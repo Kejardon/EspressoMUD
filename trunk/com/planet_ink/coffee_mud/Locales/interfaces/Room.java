@@ -49,6 +49,7 @@ public interface Room extends ItemCollection.ItemHolder, Interactable, CMSavable
 	public void recoverRoomStats();
 	public Area getArea();
 	public void setArea(Area newArea);
+	public void setAreaRaw(Area newArea);
 
 	public int numExits();
 	public void addExit(Exit E, Room destination);

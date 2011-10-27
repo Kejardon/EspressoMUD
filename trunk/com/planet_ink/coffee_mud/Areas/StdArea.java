@@ -45,12 +45,14 @@ public class StdArea implements Area
 	protected Vector<TickActer> tickActers=new Vector();
 	protected HashedList<Room> tickingRooms=new HashedList<Room>();
 	protected Vector<Room> totalMetroRooms=null;
+	protected long lastTick=0;
 
 	protected Vector<Area> children=null;
 	protected Vector<Area> parents=null;
 	protected Vector<String> childrenToLoad=new Vector(1);
 //	protected Vector<String> parentsToLoad=new Vector(1);
-	protected Environmental myEnvironmental=new Environmental.DefaultEnv(E);
+	protected Environmental myEnvironmental=new Environmental.DefaultEnv(this);
+	protected EnumSet<ListenHolder.Flags> lFlags=EnumSet.noneOf(ListenHolder.Flags.class);
 
 	protected String author="";
 
@@ -59,7 +61,6 @@ public class StdArea implements Area
 	
 	public void initializeClass(){}
 
-	protected Vector affects=new Vector(1);
 //	protected Vector subOps=new Vector(1);
 	protected TimeClock myClock=null;
 	public void setTimeObj(TimeClock obj){myClock=obj;}
@@ -67,6 +68,15 @@ public class StdArea implements Area
 	{
 		if(myClock==null) myClock=CMLib.time().globalClock();
 		return myClock;
+	}
+	public Environmental getEnvObject() {return myEnvironmental;}
+	public int priority(ListenHolder L){return Integer.MAX_VALUE;}
+	public void registerListeners(ListenHolder here) { here.addListener(this, lFlags); }
+	public void registerAllListeners()
+	{
+	}
+	public void clearAllListeners()
+	{
 	}
 
 	public StdArea()
@@ -79,7 +89,7 @@ public class StdArea implements Area
 	{
 		amDestroyed=true;
 		affects=null;
-		behaviors=null;
+//		behaviors=null;
 		author=null;
 //		currency=null;
 		children=null;
@@ -98,7 +108,6 @@ public class StdArea implements Area
 
 	public String name()
 	{
-		if(envStats().newName()!=null) return envStats().newName();
 		return name;
 	}
 
@@ -111,11 +120,14 @@ public class StdArea implements Area
 	 */
 	public String getNewRoomID()
 	{
-		SortedList.SortableObject<Room> lastRoomObj=defaultIDRooms.lastElement();
+		SortedList.SortableObject<Room> lastRoomObj=properRooms.lastElement();
 		if(lastRoomObj==null) return name+"#1";
 		return name+"#"+(1+lastRoomObj.myInt);
 	}
+	public long lastAct(){return 0;}	//No Action ticks
+	public long lastTick(){return lastTick;}
 
+	public EnumSet<ListenHolder.Flags> listenFlags() {return lFlags;}
 	public CMObject newInstance()
 	{
 		try
@@ -137,18 +149,11 @@ public class StdArea implements Area
 		if(E.children!=null)
 			children=(Vector)E.children.clone();
 		affects=new Vector(1);
-		behaviors=new Vector(1);
-		for(int b=0;b<E.numBehaviors();b++)
-		{
-			Behavior B=E.fetchBehavior(b);
-			if(B!=null)
-				behaviors.addElement((Behavior)B.copyOf());
-		}
 		for(int a=0;a<E.numEffects();a++)
 		{
-			Ability A=E.fetchEffect(a);
+			Effect A=E.fetchEffect(a);
 			if(A!=null)
-				affects.addElement((Ability)A.copyOf());
+				affects.addElement((Effect)A.copyOf());
 		}
 	}
 	public CMObject copyOf()
@@ -170,9 +175,30 @@ public class StdArea implements Area
 	public int compareTo(CMObject o)
 	{
 		if(o instanceof Area)
-			 return name.compareTo(A.name());
+			 return name.compareTo(((Area)o).name());
 		return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));
 	}
+	public void removeListener(Listener oldAffect, EnumSet<ListenHolder.Flags> flags)
+	{
+		ListenHolder.O.removeListener(this, oldAffect, flags);
+		if((flags.contains(ListenHolder.Flags.OK))&&(okCheckers.isEmpty()))
+			lFlags.remove(ListenHolder.Flags.OK);
+		if((flags.contains(ListenHolder.Flags.EXC))&&(excCheckers.isEmpty()))
+			lFlags.remove(ListenHolder.Flags.EXC);
+	}
+	public void addListener(Listener newAffect, EnumSet<ListenHolder.Flags> flags)
+	{
+		ListenHolder.O.addListener(this, newAffect, flags);
+		if((flags.contains(ListenHolder.Flags.OK))&&(!okCheckers.isEmpty()))
+			lFlags.add(ListenHolder.Flags.OK);
+		if((flags.contains(ListenHolder.Flags.EXC))&&(!excCheckers.isEmpty()))
+			lFlags.add(ListenHolder.Flags.EXC);
+	}
+	public Vector<CharAffecter> charAffecters(){return null;}
+	public Vector<EnvAffecter> envAffecters(){return null;}
+	public Vector<OkChecker> okCheckers(){return okCheckers;}
+	public Vector<ExcChecker> excCheckers(){return excCheckers;}
+	public Vector<TickActer> tickActers(){return tickActers;}
 
 	public boolean okMessage(OkChecker myHost, CMMsg msg)
 	{
@@ -188,7 +214,7 @@ public class StdArea implements Area
 			}
 		}
 		for(int i=0;i<okCheckers.size();i++)
-			if(!okCheckers.get(i).okMessage(this,msg)))
+			if(!okCheckers.get(i).okMessage(this,msg))
 				return false;
 		if(parents!=null)
 		for(int i=0;i<parents.size();i++)
@@ -196,11 +222,12 @@ public class StdArea implements Area
 				return false;
 		return true;
 	}
+	public boolean respondTo(CMMsg msg){return true;}
 
 	public void executeMsg(ExcChecker myHost, CMMsg msg)
 	{
 		for(int i=0;i<excCheckers.size();i++)
-			excChecker.get(i).executeMsg(this, msg);
+			excCheckers.get(i).executeMsg(this, msg);
 
 		if(parents!=null)
 		for(int i=0;i<parents.size();i++)
@@ -228,16 +255,17 @@ public class StdArea implements Area
 				tickingRooms.remove(R);
 		}
 		tickStatus=Tickable.TickStat.Not;
+		lastTick=System.currentTimeMillis();
 		return true;
 	}
 
-	public void addEffect(Ability to)
+	public void addEffect(Effect to)
 	{
 		if(to==null) return;
 		affects.addElement(to);
 		to.setAffectedOne(this);
 	}
-	public void delEffect(Ability to)
+	public void delEffect(Effect to)
 	{
 		if(affects.removeElement(to))
 			to.setAffectedOne(null);
@@ -334,9 +362,10 @@ public class StdArea implements Area
 		if(roomID.startsWith(name+"#"))
 		synchronized(properRooms)
 		{
-			contR=new SortedList.SortableObject<Room>(null, Integer.parseInt(roomID.substring(roomID.indexOf("#")+1)));
-			return properRooms.get(properRooms.indexOf(contR)).myObj;
+			int foundIndex=properRooms.indexOf(new SortedList.SortableObject<Room>(null, Integer.parseInt(roomID.substring(roomID.indexOf("#")+1))));
+			if(foundIndex>=0) return properRooms.get(foundIndex).myObj;
 		}
+		return null;
 	}
 
 	public int metroSize()
@@ -349,7 +378,7 @@ public class StdArea implements Area
 	public Room getRandomProperRoom()
 	{
 		if(properRooms.size()==0) return null;
-		return properRooms.get(CMath.random(properRooms.size()));
+		return properRooms.get(CMath.random(properRooms.size())).myObj;
 	}
 	public Room getRandomMetroRoom()
 	{
@@ -359,17 +388,16 @@ public class StdArea implements Area
 			Room R=(Room)metroRooms.elementAt(CMLib.dice().roll(1,metroRooms.size(),-1));
 			return R;
 		}*/
-		String roomID=metroRoomIDSet.random();
-		Room R=CMLib.map().getRoom(roomID);
-		if(R==null) Log.errOut("StdArea","Unable to random-metro-find: "+roomID);
-		return R;
+		Vector<Room> V=getMetroCollection();
+		if(V.size()>0) return V.get(CMath.random(V.size()));
+		return null;
 	}
 
-	protected void clearMetroMap()
+	public void clearMetroMap()
 	{
 		totalMetroRooms=null;
 		for(Enumeration<Area> e=getParents();e.hasMoreElements();)
-			e.next().clearMetroMap();
+			e.nextElement().clearMetroMap();
 	}
 
 	public Enumeration<Room> getProperMap()
@@ -382,17 +410,18 @@ public class StdArea implements Area
 	{
 		if(totalMetroRooms!=null)
 			return totalMetroRooms;
-		totalMetroRooms = Vector<Room>(1);
+		totalMetroRooms = new Vector(1);
 		Vector<Room> tempList=totalMetroRooms;
-		Vector<Room>[] toAdd=new Vector<Room>[numChildren()];
+		Vector<Room>[] toAdd=new Vector[children.size()];
 		int totalSize=properRooms.size();
 		for(int i=0;i<children.size();i++)
 		{
-			toAdd[i]=children.get(i).metroVector();
+			toAdd[i]=children.get(i).getMetroCollection();
 			totalSize+=toAdd[i].size();
 		}
 		tempList.ensureCapacity(totalSize);
-		tempList.addAll(properRooms);
+		for(SortedList.SortableObject<Room> roomC : (SortedList.SortableObject<Room>[])properRooms.toArray())
+			tempList.add(roomC.myObj);
 		for(int i=0;i<toAdd.length;i++)
 			tempList.addAll(toAdd[i]);
 		return tempList;
@@ -473,7 +502,7 @@ public class StdArea implements Area
 	// Doesn't prevent having the same parent twice. NOTE: People making areas should take care about this!
 	public boolean canChild(Area newChild)
 	{
-		initParents();
+//		initParents();
 		if(parents.contains(newChild))
 			return false;
 		for(int i=0;i<parents.size();i++)
@@ -486,7 +515,7 @@ public class StdArea implements Area
 	}
 
 	// Parent
-	public Enumeration<Area> getParents() { initParents(); return parents.elements(); }
+	public Enumeration<Area> getParents() { return parents.elements(); }
 	public Vector<Area> getParentsRecurse()
 	{
 		Vector<Area> V=new Vector<Area>();
@@ -553,7 +582,7 @@ public class StdArea implements Area
 	//Redundant with canChild
 	public boolean canParent(Area newParent)
 	{
-		initChildren();
+//		initChildren();
 		if(children.contains(newParent))
 			return false;
 		for(int i=0;i<children.size();i++)
@@ -576,10 +605,10 @@ public class StdArea implements Area
 //			public String save(StdArea E){ return E.name; }
 //			public void load(StdArea E, String S){ E.name=S.intern(); } },
 		CHL(){
-			public String save(StdArea E){ return getChildrenList(); }
+			public String save(StdArea E){ return E.getChildrenList(); }
 			public void load(StdArea E, String S){
 				while(S.length()>0) {
-					addChildToLoad(S.substring(0,S.indexOf(';')));
+					E.addChildToLoad(S.substring(0,S.indexOf(';')));
 					S=S.substring(S.indexOf(';')+1); } } },
 		ENV(){
 			public String save(StdArea E){ return CMLib.coffeeMaker().getPropertiesStr(E.myEnvironmental); }
@@ -589,8 +618,8 @@ public class StdArea implements Area
 				E.myEnvironmental.destroy();
 				E.myEnvironmental=newEnv; } },
 		EFC(){
-			public String save(StdItem E){ return CMLib.coffeeMaker().getVectorStr(E.affects); }
-			public void load(StdItem E, String S){
+			public String save(StdArea E){ return CMLib.coffeeMaker().getVectorStr(E.affects); }
+			public void load(StdArea E, String S){
 				Vector<Effect> V=CMLib.coffeeMaker().setVectorStr(S);
 				for(Effect A : V)
 					E.addEffect(A);
@@ -611,9 +640,9 @@ public class StdArea implements Area
 			public void mod(StdArea E, MOB M){
 				String newName=CMLib.genEd().stringPrompt(M, E.name, false);
 				if(E.name.equals(newName)) return;
-				for(Enumeration<Room> e=getProperMap();e.hasNext();)
+				for(Enumeration<Room> e=E.getProperMap();e.hasMoreElements();)
 				{
-					Room R=e.next();
+					Room R=e.nextElement();
 					R.setName(newName+R.name().substring(R.name().indexOf('#')));
 				}
 				E.name=newName;} },
@@ -639,7 +668,7 @@ public class StdArea implements Area
 					if(A==null) return;
 					if(E.isChild(A)) E.removeChild(A);
 					else if(E.canChild(A)) E.addChild(A);
-					else M.session().rawPrintln("That would cause a circular reference."); } } }
+					else M.session().rawPrintln("That would cause a circular reference."); } } },
 		PARENTS(){
 			public String brief(StdArea E){return E.getParentsList();}
 			public String prompt(StdArea E){return E.getParentsList();}
@@ -650,7 +679,7 @@ public class StdArea implements Area
 					if(A==null) return;
 					if(A.isChild(E)) A.removeChild(E);
 					else if(A.canChild(E)) A.addChild(E);
-					else M.session().rawPrintln("That would cause a circular reference."); } } }
+					else M.session().rawPrintln("That would cause a circular reference."); } } },
 		;
 		public abstract String brief(StdArea fromThis);
 		public abstract String prompt(StdArea fromThis);
@@ -1013,6 +1042,5 @@ public class StdArea implements Area
 			return mid;
 		}
 	}
-*/
 */
 }

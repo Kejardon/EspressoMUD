@@ -4,7 +4,6 @@ import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -30,6 +29,7 @@ import java.util.*;
    See the License for the specific language governing permissions and
    limitations under the License.
 */
+@SuppressWarnings("unchecked")
 public class StdTimeZone extends StdArea
 {
 	public String ID(){	return "StdTimeZone";}
@@ -37,13 +37,13 @@ public class StdTimeZone extends StdArea
 	public StdTimeZone()
 	{
 		super();
-		myClock = (TimeClock)CMClass.getCommon("DefaultTimeClock");
+		myClock = (TimeClock)CMClass.Objects.COMMON.getNew("DefaultTimeClock");
 	}
 
 	public CMObject copyOf()
 	{
 		CMObject O=super.copyOf();
-		if(O instanceof Area) ((Area)O).setTimeObj((TimeClock)CMClass.getCommon("DefaultTimeClock"));
+		if(O instanceof Area) ((Area)O).setTimeObj((TimeClock)CMClass.Objects.COMMON.getNew("DefaultTimeClock"));
 		return O;
 	}
 
@@ -67,7 +67,7 @@ public class StdTimeZone extends StdArea
 	//CMModifiable and CMSavable
 	private static ModEnum[] totalEnumM=null;
 	private static Enum[] headerEnumM=null;
-	public SaveEnum[] totalEnumM()
+	public ModEnum[] totalEnumM()
 	{
 		if(totalEnumM==null)
 			totalEnumM=(ModEnum[])CMath.combineArrays(MCode.values(), super.totalEnumM());
@@ -76,7 +76,7 @@ public class StdTimeZone extends StdArea
 	public Enum[] headerEnumM()
 	{
 		if(headerEnumM==null)
-			headerEnumM=CMath.combineArrays(new Enum[] {MCode.values()[0]}, super.headerEnumM());
+			headerEnumM=(Enum[])CMath.combineArrays(new Enum[] {MCode.values()[0]}, super.headerEnumM());
 		return headerEnumM;
 	}
 	private static SaveEnum[] totalEnumS=null;
@@ -90,16 +90,16 @@ public class StdTimeZone extends StdArea
 	public Enum[] headerEnumS()
 	{
 		if(headerEnumS==null)
-			headerEnumS=CMath.combineArrays(new Enum[] {SCode.values()[0]}, super.headerEnumS());
+			headerEnumS=(Enum[])CMath.combineArrays(new Enum[] {SCode.values()[0]}, super.headerEnumS());
 		return headerEnumS;
 	}
 	private enum SCode implements CMSavable.SaveEnum{
 		TIM(){
 			public String save(StdTimeZone E){ return CMLib.coffeeMaker().getPropertiesStr(E.myClock); }
 			public void load(StdTimeZone E, String S){
-				TimeClock newClock=(TimeClock)CMClass.getCommon("DefaultTimeClock");
+				TimeClock newClock=(TimeClock)CMClass.Objects.COMMON.getNew("DefaultTimeClock");
 				CMLib.coffeeMaker().setPropertiesStr(newClock, S);
-				E.myClock.destroy();	//TODO: Is this line appropriate? More to the point, is this how clocks should be saved/loaded/modified?
+//				E.myClock.destroy();	//TODO: Is this line appropriate? More to the point, is this how clocks should be saved/loaded/modified?
 				E.myClock=newClock; } }
 		;
 		public abstract String save(StdTimeZone E);

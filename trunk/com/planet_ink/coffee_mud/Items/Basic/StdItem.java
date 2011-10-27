@@ -56,7 +56,7 @@ public class StdItem implements Item
 //	protected int material=RawMaterial.RESOURCE_COTTON;
 	protected Tickable.TickStat tickStatus=Tickable.TickStat.Not;
 	protected boolean destroyed=false;
-	protected Environmental.DefaultEnv myEnvironmental=new Environmental.DefaultEnv(this);
+	protected Environmental myEnvironmental=new Environmental.DefaultEnv(this);
 
 	public Environmental getEnvObject() {return myEnvironmental;}
 
@@ -233,9 +233,9 @@ public class StdItem implements Item
 
 		for(int a=0;a<E.numEffects();a++)
 		{
-			Ability A=E.fetchEffect(a);
-			if((A!=null)&&(!A.canBeUninvoked())&&(!A.ID().equals("ItemRejuv")))
-				addEffect((Ability)A.copyOf());
+			Effect A=E.fetchEffect(a);
+			if(A!=null)
+				addEffect((Effect)A.copyOf());
 		}
 	}
 	public CMObject copyOf()

@@ -81,6 +81,7 @@ public interface Area extends Environmental.EnvHolder, ListenHolder.MsgListener,
 	public Room getRandomMetroRoom();
 	public Vector<Room> getMetroCollection();
 	public String getNewRoomID();
+	public void clearMetroMap();
 //	public void setAreaState(int newState);
 //	public int getAreaState();
 //	public void addSubOp(String username);

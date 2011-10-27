@@ -53,6 +53,7 @@ public interface GenericEditor extends CMLibrary
 	public void modBehavable(Behavable E, MOB M);
 	public void modAffectable(Affectable E, MOB M);
 	public int promptVector(MOB mob, Vector V, boolean newOption);
+	public Area areaPrompt(MOB M);
 	public Effect newAnyEffect(MOB mob);
 	public Effect newAnyEffect(MOB mob, Vector<Effect> notThese);
 	public Behavior newAnyBehavior(MOB mob);

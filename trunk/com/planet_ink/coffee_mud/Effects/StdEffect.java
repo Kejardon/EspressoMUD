@@ -1,14 +1,12 @@
-package com.planet_ink.coffee_mud.Abilities;
+package com.planet_ink.coffee_mud.Effects;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
-import com.planet_ink.coffee_mud.Items.Basic.StdItem;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
 import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
@@ -36,23 +34,36 @@ import java.util.*;
 public class StdEffect implements Effect
 {
 	protected int tickDown=-1;
-	protected int ability=0;
-	protected String text="";
 	protected Vector affects=new Vector(1);
-	protected boolean ticking=true;
+	protected long lastTick=0;
 
 	protected Affectable affected=null;
 	protected boolean unInvoked=false;
-	protected EnumSet myFlags=EnumSet.of(Flags.Natural);
-	protected EnumSet myListens=EnumSet.of();
+	protected EnumSet<Flags> myFlags=EnumSet.noneOf(Flags.class);
+	protected EnumSet<ListenHolder.Flags> lFlags=EnumSet.noneOf(ListenHolder.Flags.class);
+	protected Vector<OkChecker> okCheckers=null;
+	protected Vector<ExcChecker> excCheckers=null;
+	protected Vector<TickActer> tickActers=null;
+	protected Tickable.TickStat tickStatus=Tickable.TickStat.Not;
 
 	public String ID() { return "StdEffect"; }
-	public int priority(){return Integer.MAX_VALUE;}
+	public int priority(ListenHolder L){return Integer.MAX_VALUE;}
+	public void registerListeners(ListenHolder here) { here.addListener(this, lFlags); }
+	public void registerAllListeners()
+	{
+		if(affected instanceof ListenHolder)
+			((ListenHolder)affected).addListener(this, lFlags);
+	}
+	public void clearAllListeners()
+	{
+		if(affected instanceof ListenHolder)
+			((ListenHolder)affected).removeListener(this, lFlags);
+	}
 	public void initializeClass() {}
 	public void registerListeners(Affectable forThis)
 	{
 		if(forThis==affected)
-			Affectable.addListener(this, myFlags);
+			forThis.addListener(this, lFlags);
 	}
 	public StdEffect(){}
 
@@ -62,10 +73,7 @@ public class StdEffect implements Effect
 		catch(Exception e) { Log.errOut(ID(),e); }
 		return new StdEffect();
 	}
-	public EnumSet effectFlags(){ return myFlags; }
-
-	public int abilityCode(){return ability;}
-	public void setAbilityCode(int newCode){ability=newCode;}
+	public EnumSet<Flags> effectFlags(){ return myFlags; }
 
 	public void startTickDown(Affectable affected, int tickTime)
 	{
@@ -74,13 +82,9 @@ public class StdEffect implements Effect
 		tickDown=tickTime;
 	}
 
-
 	public int compareTo(CMObject o)
 	{
-		int i=ID().compareTo(o.ID())
-		if(i!=0)
-			return i;
-		return CMLib.coffeeMaker().getPropertiesStr(this).compareTo(CMLib.coffeeMaker().getPropertiesStr(o));
+		return ID().compareTo(o.ID());
 	}
 	protected void cloneFix(Effect E){}
 	public CMObject copyOf()
@@ -97,8 +101,6 @@ public class StdEffect implements Effect
 		}
 	}
 
-	public String text(){return text;}
-	public void setText(String newT){text=newT;}
 	public Affectable affecting()
 	{
 		return affected;
@@ -111,38 +113,47 @@ public class StdEffect implements Effect
 	public void unInvoke()
 	{
 		unInvoked=true;
-
 		if(affected==null) return;
-		Affected being=affected;
-
-		being.delEffect(this);
+		affected.delEffect(this);
 	}
 
-	public boolean invoke(Environmental target, int asLevel)
+	public boolean invoke(Affectable target, int asLevel)
 	{
 		return true;
 	}
+	public void affectCharStats(CMObject affected, CharStats stats){}
+	public void affectEnvStats(Environmental affected, EnvStats stats){}
 
-	public void executeMsg(Environmental myHost, CMMsg msg)
+	public boolean okMessage(ListenHolder.OkChecker myHost, CMMsg msg)
 	{
-		return;
-	}
-
-	public boolean okMessage(Environmental myHost, CMMsg msg)
-	{
+		for(int i=okCheckers.size();i>0;i--)
+			if(!okCheckers.get(i-1).okMessage(myHost,msg))
+				return false;
 		return true;
 	}
-
-	public boolean tick(Tickable ticking, int tickID)
+	public boolean respondTo(CMMsg msg){return true;}
+	public void executeMsg(ListenHolder.ExcChecker myHost, CMMsg msg)
 	{
-		if(unInvoked)
-			return false;
+		for(int i=excCheckers.size();i>0;i--)
+			excCheckers.get(i-1).executeMsg(myHost,msg);
+	}
 
-		if((tickID==Tickable.TICKID_MOB)
-		&&(tickDown!=Integer.MAX_VALUE))
+	//Tickable
+	public Tickable.TickStat getTickStatus(){return tickStatus;}
+	public boolean tick(Tickable ticking, Tickable.TickID tickID)
+	{
+		if(tickID==Tickable.TickID.Action) return false;
+		tickStatus=Tickable.TickStat.Listener;
+		for(int i=tickActers.size()-1;i>=0;i--)
 		{
-			if(tickDown<0)
-				return !unInvoked;
+			TickActer T=tickActers.get(i);
+			if(!T.tick(ticking, tickID))
+				removeListener(T, EnumSet.of(ListenHolder.Flags.TICK));
+		}
+		tickStatus=Tickable.TickStat.Not;
+		lastTick=System.currentTimeMillis();
+		if(tickDown!=Integer.MAX_VALUE)
+		{
 			if((--tickDown)<=0)
 			{
 				tickDown=-1;
@@ -152,150 +163,98 @@ public class StdEffect implements Effect
 		}
 		return true;
 	}
-	public void addEffect(Effect to);
-	public void delEffect(Effect to);
-	public int numEffects();
-	public Effect fetchEffect(int index);
-	public Effect fetchEffect(String ID);
-	public void setTicking(boolean ticking);
-	public static enum SCode{
-		TCK(savType.INT), ABL(savType.INT), LST(savType.LONG);
-		@Override public String toString()
-		{
-			String s = super.toString();
-			return s.substring(0, 1) + s.substring(1).toLowerCase();
-		}
-		private savType type;
-		private SCode(savType myType) {type=myType;}
-		public savType type(){return type;}
-	}
-	private static String[] parsedSCodes=null;
-	private static savType[] parsedSTypes=null;
-	private void parseSCodes()
+	public long lastAct(){return 0;}	//No Action ticks
+	public long lastTick(){return lastTick;}
+	//Affectable
+	public void addEffect(Effect to)
 	{
-		SCode[] codes=SCode.values();
-		parsedSCodes=new String[codes.length];
-		parsedSTypes=new savType[codes.length];
-		for(int i=0;i<codes.length;i++)
-		{
-			parsedSCodes[i]=codes[i].toString();
-			parsedSTypes[i]=codes[i].type();
-		}
+		if(to==null) return;
+		affects.addElement(to);
+		to.setAffectedOne(this);
 	}
-	public String[] savCodes()
+	public void delEffect(Effect to)
 	{
-		if(parsedSCodes==null)
-			parseSCodes();
-		return parsedSCodes;
+		if(affects.removeElement(to))
+			to.setAffectedOne(null);
 	}
-	public savType savType(int code)
+	public int numEffects(){return affects.size();}
+	public Effect fetchEffect(int index)
 	{
-		if(parsedSTypes==null)
-			parseSCodes();
-		return parsedSTypes[code];
-	}
-	public CMSavable savSub(int code, CMSavable val){return null;}
-	public Vector savVector(int code, Vector val){return null;}
-	public short savShort(int code, short val){return 0;}
-	public int savInt(int code, int val)
-	{
-		if(code>=0)
-		{
-			switch(SCode.values()[code])
-			{
-				case PRO: proficiency=val; break;
-				case TCK: tickDown=val; break;
-			}
-		}
-		else
-		{
-			code=(-code)-1;
-			switch(SCode.values()[code])
-			{
-				case PRO: return proficiency;
-				case TCK: return tickDown;
-			}
-		}
-		return 0;
-	}
-	public long savLong(int code, long val)
-	{
-		if(code>=0)
-		{
-			switch(SCode.values()[code])
-			{
-				case LST: lastCastHelp=val; break;
-			}
-		}
-		else
-		{
-			code=(-code)-1;
-			switch(SCode.values()[code])
-			{
-				case LST: return lastCastHelp;
-			}
-		}
-		return 0;
-	}
-	public double savDouble(int code, double val){return 0;}
-	public boolean savBoolean(int code, boolean val)
-	{
-		if(code>=0)
-		{
-			switch(SCode.values()[code])
-			{
-				case SAV: savable=val; break;
-				case CBU: canBeUninvoked=val; break;
-				case UNV: unInvoked=val; break;
-			}
-		}
-		else
-		{
-			code=(-code)-1;
-			switch(SCode.values()[code])
-			{
-				case SAV: return savable;
-				case CBU: return canBeUninvoked;
-				case UNV: return unInvoked;
-			}
-		}
-		return true;
-	}
-	public String savString(int code, String val)
-	{
-		if(code>=0)
-		{
-			switch(SCode.values()[code])
-			{
-				case TXT: setMiscText(val); break;
-				case INV: break;//Can't really do this right now D: Need some sort of global identifier for specific objects... mobs at least
-				case AFF: break;
-			}
-		}
-		else
-		{
-			code=(-code)-1;
-			switch(SCode.values()[code])
-			{
-				case TXT: return text();
-				case INV: break;
-				case AFF: break;
-			}
-		}
+		try { return (Effect)affects.elementAt(index); }
+		catch(java.lang.ArrayIndexOutOfBoundsException x){}
 		return null;
 	}
-	public char savChar(int code, char val){return 0;}
-	public short[] savAShort(int code, short[] val){return null;}
-	public int[] savAInt(int code, int[] val){return null;}
-	public long[] savALong(int code, long[] val){return null;}
-	public double[] savADouble(int code, double[] val){return null;}
-	public boolean[] savABoolean(int code, boolean[] val){return null;}
-	public String[] savAString(int code, String[] val){return null;}
-	public char[] savAChar(int code, char[] val){return null;}
-
-	public boolean sameAs(Environmental E)
+	public Vector<Effect> fetchEffect(String ID)
 	{
-		if(!(E instanceof StdEffect)) return false;
-		return true;
+		Vector<Effect> V=new Vector<Effect>();
+		for(int a=0;a<affects.size();a++)
+		{
+			Effect A=fetchEffect(a);
+			if((A!=null)&&(A.ID().equals(ID)))
+				V.add(A);
+		}
+		return V;
 	}
+	public Vector<Effect> allEffects() { return (Vector<Effect>)affects.clone(); }
+	//Affectable/Behavable shared
+	public Vector<CharAffecter> charAffecters(){return null;}
+	public Vector<EnvAffecter> envAffecters(){return null;}	//TODO: Should this give the environmental's instead?
+	public Vector<OkChecker> okCheckers(){if(okCheckers==null) okCheckers=new Vector(); return okCheckers;}
+	public Vector<ExcChecker> excCheckers(){if(excCheckers==null) excCheckers=new Vector(); return excCheckers;}
+	public Vector<TickActer> tickActers(){if(tickActers==null) tickActers=new Vector(); return tickActers;}
+	public void removeListener(Listener oldAffect, EnumSet flags)
+	{
+		ListenHolder.O.removeListener(this, oldAffect, flags);
+		if((flags.contains(ListenHolder.Flags.TICK))&&(tickActers.isEmpty())&&(lFlags.remove(ListenHolder.Flags.TICK)))
+			if(affected instanceof ListenHolder)
+				((ListenHolder)affected).removeListener(this, EnumSet.of(ListenHolder.Flags.TICK));
+	}
+	public void addListener(Listener newAffect, EnumSet flags)
+	{
+		ListenHolder.O.addListener(this, newAffect, flags);
+		if((flags.contains(ListenHolder.Flags.TICK))&&(!tickActers.isEmpty())&&(lFlags.add(ListenHolder.Flags.TICK)))
+			if(affected instanceof ListenHolder)
+				((ListenHolder)affected).addListener(this, EnumSet.of(ListenHolder.Flags.TICK));
+	}
+	public EnumSet<ListenHolder.Flags> listenFlags() {return lFlags;}
+
+	//CMModifiable and CMSavable
+	public SaveEnum[] totalEnumS(){return SCode.values();}
+	public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]} ;}
+	public ModEnum[] totalEnumM(){return MCode.values();}
+	public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
+
+	private enum SCode implements CMSavable.SaveEnum{
+		TIC(){
+			public String save(StdEffect E){ return ""+E.tickDown; }
+			public void load(StdEffect E, String S){ E.tickDown=Integer.parseInt(S); } },
+		EFC(){
+			public String save(StdEffect E){ return CMLib.coffeeMaker().getVectorStr(E.affects); }
+			public void load(StdEffect E, String S){
+				Vector<Effect> V=CMLib.coffeeMaker().setVectorStr(S);
+				for(Effect A : V)
+					E.addEffect(A);
+				
+				} },
+		;
+		public abstract String save(StdEffect E);
+		public abstract void load(StdEffect E, String S);
+		public String save(CMSavable E){return save((StdEffect)E);}
+		public void load(CMSavable E, String S){load((StdEffect)E, S);} }
+	private enum MCode implements CMModifiable.ModEnum{
+		TICKDOWN(){
+			public String brief(StdEffect E){return ""+E.tickDown;}
+			public String prompt(StdEffect E){return ""+E.tickDown;}
+			public void mod(StdEffect E, MOB M){E.tickDown=CMLib.genEd().intPrompt(M, ""+E.tickDown);} },
+		EFFECTS(){
+			public String brief(StdEffect E){return ""+E.affects.size();}
+			public String prompt(StdEffect E){return "";}
+			public void mod(StdEffect E, MOB M){CMLib.genEd().modAffectable(E, M);} },
+		;
+		public abstract String brief(StdEffect fromThis);
+		public abstract String prompt(StdEffect fromThis);
+		public abstract void mod(StdEffect toThis, MOB M);
+		public String brief(CMModifiable fromThis){return brief((StdEffect)fromThis);}
+		public String prompt(CMModifiable fromThis){return prompt((StdEffect)fromThis);}
+		public void mod(CMModifiable toThis, MOB M){mod((StdEffect)toThis, M);} }
 }

@@ -495,7 +495,7 @@ public class StdRoom implements Room
 	}
 
 	//Things listen to this really, not the other way around, so really simple code here.
-	public void removeListener(Listener oldAffect, EnumSet flags)
+	public void removeListener(Listener oldAffect, EnumSet<ListenHolder.Flags> flags)
 	{
 		ListenHolder.O.removeListener(this, oldAffect, flags);
 		if((flags.contains(ListenHolder.Flags.TICK))&&(tickActers.isEmpty())&&(lFlags.remove(ListenHolder.Flags.TICK)))

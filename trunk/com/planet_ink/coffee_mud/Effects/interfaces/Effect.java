@@ -30,7 +30,7 @@ import java.util.*;
 @SuppressWarnings("unchecked")
 public interface Effect extends ListenHolder.AllListener, CMModifiable, CMSavable, Affectable
 {
-	public EnumSet effectFlags();
+	public EnumSet<Flags> effectFlags();
 	public Affectable affecting();
 	public void setAffectedOne(Affectable being);
 	public boolean invoke(Affectable target, int asLevel);
