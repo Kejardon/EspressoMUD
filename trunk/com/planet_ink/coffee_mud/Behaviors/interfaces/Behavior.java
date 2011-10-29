@@ -44,8 +44,9 @@ import java.util.Vector;
 public interface Behavior extends ListenHolder.AllListener, CMModifiable, CMSavable
 {
 	public void startBehavior(Behavable forMe);
+	public Behavable behaver();
 
-//	public String getParms();
-//	public void setParms(String parameters);
+	public String getParms();
+	public void setParms(String parameters);
 
 }

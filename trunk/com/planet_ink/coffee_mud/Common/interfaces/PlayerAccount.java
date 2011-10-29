@@ -16,7 +16,7 @@ public interface PlayerAccount extends CMCommon, AccountStats, CMModifiable, CMS
 {
 	public Enumeration<MOB> getLoadPlayers();
 	public int numPlayers();
-	public Enumeration<String> getPlayers();
+//	public Enumeration<String> getPlayers();
 	public void addNewPlayer(MOB mob);
 	public void delPlayer(MOB mob);
 //	public MOB getAccountMob();
@@ -29,7 +29,7 @@ public interface PlayerAccount extends CMCommon, AccountStats, CMModifiable, CMS
 	public boolean isPlayer(String name);
 	public String accountName();
 	public void setAccountName(String name);
-	public void setPlayerNames(Vector<String> names);
+//	public void setPlayerNames(Vector<String> names);
 	
 	/**
 	 * Checks whether the given string flag is set for this account.

@@ -4,7 +4,6 @@ import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -12,8 +11,6 @@ import com.planet_ink.coffee_mud.Items.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
-
-
 
 import java.util.*;
 
@@ -33,29 +30,41 @@ import java.util.*;
    limitations under the License.
 */
 @SuppressWarnings("unchecked")
-public class StdBehavior extends CMModifiable.DummyCMMod implements Behavior
+public class StdBehavior implements Behavior
 {
+	protected Behavable behaver=null;
+	protected String parms="";
+
+	protected long lastTick=0;
+	protected Tickable.TickStat tickStatus=Tickable.TickStat.Not;
+	protected EnumSet<ListenHolder.Flags> lFlags=EnumSet.noneOf(ListenHolder.Flags.class);
+
 	public String ID(){return "StdBehavior";}
 	public String name(){return ID();}
-	protected int canImproveCode(){return Behavior.CAN_MOBS;}
-	public long flags(){return 0;}
-	public boolean grantsAggressivenessTo(MOB M){return false;}
-	public long getTickStatus(){return Tickable.STATUS_NOT;}
+//	protected int canImproveCode(){return Behavior.CAN_MOBS;}
+//	public long flags(){return 0;}
+//	public boolean grantsAggressivenessTo(MOB M){return false;}
+	public Tickable.TickStat getTickStatus(){return tickStatus;}
 	public void initializeClass(){}
-	public int priority(){return Integer.MAX_VALUE;}
-	public void registerListeners(Environmental forThis){}
+	public int priority(ListenHolder L){return Integer.MAX_VALUE;}
+	public void registerListeners(ListenHolder here) { here.addListener(this, lFlags); }
+	public EnumSet<ListenHolder.Flags> listenFlags() {return lFlags;}
+	public void registerAllListeners()
+	{if(behaver instanceof ListenHolder) behaver.addListener(this, lFlags);}
+	public void clearAllListeners()
+	{if(behaver instanceof ListenHolder) behaver.removeListener(this, lFlags);}
 	public void affectEnvStats(Environmental affectedEnv, EnvStats affectableStats)
 	{}
-	public void affectCharStats(MOB affectedMob, CharStats affectableStats)
+	public void affectCharStats(CMObject affected, CharStats affectableStats)
 	{}
-	protected boolean isSavableBehavior=true;
+//	protected boolean isSavableBehavior=true;
 
 	public StdBehavior()
 	{
 		super();
 	}
 
-	protected String parms="";
+	public Behavable behaver(){return behaver;}
 
 	/** return a new instance of the object*/
 	public CMObject newInstance()
@@ -83,181 +92,57 @@ public class StdBehavior extends CMModifiable.DummyCMMod implements Behavior
 			return new StdBehavior();
 		}
 	}
-	public void startBehavior(Environmental forMe){}
+	public void startBehavior(Behavable forMe){behaver=forMe;}
 	protected void finalize(){}
-	public void setSavable(boolean truefalse){isSavableBehavior=truefalse;}
-	public boolean isSavable(){return isSavableBehavior;}
-	protected MOB getBehaversMOB(Tickable ticking)
-	{
-		if(ticking==null) return null;
-
-		if(ticking instanceof MOB)
-			return (MOB)ticking;
-		else
-		if(ticking instanceof Item)
-			if(((Item)ticking).owner() != null)
-				if(((Item)ticking).owner() instanceof MOB)
-					return (MOB)((Item)ticking).owner();
-
-		return null;
-	}
-
-	protected Room getBehaversRoom(Tickable ticking)
-	{
-		if(ticking==null) return null;
-
-		if(ticking instanceof Room)
-			return (Room)ticking;
-
-		MOB mob=getBehaversMOB(ticking);
-		if(mob!=null)
-			return mob.location();
-
-		if(ticking instanceof Item)
-			if(((Item)ticking).owner() != null)
-				if(((Item)ticking).owner() instanceof Room)
-					return (Room)((Item)ticking).owner();
-
-		return null;
-	}
-
 	public String getParms(){return parms;}
 	public void setParms(String parameters){parms=parameters;}
-	public String parmsFormat(){return CMParms.FORMAT_UNDEFINED;}
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
-	public Vector externalFiles(){return null;}
 
-	public void executeMsg(Environmental affecting, CMMsg msg)
+	public void executeMsg(ListenHolder.ExcChecker myHost, CMMsg msg)
 	{
 		return;
 	}
-
-	public boolean okMessage(Environmental oking, CMMsg msg)
+	public boolean respondTo(CMMsg msg){return true;}
+	public boolean okMessage(ListenHolder.OkChecker myHost, CMMsg msg)
 	{
 		return true;
 	}
 
-	public boolean canImprove(int can_code){return CMath.bset(canImproveCode(),can_code);}
-	public boolean canImprove(Environmental E)
+	public boolean tick(Tickable ticking, Tickable.TickID tickID)
 	{
-		if((E==null)&&(canImproveCode()==0)) return true;
-		if(E==null) return false;
-		if((E instanceof MOB)&&((canImproveCode()&Ability.CAN_MOBS)>0)) return true;
-		if((E instanceof Item)&&((canImproveCode()&Ability.CAN_ITEMS)>0)) return true;
-		if((E instanceof Exit)&&((canImproveCode()&Ability.CAN_EXITS)>0)) return true;
-		if((E instanceof Room)&&((canImproveCode()&Ability.CAN_ROOMS)>0)) return true;
-		if((E instanceof Area)&&((canImproveCode()&Ability.CAN_AREAS)>0)) return true;
-		return false;
-	}
-	public static boolean canActAtAll(Tickable affecting)
-	{ return CMLib.flags().canActAtAll(affecting);}
-
-	public static boolean canFreelyBehaveNormal(Tickable affecting)
-	{ return CMLib.flags().canFreelyBehaveNormal(affecting);}
-
-	public boolean tick(Tickable ticking, int tickID)
-	{
-		if((ticking instanceof Environmental) && (((Environmental)ticking).amDestroyed()))
-			return false;
+		lastTick=System.currentTimeMillis();
 		return true;
 	}
+	public long lastAct(){return 0;}	//No Action ticks
+	public long lastTick(){return lastTick;}
 
-	public String[] modCodes() {return null;}
+	//CMModifiable and CMSavable
+	public SaveEnum[] totalEnumS(){return SCode.values();}
+	public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]} ;}
+	public ModEnum[] totalEnumM(){return MCode.values();}
+	public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
 
-	public String modBrief(int code) {return null;}
-	public modType modType(int code) {return null;}
-	public String modDefault(int code) {return null;}
-
-	public static enum SCode{
-		SAV(savType.BOOLEAN), PRM(savType.STRING);
-		@Override public String toString()
-		{
-			String s = super.toString();
-			return s.substring(0, 1) + s.substring(1).toLowerCase();
-		}
-		private savType type;
-		private SCode(savType myType) {type=myType;}
-		public savType type(){return type;}
-	}
-	private static String[] parsedSCodes=null;
-	private static savType[] parsedSTypes=null;
-	private void parseSCodes()
-	{
-		SCode[] codes=SCode.values();
-		parsedSCodes=new String[codes.length];
-		parsedSTypes=new savType[codes.length];
-		for(int i=0;i<codes.length;i++)
-		{
-			parsedSCodes[i]=codes[i].toString();
-			parsedSTypes[i]=codes[i].type();
-		}
-	}
-	public String[] savCodes()
-	{
-		if(parsedSCodes==null)
-			parseSCodes();
-		return parsedSCodes;
-	}
-	public savType savType(int code)
-	{
-		if(parsedSTypes==null)
-			parseSCodes();
-		return parsedSTypes[code];
-	}
-
-	public boolean savBoolean(int code, boolean val)
-	{
-		if(code>=0)
-		{
-			switch(SCode.values()[code])
-			{
-				case SAV: isSavableBehavior=val;
-			}
-		}
-		else
-		{
-			code=(-code)-1;
-			switch(SCode.values()[code])
-			{
-				case SAV: return isSavableBehavior;
-			}
-		}
-		return false;
-	}
-	public String savString(int code, String val)
-	{
-		if(code>=0)
-		{
-			switch(SCode.values()[code])
-			{
-				case PRM: setParms(val); break;
-			}
-		}
-		else
-		{
-			code=(-code)-1;
-			switch(SCode.values()[code])
-			{
-				case PRM: return parms;
-			}
-		}
-		return null;
-	}
-
-	public CMSavable savSub(int code, CMSavable val){return null;}
-	public short savShort(int code, short val){return 0;}
-	public int savInt(int code, int val){return 0;}
-	public long savLong(int code, long val){return 0;}
-	public double savDouble(int code, double val){return 0;}
-	public char savChar(int code, char val){return 0;}
-	public short[] savAShort(int code, short[] val){return null;}
-	public int[] savAInt(int code, int[] val){return null;}
-	public long[] savALong(int code, long[] val){return null;}
-	public double[] savADouble(int code, double[] val){return null;}
-	public boolean[] savABoolean(int code, boolean[] val){return null;}
-	public String[] savAString(int code, String[] val){return null;}
-	public char[] savAChar(int code, char[] val){return null;}
-	public Vector savVector(int code, Vector val){return null;}
+	private enum SCode implements CMSavable.SaveEnum{
+		PRM(){
+			public String save(StdBehavior E){ return E.parms; }
+			public void load(StdBehavior E, String S){ E.setParms(S.intern()); } },
+		;
+		public abstract String save(StdBehavior E);
+		public abstract void load(StdBehavior E, String S);
+		public String save(CMSavable E){return save((StdBehavior)E);}
+		public void load(CMSavable E, String S){load((StdBehavior)E, S);} }
+	private enum MCode implements CMModifiable.ModEnum{
+		PARMS(){
+			public String brief(StdBehavior E){return E.parms;}
+			public String prompt(StdBehavior E){return E.parms;}
+			public void mod(StdBehavior E, MOB M){E.setParms(CMLib.genEd().stringPrompt(M, ""+E.parms, false));} },
+		;
+		public abstract String brief(StdBehavior fromThis);
+		public abstract String prompt(StdBehavior fromThis);
+		public abstract void mod(StdBehavior toThis, MOB M);
+		public String brief(CMModifiable fromThis){return brief((StdBehavior)fromThis);}
+		public String prompt(CMModifiable fromThis){return prompt((StdBehavior)fromThis);}
+		public void mod(CMModifiable toThis, MOB M){mod((StdBehavior)toThis, M);} }
 
 	public boolean sameAs(Behavior E)
 	{

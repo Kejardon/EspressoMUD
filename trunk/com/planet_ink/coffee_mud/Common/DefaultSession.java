@@ -137,8 +137,8 @@ public class DefaultSession extends Thread implements Session
 			rawout.flush();
 			preliminaryRead(250);
 
-			out = new PrintWriter(new OutputStreamWriter(rawout,CMProps.getVar(CMProps.SYSTEM_CHARSETOUTPUT)));
-			in = new BufferedReader(new InputStreamReader(rawin,CMProps.getVar(CMProps.SYSTEM_CHARSETINPUT)));
+			out = new PrintWriter(new OutputStreamWriter(rawout,CMProps.Strings.CHARSETOUTPUT.property()));
+			in = new BufferedReader(new InputStreamReader(rawin,CMProps.Strings.CHARSETINPUT.property()));
 
 			preliminaryRead(250);
 			if(clientTelnetMode(TELNET_COMPRESS2))
@@ -155,7 +155,7 @@ public class DefaultSession extends Thread implements Session
 				preliminaryRead(250);
 				ZOutputStream zOut=new ZOutputStream(rawout, JZlib.Z_DEFAULT_COMPRESSION);
 				zOut.setFlushMode(JZlib.Z_SYNC_FLUSH);
-				out = new PrintWriter(new OutputStreamWriter(zOut,CMProps.getVar(CMProps.SYSTEM_CHARSETOUTPUT)));
+				out = new PrintWriter(new OutputStreamWriter(zOut,CMProps.Strings.CHARSETOUTPUT.property()));
 				try{Thread.sleep(50);}catch(Exception e){}
 			}
 			if(clientTelnetMode(Session.TELNET_MXP))
@@ -310,13 +310,13 @@ public class DefaultSession extends Thread implements Session
 
 	public void initTelnetMode(int mobbitmap)
 	{
-		setServerTelnetMode(TELNET_ANSI,CMath.bset(mobbitmap,PlayerStats.ATT_ANSI));
-		setClientTelnetMode(TELNET_ANSI,CMath.bset(mobbitmap,PlayerStats.ATT_ANSI));
+		setServerTelnetMode(TELNET_ANSI,(mobbitmap&PlayerStats.ATT_ANSI)>0);
+		setClientTelnetMode(TELNET_ANSI,(mobbitmap&PlayerStats.ATT_ANSI)>0);
 		boolean changedSomething=false;
-		boolean mxpSet=(!CMSecurity.isDisabled("MXP"))&&CMath.bset(mobbitmap,PlayerStats.ATT_MXP);
+		boolean mxpSet=(!CMSecurity.isDisabled("MXP"))&&((mobbitmap&PlayerStats.ATT_MXP)>0);
 		if(mxpSet!=clientTelnetMode(TELNET_MXP))
 		{ changeTelnetMode(TELNET_MXP,!clientTelnetMode(TELNET_MXP)); changedSomething=true;}
-		boolean mspSet=(!CMSecurity.isDisabled("MSP"))&&CMath.bset(mobbitmap,PlayerStats.ATT_SOUND);
+		boolean mspSet=(!CMSecurity.isDisabled("MSP"))&&((mobbitmap&PlayerStats.ATT_SOUND)>0);
 		if(mspSet!=clientTelnetMode(TELNET_MSP))
 		{ changeTelnetMode(TELNET_MSP,!clientTelnetMode(TELNET_MSP)); changedSomething=true;}
 		try{if(changedSomething) blockingIn(500);}catch(Exception e){}
@@ -370,8 +370,7 @@ public class DefaultSession extends Thread implements Session
 	}
 
 	private int metaFlags() {
-		return ((snoops.size()>0)?Command.METAFLAG_SNOOPED:0)
-			   |(((mob!=null)&&(mob.soulMate()!=null))?Command.METAFLAG_POSSESSED:0);
+		return (snoops.size()>0)?Command.METAFLAG_SNOOPED:0;
 	}
 
 	public void setPreviousCmd(Vector cmds)
@@ -428,7 +427,7 @@ public class DefaultSession extends Thread implements Session
 			{
 				if(isLockedUpWriting())
 				{
-					String name=(mob!=null)?mob.Name():getAddress();
+					String name=(mob!=null)?mob.name():getAddress();
 					Log.errOut("DefaultSession","Kicked out "+name+" due to write-lock ("+out.getClass().getName()+".");
 					kill(true,true,true);
 					kill(true,true,true);
@@ -457,7 +456,7 @@ public class DefaultSession extends Thread implements Session
 			try{
 				if((snoops.size()>0)&&(snoopSuspensionStack<=0))
 				{
-					String msgColored=CMStrings.replaceAll(msg,"\n\r",CMLib.coffeeFilter().colorOnlyFilter("\n\r^Z"+((mob==null)?"?":mob.Name())+":^N ",this));
+					String msgColored=CMStrings.replaceAll(msg,"\n\r",CMLib.coffeeFilter().colorOnlyFilter("\n\r^Z"+((mob==null)?"?":mob.name())+":^N ",this));
 					for(int s=0;s<snoops.size();s++)
 						((Session)snoops.elementAt(s)).onlyPrint(msgColored,noCache);
 				}
@@ -560,10 +559,10 @@ public class DefaultSession extends Thread implements Session
 	public void stdPrint(String msg)
 	{ rawPrint(CMLib.coffeeFilter().fullOutFilter(this,mob,mob,mob,null,msg,false)); }
 
-	public void print(Environmental src, Environmental trg, Environmental tol, String msg)
+	public void print(Interactable src, Interactable trg, CMObject tol, String msg)
 	{ onlyPrint((CMLib.coffeeFilter().fullOutFilter(this,mob,src,trg,tol,msg,false)),false);}
 
-	public void stdPrint(Environmental src, Environmental trg, Environmental tol, String msg)
+	public void stdPrint(Interactable src, Interactable trg, CMObject tol, String msg)
 	{ rawPrint(CMLib.coffeeFilter().fullOutFilter(this,mob,src,trg,trg,msg,false)); }
 
 	public void println(String msg)
@@ -672,8 +671,6 @@ public class DefaultSession extends Thread implements Session
 
 		if(mob()==null) return clookup;
 		PlayerStats pstats=mob().playerStats();
-		if((mob.soulMate()!=null)&&(mob.soulMate().playerStats()!=null))
-			pstats=mob.soulMate().playerStats();
 		if(pstats==null) return clookup;
 
 		if(!pstats.getColorStr().equals(lastColorStr))
@@ -873,7 +870,7 @@ public class DefaultSession extends Thread implements Session
 							if(externalCmd.length()>0)
 								cmd.add(externalCmd);
 						}
-						Command C=CMClass.getCommand("Shutdown");
+						Command C=CMClass.Objects.COMMAND.getCommand("Shutdown", true);
 						l="";
 						killFlag=true;
 						out.write("\n\n\033[1z<Executing Shutdown...\n\n");
@@ -939,7 +936,7 @@ public class DefaultSession extends Thread implements Session
 					out.flush();
 					ZOutputStream zOut=new ZOutputStream(rawout, JZlib.Z_DEFAULT_COMPRESSION);
 					zOut.setFlushMode(JZlib.Z_SYNC_FLUSH);
-					out = new PrintWriter(new OutputStreamWriter(zOut,CMProps.getVar(CMProps.SYSTEM_CHARSETOUTPUT)));
+					out = new PrintWriter(new OutputStreamWriter(zOut,CMProps.Strings.CHARSETOUTPUT.property()));
 					try{Thread.sleep(250);}catch(Exception e){}
 				}
 			}
@@ -961,7 +958,7 @@ public class DefaultSession extends Thread implements Session
 			if((last==TELNET_COMPRESS2)&&(serverTelnetMode(last)))
 			{
 				setClientTelnetMode(last,false);
-				out = new PrintWriter(new OutputStreamWriter(rawout,CMProps.getVar(CMProps.SYSTEM_CHARSETOUTPUT)));
+				out = new PrintWriter(new OutputStreamWriter(rawout,CMProps.Strings.CHARSETOUTPUT.property()));
 			}
 			if((mightSupportTelnetMode(last)&&(serverTelnetMode(last))))
 				changeTelnetMode(last,false);
@@ -1220,19 +1217,21 @@ public class DefaultSession extends Thread implements Session
 	}
 
 	public boolean confirm(String Message, String Default, long maxTime)
-	throws IOException
 	{
 		if(Default.toUpperCase().startsWith("T")) Default="Y";
-		String YN=choose(Message,"YN",Default,maxTime);
+		String YN=Default;
+		try{YN=choose(Message,"YN",Default,maxTime);}
+		catch(IOException e){}
 		if(YN.equals("Y"))
 			return true;
 		return false;
 	}
 	public boolean confirm(String Message, String Default)
-	throws IOException
 	{
 		if(Default.toUpperCase().startsWith("T")) Default="Y";
-		String YN=choose(Message,"YN",Default,-1);
+		String YN=Default;
+		try{YN=choose(Message,"YN",Default,-1);}
+		catch(IOException e){}
 		if(YN.equals("Y"))
 			return true;
 		return false;
@@ -1282,12 +1281,12 @@ public class DefaultSession extends Thread implements Session
 		if(mob.playerStats()==null) return;
 		StringBuffer buf=new StringBuffer("");
 		if(clientTelnetMode(Session.TELNET_MXP))
-			buf.append("^<!EN Hp '"+mob().charStats().getPoints(CharStats.STAT_HITPOINTS)
-					+"'^>^<!EN MaxHp '"+mob().charStats().getMaxPoints(CharStats.STAT_HITPOINTS)
-					+"'^>^<!EN Mana '"+mob().charStats().getPoints(CharStats.STAT_MANA)
-					+"'^>^<!EN MaxMana '"+mob().charStats().getMaxPoints(CharStats.STAT_MANA)
-					+"'^>^<!EN Move '"+mob().charStats().getPoints(CharStats.STAT_MOVE)
-					+"'^>^<!EN MaxMove '"+mob().charStats().getMaxPoints(CharStats.STAT_MOVE)
+			buf.append("^<!EN Hp '"+mob().charStats().getPoints(CharStats.Points.HIT)
+					+"'^>^<!EN MaxHp '"+mob().charStats().getMaxPoints(CharStats.Points.HIT)
+					+"'^>^<!EN Mana '"+mob().charStats().getPoints(CharStats.Points.MANA)
+					+"'^>^<!EN MaxMana '"+mob().charStats().getMaxPoints(CharStats.Points.MANA)
+					+"'^>^<!EN Focus '"+mob().charStats().getPoints(CharStats.Points.FOCUS)
+					+"'^>^<!EN TargetFocus '"+mob().charStats().getMaxPoints(CharStats.Points.FOCUS)
 					+"'^>^\n\r\n\r");
 		buf.append(CMLib.utensils().builtPrompt(mob));
 		print("^<Prompt^>"+buf.toString()+"^</Prompt^>^.^N");
@@ -1338,17 +1337,16 @@ public class DefaultSession extends Thread implements Session
 		}
 	}
 
+	//TODO: Save MOB and remove it
 	private void removeMOBFromGame(boolean killSession)
 	{
 		MOB M=mob;
 		if(M!=null)
 		{
-			boolean inTheGame=CMLib.flags().isInTheGame(M,true);
 			PlayerStats pstats=M.playerStats();
 			if(pstats!=null) {
 				pstats.setLastDateTime(System.currentTimeMillis());
 			}
-			M.removeFromGame(killSession);
 		}
 	}
 	public int getStatus(){return status;}
@@ -1401,13 +1399,13 @@ public class DefaultSession extends Thread implements Session
 						StringBuffer loginMsg=new StringBuffer("");
 						loginMsg.append(getAddress())
 								.append(" "+terminalType)
-								.append(((CMath.bset(mob.playerStats().getBitmap(),PlayerStats.ATT_MXP)&&clientTelnetMode(Session.TELNET_MXP)))?" MXP":"")
+								.append(((((mob.playerStats().getBitmap()&PlayerStats.ATT_MXP)>0)&&clientTelnetMode(Session.TELNET_MXP)))?" MXP":"")
 								.append((clientTelnetMode(Session.TELNET_COMPRESS)||clientTelnetMode(Session.TELNET_COMPRESS2))?" CMP":"")
-								.append(((CMath.bset(mob.playerStats().getBitmap(),PlayerStats.ATT_ANSI)&&clientTelnetMode(Session.TELNET_ANSI)))?" ANSI":"")
-								.append(", login: "+mob.Name());
+								.append(((((mob.playerStats().getBitmap()&PlayerStats.ATT_ANSI)>0)&&clientTelnetMode(Session.TELNET_ANSI)))?" ANSI":"")
+								.append(", login: "+mob.name());
 						Log.sysOut("Session",loginMsg.toString());
 						if(loginResult != CharCreationLibrary.LoginResult.NO_LOGIN)
-							if(!CMLib.map().sendGlobalMessage(mob,CMMsg.TYP_LOGIN,CMClass.getMsg(mob,null,CMMsg.MSG_LOGIN,null)))
+							if(!CMLib.map().sendGlobalMessage(mob,EnumSet.of(CMMsg.MsgCode.LOGIN),CMClass.getMsg(mob,null,EnumSet.of(CMMsg.MsgCode.LOGIN),null)))
 								killFlag=true;
 					}
 					needPrompt=true;
@@ -1468,7 +1466,7 @@ public class DefaultSession extends Thread implements Session
 
 									if(snoops.size()>0)
 									{
-										String msgColored=CMStrings.replaceAll(input,"\n\r",CMLib.coffeeFilter().colorOnlyFilter("\n\r^Z"+((mob==null)?"?":mob.Name())+":^N ",this));
+										String msgColored=CMStrings.replaceAll(input,"\n\r",CMLib.coffeeFilter().colorOnlyFilter("\n\r^Z"+((mob==null)?"?":mob.name())+":^N ",this));
 										for(int s=0;s<snoops.size();s++)
 											((Session)snoops.elementAt(s)).rawPrintln(msgColored);
 									}
@@ -1491,7 +1489,7 @@ public class DefaultSession extends Thread implements Session
 						&&(mob()!=null))
 						{
 							lastBlahCheck=System.currentTimeMillis();
-							Vector V=CMParms.parse(CMProps.getVar(CMProps.SYSTEM_IDLETIMERS));
+/*							Vector V=CMParms.parse(CMProps.getVar(CMProps.SYSTEM_IDLETIMERS));
 							if((V.size()>0)
 							&&(!CMSecurity.isAllowed(mob(),mob().location(),"IDLEOK"))
 							&&(CMath.s_int((String)V.firstElement())>0))
@@ -1509,7 +1507,7 @@ public class DefaultSession extends Thread implements Session
 									println(mob(),null,null,"\n\r^ZIf you don't do something, you will be logged out in "+remain+" minute(s)!^?");
 								}
 							}
-
+*/
 							if(!afkFlag())
 							{
 								if(getIdleMillis()>=600000)
@@ -1554,18 +1552,15 @@ public class DefaultSession extends Thread implements Session
 		}
 		if(mob!=null)
 		{
-			String name=mob.Name();
+			String name=mob.name();
 			if(name.trim().length()==0) name="Unknown";
-			if(!CMLib.flags().isCloaked(mob))
-			{
-				Vector channels=CMLib.channels().getFlaggedChannelNames(ChannelsLibrary.ChannelFlag.LOGOFFS);
-				for(int i=0;i<channels.size();i++)
-					CMLib.commands().postChannel((String)channels.elementAt(i),name+" has logged out",true);
-			}
-			CMLib.login().notifyFriends(mob,"^X"+mob.Name()+" has logged off.^.^?");
+			Vector channels=CMLib.channels().getFlaggedChannelNames(ChannelsLibrary.ChannelFlag.LOGOFFS);
+			for(int i=0;i<channels.size();i++)
+				CMLib.commands().postChannel((String)channels.elementAt(i),name+" has logged out",true);
+			CMLib.login().notifyFriends(mob,"^X"+mob.name()+" has logged off.^.^?");
 				
 			// the player quit message!
-			loginLogoutThread LT=new loginLogoutThread(mob,CMMsg.MSG_QUIT);
+			loginLogoutThread LT=new loginLogoutThread(mob,EnumSet.of(CMMsg.MsgCode.QUIT));
 			LT.initialize();
 			LT.start();
 			if(mob.playerStats()!=null)
@@ -1573,7 +1568,6 @@ public class DefaultSession extends Thread implements Session
 				mob.playerStats().setLastDateTime(System.currentTimeMillis());
 			}
 			Log.sysOut("Session",getAddress()+" logout: "+name);
-			if(mob!=null) mob.removeFromGame(true);
 			if(mob!=null) mob.setSession(null);
 			mob=null;
 		}
@@ -1599,19 +1593,20 @@ public class DefaultSession extends Thread implements Session
 
 	private static class loginLogoutThread extends Thread implements Tickable
 	{
-		public String name(){return (theMOB==null)?"Dead LLThread":"LLThread for "+theMOB.Name();}
+		public String name(){return (theMOB==null)?"Dead LLThread":"LLThread for "+theMOB.name();}
 		public boolean tick(Tickable ticking, int tickID){return false;}
 		public String ID(){return name();}
 		public CMObject newInstance(){try{return (CMObject)getClass().newInstance();}catch(Exception e){return new loginLogoutThread();}}
 		public void initializeClass(){}
 		public CMObject copyOf(){try{return (CMObject)this.clone();}catch(Exception e){return newInstance();}}
 		public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
-		public long getTickStatus(){return 0;}
+		public Tickable.TickStat getTickStatus(){return Tickable.TickStat.Not;}
+		public long lastTick(){return 0;}
 		private MOB theMOB=null;
-		private int msgCode=-1;
+		private EnumSet<CMMsg.MsgCode> msgCode=null;
 		private HashSet skipRooms=new HashSet();
 		private loginLogoutThread(){}
-		public loginLogoutThread(MOB mob, int msgC)
+		public loginLogoutThread(MOB mob, EnumSet<CMMsg.MsgCode> msgC)
 		{
 			theMOB=mob;
 			msgCode=msgC;
@@ -1620,20 +1615,20 @@ public class DefaultSession extends Thread implements Session
 		public void initialize()
 		{
 			skipRooms.clear();
-			if((!CMProps.getBoolVar(CMProps.SYSTEMB_MUDSHUTTINGDOWN))
-			&&(CMProps.getBoolVar(CMProps.SYSTEMB_MUDSTARTED)))
+			if((!CMProps.Bools.MUDSHUTTINGDOWN.property())
+			&&(CMProps.Bools.MUDSTARTED.property()))
 			{
 				CMMsg msg=CMClass.getMsg(theMOB,null,msgCode,null);
 				Room R=theMOB.location();
 				if(R!=null) skipRooms.remove(R);
 				try{
 					if((R!=null)&&(theMOB.location()!=null))
-						R.send(theMOB,msg);
+						R.send(msg);
 					for(Iterator i=skipRooms.iterator();i.hasNext();)
 					{
 						R=(Room)i.next();
 						if(theMOB.location()!=null)
-							R.sendOthers(theMOB,msg);
+							R.send(msg);
 					}
 					if(R!=null) skipRooms.add(R);
 				}catch(Exception e){}

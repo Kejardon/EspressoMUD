@@ -68,6 +68,7 @@ public class DefaultPlayerAccount implements PlayerAccount
 			return new DefaultPlayerAccount();
 		}
 	}
+	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 	public String lastIP(){return lastIP;}
 	public void setLastIP(String ip){lastIP=ip;}
 	public long lastUpdated(){return lastUpdated;}
@@ -77,8 +78,8 @@ public class DefaultPlayerAccount implements PlayerAccount
 	public String password(){return Password;}
 	public void setPassword(String newPassword){Password=newPassword;}
 
-	public HashSet getFriends(){return friends;}
-	public HashSet getIgnored(){return ignored;}
+	public HashSet<String> getFriends(){return friends;}
+	public HashSet<String> getIgnored(){return ignored;}
 
 	protected String getPrivateList(HashSet h)
 	{
@@ -98,7 +99,7 @@ public class DefaultPlayerAccount implements PlayerAccount
 		{
 			if(fullPlayers.contains(mob))
 				return;
-			fullPlayers.add(mob.Name());
+			fullPlayers.add(mob);
 		}
 	}
 	
@@ -136,10 +137,10 @@ public class DefaultPlayerAccount implements PlayerAccount
 
 	private enum SCode implements CMSavable.SaveEnum{
 		FRN(){
-			public String save(DefaultPlayerAccount E){ return CMLib.coffeeMaker().saveAString((String[])E.friends.toArray()); }
+			public String save(DefaultPlayerAccount E){ return CMLib.coffeeMaker().savAString((String[])E.friends.toArray()); }
 			public void load(DefaultPlayerAccount E, String S){ for(String newF : CMLib.coffeeMaker().loadAString(S)) E.friends.add(newF); } },
 		IGN(){
-			public String save(DefaultPlayerAccount E){ return CMLib.coffeeMaker().saveAString((String[])E.ignored.toArray()); }
+			public String save(DefaultPlayerAccount E){ return CMLib.coffeeMaker().savAString((String[])E.ignored.toArray()); }
 			public void load(DefaultPlayerAccount E, String S){ for(String newI : CMLib.coffeeMaker().loadAString(S)) E.ignored.add(newI); } },
 		LIP(){
 			public String save(DefaultPlayerAccount E){ return E.lastIP; }
@@ -148,7 +149,7 @@ public class DefaultPlayerAccount implements PlayerAccount
 			public String save(DefaultPlayerAccount E){ return E.Password; }
 			public void load(DefaultPlayerAccount E, String S){ E.Password=S.intern(); } },
 		FLG(){
-			public String save(DefaultPlayerAccount E){ return CMLib.coffeeMaker().saveAString((String[])E.acctFlags.toArray()); }
+			public String save(DefaultPlayerAccount E){ return CMLib.coffeeMaker().savAString((String[])E.acctFlags.toArray()); }
 			public void load(DefaultPlayerAccount E, String S){ for(String newF : CMLib.coffeeMaker().loadAString(S)) E.acctFlags.add(newF); } },
 		;
 		public abstract String save(DefaultPlayerAccount E);
@@ -162,7 +163,7 @@ public class DefaultPlayerAccount implements PlayerAccount
 			public void mod(DefaultPlayerAccount E, MOB M){
 				boolean done=false;
 				while((M.session()!=null)&&(!M.session().killFlag())&&(!done)) {
-					Vector V=E.fullPlayers.clone();
+					Vector<MOB> V=(Vector<MOB>)E.fullPlayers.clone();
 					int i=CMLib.genEd().promptVector(M, V, false);
 					if(--i<0) done=true;
 					else if(i<V.size()) {
@@ -174,13 +175,13 @@ public class DefaultPlayerAccount implements PlayerAccount
 								mob.destroy(); } }	//TODO: Database deletion of character?
 						else if(action=='M') CMLib.genEd().genMiscSet(M, V.get(i)); } } } },
 		FLAGS(){
-			public String brief(DefaultPlayerAccount E){return E.acctFlags.size();}
+			public String brief(DefaultPlayerAccount E){return ""+E.acctFlags.size();}
 			public String prompt(DefaultPlayerAccount E){return ""+E.acctFlags.toArray();}
 			public void mod(DefaultPlayerAccount E, MOB M){
 				boolean done=false;
 				while((M.session()!=null)&&(!M.session().killFlag())&&(!done)) {
 					String S=CMLib.genEd().stringPrompt(M, "", false).toUpperCase();
-					if(S.length>0) {
+					if(S.length()>0) {
 						if(E.acctFlags.contains(S)&&(M.session().confirm("Remove this flag?", "N"))) E.acctFlags.remove(S);
 						else if(M.session().confirm("Add this flag?", "N")) E.acctFlags.add(S); }
 					else done=true; } } },

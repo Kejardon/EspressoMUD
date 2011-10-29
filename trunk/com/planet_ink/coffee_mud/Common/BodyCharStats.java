@@ -232,9 +232,9 @@ public class BodyCharStats implements CharStats
 		int con=getStat(Stat.CONSTITUTION);
 		if(con<0) con=0;
 		int wil=0;
-		if(body.getMob()!=null)
+		if(body.mob()!=null)
 		{
-			wil=body.getMob().charStats().getStat(Stat.WILLPOWER);
+			wil=body.mob().charStats().getStat(Stat.WILLPOWER);
 			if(wil<0) wil=0;
 		}
 		int str=getStat(Stat.STRENGTH);
@@ -242,22 +242,22 @@ public class BodyCharStats implements CharStats
 
 		int thirstCost=(int)(1+(thirst>hunger?10*damage:5*damage)+4*(1-fatigue));
 		int hungerCost=(int)(1+(hunger>thirst?10*damage:5*damage)+4*(1-fatigue));
-		int hpRegen=5+(5*con*damage);
+		int hpRegen=5+(int)Math.round(5*con*damage);
 		hpRegen*=hunger;
 		hpRegen*=thirst;
 		int mpRegen=1+2*wil;
-		int fatigueRegen=5+((con+str)*(1-damage)*(2-fatigue));
+		int fatigueRegen=5+(int)Math.round((con+str)*(1-damage)*(2-fatigue));
 		if(fatigue+0.2<sourceStats.getPointsPercent(Points.FATIGUE))	//only possible if one body is leaching off of another~
 		{
-			int temp=getPointsMax(Points.FATIGUE)/200;
+			int temp=getMaxPoints(Points.FATIGUE)/200;
 			fatigueRegen+=temp;
-			sourceStats.adjustPoints(Points.FATIGUE, -temp);
+			sourceStats.adjPoints(Points.FATIGUE, -temp);
 		}
-		sourceStats.adjustPoints(Points.THIRST, -thirstCost);
-		sourceStats.adjustPoints(Points.HUNGER, -hungerCost);
-		adjustPoints(Points.HIT, hpRegen);
-		adjustPoints(Points.MANA, mpRegen);
-		adjustPoints(Points.FATIGUE, fatigueRegen);
+		sourceStats.adjPoints(Points.THIRST, -thirstCost);
+		sourceStats.adjPoints(Points.HUNGER, -hungerCost);
+		adjPoints(Points.HIT, hpRegen);
+		adjPoints(Points.MANA, mpRegen);
+		adjPoints(Points.FATIGUE, fatigueRegen);
 	}
 
 //	public void expendEnergy(MOB mob, boolean expendMovement)
@@ -277,8 +277,8 @@ public class BodyCharStats implements CharStats
 
 	private enum SCode implements CMSavable.SaveEnum{
 		STT(){
-			public String save(BodyCharStats E){ return CMLib.coffeeMaker().savAInt(E.stat); }
-			public void load(BodyCharStats E, String S){ E.stat=CMLib.coffeeMaker().loadAInt(S); } },
+			public String save(BodyCharStats E){ return CMLib.coffeeMaker().savAShort(E.stat); }
+			public void load(BodyCharStats E, String S){ E.stat=CMLib.coffeeMaker().loadAShort(S); } },
 		PNT(){
 			public String save(BodyCharStats E){ return CMLib.coffeeMaker().savAInt(E.points); }
 			public void load(BodyCharStats E, String S){ E.points=CMLib.coffeeMaker().loadAInt(S); } },
@@ -294,27 +294,27 @@ public class BodyCharStats implements CharStats
 		CONSTITUTION(){
 			public String brief(BodyCharStats E){return ""+E.stat[0];}
 			public String prompt(BodyCharStats E){return ""+E.stat[0];}
-			public void mod(BodyCharStats E, MOB M){E.stat[0]=CMLib.genEd().intPrompt(M, ""+E.stat[0]);} },
+			public void mod(BodyCharStats E, MOB M){E.stat[0]=CMLib.genEd().shortPrompt(M, ""+E.stat[0]);} },
 		REACTIONS(){
 			public String brief(BodyCharStats E){return ""+E.stat[1];}
 			public String prompt(BodyCharStats E){return ""+E.stat[1];}
-			public void mod(BodyCharStats E, MOB M){E.stat[1]=CMLib.genEd().intPrompt(M, ""+E.stat[1]);} },
+			public void mod(BodyCharStats E, MOB M){E.stat[1]=CMLib.genEd().shortPrompt(M, ""+E.stat[1]);} },
 		INTELLIGENCE(){
 			public String brief(BodyCharStats E){return ""+E.stat[2];}
 			public String prompt(BodyCharStats E){return ""+E.stat[2];}
-			public void mod(BodyCharStats E, MOB M){E.stat[2]=CMLib.genEd().intPrompt(M, ""+E.stat[2]);} },
+			public void mod(BodyCharStats E, MOB M){E.stat[2]=CMLib.genEd().shortPrompt(M, ""+E.stat[2]);} },
 		STRENGTH(){
 			public String brief(BodyCharStats E){return ""+E.stat[3];}
 			public String prompt(BodyCharStats E){return ""+E.stat[3];}
-			public void mod(BodyCharStats E, MOB M){E.stat[3]=CMLib.genEd().intPrompt(M, ""+E.stat[3]);} },
+			public void mod(BodyCharStats E, MOB M){E.stat[3]=CMLib.genEd().shortPrompt(M, ""+E.stat[3]);} },
 		PRECISION(){
 			public String brief(BodyCharStats E){return ""+E.stat[4];}
 			public String prompt(BodyCharStats E){return ""+E.stat[4];}
-			public void mod(BodyCharStats E, MOB M){E.stat[4]=CMLib.genEd().intPrompt(M, ""+E.stat[4]);} },
+			public void mod(BodyCharStats E, MOB M){E.stat[4]=CMLib.genEd().shortPrompt(M, ""+E.stat[4]);} },
 		OBSERVATION(){
 			public String brief(BodyCharStats E){return ""+E.stat[5];}
 			public String prompt(BodyCharStats E){return ""+E.stat[5];}
-			public void mod(BodyCharStats E, MOB M){E.stat[5]=CMLib.genEd().intPrompt(M, ""+E.stat[5]);} },
+			public void mod(BodyCharStats E, MOB M){E.stat[5]=CMLib.genEd().shortPrompt(M, ""+E.stat[5]);} },
 		FATIGUE(){
 			public String brief(BodyCharStats E){return ""+E.points[0];}
 			public String prompt(BodyCharStats E){return ""+E.points[0];}

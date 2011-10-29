@@ -85,7 +85,7 @@ public interface WorldMap extends CMLibrary, Runnable
 //	public void resetRoom(Room room, boolean rebuildGrids);
 	public Room getStartRoom(Interactable E);
 	public Area getStartArea(Interactable E);
-	public Room roomLocation(Interactable E);
+	public Room roomLocation(CMObject E);
 	public void emptyRoom(Room room, Room bringBackHere);
 	public void emptyArea(Area A);
 //	public boolean hasASky(Room room);

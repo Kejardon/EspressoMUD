@@ -252,15 +252,15 @@ public class LimbCharStats implements CharStats
 		int fatigueRegen=5+((con+str)*(1-damage)*(2-fatigue));
 		if(fatigue+0.2<sourceStats.getPointsPercent(Points.FATIGUE))	//only possible if one body is leaching off of another~
 		{
-			int temp=getPointsMax(Points.FATIGUE)/200;
+			int temp=getMaxPoints(Points.FATIGUE)/200;
 			fatigueRegen+=temp;
-			sourceStats.adjustPoints(Points.FATIGUE, -temp);
+			sourceStats.adjPoints(Points.FATIGUE, -temp);
 		}
-		sourceStats.adjustPoints(Points.THIRST, -thirstCost);
-		sourceStats.adjustPoints(Points.HUNGER, -hungerCost);
-		adjustPoints(Points.HIT, hpRegen);
-		adjustPoints(Points.MANA, mpRegen);
-		adjustPoints(Points.FATIGUE, fatigueRegen);
+		sourceStats.adjPoints(Points.THIRST, -thirstCost);
+		sourceStats.adjPoints(Points.HUNGER, -hungerCost);
+		adjPoints(Points.HIT, hpRegen);
+		adjPoints(Points.MANA, mpRegen);
+		adjPoints(Points.FATIGUE, fatigueRegen);
 
 
 	Limb Code
@@ -284,13 +284,13 @@ public class LimbCharStats implements CharStats
 		int fatigueRegen=5+((con+str)*(2-fatigue));
 		if(fatigue+0.2<sourceStats.getPointsPercent(Points.FATIGUE))
 		{
-			int temp=getPointsMax(Points.FATIGUE)/200;
+			int temp=getMaxPoints(Points.FATIGUE)/200;
 			fatigueRegen+=temp;
-			sourceStats.adjustPoints(Points.FATIGUE, -temp);
+			sourceStats.adjPoints(Points.FATIGUE, -temp);
 		}
-		sourceStats.adjustPoints(Points.THIRST, -thirstCost);
-		sourceStats.adjustPoints(Points.HUNGER, -hungerCost);
-		adjustPoints(Points.FATIGUE, fatigueRegen);
+		sourceStats.adjPoints(Points.THIRST, -thirstCost);
+		sourceStats.adjPoints(Points.HUNGER, -hungerCost);
+		adjPoints(Points.FATIGUE, fatigueRegen);
 
 	MOB Code
 		BodyCharStats sourceStats=null;
@@ -302,7 +302,7 @@ public class LimbCharStats implements CharStats
 		double fatigue=sourceStats.getPointsPercent(Points.FATIGUE);
 		if(fatigue>1) fatigue=1; else if(fatigue<0) fatigue=0;
 		int current=getPoints(Points.FOCUS);
-		int target=getPointsMax(Points.FOCUS);
+		int target=getMaxPoints(Points.FOCUS);
 
 		current-=(1-thirst*fatigue)*200+(target-current)/4;
 		if(current<target)
@@ -338,13 +338,13 @@ public class LimbCharStats implements CharStats
 		int fatigueRegen=5+((con+str)*(2-fatigue));
 		if(fatigue+0.2<sourceStats.getPointsPercent(Points.FATIGUE))
 		{
-			int temp=getPointsMax(Points.FATIGUE)/200;
+			int temp=getMaxPoints(Points.FATIGUE)/200;
 			fatigueRegen+=temp;
-			sourceStats.adjustPoints(Points.FATIGUE, -temp);
+			sourceStats.adjPoints(Points.FATIGUE, -temp);
 		}
-		sourceStats.adjustPoints(Points.THIRST, -thirstCost);
-		sourceStats.adjustPoints(Points.HUNGER, -hungerCost);
-		adjustPoints(Points.FATIGUE, fatigueRegen);
+		sourceStats.adjPoints(Points.THIRST, -thirstCost);
+		sourceStats.adjPoints(Points.HUNGER, -hungerCost);
+		adjPoints(Points.FATIGUE, fatigueRegen);
 	}
 
 //	public void expendEnergy(MOB mob, boolean expendMovement)

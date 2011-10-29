@@ -87,7 +87,7 @@ public class DefaultEnvStats implements EnvStats
 	}
 	public void delAmbiance(String ambiance)
 	{
-		for(i=0;i<ambiances.length;i++)
+		for(int i=0;i<ambiances.size();i++)
 			if(ambiances.get(i).equalsIgnoreCase(ambiance))
 				{ ambiances.remove(i); return; }
 	}
@@ -99,7 +99,7 @@ public class DefaultEnvStats implements EnvStats
 		try
 		{
 			DefaultEnvStats E=(DefaultEnvStats)this.clone();
-			E.stats=(int[])E.stats.clone();
+			E.ambiances=(Vector<String>)ambiances.clone();
 			return E;
 		}
 		catch(java.lang.CloneNotSupportedException e)
@@ -119,7 +119,7 @@ public class DefaultEnvStats implements EnvStats
 			copy.weight=weight;
 			copy.magic=magic;
 			copy.Speed=Speed;
-			copy.ambiances=ambiances.clone();
+			copy.ambiances=(Vector<String>)ambiances.clone();
 		}
 	}
 
@@ -139,7 +139,7 @@ public class DefaultEnvStats implements EnvStats
 				int[] ints=CMLib.coffeeMaker().loadAInt(S);
 				E.width=ints[0]; E.length=ints[1]; E.height=ints[2]; E.weight=ints[3]; E.magic=ints[4]; } },
 		AMB(){
-			public String save(DefaultEnvStats E){ return CMLib.coffeeMaker().saveAString((String[])E.ambiances.toArray()); }
+			public String save(DefaultEnvStats E){ return CMLib.coffeeMaker().savAString((String[])E.ambiances.toArray()); }
 			public void load(DefaultEnvStats E, String S){ for(String newF : CMLib.coffeeMaker().loadAString(S)) E.ambiances.add(newF); } },
 		;
 		public abstract String save(DefaultEnvStats E);
@@ -153,12 +153,12 @@ public class DefaultEnvStats implements EnvStats
 			public void mod(DefaultEnvStats E, MOB M){
 				boolean done=false;
 				while((M.session()!=null)&&(!M.session().killFlag())&&(!done)) {
-					Vector V=E.ambiances.clone();
+					Vector<String> V=(Vector<String>)E.ambiances.clone();
 					int i=CMLib.genEd().promptVector(M, V, true);
 					if(--i<0) done=true;
 					else if(i==V.size()) {
-						String S=CMLib.genEd().promptString(M, "", false);
-						if(S.length>0) {
+						String S=CMLib.genEd().stringPrompt(M, "", false);
+						if(S.length()>0) {
 							E.delAmbiance(S);
 							E.addAmbiance(S); } }
 					else if(i<V.size()) E.delAmbiance(V.get(i)); } } },

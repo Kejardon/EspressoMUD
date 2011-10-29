@@ -373,8 +373,7 @@ public interface Session extends CMCommon
      * @return true if they entered Y, false otherwise
      * @throws IOException a disconnect
      */
-	public boolean confirm(String Message, String Default)
-	    throws IOException;
+	public boolean confirm(String Message, String Default);
     
     /**
      * Prompts the user to enter Y or N, and returns what they
@@ -387,8 +386,7 @@ public interface Session extends CMCommon
      * @return true if they entered Y, false otherwise
      * @throws IOException a disconnect or time out
      */
-	public boolean confirm(String Message, String Default, long maxTime)
-	    throws IOException;
+	public boolean confirm(String Message, String Default, long maxTime);
     
     /**
      * Prompts the user to enter one character responses from a set of

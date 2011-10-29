@@ -759,23 +759,22 @@ public class CMMap extends StdLibrary implements WorldMap
 			R.destroy();
 		}
 	}
-	public Room roomLocation(Interactable E)
+	public Room roomLocation(CMObject E)
 	{
-		if(E==null) return null;
+		if(E==null||E instanceof Exit)
+			return null;
 		if(E instanceof Area)
 			return ((Area)E).getRandomProperRoom();
-		else
 		if(E instanceof Room)
 			return (Room)E;
-		else
 		if(E instanceof MOB)
 			return ((MOB)E).location();
-		else
-		if((E instanceof Item)&&(((Item)E).container() instanceof Interactable))
-			return roomLocation((Interactable)((Item)E).container());
-		else
-		if((E instanceof Effect)&&(((Effect)E).affecting() instanceof Interactable))
-			return roomLocation((Interactable)((Effect)E).affecting());
+		if((E instanceof Item)&&(((Item)E).container() != null))
+			return roomLocation(((Item)E).container());
+		if((E instanceof Effect)&&(((Effect)E).affecting() != null))
+			return roomLocation(((Effect)E).affecting());
+		if((E instanceof Behavior)&&(((Behavior)E).behaver() != null))
+			return roomLocation(((Behavior)E).behaver());
 		return null;
 	}
 	public Area getStartArea(Interactable E)

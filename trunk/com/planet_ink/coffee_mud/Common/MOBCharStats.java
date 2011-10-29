@@ -223,7 +223,7 @@ public class MOBCharStats implements CharStats
 		double fatigue=sourceStats.getPointsPercent(Points.FATIGUE);
 		if(fatigue>1) fatigue=1; else if(fatigue<0) fatigue=0;
 		int current=getPoints(Points.FOCUS);
-		int target=getPointsMax(Points.FOCUS);
+		int target=getMaxPoints(Points.FOCUS);
 
 		current-=(1-thirst*fatigue)*200+(target-current)/4;
 		if(current<target)

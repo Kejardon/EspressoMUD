@@ -4,7 +4,6 @@ import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -34,7 +33,6 @@ import java.util.*;
 public class ActiveTicker extends StdBehavior
 {
 	public String ID(){return "ActiveTicker";}
-	protected int canImproveCode(){return Behavior.CAN_ITEMS|Behavior.CAN_MOBS|Behavior.CAN_ROOMS|Behavior.CAN_EXITS|Behavior.CAN_AREAS;}
 
 	protected int minTicks=10;
 	protected int maxTicks=30;
@@ -46,8 +44,6 @@ public class ActiveTicker extends StdBehavior
 	{
 		tickDown=(int)Math.round(Math.random()*(maxTicks-minTicks))+minTicks;
 	}
-
-
 
 	public void setParms(String newParms)
 	{
@@ -88,22 +84,6 @@ public class ActiveTicker extends StdBehavior
 
 	protected boolean canAct(Tickable ticking, int tickID)
 	{
-		if((tickID==Tickable.TICKID_MOB)
-		||(tickID==Tickable.TICKID_ITEM_BEHAVIOR)
-		||(tickID==Tickable.TICKID_ROOM_BEHAVIOR)
-		||((tickID==Tickable.TICKID_AREA)&&(ticking instanceof Area)))
-		{
-			int a=CMLib.dice().rollPercentage();
-			if((--tickDown)<1)
-			{
-				tickReset();
-				if((ticking instanceof MOB)&&(!canActAtAll(ticking)))
-					return false;
-				if(a>chance)
-					return false;
-				return true;
-			}
-		}
-		return false;
+		return ((--tickDown<1)&&(CMLib.dice().rollPercentage()<=chance));
 	}
 }
