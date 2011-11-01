@@ -1,10 +1,9 @@
-package com.planet_ink.coffee_mud.Abilities.Languages;
+package com.planet_ink.coffee_mud.Effects.Languages;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -70,7 +69,7 @@ six={"jedanast","delalime","veralim","dvanast","bahone","zahedon","prasad","tren
 		if(msg==null) return msg;
 		return msg.toUpperCase();
 	}
-
+/*
 	public boolean okMessage(Environmental myHost, CMMsg msg)
 	{
 		if((beingSpoken(ID()))
@@ -89,7 +88,7 @@ six={"jedanast","delalime","veralim","dvanast","bahone","zahedon","prasad","tren
 		}
 		return super.okMessage(myHost,msg);
 	}
-
+*/
 	private static final Hashtable hashwords=new Hashtable();
 	public Hashtable translationHash(String language)
 	{

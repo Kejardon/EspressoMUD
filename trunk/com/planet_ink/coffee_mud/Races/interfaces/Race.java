@@ -13,7 +13,7 @@ import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import java.util.*;
 
 @SuppressWarnings("unchecked")
-public interface Race extends Tickable, StatsAffecting, ListenHolder.MsgListener, CMObject
+public interface Race extends StatsAffecting, ListenHolder.MsgListener, CMObject	//Tickable?
 {
 	/*
 	public final static int AGE_INFANT=0;
@@ -45,16 +45,15 @@ public interface Race extends Tickable, StatsAffecting, ListenHolder.MsgListener
 	//degree of 100 will call curvedRandom for 1.
 
 	//Typical height for the given gender
-	public int[] height(char c);
-	public int[] weight(char c);
+//	public int[] height(Gender g, int age);
+//	public int[] weight(Gender g, int age);
 
 //	public int[] getAgingChart();
 
 	//ummmmm this is going to be complicated
 	public HashMap<String, Body.BodyPart> bodyMap();
-	
-	// Chance of impregnation(0-100) when having sex with the given race.
-	public int fertile(String race);
+	// Chance of impregnation(0-100) when having sex with the given race. Can be negative- 0 means 'impossible naturally but possible with magic/science aid', -100 means 'completely impossible'
+//	public int fertile(String race);
 /*
 	public String healthText(MOB viewer, MOB mob);
 
@@ -78,19 +77,19 @@ public interface Race extends Tickable, StatsAffecting, ListenHolder.MsgListener
 	 * or nothing.
 	 * @return the list of modifications to senses done by this race
 	 */
-	public String getSensesChgDesc();
+//	public String getSensesChgDesc();
 	/**
 	 * Returns the list of modifications to disposition done by this race
 	 * or nothing.
 	 * @return the list of modifications to disposition done by this race
 	 */
-	public String getDispositionChgDesc();
+//	public String getDispositionChgDesc();
 	/**
 	 * Returns the list of racial abilities granted to those of this race
 	 * or nothing.
 	 * @return the list of racial abilities granted to those of this race
 	 */
-	public String getAbilitiesDesc();
+//	public String getAbilitiesDesc();
 	/**
 	 * Returns the list of racial languages granted to those of this race
 	 * or nothing.

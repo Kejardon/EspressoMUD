@@ -238,7 +238,7 @@ public class MOBCharStats implements CharStats
 		}
 
 		//TODO: Focus causing fatigue?
-		setPoints(Points.FOCUS, current+change);
+		setPoints(Points.FOCUS, current);
 	}
 
 //	public void expendEnergy(MOB mob, boolean expendMovement)
@@ -258,8 +258,8 @@ public class MOBCharStats implements CharStats
 
 	private enum SCode implements CMSavable.SaveEnum{
 		STT(){
-			public String save(MOBCharStats E){ return CMLib.coffeeMaker().savAInt(E.stat); }
-			public void load(MOBCharStats E, String S){ E.stat=CMLib.coffeeMaker().loadAInt(S); } },
+			public String save(MOBCharStats E){ return CMLib.coffeeMaker().savAShort(E.stat); }
+			public void load(MOBCharStats E, String S){ E.stat=CMLib.coffeeMaker().loadAShort(S); } },
 		PNT(){
 			public String save(MOBCharStats E){ return CMLib.coffeeMaker().savAInt(E.points); }
 			public void load(MOBCharStats E, String S){ E.points=CMLib.coffeeMaker().loadAInt(S); } },
@@ -275,27 +275,27 @@ public class MOBCharStats implements CharStats
 		REACTIONS(){
 			public String brief(MOBCharStats E){return ""+E.stat[0];}
 			public String prompt(MOBCharStats E){return ""+E.stat[0];}
-			public void mod(MOBCharStats E, MOB M){E.stat[0]=CMLib.genEd().intPrompt(M, ""+E.stat[0]);} },
+			public void mod(MOBCharStats E, MOB M){E.stat[0]=CMLib.genEd().shortPrompt(M, ""+E.stat[0]);} },
 		INTELLIGENCE(){
 			public String brief(MOBCharStats E){return ""+E.stat[1];}
 			public String prompt(MOBCharStats E){return ""+E.stat[1];}
-			public void mod(MOBCharStats E, MOB M){E.stat[1]=CMLib.genEd().intPrompt(M, ""+E.stat[1]);} },
+			public void mod(MOBCharStats E, MOB M){E.stat[1]=CMLib.genEd().shortPrompt(M, ""+E.stat[1]);} },
 		STRENGTH(){
 			public String brief(MOBCharStats E){return ""+E.stat[2];}
 			public String prompt(MOBCharStats E){return ""+E.stat[2];}
-			public void mod(MOBCharStats E, MOB M){E.stat[2]=CMLib.genEd().intPrompt(M, ""+E.stat[2]);} },
+			public void mod(MOBCharStats E, MOB M){E.stat[2]=CMLib.genEd().shortPrompt(M, ""+E.stat[2]);} },
 		PRECISION(){
 			public String brief(MOBCharStats E){return ""+E.stat[3];}
 			public String prompt(MOBCharStats E){return ""+E.stat[3];}
-			public void mod(MOBCharStats E, MOB M){E.stat[3]=CMLib.genEd().intPrompt(M, ""+E.stat[3]);} },
+			public void mod(MOBCharStats E, MOB M){E.stat[3]=CMLib.genEd().shortPrompt(M, ""+E.stat[3]);} },
 		OBSERVATION(){
 			public String brief(MOBCharStats E){return ""+E.stat[4];}
 			public String prompt(MOBCharStats E){return ""+E.stat[4];}
-			public void mod(MOBCharStats E, MOB M){E.stat[4]=CMLib.genEd().intPrompt(M, ""+E.stat[4]);} },
+			public void mod(MOBCharStats E, MOB M){E.stat[4]=CMLib.genEd().shortPrompt(M, ""+E.stat[4]);} },
 		WILLPOWER(){
 			public String brief(MOBCharStats E){return ""+E.stat[5];}
 			public String prompt(MOBCharStats E){return ""+E.stat[5];}
-			public void mod(MOBCharStats E, MOB M){E.stat[5]=CMLib.genEd().intPrompt(M, ""+E.stat[5]);} },
+			public void mod(MOBCharStats E, MOB M){E.stat[5]=CMLib.genEd().shortPrompt(M, ""+E.stat[5]);} },
 		FOCUS(){
 			public String brief(MOBCharStats E){return ""+E.points[0];}
 			public String prompt(MOBCharStats E){return ""+E.points[0];}

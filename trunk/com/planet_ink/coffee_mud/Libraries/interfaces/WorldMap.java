@@ -33,6 +33,10 @@ import java.util.*;
 @SuppressWarnings("unchecked")
 public interface WorldMap extends CMLibrary, Runnable
 {
+	public String getNewExitID();
+	public void removeExit(Exit E);
+	public void addExit(Exit E);
+	public Exit getExit(String S);
 	/************************************************************************/
 	/**							 AREAS										*/
 	/************************************************************************/
@@ -83,8 +87,8 @@ public interface WorldMap extends CMLibrary, Runnable
 //	public void resetArea(Area area);
 //	public void resetRoom(Room room);
 //	public void resetRoom(Room room, boolean rebuildGrids);
-	public Room getStartRoom(Interactable E);
-	public Area getStartArea(Interactable E);
+//	public Room getStartRoom(Interactable E);
+//	public Area getStartArea(Interactable E);
 	public Room roomLocation(CMObject E);
 	public void emptyRoom(Room room, Room bringBackHere);
 	public void emptyArea(Area A);

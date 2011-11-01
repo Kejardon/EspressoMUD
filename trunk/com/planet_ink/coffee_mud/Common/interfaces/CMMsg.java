@@ -54,11 +54,13 @@ import java.util.*;
 @SuppressWarnings("unchecked")
 public interface CMMsg extends CMCommon
 {
+	public static final EnumSet<MsgCode> NO_EFFECT=EnumSet.noneOf(MsgCode.class);
+	
 	public EnumSet<MsgCode> targetCode();
 	public void setTargetCode(EnumSet<MsgCode> codes);
 	public boolean addTargetCode(MsgCode code); //Return true if the Enum was new and added.
 	public boolean removeTargetCode(MsgCode code); //Return true if the Enum was found and removed.
-	public boolean hasTargetCode(MsgCode code);
+	public boolean hasTargetCode(MsgCode... code);
 	public String targetMessage();
 	public void setTargetMessage(String str);
 	public boolean isTarget(Interactable E);
@@ -69,7 +71,7 @@ public interface CMMsg extends CMCommon
 	public void setSourceCode(EnumSet<MsgCode> codes);
 	public boolean addSourceCode(MsgCode code); //Return true if the Enum was new and added.
 	public boolean removeSourceCode(MsgCode code); //Return true if the Enum was found and removed.
-	public boolean hasSourceCode(MsgCode code);
+	public boolean hasSourceCode(MsgCode... code);
 	public String sourceMessage();
 	public void setSourceMessage(String str);
 
@@ -77,12 +79,13 @@ public interface CMMsg extends CMCommon
 	public void setOthersCode(EnumSet<MsgCode> codes);
 	public boolean addOthersCode(MsgCode code); //Return true if the Enum was new and added.
 	public boolean removeOthersCode(MsgCode code); //Return true if the Enum was found and removed.
-	public boolean hasOthersCode(MsgCode code);
+	public boolean hasOthersCode(MsgCode... code);
 	public String othersMessage();
 	public void setOthersMessage(String str);
 	public boolean isOthers(Interactable E);
 
 	public Vector<CMObject> tool();
+	public CMObject firstTool();
 	public void setTools(Vector<CMObject> V);
 	public boolean addTool(CMObject E);
 	public boolean removeTool(CMObject E);
@@ -90,6 +93,7 @@ public interface CMMsg extends CMCommon
 	public CMObject[] toolArr();
 
 	public Vector<Interactable> source();
+	public Interactable firstSource();
 	public void setSource(Vector<Interactable> V);
 	public boolean addSource(Interactable E);
 	public boolean removeSource(Interactable E);
@@ -113,11 +117,13 @@ public interface CMMsg extends CMCommon
 	{
 		//Dropped codes:
 		//RECALL, WIELD, TELL, KNOCK, BUY, SELL, DEPOSIT, WITHDRAW,
-		//TEACH, EXPCHANGE, ROOMRESET, LOGIN, LEVEL, BORROW, EXPIRE
+		//TEACH, EXPCHANGE, ROOMRESET, LEVEL, BORROW, EXPIRE
 		//CHANNEL
 		
 		//'Major' codes
-		HANDS, MOVE, EYES, MOUTH, SOUND, SNIFF, ALWAYS, MAGIC, DELICATE, MALICIOUS, CHANNEL, OPTIMIZE,
+		HANDS, MOVE, EYES, MOUTH,
+		SOUND, SNIFF, VISUAL,
+		ALWAYS, MAGIC, DELICATE, MALICIOUS, CHANNEL, OPTIMIZE,
 		//'Minor' codes. Kinda grouped together and organized
 		//Give might be same as Put?
 		UNLOCK, LOCK, OPEN, CLOSE, PUSH, PULL, THROW, DROP, PUT, GET, GIVE,
@@ -127,7 +133,7 @@ public interface CMMsg extends CMCommon
 		LOOK, EXAMINE, READ, WRITE, SPEAK, CAST, EMOTE, ORDER,
 		FIRE, COLD, WATER, GAS, MIND, JUSTICE, ACID, ELECTRIC, POISON, PARALYZE, UNDEAD, DISEASE,
 		ATTACK, HIT, DAMAGE, HEALING, DEATH, LIFE, PANIC,
-		QUIT, SHUTDOWN, RETIRE, HUH, TELL
+		QUIT, SHUTDOWN, RETIRE, HUH, TELL, LOGIN
 	}
 
 

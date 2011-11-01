@@ -537,9 +537,9 @@ public class CharCreation extends StdLibrary implements CharCreationLibrary
 	
 			boolean mayCont=true;
 			mob.recoverCharStats();
-			mob.resetToMaxState();
+			mob.charStats().resetState();
 
-			mob.setStartRoom(getDefaultStartRoom(mob));
+//			mob.setStartRoom(getDefaultStartRoom(mob));
 //			TODO
 //			mob.baseCharStats().setAge(mob.initializeBirthday(0,mob.baseCharStats().getMyRace()));
 
@@ -551,9 +551,9 @@ public class CharCreation extends StdLibrary implements CharCreationLibrary
 			{
 				if(mob==session.mob())
 					reloadTerminal(mob);
-				mob.bringToLife(mob.getStartRoom(),true);
+				mob.body().bringToLife(getDefaultStartRoom(mob),true);
 				mob.location().show(mob,mob.location(),null,EnumSet.of(CMMsg.MsgCode.ALWAYS,CMMsg.MsgCode.ENTER),"<S-NAME> appears!");
-				mob.playerStats().leveledDateTime(0);
+//				mob.playerStats().leveledDateTime(0);
 				CMLib.database().DBCreateCharacter(mob);
 				CMLib.players().addPlayer(mob);
 	
@@ -622,7 +622,7 @@ public class CharCreation extends StdLibrary implements CharCreationLibrary
 				thisSession.kill(false,false,false);
 				Log.sysOut("FrontDoor","Session swap for "+session.mob().name()+".");
 				reloadTerminal(session.mob());
-				session.mob().bringToLife(oldRoom,false);
+				session.mob().body().bringToLife(oldRoom,false);
 				return LoginResult.SESSION_SWAP;
 			}
 		}
@@ -868,7 +868,7 @@ public class CharCreation extends StdLibrary implements CharCreationLibrary
 			mob.setSession(session);
 			if(loginsDisabled(mob))
 				return LoginResult.NO_LOGIN;
-			mob.bringToLife(mob.location(),false);
+			mob.body().bringToLife(mob.location(),false);
 			mob.location().show(mob,mob.location(),null,EnumSet.of(CMMsg.MsgCode.ALWAYS,CMMsg.MsgCode.ENTER),"<S-NAME> appears!");
 		}
 		else
@@ -878,7 +878,7 @@ public class CharCreation extends StdLibrary implements CharCreationLibrary
 			session.setMob(mob);
 			if(loginsDisabled(mob))
 				return LoginResult.NO_LOGIN;
-			mob.bringToLife(mob.location(),true);
+			mob.body().bringToLife(mob.location(),true);
 			mob.location().show(mob,mob.location(),null,EnumSet.of(CMMsg.MsgCode.ALWAYS,CMMsg.MsgCode.ENTER),"<S-NAME> appears!");
 		}
 		PlayerStats pstats = mob.playerStats();
@@ -924,12 +924,12 @@ public class CharCreation extends StdLibrary implements CharCreationLibrary
 		String roomID=deathRooms.get("ALL");
 
 		Room room=null;
-		if((roomID!=null)&&(roomID.equalsIgnoreCase("START")))
-			room=mob.getStartRoom();
+//		if((roomID!=null)&&(roomID.equalsIgnoreCase("START")))
+//			room=mob.getStartRoom();
 		if((room==null)&&(roomID!=null)&&(roomID.length()>0))
 			room=CMLib.map().getRoom(roomID);
-		if(room==null)
-			room=mob.getStartRoom();
+//		if(room==null)
+//			room=mob.getStartRoom();
 		if((room==null)&&(CMLib.map().numRooms()>0))
 			room=(Room)CMLib.map().rooms().nextElement();
 		return room;

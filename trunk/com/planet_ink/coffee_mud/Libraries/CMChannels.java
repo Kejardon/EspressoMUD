@@ -90,8 +90,7 @@ public class CMChannels extends StdLibrary implements ChannelsLibrary
 	{
 		if((sender==null)||(M==null)||(M.playerStats()==null)) return false;
 		Room R=M.location();
-		if(((!offlineOK))
-		&&((M.amDead())||(R==null)))
+		if((!offlineOK)&&(R==null))
 			return false;
 		
 		if((!M.playerStats().getIgnored().contains(sender.name()))
@@ -115,7 +114,6 @@ public class CMChannels extends StdLibrary implements ChannelsLibrary
 		
 		if((sender==null)
 		||(M==null)
-		||(M.amDead())
 		||(M.location()==null)
 		||(M.playerStats()==null))
 			return false;
@@ -144,7 +142,7 @@ public class CMChannels extends StdLibrary implements ChannelsLibrary
 			return false;
 		
 
-		if(((zapCheckOnly)||((!M.amDead())&&(M.location()!=null)))
+		if(((zapCheckOnly)||((M.location()!=null)))
 		&&(CMLib.masking().maskCheck(getChannelMask(i),M,true))
 		&&((M.playerStats().getChannelMask()&i)==0))
 			return true;

@@ -1405,7 +1405,7 @@ public class DefaultSession extends Thread implements Session
 								.append(", login: "+mob.name());
 						Log.sysOut("Session",loginMsg.toString());
 						if(loginResult != CharCreationLibrary.LoginResult.NO_LOGIN)
-							if(!CMLib.map().sendGlobalMessage(mob,EnumSet.of(CMMsg.MsgCode.LOGIN),CMClass.getMsg(mob,null,EnumSet.of(CMMsg.MsgCode.LOGIN),null)))
+							if(!CMLib.map().sendGlobalMessage(mob,EnumSet.of(CMMsg.MsgCode.LOGIN),CMClass.getMsg(mob,null,null,EnumSet.of(CMMsg.MsgCode.LOGIN),null)))
 								killFlag=true;
 					}
 					needPrompt=true;
@@ -1591,17 +1591,18 @@ public class DefaultSession extends Thread implements Session
 		status=Session.STATUS_LOGOUTFINAL;
 	}
 
-	private static class loginLogoutThread extends Thread implements Tickable
+	private static class loginLogoutThread extends Thread implements CMObject //... Tickable WHY?
 	{
 		public String name(){return (theMOB==null)?"Dead LLThread":"LLThread for "+theMOB.name();}
-		public boolean tick(Tickable ticking, int tickID){return false;}
+//		public boolean tick(Tickable ticking, int tickID){return false;}
 		public String ID(){return name();}
 		public CMObject newInstance(){try{return (CMObject)getClass().newInstance();}catch(Exception e){return new loginLogoutThread();}}
 		public void initializeClass(){}
 		public CMObject copyOf(){try{return (CMObject)this.clone();}catch(Exception e){return newInstance();}}
 		public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
-		public Tickable.TickStat getTickStatus(){return Tickable.TickStat.Not;}
-		public long lastTick(){return 0;}
+//		public Tickable.TickStat getTickStatus(){return Tickable.TickStat.Not;}
+//		public long lastTick(){return 0;}
+//		public long lastAct(){return 0;}
 		private MOB theMOB=null;
 		private EnumSet<CMMsg.MsgCode> msgCode=null;
 		private HashSet skipRooms=new HashSet();
@@ -1618,7 +1619,7 @@ public class DefaultSession extends Thread implements Session
 			if((!CMProps.Bools.MUDSHUTTINGDOWN.property())
 			&&(CMProps.Bools.MUDSTARTED.property()))
 			{
-				CMMsg msg=CMClass.getMsg(theMOB,null,msgCode,null);
+				CMMsg msg=CMClass.getMsg(theMOB,null,null,msgCode,null);
 				Room R=theMOB.location();
 				if(R!=null) skipRooms.remove(R);
 				try{
@@ -1637,17 +1638,17 @@ public class DefaultSession extends Thread implements Session
 
 		public void run()
 		{
-			if((!CMProps.getBoolVar(CMProps.SYSTEMB_MUDSHUTTINGDOWN))
-			&&(CMProps.getBoolVar(CMProps.SYSTEMB_MUDSTARTED)))
+			if((!CMProps.Bools.MUDSHUTTINGDOWN.property())
+			&&(CMProps.Bools.MUDSTARTED.property()))
 			{
-				CMMsg msg=CMClass.getMsg(theMOB,null,msgCode,null);
+				CMMsg msg=CMClass.getMsg(theMOB,null,null,msgCode,null);
 				Room R=null;
 				try{
 					for(Enumeration e=CMLib.map().rooms();e.hasMoreElements();)
 					{
 						R=(Room)e.nextElement();
 						if((!skipRooms.contains(R))&&(theMOB.location()!=null))
-							R.sendOthers(theMOB,msg);
+							R.send(msg);
 					}
 				}catch(Exception e){}
 				theMOB=null;

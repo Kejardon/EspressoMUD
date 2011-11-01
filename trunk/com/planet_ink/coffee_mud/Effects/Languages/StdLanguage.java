@@ -1,11 +1,10 @@
-package com.planet_ink.coffee_mud.Abilities.Languages;
-import com.planet_ink.coffee_mud.Abilities.StdAbility;
+package com.planet_ink.coffee_mud.Effects.Languages;
+import com.planet_ink.coffee_mud.Effects.StdEffect;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -34,23 +33,18 @@ import java.util.*;
 */
 
 @SuppressWarnings("unchecked")
-public class StdLanguage extends StdAbility implements Language
+public class StdLanguage extends StdEffect implements Language
 {
 	public String ID() { return "StdLanguage"; }
 	public String name(){ return "Languages";}
 	public String writtenName() { return name();}
 	private static final String[] triggerStrings = {"SPEAK"};
 	public String[] triggerStrings(){return triggerStrings;}
-	public int abstractQuality(){return Ability.QUALITY_OK_SELF;}
-	protected int canAffectCode(){return Ability.CAN_MOBS;}
-	protected int canTargetCode(){return 0;}
-	public boolean isAutoInvoked(){return true;}
-	public boolean canBeUninvoked(){return false;}
-	public int classificationCode(){return Ability.ACODE_LANGUAGE;}
 
 	private static Hashtable emptyHash=new Hashtable();
 	private static Vector emptyVector=new Vector();
 	protected boolean spoken=false;
+	protected int proficiency=1;
 	private final static String consonants="bcdfghjklmnpqrstvwxz";
 	private final static String vowels="aeiouy";
 	public boolean beingSpoken(String language){return spoken;}
@@ -62,7 +56,7 @@ public class StdLanguage extends StdAbility implements Language
 	public boolean translatesLanguage(String language) { return ID().equalsIgnoreCase(language);}
 	public int getProficiency(String language) { 
 		if(ID().equalsIgnoreCase(language))
-			return proficiency();
+			return proficiency;
 		return 0;
 	}
 	
@@ -93,8 +87,9 @@ public class StdLanguage extends StdAbility implements Language
 	{
 		if(translationHash(language).containsKey(word.toUpperCase()))
 			return fixCase(word,(String)translationHash(language).get(word.toUpperCase()));
-		MOB M=CMLib.players().getPlayer(word);
-		if(M!=null) return word;
+//Don't entiiiirely like this feature.
+//		MOB M=CMLib.players().getPlayer(word);
+//		if(M!=null) return word;
 		if(translationVector(language).size()>0)
 		{
 			String[] choices=null;
@@ -177,13 +172,12 @@ public class StdLanguage extends StdAbility implements Language
 		}
 		return newStr.toString();
 	}
-	
 
-	
-	protected Language getMyTranslator(String id, Environmental E, Language winner) 
+	protected Language getMyTranslator(String id, MOB E) 
 	{
-		if(E==null) return winner;
-		Ability A=null;
+		if(E==null) return null;
+		Language winner=null;
+		Effect A=null;
 		for(int a=0;a<E.numEffects();a++) 
 		{
 			A=E.fetchEffect(a);
@@ -191,157 +185,93 @@ public class StdLanguage extends StdAbility implements Language
 			&& ((Language)A).translatesLanguage(id)
 			&& ((winner==null)
 					||((Language)A).getProficiency(id) > winner.getProficiency(id)))
-			{
 				winner = (Language)A;
-			}
 		}
 		return winner;
 	}
 	
-	protected Language getAnyTranslator(String id, MOB mob) 
-	{
-		Language winner = null;
-		winner = getMyTranslator(id,mob,winner);
-		winner = getMyTranslator(id,mob.location(),winner);
-		for(int i=0;i<mob.numItems();i++)
-			winner=getMyTranslator(id,mob.getItem(i),winner);
-		return winner;
-	}
-
 	protected boolean processSourceMessage(CMMsg msg, String str, int numToMess)
 	{
 		String smsg=CMStrings.getSayFromMessage(msg.sourceMessage());
 		if(numToMess>0) smsg=messChars(ID(),smsg,numToMess);
-		msg.modify(msg.source(),
-					  msg.target(),
-					  this,
-					  msg.sourceCode(),
-					  CMStrings.substituteSayInMessage(msg.sourceMessage(),smsg),
-					  msg.targetCode(),
-					  msg.targetMessage(),
-					  msg.othersCode(),
-					  msg.othersMessage());
+		msg.addTool(this);
+		msg.setSourceMessage(CMStrings.substituteSayInMessage(msg.sourceMessage(),smsg));
 		return true;
 	}
 	
 	protected boolean processNonSourceMessages(CMMsg msg, String str, int numToMess)
 	{
 		str=scrambleAll(ID(),str,numToMess);
-		msg.modify(msg.source(),
-					  msg.target(),
-					  this,
-					  msg.sourceCode(),
-					  msg.sourceMessage(),
-					  msg.targetCode(),
-					  CMStrings.substituteSayInMessage(msg.targetMessage(),str),
-					  msg.othersCode(),
-					  CMStrings.substituteSayInMessage(msg.othersMessage(),str));
+		msg.addTool(this);
+		msg.setTargetMessage(CMStrings.substituteSayInMessage(msg.targetMessage(),str));
+		msg.setOthersMessage(CMStrings.substituteSayInMessage(msg.othersMessage(),str));
 		return true;
 	}
 
-	protected boolean tryLinguisticWriting(CMMsg msg)
-	{
-		Ability L=null;
-		for(int i=msg.target().numEffects()-1;i>=0;i--)
-		{
-			L=msg.target().fetchEffect(i);
-			if((L instanceof Language)&&(!L.ID().equals(ID())))
-			{
-				msg.source().tell(msg.target().name()+" is already written in "+L.name()+" and can not have "+writtenName()+" writing added.");
-				return false;
-			}
-		}
-		return true;
-	}
-	
-	public boolean okMessage(Environmental myHost, CMMsg msg)
+	public boolean okMessage(ListenHolder.OkChecker myHost, CMMsg msg)
 	{
 		if((affected instanceof MOB)&&(beingSpoken(ID())))
+			msg.addResponse(this, -2);	//Translated to the language before even being spoken
+		return super.okMessage(myHost,msg);
+	}
+	public boolean respondTo(CMMsg msg)
+	{
+		//hm. What if multiple sources are speaking different languages?
+		if((msg.isSource((MOB)affected))
+		&&(msg.sourceMessage()!=null)
+		&&(msg.tool()==null)
+		&&(msg.hasSourceCode(CMMsg.MsgCode.SPEAK, CMMsg.MsgCode.CHANNEL)))
 		{
-			if((msg.source()==affected)
-			&&(msg.sourceMessage()!=null)
-			&&(msg.tool()==null)
-			&&((msg.sourceMinor()==CMMsg.TYP_SPEAK)
-			   ||(msg.sourceMinor()==CMMsg.TYP_TELL)
-			   ||(CMath.bset(msg.sourceCode(),CMMsg.MASK_CHANNEL))))
+			String str=CMStrings.getSayFromMessage(msg.othersMessage());
+			if(str==null) str=CMStrings.getSayFromMessage(msg.targetMessage());
+			if(str!=null)
 			{
-				String str=CMStrings.getSayFromMessage(msg.othersMessage());
-				if(str==null) str=CMStrings.getSayFromMessage(msg.targetMessage());
-				if(str!=null)
-				{
-					int numToMess=(int)Math.round(CMath.mul(numChars(str),CMath.div(100-getProficiency(ID()),100)));
-					if(!processSourceMessage(msg, str, numToMess))
-						return false;
-					if(!processNonSourceMessages(msg,str,numToMess))
-						return false;
-				}
-			}
-			else
-			if((msg.sourceMinor()==CMMsg.TYP_WRITE)
-			&&(msg.source()==affected)
-			&&(msg.target() instanceof Item)
-			&&(CMLib.flags().isReadable((Item)msg.target()))
-			&&(msg.targetMessage()!=null)
-			&&(msg.targetMessage().length()>0))
-			{
-				if(!tryLinguisticWriting(msg))
+				int numToMess=numChars(str)*(100-getProficiency(ID()))/100;
+				if(!processSourceMessage(msg, str, numToMess))
+					return false;
+				if(!processNonSourceMessages(msg,str,numToMess))
 					return false;
 			}
-			else
-			if((msg.target()==affected)&&(msg.source()!=affected))
-				switch(msg.targetMinor())
+		}
+		else
+		if((msg.target()==affected)&&(!msg.isSource((Interactable)affected)))
+		{
+			for(Interactable I : msg.sourceArr())
+			{
+				if(!(I instanceof MOB)) continue;
+				MOB source = (MOB)I;
+				if((msg.hasTargetCode(CMMsg.MsgCode.SPEAK, CMMsg.MsgCode.ORDER))
+					&&((!CMSecurity.isAllowed(source,source.location(),"ORDER"))
+					&&((!CMSecurity.isAllowed(source,source.location(),"CMDMOBS"))||(!((MOB)affected).isMonster()))
+					&&((!CMSecurity.isAllowed(source,source.location(),"CMDROOMS"))||(!((MOB)affected).isMonster()))))
 				{
-				case CMMsg.TYP_ORDER:
-				case CMMsg.TYP_BUY:
-				case CMMsg.TYP_SELL:
-				case CMMsg.TYP_LIST:
-				case CMMsg.TYP_VIEW:
-				case CMMsg.TYP_WITHDRAW:
-				case CMMsg.TYP_DEPOSIT:
-				if((!CMSecurity.isAllowed(msg.source(),msg.source().location(),"ORDER"))
-				&&(!CMSecurity.isAllowed(msg.source(),msg.source().location(),"CMDMOBS")||(!((MOB)msg.target()).isMonster()))
-				&&(!CMSecurity.isAllowed(msg.source(),msg.source().location(),"CMDROOMS")||(!((MOB)msg.target()).isMonster())))
-				{
-					Language L=getAnyTranslator(ID(),msg.source());
-					if((L==null)
-					||(!L.beingSpoken(ID()))
-					||((CMLib.dice().rollPercentage()*2)>(L.getProficiency(ID())+getProficiency(ID()))))
+					Language L=getMyTranslator(ID(),source);
+					if((L==null)||(!L.beingSpoken(ID()))||((CMLib.dice().rollPercentage()*2)>(L.getProficiency(ID())+getProficiency(ID()))))
 					{
-						msg.setTargetCode(CMMsg.TYP_SPEAK);
-						msg.setSourceCode(CMMsg.TYP_SPEAK);
-						msg.setOthersCode(CMMsg.TYP_SPEAK);
+//						msg.setTargetCode(CMMsg.TYP_SPEAK);
+//						msg.setSourceCode(CMMsg.TYP_SPEAK);
+//						msg.setOthersCode(CMMsg.TYP_SPEAK);
 						String reply=null;
 						if((L==null)||(!L.beingSpoken(ID())))
 							reply="<S-NAME> <S-IS-ARE> speaking "+name()+" and do(es) not appear to understand <T-YOUPOSS> words.";
 						else
 							reply="<S-NAME> <S-IS-ARE> having trouble understanding <T-YOUPOSS> pronunciation.";
-						msg.addTrailerMsg(CMClass.getMsg((MOB)msg.target(),msg.source(),null,CMMsg.MSG_OK_VISUAL,reply));
+						msg.addTrailerMsg(CMClass.getMsg((MOB)affected,source,null,EnumSet.of(CMMsg.MsgCode.VISUAL),reply));
 					}
 					break;
 				}
-				default:
-					break;
-				}
+			}
 		}
-		return super.okMessage(myHost,msg);
-	}
-	
-	public boolean canBeLearnedBy(MOB teacher, MOB student)
-	{
-		if(!super.canBeLearnedBy(teacher,student))
-			return false;
-		if(student==null) return true;
 		return true;
 	}
-	
-	
+/* TODO: Need some equivalent.
 	public boolean invoke(MOB mob, Vector commands, Environmental givenTarget, boolean auto, int asLevel)
 	{
 		if(!auto)
 		{
 			for(int a=0;a<mob.numEffects();a++)
 			{
-				Ability A=mob.fetchEffect(a);
+				Effect A=mob.fetchEffect(a);
 				if((A!=null)&&(A instanceof Language))
 				{
 					if(mob.isMonster())
@@ -359,15 +289,16 @@ public class StdLanguage extends StdAbility implements Language
 			setBeingSpoken(ID(),true);
 		return true;
 	}
-
+*/
 	protected boolean translateOthersMessage(CMMsg msg, String sourceWords)
 	{
 		if((msg.othersMessage()!=null)&&(msg.othersMessage().indexOf("'")>0))
 		{
 			String otherMes=msg.othersMessage();
+			//TODO: This looks wrong. It should probably be handled differently, whatever it's doing.
 			if(msg.target()!=null)
-				otherMes=CMLib.coffeeFilter().fullOutFilter(null,(MOB)affected,msg.source(),msg.target(),msg.tool(),otherMes,false);
-			msg.addTrailerMsg(CMClass.getMsg(msg.source(),affected,null,CMMsg.NO_EFFECT,null,msg.othersCode(),CMStrings.substituteSayInMessage(otherMes,sourceWords)+" (translated from "+name()+")",CMMsg.NO_EFFECT,null));
+				otherMes=CMLib.coffeeFilter().fullOutFilter(null,(MOB)affected,msg.firstSource(),msg.target(),msg.firstTool(),otherMes,false);
+			msg.addTrailerMsg(CMClass.getMsg(msg.source(),(Interactable)affected,null,EnumSet.noneOf(CMMsg.MsgCode.class),null,msg.othersCode(),CMStrings.substituteSayInMessage(otherMes,sourceWords)+" (translated from "+name()+")",CMMsg.NO_EFFECT,null));
 			return true;
 		}
 		return false;
@@ -375,12 +306,12 @@ public class StdLanguage extends StdAbility implements Language
 	
 	protected boolean translateTargetMessage(CMMsg msg, String sourceWords)
 	{
-		if(msg.amITarget(affected)&&(msg.targetMessage()!=null))
+		if((affected instanceof Interactable)&&(msg.isTarget((Interactable)affected))&&(msg.targetMessage()!=null))
 		{
 			String otherMes=msg.targetMessage();
 			if(msg.target()!=null)
-				otherMes=CMLib.coffeeFilter().fullOutFilter(null,(MOB)affected,msg.source(),msg.target(),msg.tool(),otherMes,false);
-			msg.addTrailerMsg(CMClass.getMsg(msg.source(),affected,null,CMMsg.NO_EFFECT,null,msg.targetCode(),CMStrings.substituteSayInMessage(otherMes,sourceWords)+" (translated from "+name()+")",CMMsg.NO_EFFECT,null));
+				otherMes=CMLib.coffeeFilter().fullOutFilter(null,(MOB)affected,msg.firstSource(),msg.target(),msg.firstTool(),otherMes,false);
+			msg.addTrailerMsg(CMClass.getMsg(msg.source(),(Interactable)affected,null,CMMsg.NO_EFFECT,null,msg.targetCode(),CMStrings.substituteSayInMessage(otherMes,sourceWords)+" (translated from "+name()+")",CMMsg.NO_EFFECT,null));
 			return true;
 		}
 		return false;
@@ -388,106 +319,40 @@ public class StdLanguage extends StdAbility implements Language
 
 	protected boolean translateChannelMessage(CMMsg msg, String sourceWords)
 	{
-		if(CMath.bset(msg.sourceCode(),CMMsg.MASK_CHANNEL))
+		if(msg.hasSourceCode(CMMsg.MsgCode.CHANNEL))
 		{
-			msg.addTrailerMsg(CMClass.getMsg(msg.source(),null,null,CMMsg.NO_EFFECT,CMMsg.NO_EFFECT,msg.othersCode(),CMStrings.substituteSayInMessage(msg.othersMessage(),sourceWords)+" (translated from "+name()+")"));
+			msg.addTrailerMsg(CMClass.getMsg(msg.source(),null,null,CMMsg.NO_EFFECT,null,CMMsg.NO_EFFECT,null,msg.othersCode(),CMStrings.substituteSayInMessage(msg.othersMessage(),sourceWords)+" (translated from "+name()+")"));
 			return true;
 		}
 		return false;
 	}
 	
-	public void executeMsg(Environmental myHost, CMMsg msg)
+	public void executeMsg(ListenHolder.ExcChecker myHost, CMMsg msg)
 	{
 		super.executeMsg(myHost,msg);
 
 		if((affected instanceof MOB)
-		&&(!msg.amISource((MOB)affected))
-		&&((msg.sourceMinor()==CMMsg.TYP_SPEAK)
-		   ||(msg.sourceMinor()==CMMsg.TYP_TELL)
-		   ||(CMath.bset(msg.sourceCode(),CMMsg.MASK_CHANNEL)))
+		&&(!msg.isSource((MOB)affected))
+		&&(msg.hasSourceCode(CMMsg.MsgCode.SPEAK, CMMsg.MsgCode.TELL, CMMsg.MsgCode.CHANNEL))
 		&&(msg.tool() !=null)
-		&&(msg.sourceMessage()!=null)
-		&&(msg.tool() instanceof Language)
-		&&(msg.tool().ID().equals(ID())))
+		&&(msg.sourceMessage()!=null))
 		{
-			String str=CMStrings.getSayFromMessage(msg.sourceMessage());
-			if(str!=null)
+			for(CMObject O : msg.toolArr())
 			{
-				int numToMess=(int)Math.round(CMath.mul(numChars(str),CMath.div(100-getProficiency(ID()),100)));
-				if(numToMess>0)
-					str=messChars(ID(),str,numToMess);
-				if(!translateChannelMessage(msg,str))
-					if(!translateTargetMessage(msg,str))
-						translateOthersMessage(msg, str);
-			}
-		}
-		else
-		if((affected instanceof MOB)
-		&&(msg.source()==affected)
-		&&(beingSpoken(ID()))
-		&&(msg.target() instanceof Item)
-		&&(msg.sourceMinor()==CMMsg.TYP_WRITE)
-		&&(CMLib.flags().isReadable((Item)msg.target()))
-		&&(msg.targetMessage()!=null)
-		&&(msg.targetMessage().length()>0))
-		{
-			Ability L=null;
-			for(int i=msg.target().numEffects()-1;i>=0;i--)
-			{
-				L=msg.target().fetchEffect(i);
-				if(L instanceof Language)
+				if((O instanceof Language)&&(O.ID().equals(ID())))
 				{
-					msg.target().delEffect(L);
+					String str=CMStrings.getSayFromMessage(msg.sourceMessage());
+					if(str!=null)
+					{
+						int numToMess=numChars(str)*(100-getProficiency(ID()))/100;
+						if(numToMess>0)
+							str=messChars(ID(),str,numToMess);
+						if(!translateChannelMessage(msg,str))
+							if(!translateTargetMessage(msg,str))
+								translateOthersMessage(msg, str);
+					}
 					break;
 				}
-			}
-			msg.target().addNonUninvokableEffect((Ability)this.copyOf());
-		}
-		else
-		if((affected instanceof Item)
-		&&(!canBeUninvoked())
-		&&(msg.target()==affected)
-		&&(msg.targetMinor()==CMMsg.TYP_READ)
-		&&((msg.targetMessage()==null)||(!msg.targetMessage().equals("CANCEL")))
-		&&(CMLib.flags().canBeSeenBy(this,msg.source()))
-		&&((CMLib.flags().isReadable((Item)affected))
-		&&(((Item)affected).readableText()!=null)
-		&&(((Item)affected).readableText().length()>0)))
-		{
-			// first make sure the Item does not handle it,
-			// since THIS item is in another language.
-			msg.modify(msg.source(),
-					   msg.target(),
-					   msg.tool(),
-					   msg.sourceCode(),
-					   msg.sourceMessage(),
-					   msg.targetCode(),
-					   "CANCEL",
-					   msg.othersCode(),
-					   msg.othersMessage());
-			Language L=(Language)msg.source().fetchEffect(ID());
-			String str=((Item)affected).readableText();
-			if(str.startsWith("FILE=")
-			||str.startsWith("FILE="))
-			{
-				StringBuffer buf=Resources.getFileResource(str.substring(5),true);
-				if((buf!=null)&&(buf.length()>0))
-					str=buf.toString();
-				else
-					str="";
-			}
-			int numToMess=numChars(str);
-			if(numToMess==0)
-				msg.source().tell("There is nothing written on "+affected.name()+".");
-			else
-			{
-				if(L!=null)
-					numToMess=(int)Math.round(CMath.mul(numChars(str),CMath.div(100-L.getProficiency(ID()),100)));
-				String original=messChars(ID(),str,numToMess);
-				str=scrambleAll(ID(),str,numToMess);
-				msg.source().tell("It says '"+str+"'");
-				if((L!=null)&&(!original.equals(str)))
-					msg.source().tell("It says '"+original+"' (translated from "+L.writtenName()+").");
 			}
 		}
 	}

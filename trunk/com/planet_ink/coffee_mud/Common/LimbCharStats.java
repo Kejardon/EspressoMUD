@@ -333,9 +333,9 @@ public class LimbCharStats implements CharStats
 		int str=getStat(Stat.STRENGTH);
 		if(str<0) str=0;
 
-		int thirstCost=2.5*(1-fatigue);
-		int hungerCost=2.5*(1-fatigue);
-		int fatigueRegen=5+((con+str)*(2-fatigue));
+		int thirstCost=(int)(2.5*(1-fatigue));
+		int hungerCost=(int)(2.5*(1-fatigue));
+		int fatigueRegen=5+(int)Math.round((con+str)*(2-fatigue));
 		if(fatigue+0.2<sourceStats.getPointsPercent(Points.FATIGUE))
 		{
 			int temp=getMaxPoints(Points.FATIGUE)/200;
@@ -363,8 +363,8 @@ public class LimbCharStats implements CharStats
 
 	private enum SCode implements CMSavable.SaveEnum{
 		STT(){
-			public String save(LimbCharStats E){ return CMLib.coffeeMaker().savAInt(E.stat); }
-			public void load(LimbCharStats E, String S){ E.stat=CMLib.coffeeMaker().loadAInt(S); } },
+			public String save(LimbCharStats E){ return CMLib.coffeeMaker().savAShort(E.stat); }
+			public void load(LimbCharStats E, String S){ E.stat=CMLib.coffeeMaker().loadAShort(S); } },
 		PNT(){
 			public String save(LimbCharStats E){ return CMLib.coffeeMaker().savAInt(E.points); }
 			public void load(LimbCharStats E, String S){ E.points=CMLib.coffeeMaker().loadAInt(S); } },
@@ -380,15 +380,15 @@ public class LimbCharStats implements CharStats
 		CONSTITUTION(){
 			public String brief(LimbCharStats E){return ""+E.stat[0];}
 			public String prompt(LimbCharStats E){return ""+E.stat[0];}
-			public void mod(LimbCharStats E, MOB M){E.stat[0]=CMLib.genEd().intPrompt(M, ""+E.stat[0]);} },
+			public void mod(LimbCharStats E, MOB M){E.stat[0]=CMLib.genEd().shortPrompt(M, ""+E.stat[0]);} },
 		PRECISION(){
 			public String brief(LimbCharStats E){return ""+E.stat[1];}
 			public String prompt(LimbCharStats E){return ""+E.stat[1];}
-			public void mod(LimbCharStats E, MOB M){E.stat[1]=CMLib.genEd().intPrompt(M, ""+E.stat[1]);} },
+			public void mod(LimbCharStats E, MOB M){E.stat[1]=CMLib.genEd().shortPrompt(M, ""+E.stat[1]);} },
 		STRENGTH(){
 			public String brief(LimbCharStats E){return ""+E.stat[2];}
 			public String prompt(LimbCharStats E){return ""+E.stat[2];}
-			public void mod(LimbCharStats E, MOB M){E.stat[2]=CMLib.genEd().intPrompt(M, ""+E.stat[2]);} },
+			public void mod(LimbCharStats E, MOB M){E.stat[2]=CMLib.genEd().shortPrompt(M, ""+E.stat[2]);} },
 		FATIGUE(){
 			public String brief(LimbCharStats E){return ""+E.points[0];}
 			public String prompt(LimbCharStats E){return ""+E.points[0];}

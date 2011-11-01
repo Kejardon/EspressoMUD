@@ -1,10 +1,9 @@
-package com.planet_ink.coffee_mud.Abilities.Languages;
+package com.planet_ink.coffee_mud.Effects.Languages;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -36,15 +35,13 @@ public class Common extends StdLanguage
 {
 	public String ID() { return "Common"; }
 	public String name(){ return "Common";}
-	public boolean isAutoInvoked(){return false;}
-	public boolean canBeUninvoked(){return canBeUninvoked;}
 	public Common()
 	{
 		super();
 		proficiency=100;
 	}
 	public int proficiency(){return 100;}
-
+/*
 	public boolean invoke(MOB mob, Vector commands, Environmental givenTarget, boolean auto, int asLevel)
 	{
 		boolean anythingDone=false;
@@ -57,7 +54,6 @@ public class Common extends StdLanguage
 					anythingDone=true;
 					((Language)A).setBeingSpoken(ID(),false);
 				}
-
 		}
 		isAnAutoEffect=false;
 		if(!auto)
@@ -71,4 +67,5 @@ public class Common extends StdLanguage
 		}
 		return true;
 	}
+*/
 }

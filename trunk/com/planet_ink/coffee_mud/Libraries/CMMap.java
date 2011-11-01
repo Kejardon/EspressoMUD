@@ -36,11 +36,12 @@ import java.util.*;
 public class CMMap extends StdLibrary implements WorldMap
 {
 	public String ID(){return "CMMap";}
-	public SortedVector<Area> areasList = new SortedVector<Area>();
-	public Hashtable<CMMsg.MsgCode,Vector<WeakReference<ListenHolder.MsgListener>>> globalHandlers=new Hashtable<CMMsg.MsgCode,Vector<WeakReference<ListenHolder.MsgListener>>>();
+	protected SortedVector<Area> areasList = new SortedVector<Area>();
+	protected Hashtable<CMMsg.MsgCode,Vector<WeakReference<ListenHolder.MsgListener>>> globalHandlers=new Hashtable<CMMsg.MsgCode,Vector<WeakReference<ListenHolder.MsgListener>>>();
 	private ThreadEngine.SupportThread thread=null;
-	public long lastVReset=0;
-	public final OpenExit openExit=new OpenExit();
+	protected long lastVReset=0;
+	protected final OpenExit openExit=new OpenExit();
+	protected SortedVector<Exit> exits = new SortedVector();
 
 	private class OpenExit implements Exit
 	{
@@ -55,9 +56,9 @@ public class CMMap extends StdLibrary implements WorldMap
 		public String exitListLook(MOB mob, Room destination) { return destination.displayText(); }
 		public boolean visibleExit(MOB mob, Room destination){return true;}
 		public void setVisible(boolean b){}
-		public String exitID(){return "OpenExit";}
+		public String exitID(){return "0";}
 		public void setExitID(String s){}
-		public void initializeClass(){}
+		public void initializeClass(){ CMLib.map().addExit(this); }
 		public String name(){ return "a wide open passage";}
 		public void setName(String newName){}
 		public String displayText(){return "a path to another place.";}
@@ -152,6 +153,56 @@ public class CMMap extends StdLibrary implements WorldMap
 		return -1;
 	}
 */
+
+	public Exit getExit(String S)
+	{
+		Exit E=new StdExit();
+		E.setExitID(S);
+		synchronized(exits)
+		{
+			int i=exits.indexOf(E);
+			if(i>=0) return exits.get(i);
+		}
+		return null;
+	}
+	//Messy code to optimize speed, ideally Exits have an ID and are added in order, or do not have an ID.
+	public void addExit(Exit E)
+	{
+		synchronized(exits)
+		{
+			if(E.exitID().length>0)
+			{
+				if(E.compareTo(exits.lastElement())>0)
+					exits.add(E);
+				else
+				{
+					int i=exits.indexOf(E);
+					if(i>=0)
+						setElementAt(E, i);
+					else
+						exits.add(-i-1, O);
+				}
+			}
+			else
+			{
+				E.setExitID(getNewExitID());
+				exits.add(E);
+			}
+		}
+	}
+	//Umm. Let's just go with numbers for now! Nobody's going to really see these anyways.
+	public String getNewExitID()
+	{
+		Exit last=exits.lastElement();
+		int i=1;
+		if(lastExit!=null) i=Integer.parseInt(last.exitID())+1;
+		return ""+i;
+	}
+	
+	public void removeExit(Exit E)
+	{
+		synchronized(exits) { exits.remove(E); }
+	}
 
 	// areas
 	public int numAreas() { return areasList.size(); }
@@ -525,7 +576,7 @@ public class CMMap extends StdLibrary implements WorldMap
 				for(int m=0;m<coll.numItems();m++)
 				{
 					Item I = coll.getItem(m);
-					if((!(I instanceof Body))||((M=((Body)I).getMob())==null)) continue;
+					if((!(I instanceof Body))||((M=((Body)I).mob())==null)) continue;
 					found.addAll(M.fetchInventories(srchStr));
 				}
 				if((returnFirst)&&(found.size()>0)) return found;
@@ -655,10 +706,10 @@ public class CMMap extends StdLibrary implements WorldMap
 		{
 			M=inhabs.get(i);
 			if(M==null) continue;
-			sR=M.getStartRoom();
+/*			sR=M.getStartRoom();
 			if((sR!=null)
 			&&(!sR.roomID().equals(R.roomID())))
-				return false;
+				return false; */
 			if(M.session()!=null)
 				return false;
 		}
@@ -734,7 +785,7 @@ public class CMMap extends StdLibrary implements WorldMap
 		{
 			MOB M=inhabs.get(m);
 			if((M!=null)&&(M.playerStats()!=null))
-				M.getStartRoom().bringHere(M.body(), true);
+				CMLib.login().getDefaultStartRoom(M).bringHere(M.body(), true);
 		}
 		emptyRoom(deadRoom,null);
 		deadRoom.destroy();
@@ -777,14 +828,13 @@ public class CMMap extends StdLibrary implements WorldMap
 			return roomLocation(((Behavior)E).behaver());
 		return null;
 	}
-	public Area getStartArea(Interactable E)
+/*	public Area getStartArea(Interactable E)
 	{
 		if(E instanceof Area) return (Area)E;
 		Room R=getStartRoom(E);
 		if(R==null) return null;
 		return R.getArea();
 	}
-
 	public Room getStartRoom(Interactable E)
 	{
 		if(E ==null) return null;
@@ -797,7 +847,7 @@ public class CMMap extends StdLibrary implements WorldMap
 		if(E instanceof Area) return ((Area)E).getRandomProperRoom();
 		return roomLocation(E);
 	}
-
+*/
 	public Area areaLocation(CMObject E)
 	{
 		if(E==null) return null;
@@ -827,12 +877,12 @@ public class CMMap extends StdLibrary implements WorldMap
 			if(bringBackHere!=null)
 				bringBackHere.bringHere(M.body(), false);
 			else
-			if((M.getStartRoom()==null)
-			||(M.getStartRoom()==room)
-			||(M.getStartRoom().ID().length()==0))
+//			if((M.getStartRoom()==null)
+//			||(M.getStartRoom()==room)
+//			||(M.getStartRoom().ID().length()==0))
 				M.destroy();
-			else
-				M.getStartRoom().bringHere(M.body(), false);
+//			else
+//				M.getStartRoom().bringHere(M.body(), false);
 		}
 		Item I=null;
 		inhabs = null;

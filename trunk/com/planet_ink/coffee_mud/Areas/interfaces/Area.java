@@ -59,6 +59,8 @@ public interface Area extends Environmental.EnvHolder, ListenHolder.MsgListener,
 //	public void delBlurbFlag(String flagOnly);
 	public void addProperRoom(Room R);
 	public void delProperRoom(Room R);
+	public void addTickingRoom(Room R);
+	public void removeTickingRoom(Room R);
 	public Room getRoom(String roomID);
 	public boolean isRoom(Room R);
 	public Room getRandomProperRoom();

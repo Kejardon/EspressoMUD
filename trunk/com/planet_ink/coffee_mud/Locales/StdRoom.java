@@ -53,8 +53,8 @@ public class StdRoom implements Room
 	protected long lastTick=0;
 	//TODO: This needs a custom item collection!
 	protected ItemCollection inventory=new ItemCollection.DefaultItemCol(this);
-	protected Domain myDom=Domain.Plains;
-	protected Enclosure myEnc=Enclosure.Open;
+	protected Domain myDom=Domain.PLAINS;
+	protected Enclosure myEnc=Enclosure.OPEN;
 	protected boolean amDestroyed=false;
 	protected Tickable.TickStat tickStatus=Tickable.TickStat.Not;
 	protected Environmental.DefaultEnv myEnvironmental=new Environmental.DefaultEnv(this);
@@ -144,7 +144,11 @@ public class StdRoom implements Room
 		catch(ArrayIndexOutOfBoundsException e){}
 		return null;
 	}
-	public int getExit(String target)
+	public Exit getExit(String target)
+	{
+		return (Exit)CMLib.english().fetchInteractable(exits, target, true);
+	}
+	public int getExitIndex(String target)
 	{
 		int i=CMLib.english().fetchInteractableIndex(exits, target, true);
 		if(i==-1) i=CMLib.english().fetchInteractableIndex(exits, target, false);
@@ -179,7 +183,7 @@ public class StdRoom implements Room
 		synchronized(exits)
 		{
 			for(int i=0; i<exits.size();i++)
-				if(exits.get(i)==E)
+				if(exits.get(i)==oldExit)
 				{
 					exits.set(i, newExit);
 					return true;
@@ -241,7 +245,6 @@ public class StdRoom implements Room
 	}
 	public Area getArea()
 	{
-		if(myArea==null) return CMClass.anyOldArea();
 		return myArea;
 	}
 	public void setArea(Area newArea)
@@ -370,7 +373,7 @@ public class StdRoom implements Room
 						String allMessage)
 	{
 		CMMsg msg=CMClass.getMsg(source,target,tool,allCode,allMessage);
-		if((!allCode.contains(CMMsg.MsgCode.Always))&&(!okMessage(this,msg)))
+		if((!allCode.contains(CMMsg.MsgCode.ALWAYS))&&(!okMessage(this,msg)))
 			return false;
 		send(msg);
 		return true;
@@ -386,7 +389,7 @@ public class StdRoom implements Room
 						String othMessage)
 	{
 		CMMsg msg=CMClass.getMsg(source,target,tool,srcCode,srcMessage,tarCode,tarMessage,othCode,othMessage);
-		if((!srcCode.contains(CMMsg.MsgCode.Always))&&(!okMessage(this,msg)))
+		if((!srcCode.contains(CMMsg.MsgCode.ALWAYS))&&(!okMessage(this,msg)))
 			return false;
 		send(msg);
 		return true;
@@ -447,20 +450,20 @@ public class StdRoom implements Room
 		{
 			Vector<Item> items=inventory.allItems();
 			for(int i=0;i<items.size();i++)
-				if((items.get(i) instanceof Body)&&((M=((Body)items.get(i)).getMOB())!=null))
+				if((items.get(i) instanceof Body)&&((M=((Body)items.get(i)).mob())!=null))
 					inhabs.add(M);
 		}
 		else
 		{
 			Vector<Item> items=CMLib.english().fetchAvailableItems(inventory.allItems(),inhabitantID,true);
 			for(int i=0;i<items.size();i++)
-				if((items.get(i) instanceof Body)&&((M=((Body)items.get(i)).getMOB())!=null))
+				if((items.get(i) instanceof Body)&&((M=((Body)items.get(i)).mob())!=null))
 					inhabs.add(M);
 			if(inhabs.size()==0)
 			{
 				items=CMLib.english().fetchAvailableItems(inventory.allItems(),inhabitantID, false);
 				for(int i=0;i<items.size();i++)
-					if((items.get(i) instanceof Body)&&((M=((Body)items.get(i)).getMOB())!=null))
+					if((items.get(i) instanceof Body)&&((M=((Body)items.get(i)).mob())!=null))
 						inhabs.add(M);
 			}
 		}
@@ -628,10 +631,10 @@ public class StdRoom implements Room
 				E.myEnvironmental=newEnv; } },
 		DOM(){
 			public String save(StdRoom E){ return E.myDom.toString() ; }
-			public void load(StdRoom E, String S){ E.myDom=CMClass.valueOf(Domain.class, S); } },
+			public void load(StdRoom E, String S){ E.myDom=(Domain)CMClass.valueOf(Domain.class, S); } },
 		ENC(){
 			public String save(StdRoom E){ return E.myEnc.toString() ; }
-			public void load(StdRoom E, String S){ E.myEnc=CMClass.valueOf(Enclosure.class, S); } },
+			public void load(StdRoom E, String S){ E.myEnc=(Enclosure)CMClass.valueOf(Enclosure.class, S); } },
 		DSP(){
 			public String save(StdRoom E){ return E.display; }
 			public void load(StdRoom E, String S){ E.display=S.intern(); } },
@@ -642,14 +645,14 @@ public class StdRoom implements Room
 			public String save(StdRoom E){ return E.exitsToString(); }
 			public void load(StdRoom E, String S){ E.exitsToLoad=S.intern(); } },
 		ARE(){
-			public String save(StdRoom E){ return E.myArea; }
+			public String save(StdRoom E){ return E.myArea.name(); }
 			public void load(StdRoom E, String S){ E.setArea(CMLib.map().getArea(S)); } },
 		INV(){
 			public String save(StdRoom E){ return CMLib.coffeeMaker().getPropertiesStr(E.inventory); }
 			public void load(StdRoom E, String S){
 				ItemCollection.DefaultItemCol newInv=new ItemCollection.DefaultItemCol(E);
 				CMLib.coffeeMaker().setPropertiesStr(newInv, S);
-				E.inventory.destroy();
+//				E.inventory.destroy();
 				E.inventory=newInv; } },
 		EFC(){
 			public String save(StdRoom E){ return CMLib.coffeeMaker().getVectorStr(E.affects); }
@@ -690,11 +693,11 @@ public class StdRoom implements Room
 		DOMAIN(){
 			public String brief(StdRoom E){return E.myDom.toString();}
 			public String prompt(StdRoom E){return E.myDom.toString();}
-			public void mod(StdRoom E, MOB M){E.myDom=CMLib.genEd().enumPrompt(M, E.myDom.toString(), Domain.values());} },
+			public void mod(StdRoom E, MOB M){E.myDom=(Domain)CMLib.genEd().enumPrompt(M, E.myDom.toString(), Domain.values());} },
 		ENCLOSURE(){
 			public String brief(StdRoom E){return E.myEnc.toString();}
 			public String prompt(StdRoom E){return E.myEnc.toString();}
-			public void mod(StdRoom E, MOB M){E.myEnc=CMLib.genEd().enumPrompt(M, E.myEnc.toString(), Enclosure.values());} },
+			public void mod(StdRoom E, MOB M){E.myEnc=(Enclosure)CMLib.genEd().enumPrompt(M, E.myEnc.toString(), Enclosure.values());} },
 		DISPLAY(){
 			public String brief(StdRoom E){return E.display;}
 			public String prompt(StdRoom E){return E.display;}

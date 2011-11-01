@@ -35,8 +35,15 @@ public interface Body extends Item	//, Rideable
 	public void recoverCharStats();
 //	public void resetToMaxState();
 	public void setBaseCharStats(CharStats newBaseCharStats);
+	//public void randomizeSizeWeightFactor();
+	//public void setSizeWeightFactors(int size, int weight);
+	//public int sizeFactor();
+	//public int weightFactor();
 
 	public String healthText(MOB viewer);
+
+	// Chance of impregnation(0-100) when having sex with the target. Can be negative- 0 means 'impossible naturally but possible with magic/science aid', -100 means 'completely impossible'
+//	public int fertile(Body target);
 
 	public boolean amDead();
 	public Body killMeDead();
@@ -44,6 +51,10 @@ public interface Body extends Item	//, Rideable
 	public void bringToLife();
 	//public Race myRace();
 	//public void setRace();
+
+//	TODO: Make Gender object in this folder
+//	public Gender gender();
+//	public void setGender(Gender g);
 
 	public enum Part	//Typically recognized parts. This will be part of the standardized naming scheme
 	{

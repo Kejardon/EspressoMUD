@@ -177,7 +177,9 @@ public class RoomLoader
 					Log.errOut("Room","Invalid Exit type "+exitType+" for "+exitID);
 				else
 				{
+					newExit.setExitID(exitID.intern());
 					CMLib.coffeeMaker().setPropertiesStr(newExit, DBConnections.getRes(R,"CMDATA"));
+					CMLib.map().addExit(newExit);
 					exits.add(newExit);
 				}
 				if(reportStatus&&((currentRecordPos%updateBreak)==0))

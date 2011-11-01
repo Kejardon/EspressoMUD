@@ -260,38 +260,12 @@ public class CommonMsgs extends StdLibrary implements CommonCommands
 //		if(msg.target() instanceof Item)
 //			handleBeingItemSniffed(msg);
 //		else
-		if(msg.target() instanceof MOB)
-			handleBeingMobSniffed(msg);
+//		if(msg.target() instanceof MOB)
+//			handleBeingMobSniffed(msg);
 	}
-
+/*
 	public void handleBeingMobSniffed(CMMsg msg)
 	{
-		if(!(msg.target() instanceof MOB)) return;
-		for(Interactable I : msg.sourceArr())
-		{
-			if(!(I instanceof MOB)) continue;
-			MOB sniffingmob=(MOB)I;
-			MOB sniffedmob=(MOB)msg.target();
-			if((sniffedmob.playerStats()!=null)
-	//		&&(sniffedmob.soulMate()==null)
-			&&(sniffedmob.playerStats().getHygiene()>=PlayerStats.HYGIENE_DELIMIT))
-			{
-				int x=(int)(sniffedmob.playerStats().getHygiene()/PlayerStats.HYGIENE_DELIMIT);
-				if(x<=1)
-					sniffingmob.tell(sniffedmob.displayName(sniffingmob)+" has a slight aroma.");
-				else
-				if(x<=3)
-					sniffingmob.tell(sniffedmob.displayName(sniffingmob)+" smells pretty sweaty.");
-				else
-				if(x<=7)
-					sniffingmob.tell(sniffedmob.displayName(sniffingmob)+" stinks pretty bad.");
-				else
-				if(x<15)
-					sniffingmob.tell(sniffedmob.displayName(sniffingmob)+" smells most foul.");
-				else
-					sniffingmob.tell(sniffedmob.displayName(sniffingmob)+" reeks of noxious odors.");
-			}
-		}
 	}
 
 	public void handleSit(CMMsg msg)
@@ -308,8 +282,6 @@ public class CommonMsgs extends StdLibrary implements CommonCommands
 			sittingmob.tell(sittingmob,msg.target(),msg.tool(),msg.sourceMessage());
 		}
 	}
-
-
 	public void handleLayDown(CMMsg msg)
 	{
 		for(Interactable I : msg.sourceArr())
@@ -353,7 +325,7 @@ public class CommonMsgs extends StdLibrary implements CommonCommands
 			standingmob.tell(standingmob,msg.target(),msg.tool(),msg.sourceMessage());
 		}
 	}
-
+*/
 
 	public void handleBeingLookedAt(CMMsg msg)
 	{
@@ -495,11 +467,11 @@ public class CommonMsgs extends StdLibrary implements CommonCommands
 			if((viewermob.playerStats().getBitmap()&PlayerStats.ATT_SYSOPMSGS)>0)
 				myDescription.append("\n\rType :"+viewedmob.ID()
 									+"\n\rDesc : "+viewedmob.description()
-									+"\n\rRoom :'"+((viewedmob.getStartRoom()==null)?"null":viewedmob.getStartRoom().roomID())
+//									+"\n\rRoom :'"+((viewedmob.getStartRoom()==null)?"null":viewedmob.getStartRoom().roomID())
 									+"\n\r");
 			myDescription.append(viewedmob.displayName(viewermob)+" ");
 			myDescription.append("is here.\n\r");
-			myDescription.append(viewedmob.healthText(viewermob)+"\n\r\n\r");
+//			myDescription.append(viewedmob.healthText(viewermob)+"\n\r\n\r");
 			myDescription.append(viewedmob.description()+"\n\r\n\r");
 
 			StringBuilder eq=getEquipment(viewermob,viewedmob);

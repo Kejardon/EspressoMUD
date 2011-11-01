@@ -40,8 +40,8 @@ public class DefaultTimeClock implements TimeClock
 	public CMObject newInstance(){try{return (CMObject)getClass().newInstance();}catch(Exception e){return new DefaultTimeClock();}}
 	public void initializeClass(){}
 	
-	protected long tickStatus=Tickable.STATUS_NOT;
-	public long getTickStatus(){return tickStatus;}
+	protected Tickable.TickStat tickStatus=Tickable.TickStat.Not;
+	public Tickable.TickStat getTickStatus(){return tickStatus;}
 	protected boolean loaded=false;
 	protected String loadName=null;
 	public void setLoadName(String name){loadName=name;}
@@ -140,7 +140,7 @@ public class DefaultTimeClock implements TimeClock
 	{
 		StringBuffer timeDesc=new StringBuffer("");
 
-		if((CMLib.flags().canSee(mob))&&(getTODCode()>=0))
+		if(getTODCode()>=0)
 			timeDesc.append(TOD_DESC[getTODCode()]);
 		timeDesc.append("(Hour: "+getTimeOfDay()+"/"+(getHoursInDay()-1)+")");
 		timeDesc.append("\n\rIt is ");
@@ -163,7 +163,7 @@ public class DefaultTimeClock implements TimeClock
 	public void setYear(int y){year=y;}
 
 	public int getSeasonCode(){
-		int div=(int)Math.round(Math.floor(CMath.div(getMonthsInYear(),4.0)));
+		int div=getMonthsInYear()/4;
 		if(month<div) return TimeClock.SEASON_WINTER;
 		if(month<(div*2)) return TimeClock.SEASON_SPRING;
 		if(month<(div*3)) return TimeClock.SEASON_SUMMER;
@@ -234,17 +234,17 @@ public class DefaultTimeClock implements TimeClock
 		int years=0;
 		if(hours>getHoursInDay())
 		{
-			days=(int)Math.round(Math.floor(CMath.div(hours,getHoursInDay())));
+			days=hours/getHoursInDay();
 			hours=hours-(days*getHoursInDay());
 		}
 		if(days>getDaysInMonth())
 		{
-			months=(int)Math.round(Math.floor(CMath.div(days,getDaysInMonth())));
+			months=days/getDaysInMonth();
 			days=days-(months*getDaysInMonth());
 		}
 		if(months>getMonthsInYear())
 		{
-			years=(int)Math.round(Math.floor(CMath.div(months,getMonthsInYear())));
+			years=months/getMonthsInYear();
 			months=months-(years*getMonthsInYear());
 		}
 		StringBuffer buf=new StringBuffer("");
@@ -299,6 +299,7 @@ public class DefaultTimeClock implements TimeClock
 				for(Enumeration r=A.getProperMap();r.hasMoreElements();)
 				{
 					Room R=(Room)r.nextElement();
+					/*
 					if((R!=null)&&((R.numInhabitants()>0)||(R.numItems()>0)))
 					{
 						R.recoverEnvStats();
@@ -321,7 +322,7 @@ public class DefaultTimeClock implements TimeClock
 								}
 							}
 						}
-					}
+					} */
 					if(R!=null)
 						R.recoverRoomStats();
 				}
@@ -335,7 +336,7 @@ public class DefaultTimeClock implements TimeClock
 		if(howManyHours!=0)
 		{
 			setTimeOfDay(getTimeOfDay()+howManyHours);
-			lastTicked=System.currentTimeMillis();
+			lastTick=System.currentTimeMillis();
 			while(getTimeOfDay()>=getHoursInDay())
 			{
 				setTimeOfDay(getTimeOfDay()-getHoursInDay());
@@ -387,17 +388,18 @@ public class DefaultTimeClock implements TimeClock
 		}
 	}
 */
-	public long lastTicked=0;
-	public boolean tick(Tickable ticking, int tickID)
+	public long lastTick=0;
+	public boolean tick(Tickable ticking, Tickable.TickID tickID)
 	{
-		tickStatus=Tickable.STATUS_NOT;
+//		tickStatus=Tickable.TickStat.Not;
 		if(((loadName==null)||(loaded))
-		&&(((System.currentTimeMillis()-lastTicked)<=Tickable.TIME_MILIS_PER_MUDHOUR)))
+		&&(((System.currentTimeMillis()-lastTick)<=Tickable.TIME_MILIS_PER_MUDHOUR)))
 			return true;
 		synchronized(this)
 		{
-			boolean timeToTick = ((System.currentTimeMillis()-lastTicked)>Tickable.TIME_MILIS_PER_MUDHOUR);
-			lastTicked=System.currentTimeMillis();
+			boolean timeToTick = ((System.currentTimeMillis()-lastTick)>Tickable.TIME_MILIS_PER_MUDHOUR);
+			lastTick=System.currentTimeMillis();
+			/* TODO
 			if((loadName!=null)&&(!loaded))
 			{
 				loaded=true;
@@ -442,11 +444,14 @@ public class DefaultTimeClock implements TimeClock
 					}
 				}
 			}
+			*/
 			if(timeToTick)
 				tickTock(1);
 		}
 		return true;
 	}
+	public long lastTick(){return lastTick;}
+	public long lastAct(){return 0;}
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 
 	public SaveEnum[] totalEnumS(){return SCode.values();}
@@ -501,21 +506,21 @@ public class DefaultTimeClock implements TimeClock
 			public String prompt(DefaultTimeClock E){return ""+E.year;}
 			public void mod(DefaultTimeClock E, MOB M){E.year=CMLib.genEd().intPrompt(M, ""+E.year);} },
 		WEEKNAMES(){
-			public String brief(DefaultTimeClock E){return ""+E.weekNames.size();}
+			public String brief(DefaultTimeClock E){return ""+E.weekNames.length;}
 			public String prompt(DefaultTimeClock E){return ""+E.weekNames;}
 			public void mod(DefaultTimeClock E, MOB M){CMLib.genEd().astringPrompt(M, E.weekNames, false);} },
 		MONTHNAMES(){
-			public String brief(DefaultTimeClock E){return ""+E.monthsInYear.size();}
+			public String brief(DefaultTimeClock E){return ""+E.monthsInYear.length;}
 			public String prompt(DefaultTimeClock E){return ""+E.monthsInYear;}
 			public void mod(DefaultTimeClock E, MOB M){CMLib.genEd().astringPrompt(M, E.monthsInYear, false);} },
 		YEARNAMES(){
-			public String brief(DefaultTimeClock E){return ""+E.yearNames.size();}
+			public String brief(DefaultTimeClock E){return ""+E.yearNames.length;}
 			public String prompt(DefaultTimeClock E){return ""+E.yearNames;}
 			public void mod(DefaultTimeClock E, MOB M){CMLib.genEd().astringPrompt(M, E.yearNames, false);} },
 		HOURSOFDAY(){
 			public String brief(DefaultTimeClock E){return ""+E.dawnToDusk;}
 			public String prompt(DefaultTimeClock E){return ""+E.dawnToDusk;}
-			public void mod(DefaultTimeClock E, MOB M){CMLib.genEd().aintPrompt(M, E.dawnToDusk, false);} },
+			public void mod(DefaultTimeClock E, MOB M){CMLib.genEd().aintPrompt(M, E.dawnToDusk);} },
 		HOURSPERDAY(){
 			public String brief(DefaultTimeClock E){return ""+E.hoursInDay;}
 			public String prompt(DefaultTimeClock E){return ""+E.hoursInDay;}

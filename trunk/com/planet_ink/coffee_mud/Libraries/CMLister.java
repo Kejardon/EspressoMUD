@@ -46,9 +46,9 @@ public class CMLister extends StdLibrary implements ListingLibrary
 		else
 		if((longLook)&&(item instanceof Item)&&(((Item)item).container()!=null))
 			return CMStrings.capitalizeFirstLetter("	 "+item.name())+(sysmsgs?" ("+item.ID()+")":"");
-		else
-		if(item instanceof MOB)
-			return CMStrings.capitalizeFirstLetter(((MOB)item).displayText(viewer))+(sysmsgs?" ("+item.ID()+")":"");
+//		else
+//		if(item instanceof MOB)
+//			return CMStrings.capitalizeFirstLetter(((MOB)item).displayText(viewer))+(sysmsgs?" ("+item.ID()+")":"");
 		else
 		if(item.displayText().length()>0)
 			return CMStrings.capitalizeFirstLetter(item.displayText())+(sysmsgs?" ("+item.ID()+")":"");

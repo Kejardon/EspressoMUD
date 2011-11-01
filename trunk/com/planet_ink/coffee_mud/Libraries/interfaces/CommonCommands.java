@@ -4,7 +4,6 @@ import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -53,10 +52,10 @@ public interface CommonCommands extends CMLibrary
 //	public String examineItemString(MOB mob, Item item);
 	public void handleBeingRead(CMMsg msg);
 //	public void handleRecall(CMMsg msg);
-	public void handleSit(CMMsg msg);
-	public void handleLayDown(CMMsg msg);
-	public void handleStand(CMMsg msg);
-	public void handleSleep(CMMsg msg);
+//	public void handleSit(CMMsg msg);
+//	public void handleLayDown(CMMsg msg);
+//	public void handleStand(CMMsg msg);
+//	public void handleSleep(CMMsg msg);
 	public void handleBeingSniffed(CMMsg msg);
 //	public void handleBeingGivenTo(CMMsg msg);
 //	public void handleBeingGetted(CMMsg msg);

@@ -195,7 +195,12 @@ public class StdExit implements Exit
 		for(int i=excCheckers.size();i>0;i--)
 			excCheckers.get(i-1).executeMsg(myHost,msg);
 	}
-	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
+	public int compareTo(CMObject o)
+	{
+		if(o instanceof Exit)
+			return exitID.compareTo(((Exit)o).exitID());
+		return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));
+	}
 
 	//Affectable
 	public void addEffect(Effect to)
@@ -318,9 +323,9 @@ public class StdExit implements Exit
 				CMLib.coffeeMaker().setPropertiesStr(newEnv, S);
 				E.myEnvironmental.destroy();
 				E.myEnvironmental=newEnv; } },
-		EID(){
+/*		EID(){
 			public String save(StdExit E){ return E.exitID; }
-			public void load(StdExit E, String S){ E.exitID=S.intern(); } },
+			public void load(StdExit E, String S){ E.exitID=S.intern(); } }, */
 		DSP(){
 			public String save(StdExit E){ return E.display; }
 			public void load(StdExit E, String S){ E.display=S.intern(); } },

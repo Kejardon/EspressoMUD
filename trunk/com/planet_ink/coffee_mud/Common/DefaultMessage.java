@@ -85,11 +85,14 @@ public class DefaultMessage implements CMMsg
 
 	public EnumSet<MsgCode> targetCode() { return targetCode; }
 	public void setTargetCode(EnumSet<MsgCode> codes){targetCode=codes;}
-	public boolean hasTargetCode(MsgCode code)
+	public boolean hasTargetCode(MsgCode... code)
 	{
 		if(targetCode==null)
 			return false;
-		return targetCode.contains(code);
+		for (MsgCode a : code)
+			if(targetCode.contains(a))
+				return true;
+		return false;
 	}
 	public boolean addTargetCode(MsgCode code)
 	{
@@ -111,11 +114,14 @@ public class DefaultMessage implements CMMsg
 
 	public EnumSet<MsgCode> sourceCode() { return sourceCode; }
 	public void setSourceCode(EnumSet<MsgCode> codes){sourceCode=codes;}
-	public boolean hasSourceCode(MsgCode code)
+	public boolean hasSourceCode(MsgCode... code)
 	{
 		if(sourceCode==null)
 			return false;
-		return sourceCode.contains(code);
+		for (MsgCode a : code)
+			if(sourceCode.contains(a))
+				return true;
+		return false;
 	}
 	public boolean addSourceCode(MsgCode code)
 	{
@@ -138,11 +144,14 @@ public class DefaultMessage implements CMMsg
 
 	public EnumSet<MsgCode> othersCode() { return othersCode; }
 	public void setOthersCode(EnumSet<MsgCode> codes){othersCode=codes;}
-	public boolean hasOthersCode(MsgCode code)
+	public boolean hasOthersCode(MsgCode... code)
 	{
 		if(othersCode==null)
 			return false;
-		return othersCode.contains(code);
+		for (MsgCode a : code)
+			if(othersCode.contains(a))
+				return true;
+		return false;
 	}
 	public boolean addOthersCode(MsgCode code)
 	{
@@ -200,6 +209,11 @@ public class DefaultMessage implements CMMsg
 	public void setTarget(Interactable E){target=E;}
 
 	public Vector<Interactable> source(){ return sources; }
+	public Interactable firstSource()
+	{
+		if((sources==null)||(sources.size()==0)) return null;
+		return sources.get(0);
+	}
 	public void setSource(Vector<Interactable> V){sources=V;}
 	public boolean addSource(Interactable E)
 	{
@@ -211,6 +225,11 @@ public class DefaultMessage implements CMMsg
 	public boolean removeSource(Interactable E){return sources.remove(E);}
 
 	public Vector<CMObject> tool() { return tools; }
+	public CMObject firstTool()
+	{
+		if((tools==null)||(tools.size()==0)) return null;
+		return tools.get(0);
+	}
 	public void setTools(Vector<CMObject> V){tools=V;}
 	public boolean addTool(CMObject O)
 	{

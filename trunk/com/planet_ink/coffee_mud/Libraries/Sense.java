@@ -65,7 +65,7 @@ public class Sense extends StdLibrary implements CMFlagLibrary
 		else
 		if(E instanceof MOB)
 			return (((MOB)E).location()!=null)
-				   &&((MOB)E).amActive()
+//				   &&((MOB)E).amActive()
 				   &&((!reqInhabitation)||(((MOB)E).location().isContent(((MOB)E).body(), true)));
 		else
 		if(E instanceof Item)

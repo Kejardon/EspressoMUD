@@ -384,10 +384,10 @@ public class CoffeeUtensils extends StdLibrary implements CMMiscUtils
 				case 'H': { buf.append("^<MaxHp^>"+mob.charStats().getMaxPoints(CharStats.Points.HIT)+"^</MaxHp^>"); c++; break;}
 				case 'K':
 				case 'k': { MOB tank=mob;
-							if((tank.getVictim()!=null)
-							&&(tank.getVictim().getVictim()!=null)
-							&&(tank.getVictim().getVictim()!=mob))
-								tank=tank.getVictim().getVictim();
+							if((tank.getVictim() instanceof MOB)
+							&&(((MOB)tank.getVictim()).getVictim() instanceof MOB)
+							&&(((MOB)tank.getVictim()).getVictim()!=mob))
+								tank=(MOB)((MOB)tank.getVictim()).getVictim();
 							if(((c+1)<prompt.length())&&(tank!=null))
 								switch(prompt.charAt(c+1))
 								{
