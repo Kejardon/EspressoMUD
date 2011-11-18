@@ -52,7 +52,7 @@ public interface GenericEditor extends CMLibrary
 
 	public void modBehavable(Behavable E, MOB M);
 	public void modAffectable(Affectable E, MOB M);
-	public void modExits(Vector<Exit> exits, Vector<Room> destinations, MOB M);
+	public void modExits(Vector<Room.REMap> exits, MOB M);
 	public int promptVector(MOB mob, Vector V, boolean newOption);
 	public Area areaPrompt(MOB M);
 	public Effect newAnyEffect(MOB mob);

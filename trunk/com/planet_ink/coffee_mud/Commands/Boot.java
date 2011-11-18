@@ -4,7 +4,6 @@ import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -64,7 +63,7 @@ public class Boot extends StdCommand
 			    {
 					mob.tell("You boot "+S.mob().name());
 					if(S.mob().location()!=null)
-						S.mob().location().show(S.mob(),null,CMMsg.MSG_OK_VISUAL,"Something is happening to <S-NAME>.");
+						S.mob().location().show(S.mob(),null,null,EnumSet.of(CMMsg.MsgCode.VISUAL),"Something is happening to <S-NAME>.");
 			    }
 			    else
 			        mob.tell("You boot "+S.getAddress());

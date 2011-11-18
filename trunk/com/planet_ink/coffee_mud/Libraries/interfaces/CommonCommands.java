@@ -33,6 +33,7 @@ public interface CommonCommands extends CMLibrary
 {
 	public boolean forceStandardCommand(MOB mob, String command, Vector parms);
 	public StringBuilder getScore(MOB mob);
+	public StringBuilder getScore(MOB mob, String parm);
 	public StringBuilder getEquipment(MOB viewer, MOB mob);
 	public StringBuilder getInventory(MOB viewer, MOB mob);
 	public void postChannel(MOB mob, String channelName, String message, boolean systemMsg);
@@ -45,7 +46,7 @@ public interface CommonCommands extends CMLibrary
 	public void postSheath(MOB mob, boolean ifPossible);
 	public void postDraw(MOB mob, boolean doHold, boolean ifNecessary);
 	public void postStand(MOB mob, boolean ifNecessary);
-	public void postSay(MOB mob, MOB target, String text, boolean isPrivate, boolean tellFlag);
+	public void postSay(MOB mob, MOB target, String text, boolean isPrivate);
 	public void postSay(MOB mob, MOB target,String text);
 	public void postSay(MOB mob, String text);
 	public void handleBeingLookedAt(CMMsg msg);

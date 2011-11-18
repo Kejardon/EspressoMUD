@@ -4,7 +4,6 @@ import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -75,13 +74,9 @@ public class ChanWho extends StdCommand
 		{
 			Session ses=CMLib.sessions().elementAt(s);
 			MOB mob2=ses.mob();
-			if((mob2!=null)&&(mob2.soulMate()!=null))
-				mob2=mob2.soulMate();
 			if((CMLib.channels().mayReadThisChannel(mob,areareq,ses,channelInt))
 			&&(mob2!=null)
-			&&(CMLib.flags().isInTheGame(mob2,true))
-			&&((((mob2.envStats().disposition()&EnvStats.IS_CLOAKED)==0)
-					||((CMSecurity.isAllowedAnywhere(mob,"CLOAK")||CMSecurity.isAllowedAnywhere(mob,"WIZINV"))&&(mob.envStats().level()>=mob2.envStats().level())))))
+			&&(CMLib.flags().isInTheGame(mob2,true)))
 					buf.append("^x[^?^.^N"+CMStrings.padRight(mob2.name(),20)+"^x]^?^.^N\n\r");
 		}
 		if(buf.length()==0)

@@ -467,125 +467,162 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 		return null;
 	}
 
-
-	public int fetchInteractableIndex(Vector<? extends Interactable> list, String srchStr, boolean exactOnly)
+	public Interactable fetchInteractable(Vector<? extends Interactable> list, String srchStr, boolean exactOnly)
+	{ return fetchInteractable(list.toArray(), srchStr, exactOnly); }
+	protected boolean thingCheck(Vector<? extends Interactable> V, Interactable thisThang, String srchStr, boolean allFlag, boolean exact, int maxDepth, int[] numLeft)
 	{
-		Object[] flags=fetchFlags(srchStr);
-		if(flags==null) return -1;
-
-		srchStr=(String)flags[FLAG_STR];
-		int myOccurrance=((Integer)flags[FLAG_DOT]).intValue();
-		boolean allFlag=((Boolean)flags[FLAG_ALL]).booleanValue();
-		Interactable thisThang=null;
-		if(exactOnly)
+		if(exact)
 		{
-			if(srchStr.startsWith("$")) srchStr=srchStr.substring(1);
-			if(srchStr.endsWith("$")) srchStr=srchStr.substring(0,srchStr.length()-1);
-			try
+			if((thisThang.ID().equalsIgnoreCase(srchStr)||thisThang.name().equalsIgnoreCase(srchStr))
+				&&((!allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0))))
 			{
-				for(int i=0;i<list.size();i++)
-				{
-					thisThang=list.elementAt(i);
-					if(thisThang.ID().equalsIgnoreCase(srchStr)
-					   ||thisThang.name().equalsIgnoreCase(srchStr))
-						if((!allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0)))
-							if((--myOccurrance)<=0)
-								return i;
-				}
+				V.add(thisThang);
+				if((--numLeft[0])<=0) return true;
 			}
-			catch(java.lang.ArrayIndexOutOfBoundsException x){}
 		}
 		else
 		{
-			myOccurrance=((Integer)flags[FLAG_DOT]).intValue();
-			try
+			if(containsString(thisThang.name(),srchStr)
+			   &&((!allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0))))
 			{
-				for(int i=0;i<list.size();i++)
-				{
-					thisThang=list.elementAt(i);
-					if(containsString(thisThang.name(),srchStr)
-					   &&((!allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0))))
-						if((--myOccurrance)<=0)
-							return i;
-				}
+				V.add(thisThang);
+				if((--numLeft[0])<=0) return true;
 			}
-			catch(java.lang.ArrayIndexOutOfBoundsException x){}
-			myOccurrance=((Integer)flags[FLAG_DOT]).intValue();
-			try
-			{
-				for(int i=0;i<list.size();i++)
-				{
-					thisThang=list.elementAt(i);
-					if((containsString(thisThang.displayText(),srchStr)
-						||((thisThang instanceof MOB)&&containsString(((MOB)thisThang).genericName(),srchStr))))
-							if((--myOccurrance)<=0)
-								return i;
-				}
-			}
-			catch(java.lang.ArrayIndexOutOfBoundsException x){}
 		}
-		return -1;
+		//NOTE: Not sure if this line is a good idea!
+		if((thisThang instanceof Body)&&(((Body)thisThang).mob()!=null))
+			if(thingCheck(V, ((Body)thisThang).mob(), srchStr, allFlag, exact, 0, numLeft))
+				return true;
+		if(maxDepth>0)
+		{
+			ItemCollection col=ItemCollection.DefaultItemCol.getFrom(thisThang);
+			if(col!=null)
+				if(thingArrayCheck(V, (Item[])col.allItems().toArray(), srchStr, allFlag, exact, maxDepth-1, numLeft))
+					return true;
+			if(thisThang instanceof Room)
+			{
+				Room R=(Room)thisThang;
+				for(int i=0;i<R.numExits();i++)
+				{
+					Exit E=R.getExit(i);
+					if((E!=null)&&(thingCheck(E, srchStr, allFlag, exact, maxDepth-1, numLeft)))
+						return true;
+				}
+			}
+		}
+		return false;
 	}
-	public Interactable fetchInteractable(Vector<? extends Interactable> list, String srchStr, boolean exactOnly)
+	protected boolean thingArrayCheck(Vector<? extends Interactable> V, Interactable[] stuff, String srchStr, boolean allFlag, boolean exact, int maxDepth, int[] numLeft)
+	{
+		for(Interactable I : stuff)
+		{
+			if(I==null) continue;
+			if(thingCheck(V, I, srchStr, allFlag, exact, maxDepth, numLeft)) return true;
+		}
+		return false;
+	}
+	public Vector<Interactable> fetchInteractables(String srchStr, boolean exactOnly, int maxDepth, int toFind, Object... list);
+	{
+		Vector<? extends Interactable> V=new Vector();
+		Object[] flags=fetchFlags(srchStr);
+		if(flags==null) return null;
+		srchStr=(String)flags[FLAG_STR];
+		boolean allFlag=((Boolean)flags[FLAG_ALL]).booleanValue();
+		int[] numLeft={toFind};
+		if(srchStr.startsWith("$")) srchStr=srchStr.substring(1);
+		if(srchStr.endsWith("$")) srchStr=srchStr.substring(0,srchStr.length()-1);
+		for(Object O : list)
+		{
+			if(O instanceof Interactable)
+				{ if(thingCheck(V, (Interactable)O, srchStr, allFlag, exactOnly, maxDepth, numLeft)) return V; }
+			else if((maxDepth>0)&&(O instanceof ItemCollection))
+				{ if(thingArrayCheck(V, (Interactable[])((ItemCollection)O).allItems().toArray(), srchStr, allFlag, exactOnly, maxDepth-1, numLeft)) return V; }
+			else if((maxDepth>0)&&(O instanceof ItemCollection.ItemHolder))
+				{ if(thingArrayCheck(V, (Interactable[])((ItemCollection.ItemHolder)O).getItemCollection().allItems().toArray(), srchStr, allFlag, exactOnly, maxDepth-1, numLeft)) return V; }
+			else if(O instanceof Vector)
+				{ if(thingArrayCheck(V, (Interactable[])((Vector)O).toArray(), srchStr, allFlag, exactOnly, maxDepth, numLeft)) return V; }
+		}
+		return V;
+	}
+	public Interactable fetchInteractable(String srchStr, boolean exactOnly, int maxDepth, Object... list)
 	{
 		Object[] flags=fetchFlags(srchStr);
 		if(flags==null) return null;
 
 		srchStr=(String)flags[FLAG_STR];
-		int myOccurrance=((Integer)flags[FLAG_DOT]).intValue();
+		int[] myOccurrance={((Integer)flags[FLAG_DOT]).intValue()};
 		boolean allFlag=((Boolean)flags[FLAG_ALL]).booleanValue();
 		Interactable thisThang=null;
-		if(exactOnly)
+		if(srchStr.startsWith("$")) srchStr=srchStr.substring(1);
+		if(srchStr.endsWith("$")) srchStr=srchStr.substring(0,srchStr.length()-1);
+		for(Object O : list)
 		{
-			if(srchStr.startsWith("$")) srchStr=srchStr.substring(1);
-			if(srchStr.endsWith("$")) srchStr=srchStr.substring(0,srchStr.length()-1);
-			try
-			{
-				for(int i=0;i<list.size();i++)
-				{
-					thisThang=list.elementAt(i);
-					if(thisThang.ID().equalsIgnoreCase(srchStr)
-					   ||thisThang.name().equalsIgnoreCase(srchStr))
-						if((!allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0)))
-							if((--myOccurrance)<=0)
-								return thisThang;
-				}
-			}
-			catch(java.lang.ArrayIndexOutOfBoundsException x){}
-		}
-		else
-		{
-			myOccurrance=((Integer)flags[FLAG_DOT]).intValue();
-			try
-			{
-				for(int i=0;i<list.size();i++)
-				{
-					thisThang=list.elementAt(i);
-					if(containsString(thisThang.name(),srchStr)
-					   &&((!allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0))))
-						if((--myOccurrance)<=0)
-							return thisThang;
-				}
-			}
-			catch(java.lang.ArrayIndexOutOfBoundsException x){}
-			myOccurrance=((Integer)flags[FLAG_DOT]).intValue();
-			try
-			{
-				for(int i=0;i<list.size();i++)
-				{
-					thisThang=list.elementAt(i);
-					if((containsString(thisThang.displayText(),srchStr)
-						||((thisThang instanceof MOB)&&containsString(((MOB)thisThang).genericName(),srchStr))))
-							if((--myOccurrance)<=0)
-								return thisThang;
-				}
-			}
-			catch(java.lang.ArrayIndexOutOfBoundsException x){}
+			if(O instanceof Interactable)
+				thisThang=thingCheck((Interactable)O, srchStr, allFlag, exactOnly, myOccurrance, maxDepth);
+			else if((maxDepth>0)&&(O instanceof ItemCollection))
+				thisThang=thingArrayCheck((Interactable[])((ItemCollection)O).allItems().toArray(), srchStr, allFlag, exactOnly, myOccurrance, maxDepth-1);
+			else if((maxDepth>0)&&(O instanceof ItemCollection.ItemHolder))
+				thisThang=thingArrayCheck((Interactable[])((ItemCollection.ItemHolder)O).getItemCollection().allItems().toArray(), srchStr, allFlag, exactOnly, myOccurrance, maxDepth-1);
+			else if(O instanceof Vector)
+				thisThang=thingArrayCheck((Interactable[])((Vector)O).toArray(), srchStr, allFlag, exactOnly, myOccurrance, maxDepth);
+			if(thisThang!=null) return thisThang;
 		}
 		return null;
 	}
+	protected Interactable thingCheck(Interactable thisThang, String srchStr, boolean allFlag, boolean exact, int[] myOccurrance, int maxDepth)
+	{
+		if(exact)
+		{
+			if(thisThang.ID().equalsIgnoreCase(srchStr)||thisThang.name().equalsIgnoreCase(srchStr))
+				if((!allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0)))
+					if((--myOccurrance[0])<=0)
+						return thisThang;
+		}
+		else
+		{
+			if(containsString(thisThang.name(),srchStr)
+			   &&((!allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0))))
+				if((--myOccurrance[0])<=0)
+					return thisThang;
+		}
+		//NOTE: Not sure if this line is a good idea! Will check mobs instead of just bodys, but not mobs inventories
+		if((thisThang instanceof Body)&&(((Body)thisThang).mob()!=null))
+			return thingCheck(((Body)thisThang).mob(), srchStr, allFlag, exact, myOccurrance, 0);
+		if(maxDepth>0)
+		{
+			Interactable found=null;
+			ItemCollection col=ItemCollection.DefaultItemCol.getFrom(thisThang);
+			if(col!=null)
+			{
+				found=thingArrayCheck((Item[])col.allItems().toArray(), srchStr, allFlag, exact, myOccurrance, maxDepth-1);
+				if(found!=null) return found;
+			}
+			if(thisThang instanceof Room)
+			{
+				Room R=(Room)thisThang;
+				for(int i=0;i<R.numExits();i++)
+				{
+					Exit E=R.getExit(i);
+					if(E!=null) found=thingCheck(E, srchStr, allFlag, exact, myOccurrance, maxDepth-1);
+					if(found!=null) return found;
+				}
+			}
+		}
+		return null;
+	}
+	protected Interactable thingArrayCheck(Interactable[] stuff, String srchStr, boolean allFlag, boolean exact, int[] myOccurrance, int maxDepth)
+	{
+		Interactable thing=null;
+		for(Interactable I : stuff)
+		{
+			if(I==null) continue;
+			if((thing=thingCheck(I, srchStr, allFlag, exact, myOccurrance, maxDepth))!=null)
+				break;
+		}
+		return thing;
+	}
 
-	public Vector fetchInteractables(Vector<? extends Interactable> list, String srchStr, boolean exactOnly)
+	public Vector<Interactable> fetchInteractables(Vector<? extends Interactable> list, String srchStr, boolean exactOnly)
 	{
 		Object[] flags=fetchFlags(srchStr);
 		Vector matches=new Vector(1);
@@ -647,57 +684,6 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 		}
 		return matches;
 	}
-
-	public Interactable fetchInteractable(Hashtable<String, Interactable> list, String srchStr, boolean exactOnly)
-	{
-		Object[] flags=fetchFlags(srchStr);
-		if(flags==null) return null;
-
-		srchStr=(String)flags[FLAG_STR];
-		int myOccurrance=((Integer)flags[FLAG_DOT]).intValue();
-		boolean allFlag=((Boolean)flags[FLAG_ALL]).booleanValue();
-
-		if(list.get(srchStr)!=null)
-			return list.get(srchStr);
-		Interactable thisThang=null;
-		if(exactOnly)
-		{
-			if(srchStr.startsWith("$")) srchStr=srchStr.substring(1);
-			if(srchStr.endsWith("$")) srchStr=srchStr.substring(0,srchStr.length()-1);
-			for(Enumeration<Interactable> e=list.elements();e.hasMoreElements();)
-			{
-				thisThang=e.nextElement();
-				if(thisThang.ID().equalsIgnoreCase(srchStr)
-				||thisThang.name().equalsIgnoreCase(srchStr))
-					if((!allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0)))
-						if((--myOccurrance)<=0)
-							return thisThang;
-			}
-		}
-		else
-		{
-			myOccurrance=((Integer)flags[FLAG_DOT]).intValue();
-			for(Enumeration<Interactable> e=list.elements();e.hasMoreElements();)
-			{
-				thisThang=e.nextElement();
-				if((containsString(thisThang.name(),srchStr))
-				&&((!allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0))))
-					if((--myOccurrance)<=0)
-						return thisThang;
-			}
-			myOccurrance=((Integer)flags[FLAG_DOT]).intValue();
-			for(Enumeration<Interactable> e=list.elements();e.hasMoreElements();)
-			{
-				thisThang=e.nextElement();
-				if((containsString(thisThang.displayText(),srchStr))
-				||((thisThang instanceof MOB)&&containsString(((MOB)thisThang).genericName(),srchStr)))
-					if((--myOccurrance)<=0)
-						return thisThang;
-			}
-		}
-		return null;
-	}
-
 	public int getContextNumber(Object[] list, Interactable E){ return getContextNumber(CMParms.makeVector(list),E);}
 	public int getContextNumber(Vector<? extends Interactable> list, Interactable E)
 	{
@@ -762,257 +748,32 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 		srchStr=(String)flags[FLAG_STR];
 		int myOccurrance=((Integer)flags[FLAG_DOT]).intValue();
 		boolean allFlag=((Boolean)flags[FLAG_ALL]).booleanValue();
-		Interactable thisThang=null;
 		if(exactOnly)
 		{
 			if(srchStr.startsWith("$")) srchStr=srchStr.substring(1);
 			if(srchStr.endsWith("$")) srchStr=srchStr.substring(0,srchStr.length()-1);
-			for(int i=0;i<list.length;i++)
-			{
-				thisThang=list[i];
-				if(thisThang!=null)
-					if(thisThang.ID().equalsIgnoreCase(srchStr)
-					||thisThang.name().equalsIgnoreCase(srchStr))
-						if((!allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0)))
-							if((--myOccurrance)<=0)
-								return thisThang;
-			}
+			for(Interactable thisThang : list)
+				if(   (thisThang!=null)
+					&&(thisThang.ID().equalsIgnoreCase(srchStr)||thisThang.name().equalsIgnoreCase(srchStr))
+					&&((!allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0)))
+					&&((--myOccurrance)<=0) )
+					return thisThang;
 		}
 		else
 		{
+			for(Interactable thisThang : list)
+				if(   (thisThang!=null)
+					&&(containsString(thisThang.name(),srchStr))
+					&&((!allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0)))
+					&&((--myOccurrance)<=0) )
+					return thisThang;
 			myOccurrance=((Integer)flags[FLAG_DOT]).intValue();
-			for(int i=0;i<list.length;i++)
-			{
-				thisThang=list[i];
-				if(thisThang!=null)
-					if((containsString(thisThang.name(),srchStr))
-					   &&((!allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0))))
-						if((--myOccurrance)<=0)
-							return thisThang;
-			}
-			myOccurrance=((Integer)flags[FLAG_DOT]).intValue();
-			for(int i=0;i<list.length;i++)
-			{
-				thisThang=list[i];
-				if(thisThang==null) continue;
-				if((containsString(thisThang.displayText(),srchStr))
-				||((thisThang instanceof MOB)&&containsString(((MOB)thisThang).genericName(),srchStr)))
-						if((--myOccurrance)<=0)
-							return thisThang;
-			}
-		}
-		return null;
-	}
-
-	public Item fetchAvailableItem(Vector list, String srchStr, boolean exactOnly)
-	{
-		Object[] flags=fetchFlags(srchStr);
-		if(flags==null) return null;
-
-		srchStr=(String)flags[FLAG_STR];
-		int myOccurrance=((Integer)flags[FLAG_DOT]).intValue();
-		boolean allFlag=((Boolean)flags[FLAG_ALL]).booleanValue();
-
-		if(exactOnly)
-		{
-			try
-			{
-				if(srchStr.startsWith("$")) srchStr=srchStr.substring(1);
-				if(srchStr.endsWith("$")) srchStr=srchStr.substring(0,srchStr.length()-1);
-				for(int i=0;i<list.size();i++)
-				{
-					Item thisThang=(Item)list.elementAt(i);
-
-					if((thisThang.ID().equalsIgnoreCase(srchStr)
-					   ||(thisThang.name().equalsIgnoreCase(srchStr))))
-						if((!allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0)))
-							if((--myOccurrance)<=0)
-								return thisThang;
-				}
-			}
-			catch(java.lang.ArrayIndexOutOfBoundsException x){}
-		}
-		else
-		{
-			try
-			{
-				for(int i=0;i<list.size();i++)
-				{
-					Item thisThang=(Item)list.elementAt(i);
-
-					if(((containsString(thisThang.name(),srchStr))
-					   &&((!allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0)))))
-						if((--myOccurrance)<=0)
-							return thisThang;
-				}
-			}
-			catch(java.lang.ArrayIndexOutOfBoundsException x){}
-			myOccurrance=((Integer)flags[FLAG_DOT]).intValue();
-			try
-			{
-				Item thisThang=null;
-				for(int i=0;i<list.size();i++)
-				{
-					thisThang=(Item)list.elementAt(i);
-					if(containsString(thisThang.displayText(),srchStr))
-						if((--myOccurrance)<=0)
-							return thisThang;
-				}
-			}
-			catch(java.lang.ArrayIndexOutOfBoundsException x){}
-		}
-		return null;
-	}
-
-	public Vector fetchAvailableItems(Vector list, String srchStr, boolean exactOnly)
-	{
-		Vector matches=new Vector();
-		Object[] flags=fetchFlags(srchStr);
-		if(flags==null) return matches;
-
-		srchStr=(String)flags[FLAG_STR];
-		int myOccurrance=((Integer)flags[FLAG_DOT]).intValue();
-		boolean allFlag=((Boolean)flags[FLAG_ALL]).booleanValue();
-
-		if(exactOnly)
-		{
-			try
-			{
-				if(srchStr.startsWith("$")) srchStr=srchStr.substring(1);
-				if(srchStr.endsWith("$")) srchStr=srchStr.substring(0,srchStr.length()-1);
-				for(int i=0;i<list.size();i++)
-				{
-					Item thisThang=(Item)list.elementAt(i);
-
-					if((thisThang.ID().equalsIgnoreCase(srchStr)
-					   ||(thisThang.name().equalsIgnoreCase(srchStr))))
-						if((!allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0)))
-							if((--myOccurrance)<=0)
-								matches.addElement(thisThang);
-				}
-			}
-			catch(java.lang.ArrayIndexOutOfBoundsException x){}
-		}
-		else
-		{
-			try
-			{
-				for(int i=0;i<list.size();i++)
-				{
-					Item thisThang=(Item)list.elementAt(i);
-
-					if(((containsString(thisThang.name(),srchStr))
-					   &&((!allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0)))))
-						if((--myOccurrance)<=0)
-							matches.addElement(thisThang);
-				}
-			}
-			catch(java.lang.ArrayIndexOutOfBoundsException x){}
-			if(matches.size()==0)
-			{
-				myOccurrance=((Integer)flags[FLAG_DOT]).intValue();
-				try
-				{
-					Item thisThang=null;
-					for(int i=0;i<list.size();i++)
-					{
-						thisThang=(Item)list.elementAt(i);
-						if(containsString(thisThang.displayText(),srchStr))
-							if((--myOccurrance)<=0)
-								matches.addElement(thisThang);
-					}
-				}
-				catch(java.lang.ArrayIndexOutOfBoundsException x){}
-			}
-		}
-		return matches;
-	}
-
-	public Interactable fetchAvailable(Vector<? extends Interactable> list, String srchStr, boolean exactOnly)
-	{
-		Object[] flags=fetchFlags(srchStr);
-		if(flags==null) return null;
-
-		srchStr=(String)flags[FLAG_STR];
-		int myOccurrance=((Integer)flags[FLAG_DOT]).intValue();
-		boolean allFlag=((Boolean)flags[FLAG_ALL]).booleanValue();
-
-		Interactable E=null;
-		Item thisThang=null;
-		if(exactOnly)
-		{
-			try
-			{
-				if(srchStr.startsWith("$")) srchStr=srchStr.substring(1);
-				if(srchStr.endsWith("$")) srchStr=srchStr.substring(0,srchStr.length()-1);
-				for(int i=0;i<list.size();i++)
-				{
-					E=list.elementAt(i);
-					if(E instanceof Item)
-					{
-						thisThang=(Item)E;
-						if((thisThang.ID().equalsIgnoreCase(srchStr)
-						   ||(thisThang.name().equalsIgnoreCase(srchStr))))
-							if((!allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0)))
-								if((--myOccurrance)<=0)
-									return thisThang;
-					}
-					else
-					if(E.ID().equalsIgnoreCase(srchStr)
-					||E.name().equalsIgnoreCase(srchStr))
-						if((!allFlag)||((E.displayText()!=null)&&(E.displayText().length()>0)))
-							if((--myOccurrance)<=0)
-								return E;
-					}
-			}
-			catch(java.lang.ArrayIndexOutOfBoundsException x){}
-		}
-		else
-		{
-			try
-			{
-				for(int i=0;i<list.size();i++)
-				{
-					E=list.elementAt(i);
-					if(E instanceof Item)
-					{
-						thisThang=(Item)E;
-
-						if(((containsString(thisThang.name(),srchStr))
-						   &&((!allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0)))))
-							if((--myOccurrance)<=0)
-								return thisThang;
-					}
-					else
-					if((containsString(E.name(),srchStr))
-					&&((!allFlag)||((E.displayText()!=null)&&(E.displayText().length()>0))))
-						if((--myOccurrance)<=0)
-							return E;
-
-				}
-			}
-			catch(java.lang.ArrayIndexOutOfBoundsException x){}
-			myOccurrance=((Integer)flags[FLAG_DOT]).intValue();
-			try
-			{
-				for(int i=0;i<list.size();i++)
-				{
-					E=list.elementAt(i);
-					if(E instanceof Item)
-					{
-						thisThang=(Item)E;
-						if(containsString(thisThang.displayText(),srchStr))
-							if((--myOccurrance)<=0)
-								return thisThang;
-					}
-					else
-					if((containsString(E.displayText(),srchStr))
-					||((E instanceof MOB)&&containsString(((MOB)E).genericName(),srchStr)))
-						if((--myOccurrance)<=0)
-							return E;
-				}
-			}
-			catch(java.lang.ArrayIndexOutOfBoundsException x){}
+			for(Interactable thisThang : list)
+				if(   (thisThang!=null)
+					&&((containsString(thisThang.displayText(),srchStr))
+						||((thisThang instanceof MOB)&&containsString(((MOB)thisThang).genericName(),srchStr)))
+					&&((--myOccurrance)<=0) )
+					return thisThang;
 		}
 		return null;
 	}
@@ -1061,10 +822,30 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 		return V;
 	}
 
-
-	public Vector possibleContainers(MOB mob, Vector commands, boolean withContentOnly)
+	public int getPartitionIndex(Vector<String> commands, String partitionName)
 	{
-		Vector V=new Vector();
+		for(int i=1; i<commands.size()-1; i++)
+			if(partitionName.equalsIgnoreCase(commands.get(i)))
+			{
+				commands.remove(i);
+				return i;
+			}
+		return -1;
+	}
+	public int getPartitionIndex(Vector<String> commands, String partitionName, int defaultTo)
+	{
+		for(int i=1; i<commands.size()-1; i++)
+			if(partitionName.equalsIgnoreCase(commands.get(i)))
+			{
+				commands.remove(i);
+				return i;
+			}
+		return defaultTo;
+	}
+
+	public Vector<Container> possibleContainers(MOB mob, Vector commands, boolean withContentOnly)
+	{
+		Vector<Container> V=new Vector();
 		if(commands.size()==1)
 			return V;
 
@@ -1136,7 +917,7 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 		return V;
 	}
 
-	public Item possibleContainer(MOB mob, Vector commands, boolean withStuff)
+	public Container possibleContainer(MOB mob, Vector commands, boolean withStuff)
 	{
 		if(commands.size()==1)
 			return null;
@@ -1157,7 +938,7 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 				commands.removeElementAt(fromDex);
 			while(commands.size()>containerDex)
 				commands.removeElementAt(containerDex);
-			return (Item)thisThang;
+			return (Container)thisThang;
 		}
 		return null;
 	}
@@ -1182,6 +963,8 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 		return days+"d "+hours+"h "+minutes+"m "+seconds+"s "+millis+"ms"+avg;
 	}
 
+	//Return max_value if not specified. Return a value + command "all" if specified. Return -1 if fail.
+	//TODO: Reprogram this and make it sensible.
 	public int calculateMaxToGive(MOB mob, Vector commands, boolean breakPackages, Interactable checkWhat, boolean getOnly)
 	{
 		int maxToGive=Integer.MAX_VALUE;
@@ -1193,12 +976,6 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 			commands.setElementAt("all",0);
 			if(breakPackages)
 			{
-				boolean throwError=false;
-				if((commands.size()>2)&&("FROM".startsWith(((String)commands.elementAt(1)).toUpperCase())))
-				{
-					throwError=true;
-					commands.removeElementAt(1);
-				}
 				String packCheckName=CMParms.combine(commands,1);
 				Interactable fromWhat=null;
 				if(checkWhat instanceof MOB)
@@ -1215,15 +992,6 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 						return -1;
 					}
 //					Interactable toWhat=CMLib.materials().unbundle((Item)fromWhat,maxToGive);
-//					if(toWhat==null)
-//					{
-						if(throwError)
-						{
-							mob.tell("You can't get anything from "+fromWhat.name()+".");
-							return -1;
-						}
-/*					}
-					else
 					if(getOnly&&mob.isMine(fromWhat)&&mob.isMine(toWhat))
 					{
 						mob.tell("Ok");
@@ -1238,13 +1006,7 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 						commands.clear();
 						commands.addElement(o);
 						commands.addElement(toWhat.name());
-					} */
-				}
-				else
-				if(throwError)
-				{
-					mob.tell("You don't see '"+packCheckName+"' here.");
-					return -1;
+					}
 				}
 			}
 		}
@@ -1580,6 +1342,113 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 					room.getItemCollection().addItem(C);
 					return C;
 				}
+			}
+		}
+		return null;
+	}
+	public int fetchInteractableIndex(Vector<? extends Interactable> list, String srchStr, boolean exactOnly)
+	{
+		Object[] flags=fetchFlags(srchStr);
+		if(flags==null) return -1;
+
+		srchStr=(String)flags[FLAG_STR];
+		int myOccurrance=((Integer)flags[FLAG_DOT]).intValue();
+		boolean allFlag=((Boolean)flags[FLAG_ALL]).booleanValue();
+		Interactable thisThang=null;
+		if(exactOnly)
+		{
+			if(srchStr.startsWith("$")) srchStr=srchStr.substring(1);
+			if(srchStr.endsWith("$")) srchStr=srchStr.substring(0,srchStr.length()-1);
+			try
+			{
+				for(int i=0;i<list.size();i++)
+				{
+					thisThang=list.elementAt(i);
+					if(thisThang.ID().equalsIgnoreCase(srchStr)
+					   ||thisThang.name().equalsIgnoreCase(srchStr))
+						if((!allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0)))
+							if((--myOccurrance)<=0)
+								return i;
+				}
+			}
+			catch(java.lang.ArrayIndexOutOfBoundsException x){}
+		}
+		else
+		{
+			myOccurrance=((Integer)flags[FLAG_DOT]).intValue();
+			try
+			{
+				for(int i=0;i<list.size();i++)
+				{
+					thisThang=list.elementAt(i);
+					if(containsString(thisThang.name(),srchStr)
+					   &&((!allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0))))
+						if((--myOccurrance)<=0)
+							return i;
+				}
+			}
+			catch(java.lang.ArrayIndexOutOfBoundsException x){}
+			myOccurrance=((Integer)flags[FLAG_DOT]).intValue();
+			try
+			{
+				for(int i=0;i<list.size();i++)
+				{
+					thisThang=list.elementAt(i);
+					if((containsString(thisThang.displayText(),srchStr)
+						||((thisThang instanceof MOB)&&containsString(((MOB)thisThang).genericName(),srchStr))))
+							if((--myOccurrance)<=0)
+								return i;
+				}
+			}
+			catch(java.lang.ArrayIndexOutOfBoundsException x){}
+		}
+		return -1;
+	}
+	public Interactable fetchInteractable(Hashtable<String, Interactable> list, String srchStr, boolean exactOnly)
+	{
+		Object[] flags=fetchFlags(srchStr);
+		if(flags==null) return null;
+
+		srchStr=(String)flags[FLAG_STR];
+		int myOccurrance=((Integer)flags[FLAG_DOT]).intValue();
+		boolean allFlag=((Boolean)flags[FLAG_ALL]).booleanValue();
+
+		if(list.get(srchStr)!=null)
+			return list.get(srchStr);
+		Interactable thisThang=null;
+		if(exactOnly)
+		{
+			if(srchStr.startsWith("$")) srchStr=srchStr.substring(1);
+			if(srchStr.endsWith("$")) srchStr=srchStr.substring(0,srchStr.length()-1);
+			for(Enumeration<Interactable> e=list.elements();e.hasMoreElements();)
+			{
+				thisThang=e.nextElement();
+				if(thisThang.ID().equalsIgnoreCase(srchStr)
+				||thisThang.name().equalsIgnoreCase(srchStr))
+					if((!allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0)))
+						if((--myOccurrance)<=0)
+							return thisThang;
+			}
+		}
+		else
+		{
+			myOccurrance=((Integer)flags[FLAG_DOT]).intValue();
+			for(Enumeration<Interactable> e=list.elements();e.hasMoreElements();)
+			{
+				thisThang=e.nextElement();
+				if((containsString(thisThang.name(),srchStr))
+				&&((!allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0))))
+					if((--myOccurrance)<=0)
+						return thisThang;
+			}
+			myOccurrance=((Integer)flags[FLAG_DOT]).intValue();
+			for(Enumeration<Interactable> e=list.elements();e.hasMoreElements();)
+			{
+				thisThang=e.nextElement();
+				if((containsString(thisThang.displayText(),srchStr))
+				||((thisThang instanceof MOB)&&containsString(((MOB)thisThang).genericName(),srchStr)))
+					if((--myOccurrance)<=0)
+						return thisThang;
 			}
 		}
 		return null;

@@ -71,14 +71,118 @@ public class CommonMsgs extends StdLibrary implements CommonCommands
 		return false;
 	}
 
-	public StringBuilder getScore(MOB mob)
+	public StringBuilder getScore(MOB mob){return getScore(mob,"");}
+	public StringBuilder getScore(MOB mob, String parm)
 	{
-		Vector V=new Vector();
-		forceStandardCommand(mob,"Score",V);
-		if((V.size()==1)&&(V.firstElement() instanceof StringBuilder))
-			return (StringBuilder)V.firstElement();
-		return new StringBuilder("");
+		StringBuilder msg=new StringBuilder("^N");
+		msg.append("You are ^H"+mob.Name()+"^?.\n\r");
+/*
+		String genderName="neuter";
+		if(mob.charStats().gender()=='M') genderName="male";
+		else
+		if(mob.charStats().gender()=='F') genderName="female";
+		msg.append("You are a ");
+		if(mob.baseCharStats().age()>0)
+			msg.append("^!"+mob.baseCharStats().age()+"^? year old ");
+		msg.append("^!"+genderName);
+		if((!CMSecurity.isDisabled("RACES")))
+			msg.append(" "+mob.charStats().getMyRace().name() + "^?");
+		else
+			msg.append("^?");
+		msg.append(".\n\r");
+*/
+		msg.append("\n\r^NYour character stats are: ");
+		msg.append("\n\r");
+		CharStats CT=mob.charStats();
+		if(parm.equalsIgnoreCase("BASE")) CT=mob.baseCharStats();
+		for(CharStats.Stat i : CharStats.Stat.values())
+			if(CT.getStat(i)!=-1)
+			msg.append(CMStrings.padRight("^<HELP^>" + CMStrings.capitalizeAndLower(i.toString())+"^</HELP^>",15)
+					+": "
+					+CMStrings.padRight(Integer.toString(CT.getStat(i)),3)
+					+"\n\r");
+		msg.append("^N^!");
+		msg.append("^?\n\r");
+		Body body=mob.body();
+		if(body!=null)
+		{
+			msg.append("\n\r^NYour body stats are: ");
+			msg.append("\n\r");
+			CT=body.charStats();
+			if(parm.equalsIgnoreCase("BASE")) CT=body.baseCharStats();
+			for(CharStats.Stat i : CharStats.Stat.values())
+				if(CT.getStat(i)!=-1)
+				msg.append(CMStrings.padRight("^<HELP^>" + CMStrings.capitalizeAndLower(i.toString())+"^</HELP^>",15)
+						+": "
+						+CMStrings.padRight(Integer.toString(CT.getStat(i)),3)
+						+"\n\r");
+			msg.append("^N^!");
+			msg.append("^?\n\r");
+			msg.append("You have ^H"+body.charStats().getPoints(CharStats.Points.HIT)+"/"+body.charStats().getMaxPoints(CharStats.Points.HIT)+"^? ^<HELP^>hit points^</HELP^> and ^H");
+			msg.append(body.charStats().getPoints(CharStats.Points.MANA)+"/"+body.charStats().getMaxPoints(CharStats.Points.MANA)+"^? ^<HELP^>mana^</HELP^>.\n\r");
+			msg.append("You are ^!"+body.getEnvObject().envStats().height()+"^? inches tall.\n\r");
+		}
+//		if(CMSecurity.isAllowed(mob,mob.location(),"CARRYALL"))
+//			msg.append("You are carrying ^!"+mob.numItems()+"^? items weighing ^!"+mob.envStats().weight()+"^? pounds.\n\r");
+//		msg.append("You have been online for ^!"+Math.round(CMath.div(mob.getAgeHours(),60.0))+"^? hours.\n\r");
+//		msg.append("Your ^<HELP^>armored defence^</HELP^> is: ^H"+CMLib.combat().armorStr(mob)+"^?.\n\r");
+//		msg.append("Your ^<HELP^>combat prowess^</HELP^> is : ^H"+CMLib.combat().fightingProwessStr(mob)+"^?.\n\r");
+		//if(CMLib.flags().canSeeHidden(mob))
+		//	msg.append("Your ^<HELP^>observation score^</HELP^> : ^H"+CMLib.flags().getDetectScore(mob)+"^?.\n\r");
+		int pct=(int)(5.5*mob.charStats().getPointsPercent(CharStats.Points.FATIGUE));
+		switch(pct)
+		{
+			case 0:
+				msg.append("^!You are about to drop!^?\n\r");
+				break;
+			case 1:
+				msg.append("^!You are exhausted.^?\n\r");
+				break;
+			case 2:
+				msg.append("^!You are winded.^?\n\r");
+				break;
+			case 3:
+				msg.append("^!You are tired.^?\n\r");
+				break;
+			case 4:
+				msg.append("^!You are a bit tired.^?\n\r");
+				break;
+		}
+		pct=(int)(4.5*mob.charStats().getPointsPercent(CharStats.Points.HUNGER));
+		switch(pct)
+		{
+			case 0:
+				msg.append("^!You are starving!^?\n\r");
+				break;
+			case 1:
+				msg.append("^!You need to eat something.^?\n\r");
+				break;
+			case 2:
+				msg.append("^!You are hungry.^?\n\r");
+				break;
+			case 3:
+				msg.append("^!You could eat a snack.^?\n\r");
+				break;
+		}
+		pct=(int)(4.5*mob.charStats().getPointsPercent(CharStats.Points.THIRST));
+		switch(pct)
+		{
+			case 0:
+				msg.append("^!You are dying of thirst!^?\n\r");
+				break;
+			case 1:
+				msg.append("^!You need to drink something.^?\n\r");
+				break;
+			case 2:
+				msg.append("^!You are parched.^?\n\r");
+				break;
+			case 3:
+				msg.append("^!You could use a drink.^?\n\r");
+				break;
+		}
+		return msg;
 	}
+
 	public StringBuilder getEquipment(MOB viewer, MOB mob)
 	{
 		Vector V=new Vector();
@@ -174,13 +278,12 @@ public class CommonMsgs extends StdLibrary implements CommonCommands
 			forceStandardCommand(mob,"Stand",CMParms.makeVector("STAND"));
 	}
 
-	public void postSay(MOB mob, MOB target,String text){ postSay(mob,target,text,false,false);}
-	public void postSay(MOB mob, String text){ postSay(mob,null,text,false,false);}
+	public void postSay(MOB mob, MOB target,String text){ postSay(mob,target,text,false);}
+	public void postSay(MOB mob, String text){ postSay(mob,null,text,false);}
 	public void postSay(MOB mob,
 						MOB target,
 						String text,
-						boolean isPrivate,
-						boolean tellFlag)
+						boolean isPrivate)
 	{
 		Room location=mob.location();
 		if(target!=null)
@@ -188,59 +291,9 @@ public class CommonMsgs extends StdLibrary implements CommonCommands
 		if(location==null) return;
 		if((isPrivate)&&(target!=null))
 		{
-			if(tellFlag)
-			{
-				String targetName=target.name();
-				{
-					boolean ignore=((target.playerStats()!=null)&&(target.playerStats().getIgnored().contains(mob.name())));
-					CMMsg msg=null;
-					msg=CMClass.getMsg(mob,target,null,EnumSet.of(CMMsg.MsgCode.TELL),"^t^<TELL \""+mob.name()+"\"^><S-NAME> tell(s) <T-NAME> '"+text+"'^</TELL^>^?^.");
-					if((mob.location().okMessage(mob,msg))
-					&&((ignore)||(target.okMessage(target,msg))))
-					{
-						mob.executeMsg(mob,msg);
-						if((mob!=target)&&(!ignore))
-						{
-							target.executeMsg(target,msg);
-							if(msg.trailerMsgs()!=null)
-							{
-								for(int i=0;i<msg.trailerMsgs().size();i++)
-								{
-									CMMsg msg2=(CMMsg)msg.trailerMsgs().elementAt(i);
-									if((msg!=msg2)&&(target.okMessage(target,msg2)))
-										target.executeMsg(target,msg2);
-								}
-								msg.trailerMsgs().clear();
-							}
-							if((!mob.isMonster())&&(!target.isMonster()))
-							{
-								if(mob.playerStats()!=null)
-								{
-									mob.playerStats().setReplyTo(target,PlayerStats.REPLY_TELL);
-									mob.playerStats().addTellStack(CMLib.coffeeFilter().fullOutFilter(mob.session(),mob,mob,target,null,CMStrings.removeColors(msg.sourceMessage()),false));
-								}
-								if(target.playerStats()!=null)
-								{
-									target.playerStats().setReplyTo(mob,PlayerStats.REPLY_TELL);
-									String str=msg.targetMessage();
-									//TODO: Language stuff here?
-//									if((msg.tool() instanceof Ability)
-//									&&((((Ability)msg.tool()).classificationCode() & Ability.ALL_ACODES)==Ability.ACODE_LANGUAGE)
-//									&&(target.fetchEffect(msg.tool().ID()) != null))
-//										str=CMStrings.substituteSayInMessage(str,CMStrings.getSayFromMessage(msg.sourceMessage()));
-									target.playerStats().addTellStack(CMLib.coffeeFilter().fullOutFilter(target.session(),target,mob,target,null,CMStrings.removeColors(str),false));
-								}
-							}
-						}
-					}
-				}
-			}
-			else
-			{
-				CMMsg msg=CMClass.getMsg(mob,target,null,EnumSet.of(CMMsg.MsgCode.SPEAK),"^T^<SAY \""+target.name()+"\"^><S-NAME> say(s) '"+text+"' to <T-NAMESELF>.^</SAY^>^?",EnumSet.of(CMMsg.MsgCode.SPEAK),"^T^<SAY \""+mob.name()+"\"^><S-NAME> say(s) '"+text+"' to <T-NAMESELF>.^</SAY^>^?",EnumSet.noneOf(CMMsg.MsgCode.class),null);
-				if(location.okMessage(location,msg))
-					location.send(msg);
-			}
+			CMMsg msg=CMClass.getMsg(mob,target,null,EnumSet.of(CMMsg.MsgCode.SPEAK),"^T^<SAY \""+target.name()+"\"^><S-NAME> say(s) '"+text+"' to <T-NAMESELF>.^</SAY^>^?",EnumSet.of(CMMsg.MsgCode.SPEAK),"^T^<SAY \""+mob.name()+"\"^><S-NAME> say(s) '"+text+"' to <T-NAMESELF>.^</SAY^>^?",EnumSet.noneOf(CMMsg.MsgCode.class),null);
+			if(location.okMessage(location,msg))
+				location.send(msg);
 		}
 		else
 		if(!isPrivate)

@@ -1,8 +1,12 @@
 package com.planet_ink.coffee_mud.core;
 import java.util.*;
+//NOTE: This object is not naturally synchronized, but SHOULD be synchronized or carefully handled.
 @SuppressWarnings("unchecked")
 public class WVector<E> implements Cloneable
 {
+	private Vector<WeightedObject<E>> objects=new Vector<WeightedObject<E>>();
+	private int totalWeight=0;
+
 	private class WeightedObject<E>
 	{
 		private E O;
@@ -14,8 +18,6 @@ public class WVector<E> implements Cloneable
 		public int weight(){return weight;}
 		public void setWeight(int weight){this.weight=weight;}
 	}
-	private Vector<WeightedObject<E>> objects=new Vector<WeightedObject<E>>();
-	private int totalWeight=0;
 
 	public int weight() {return totalWeight;}
 	public int size() {return objects.size();}
@@ -112,6 +114,18 @@ public class WVector<E> implements Cloneable
 			newThis.add(O.obj(), O.weight());
 		}
 		return newThis;
-		
+	}
+	public void simplify()
+	{
+		if(objects.size()==0) return;
+		int gcd=objects.get(0).weight();
+		for(int i=1;i<objects.size();i++)
+		{
+			gcd=CMath.gcd(objects.get(i).weight(),gcd);
+			if(gcd==1) return;
+		}
+		for(WeightedObject<E> O : (WeightedObject<E>[])()object.toArray())
+			O.setWeight(O.weight()/gcd);
+		totalWeight/=gcd;
 	}
 }

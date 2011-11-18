@@ -51,6 +51,7 @@ public class StdMOB implements MOB
 //	protected Room lastLocation=null;
 
 	protected Session mySession=null;
+	protected Session myTempSession=null;
 //	protected boolean pleaseDestroy=false;
 
 	protected Tickable.TickStat tickStatus=Tickable.TickStat.Not;
@@ -243,18 +244,23 @@ public class StdMOB implements MOB
 			return (Room)O;
 		return null;
 	}
-	public void setLocation(ItemCollection newPlace)
+	public void setLocation(Room newPlace)
 	{
 		if(myBody==null) return;
 		myBody.setContainer(newPlace);
 	}
 	public Session session()
 	{
+		if(myTempSession!=null) return myTempSession;
 		return mySession;
 	}
 	public void setSession(Session newSession)
 	{
 		mySession=newSession;
+	}
+	public void setTempSession(Session newSession)
+	{
+		myTempSession=newSession;
 	}
 
 	public String displayName(MOB viewer)

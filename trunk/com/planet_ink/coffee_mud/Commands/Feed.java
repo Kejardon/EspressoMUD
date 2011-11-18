@@ -47,26 +47,23 @@ public class Feed extends StdCommand
 			return false;
 		}
 		commands.removeElementAt(0);
-		String what=(String)commands.lastElement();
-		commands.removeElement(what);
-		String whom=CMParms.combine(commands,0);
+
+		int partition=CMLib.english().getPartitionIndex(commands, "to", commands.size()-1);
+
+		String what=CMParms.combine(commands,partition);
+		String whom=CMParms.combine(commands,0,partition);
 		MOB target=mob.location().fetchInhabitant(whom);
-		if((target==null)||(!CMLib.flags().canBeSeenBy(target,mob)))
+		if(target==null)
 		{
 			mob.tell("I don't see "+whom+" here.");
 			return false;
 		}
-		if(target.willFollowOrdersOf(mob)||(CMLib.flags().isBoundOrHeld(target)))
+		if(target.willFollowOrdersOf(mob))
 		{
-			Item item=mob.fetchInventory(null,what);
-			if((item==null)||(!CMLib.flags().canBeSeenBy(item,mob)))
+			Item item=mob.fetchInventory(what);
+			if(item==null)
 			{
 				mob.tell("I don't see "+what+" here.");
-				return false;
-			}
-			if(!item.amWearingAt(Wearable.IN_INVENTORY))
-			{
-				mob.tell("You might want to remove that first.");
 				return false;
 			}
 			if((!(item instanceof Food))&&(!(item instanceof Drink)))
@@ -74,43 +71,17 @@ public class Feed extends StdCommand
 				mob.tell("You might want to try feeding them something edibile or drinkable.");
 				return false;
 			}
-			CMMsg msg=CMClass.getMsg(mob,target,item,CMMsg.MSG_NOISYMOVEMENT,"<S-NAME> feed(s) "+item.name()+" to <T-NAMESELF>.");
-			if(mob.location().okMessage(mob,msg))
-			{
-				mob.location().send(mob,msg);
-				if((CMLib.commands().postDrop(mob,item,true,false))
-				   &&(mob.location().isContent(item)))
-				{
-					msg=CMClass.getMsg(target,item,CMMsg.MASK_ALWAYS|CMMsg.MSG_GET,null);
-					target.location().send(target,msg);
-					if(target.isMine(item))
-					{
-						if(item instanceof Food)
-							msg=CMClass.getMsg(target,item,null,CMMsg.MASK_ALWAYS|CMMsg.MSG_EAT,CMMsg.MSG_EAT,CMMsg.MSG_EAT,null);
-						else
-							msg=CMClass.getMsg(target,item,null,CMMsg.MASK_ALWAYS|CMMsg.MSG_DRINK,CMMsg.MSG_DRINK,CMMsg.MSG_DRINK,null);
-						if(target.location().okMessage(target,msg))
-							target.location().send(target,msg);
-						if(target.isMine(item))
-						{
-							msg=CMClass.getMsg(target,item,null,CMMsg.MASK_ALWAYS|CMMsg.MSG_DROP,CMMsg.MSG_DROP,CMMsg.MSG_DROP,null);
-							if(mob.location().okMessage(mob,msg))
-							{
-								mob.location().send(mob,msg);
-								CMLib.commands().postGet(mob,null,item,true);
-							}
-						}
-					}
-				}
-			}
+			EnumSet<CMMsg.MsgCode> code=null;
+			if(item instanceof Food)
+				code=EnumSet.of(CMMsg.MsgCode.EAT);
+			else
+				code=EnumSet.of(CMMsg.MsgCode.DRINK);
+			mob.location().doMessage(CMClass.getMsg(mob,target,item,code,"<S-NAME> feed(s) "+item.name()+" to <T-NAMESELF>."));
 		}
 		else
 			mob.tell(target.name()+" won't let you.");
 		return false;
 	}
-    public double combatActionsCost(MOB mob, Vector cmds){return CMath.div(CMProps.getIntVar(CMProps.SYSTEMI_DEFCOMCMDTIME),100.0);}
-    public double actionsCost(MOB mob, Vector cmds){return CMath.div(CMProps.getIntVar(CMProps.SYSTEMI_DEFCMDTIME),100.0);}
+	public double actionsCost(MOB mob, Vector cmds){return DEFAULT_NONCOMBATACTION;}
 	public boolean canBeOrdered(){return true;}
-
-	
 }

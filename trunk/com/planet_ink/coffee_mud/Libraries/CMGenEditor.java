@@ -414,57 +414,53 @@ public class CMGenEditor extends StdLibrary implements GenericEditor
 		return null;
 	}
 
-	public void modExits(Vector<Exit> exits, Vector<Room> destinations, MOB M)
+	public void modExits(Vector<Room.REMap> exits, MOB M)
 	{
 		boolean done=false;
 		while((M.session()!=null)&&(!M.session().killFlag())&&(!done))
 		{
-			synchronized(exits)
+			Vector<Room.REMap> V=(Vector)exits.clone();
+			int i=0;
+			for(;i<V.size();i++)
 			{
-				int i=0;
-				for(;i<exits.size();i++)
+				Exit e=V.get(i).exit;
+				M.session().rawPrintln((1+i)+". "+e.ID()+" "+e.exitID()+" to "+V.get(i).room.roomID());
+			}
+			M.session().rawPrintln((1+i)+". New Element");
+			i=CMath.s_int(M.session().prompt("Edit which? ",""));
+			if(--i<0) done=true;
+			else if(i==V.size())
+			{
+				Exit e=newAnyExit(M);
+				if(e!=null)
 				{
-					Exit e=exits.get(i);
-					M.session().rawPrintln((1+i)+". "+e.ID()+" "+e.exitID()+" to "+destinations.get(i).roomID());
-				}
-				M.session().rawPrintln((1+i)+". New Element");
-				i=CMath.s_int(M.session().prompt("Edit which? ",""));
-				if(--i<0) done=true;
-				else if(i==exits.size())
-				{
-					Exit e=newAnyExit(M);
-					if(e!=null)
+					CMLib.genEd().genMiscSet(M, e);
+					Room R=null;
+					while(R==null)
 					{
-						CMLib.genEd().genMiscSet(M, e);
-						Room R=null;
-						while(R==null)
-						{
-							String roomID=M.session().prompt("Connect this exit to what room? ","");
-							if(roomID.equals("")) break;
-							R=CMLib.map().getRoom(roomID);
-						}
-						if(R!=null)
-						{
-							exits.add(e);
-							destinations.add(R);
-						}
+						String roomID=M.session().prompt("Connect this exit to what room? ","");
+						if(roomID.equals("")) break;
+						R=CMLib.map().getRoom(roomID);
 					}
+					if(R!=null)
+						exits.add(new REMap(R, e));
 				}
-				else if(i<exits.size())
+			}
+			else if(i<V.size())
+			{
+				char action=M.session().prompt("Edit (E)xit, target (R)oom, or (D)estroy link?","").trim().toUpperCase().charAt(0);
+				if(action=='D') { exits.remove(V.get(i)); }
+				else if(action=='E') CMLib.genEd().genMiscSet(M, V.get(i).exit);
+				else if(action=='R')
 				{
-					char action=M.session().prompt("Edit (E)xit, target (R)oom, or (D)estroy link?","").trim().toUpperCase().charAt(0);
-					if(action=='D') { exits.remove(i); destinations.remove(i); }
-					else if(action=='E') CMLib.genEd().genMiscSet(M, exits.get(i));
-					else if(action=='R')
+					Room R=null;
+					while(R==null)
 					{
-						Room R=null;
-						while(R==null)
-						{
-							String roomID=M.session().prompt("Connect this exit to what room? ","");
-							if(roomID.equals("")) break;
-							R=CMLib.map().getRoom(roomID);
-						}
+						String roomID=M.session().prompt("Connect this exit to what room? ","");
+						if(roomID.equals("")) break;
+						R=CMLib.map().getRoom(roomID);
 					}
+					if(R!=null) exits.changeExit(V.get(i), R);
 				}
 			}
 		}

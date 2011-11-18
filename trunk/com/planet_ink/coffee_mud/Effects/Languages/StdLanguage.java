@@ -333,7 +333,7 @@ public class StdLanguage extends StdEffect implements Language
 
 		if((affected instanceof MOB)
 		&&(!msg.isSource((MOB)affected))
-		&&(msg.hasSourceCode(CMMsg.MsgCode.SPEAK, CMMsg.MsgCode.TELL, CMMsg.MsgCode.CHANNEL))
+		&&(msg.hasSourceCode(CMMsg.MsgCode.SPEAK, CMMsg.MsgCode.CHANNEL))
 		&&(msg.tool() !=null)
 		&&(msg.sourceMessage()!=null))
 		{

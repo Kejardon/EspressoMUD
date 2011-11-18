@@ -89,6 +89,7 @@ public interface MOB extends ItemCollection.ItemHolder, Interactable, CMSavable,
 	/** Whether a sessiob object is attached to this MOB */
 	public Session session();
 	public void setSession(Session newSession);
+	public void setTempSession(Session newSession);
 	public boolean isMonster();
 
 	// Alternate body stuff. I'll figure this out later.
@@ -117,7 +118,7 @@ public interface MOB extends ItemCollection.ItemHolder, Interactable, CMSavable,
 //	public Room getStartRoom();
 //	public void setStartRoom(Room newRoom);
 	public Room location();
-	public void setLocation(ItemCollection newPlace);
+	public void setLocation(Room newPlace);
 /*
 	public Item fetchWornItem(String itemName);
 	public Vector fetchWornItems(long wornCode, short aboveOrAroundLayer, short layerAttributes);

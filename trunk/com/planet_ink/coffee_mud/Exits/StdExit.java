@@ -49,6 +49,7 @@ public class StdExit implements Exit
 	protected long lastTick=0;
 	protected Tickable.TickStat tickStatus=Tickable.TickStat.Not;
 	protected boolean amDestroyed=false;
+	protected boolean needSave=false;
 
 	protected Environmental myEnvironmental=new Environmental.DefaultEnv(this);
 	protected Closeable myDoor=null;
@@ -79,6 +80,8 @@ public class StdExit implements Exit
 	}
 	public boolean visibleExit(MOB mob, Room destination) {return visible; }
 	public void setVisible(boolean b){visible = b;}
+	public boolean needSave(){return needSave;}
+	public void setSave(boolean b){needSave=b;}
 
 	public int priority(ListenHolder L){return Integer.MAX_VALUE;}
 	public void registerListeners(ListenHolder here) { here.addListener(this, lFlags); }

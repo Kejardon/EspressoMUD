@@ -22,7 +22,7 @@ import java.util.*;
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+	   http://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -46,19 +46,15 @@ public class Emote extends StdCommand
 			return false;
 		}
 		String combinedCommands=CMParms.combine(commands,1);
-		combinedCommands=CMProps.applyINIFilter(combinedCommands,CMProps.SYSTEM_EMOTEFILTER);
-        if(combinedCommands.trim().startsWith("'")||combinedCommands.trim().startsWith("`"))
-            combinedCommands=combinedCommands.trim();
-        else
-            combinedCommands=" "+combinedCommands.trim();
-		String emote="^E<S-NAME>"+combinedCommands+" ^?";
-		CMMsg msg=CMClass.getMsg(mob,null,null,CMMsg.MSG_EMOTE,"^E"+mob.name()+combinedCommands+" ^?",emote,emote);
-		if(mob.location().okMessage(mob,msg))
-			mob.location().send(mob,msg);
+		if(combinedCommands.trim().startsWith("'")||combinedCommands.trim().startsWith("`"))
+			combinedCommands=combinedCommands.trim();
+		else
+			combinedCommands=" "+combinedCommands.trim();
+		CMMsg msg=CMClass.getMsg(mob,null,null,EnumSet.of(CMMsg.MsgCode.EMOTE),"^E<S-NAME>"+combinedCommands+" ^?");
+		mob.location().doMessage(msg);
 		return false;
 	}
-    public double combatActionsCost(MOB mob, Vector cmds){return CMath.div(CMProps.getIntVar(CMProps.SYSTEMI_DEFCOMCMDTIME),100.0);}
-    public double actionsCost(MOB mob, Vector cmds){return CMath.div(CMProps.getIntVar(CMProps.SYSTEMI_DEFCMDTIME),100.0);}
+	public double actionsCost(MOB mob, Vector cmds){return DEFAULT_NONCOMBATACTION;}
 	public boolean canBeOrdered(){return true;}
 
 	

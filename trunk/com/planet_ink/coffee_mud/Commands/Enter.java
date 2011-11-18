@@ -4,7 +4,6 @@ import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -46,40 +45,12 @@ public class Enter extends Go
 			return false;
 		}
 		String enterWhat=CMParms.combine(commands,1).toUpperCase();
-		int dir=Directions.getGoodDirectionCode(enterWhat);
-		if(dir<0)
-		{
-			Environmental getThis=mob.location().fetchFromRoomFavorItems(null,enterWhat,Wearable.FILTER_UNWORNONLY);
-			if(getThis!=null)
-			{
-				if(getThis instanceof Rideable)
-				{
-					Command C=CMClass.getCommand("Sit");
-					if(C!=null) return C.execute(mob,commands,metaFlags);
-				}
-				else
-				if((getThis instanceof DeadBody)
-				&&(mob.envStats().height()<=0)
-				&&(mob.envStats().weight()<=0))
-				{
-					String mountStr="<S-NAME> enter(s) <T-NAME>.";
-					CMMsg msg=CMClass.getMsg(mob,getThis,null,CMMsg.MSG_SIT,mountStr);
-					if(mob.location().okMessage(mob,msg))
-						mob.location().send(mob,msg);
-					return true;
-				}
-			}
-			dir=CMLib.tracking().findExitDir(mob,mob.location(),enterWhat);
-			if(dir<0)
-			{
-				mob.tell("You don't see '"+enterWhat.toLowerCase()+"' here.");
-				return false;
-			}
-		}
-		move(mob,dir,false,false,false);
+		Room.REMap map=mob.location().getREMap(enterWhat);
+		if(map!=null)
+			move(mob,map.exit,map.room,false,false);
+		else
+			mob.tell("There is no exit like that.");
 		return false;
 	}
 	public boolean canBeOrdered(){return true;}
-
-	
 }

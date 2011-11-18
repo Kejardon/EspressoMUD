@@ -50,6 +50,12 @@ import java.util.*;
  * Others Code
  * Others Message
  * Same for target and unrelated mobs.
+ * 
+ * Debated changes:
+ * Make a 'message type' code that holds the main MsgCode for the message for things to know how to react to the message.
+ * Make seperate messages for visual/audio observation and a default message. 3 flags for each mob observing it: visual, audio, default (observed-but-null goes to default).
+ * Add a dedicated 'obviousness' value for how close/observant people have to be to see/hear it (maybe 2 if seperate visual/audio messages).
+ * 
  */
 @SuppressWarnings("unchecked")
 public interface CMMsg extends CMCommon
@@ -116,25 +122,58 @@ public interface CMMsg extends CMCommon
 	public enum MsgCode
 	{
 		//Dropped codes:
-		//RECALL, WIELD, TELL, KNOCK, BUY, SELL, DEPOSIT, WITHDRAW,
+		//RECALL, WIELD, TELL, KNOCK, BUY, SELL, DEPOSIT, WITHDRAW, WAND, HIT, PANIC, TELL
 		//TEACH, EXPCHANGE, ROOMRESET, LEVEL, BORROW, EXPIRE
 		//CHANNEL
+		//OPTIMIZE
 		
-		//'Major' codes
+		//'Major' codes. More flags than message definitions
 		HANDS, MOVE, EYES, MOUTH,
 		SOUND, SNIFF, VISUAL,
-		ALWAYS, MAGIC, DELICATE, MALICIOUS, CHANNEL, OPTIMIZE,
+		ALWAYS, MAGIC, DELICATE, MALICIOUS, CHANNEL,
 		//'Minor' codes. Kinda grouped together and organized
-		//Give might be same as Put?
+		//Give might be same as Put? probably not.
 		UNLOCK, LOCK, OPEN, CLOSE, PUSH, PULL, THROW, DROP, PUT, GET, GIVE,
 		ENTER, LEAVE, SLEEP, CRAWL, SIT, LAYDOWN, STAND, MOUNT, DISMOUNT, ADVANCE, RETREAT,
-		WEAR, REMOVE, WAND, ACTIVATE, RELOAD,
+		WEAR, REMOVE, ACTIVATE, RELOAD,
 		FILL, EAT, DRINK,
 		LOOK, EXAMINE, READ, WRITE, SPEAK, CAST, EMOTE, ORDER,
 		FIRE, COLD, WATER, GAS, MIND, JUSTICE, ACID, ELECTRIC, POISON, PARALYZE, UNDEAD, DISEASE,
-		ATTACK, HIT, DAMAGE, HEALING, DEATH, LIFE, PANIC,
-		QUIT, SHUTDOWN, RETIRE, HUH, TELL, LOGIN
+		ATTACK, DAMAGE, HEALING, DEATH, LIFE,
+		QUIT, SHUTDOWN, RETIRE, HUH, LOGIN
 	}
+/* MsgCode standards. * means optional, may be empty/null. By default, Message reserved for visual(or sound) component, value is unused.
+UNLOCK/LOCK/OPEN/CLOSE/PUSH/PULL/ACTIVATE/GET:
+Source* providing power/action, target is the lock/closeable/whatever, tool* is what is used to do the action(limb, key, spell, sword...).
+	Value* is obviousness? For UNLOCK/LOCK/ACTIVATE/GET only probably
+THROW: Source providing power/action(first object, must exist, be null if none. IMPORTANT) then list* of details(i.e. limbs or spells doing the throwing), target is target, tool is list of things thrown
+GIVE/RELOAD: Same as THROW but value* is obviousness.
+	What should the target be for GIVE? :x or specifically what limb/tool is the recipient using?
+PUT: Same as GIVE but target is optional (no target means the ground where the mob is at)
+FILL: Same as THROW (tool is what it is filled with/by) but value is an optional amount..? What to do about obviousness... this is probably important for assassins poisoning drinks!
+DROP: Same as THROW but optional target.
+EAT/DRINK: Basically same as THROW, value* specifies amount to eat/drink.
+WEAR/REMOVE: Basically same as THROW. Target(optional for remove) is the limb it's worn on (or if mob, find best-fit limb to put it on), tool is what's being put on (first is first handled(inmost for wear, outmost for remove)).
+ENTER/LEAVE: Source is the thing(s) moving, target is the thing being entered/left, tool* is the spell used/object ridden. Value is obviousness.
+SLEEP/CRAWL/SIT/LAYDOWN/STAND: Source is the thing(s) sleeping, target* is the location/object being slept on. Tool is always empty I guess, value* is obviousness.
+MOUNT: Source is the thing(s) mounting, target is what is being mounted. Tool is probably always empty. Value* is obviousness.
+DISMOUNT: Source is the thing(s) dismounting, target* is what is being dismounted (if null, immediately below source. If specified, link immediately above target that leads to source). Value* is obviousness.
+ADVANCE/RETREAT: Source is the thing(s) moving, target is what is being approached. Tool* would be a list of waypoints? Probably not. Distance calculated on the fly.
+	Will probably change/think this over. Mechanics aren't ready for it yet anyways. TODO
+LOOK/EXAMINE/READ: Basically the same as ENTER/LEAVE
+WRITE: Source* providing power/action, target is what is being written on, tool* is utensil. Target message is the text written. Value* is obviousness.
+	Actually, I kinda want to rehaul a lot of writing stuff. Maybe legible text should be its own CMObject. Worth considering for later, TODO.
+SPEAK/EMOTE: Source* providing power/action, target* is who/what it's directed at, tool* is whatever used. Value* is the intensity(loudness for sound, obviousness for emote).
+ORDER: Subflag on Speak or Emote probably.
+CAST: Source* providing power/mana, target* is target (always resisting), tool is spell. Value* is obviousness.
+FIRE-DISEASE: Subflags. Mainly used for ATTACK for special-case things probably.
+ATTACK/HEALING: Source* providing power/action, target is target, tool is how they are attacked/healed.
+DAMAGE: Subflag for attack. Alternatively, by itself to damage without a chance to dodge.
+DEATH: Source is thing that dies. Tool* is direct cause(s) of death?
+LIFE: Source is thing that came to life. Tool* is what caused it?
+QUIT/RETIRE/LOGIN/HUH: Source is player that did something. (Should HUH be a flag? Might make it just use mob.tell or something)
+SHUTDOWN: I dunno. Can't think of anything actually important for a shutdown message.
+*/
 
 
 	/* helpful message groupings

@@ -22,7 +22,7 @@ import java.util.*;
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+	   http://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -52,22 +52,14 @@ public class Tell extends StdCommand
 		   &&(mob.playerStats()!=null))
 		{
 			Vector V=mob.playerStats().getTellStack();
-			if((V.size()==0)
-			||(CMath.bset(metaFlags,Command.METAFLAG_AS))
-	        ||(CMath.bset(metaFlags,Command.METAFLAG_POSSESSED)))
+			if(V.size()==0)
 				mob.tell("No telling.");
 			else
 			{
 				int num=CMath.s_int(CMParms.combine(commands,1));
 				if(num>V.size()) num=V.size();
-		        Session S=mob.session();
-		        try {
-    		        if(S!=null) S.snoopSuspension(1);
-    				for(int i=V.size()-num;i<V.size();i++)
-    					mob.tell((String)V.elementAt(i));
-		        } finally {
-		            if(S!=null) S.snoopSuspension(-1);
-		        }
+				for(int i=V.size()-num;i<V.size();i++)
+					mob.tell((String)V.elementAt(i));
 			}
 			return false;
 		}
@@ -118,20 +110,55 @@ public class Tell extends StdCommand
 			return false;
 		}
 		
-		Session ts=target.session();
-		try{
-            if(ts!=null) ts.snoopSuspension(1);
-            CMLib.commands().postSay(mob,target,combinedCommands,true,true);
-		} finally {
-		    if(ts!=null) ts.snoopSuspension(-1);
-		}
-        
+			{
+				String targetName=target.name();
+				{
+					boolean ignore=((target.playerStats()!=null)&&(target.playerStats().getIgnored().contains(mob.name())));
+					CMMsg msg=null;
+					msg=CMClass.getMsg(mob,target,null,EnumSet.of(CMMsg.MsgCode.TELL),"^t^<TELL \""+mob.name()+"\"^><S-NAME> tell(s) <T-NAME> '"+text+"'^</TELL^>^?^.");
+					if((mob.location().okMessage(mob,msg))
+					&&((ignore)||(target.okMessage(target,msg))))
+					{
+						mob.executeMsg(mob,msg);
+						if((mob!=target)&&(!ignore))
+						{
+							target.executeMsg(target,msg);
+							if(msg.trailerMsgs()!=null)
+							{
+								for(int i=0;i<msg.trailerMsgs().size();i++)
+								{
+									CMMsg msg2=(CMMsg)msg.trailerMsgs().elementAt(i);
+									if((msg!=msg2)&&(target.okMessage(target,msg2)))
+										target.executeMsg(target,msg2);
+								}
+								msg.trailerMsgs().clear();
+							}
+							if((!mob.isMonster())&&(!target.isMonster()))
+							{
+								if(mob.playerStats()!=null)
+								{
+									mob.playerStats().setReplyTo(target,PlayerStats.REPLY_TELL);
+									mob.playerStats().addTellStack(CMLib.coffeeFilter().fullOutFilter(mob.session(),mob,mob,target,null,CMStrings.removeColors(msg.sourceMessage()),false));
+								}
+								if(target.playerStats()!=null)
+								{
+									target.playerStats().setReplyTo(mob,PlayerStats.REPLY_TELL);
+									String str=msg.targetMessage();
+									target.playerStats().addTellStack(CMLib.coffeeFilter().fullOutFilter(target.session(),target,mob,target,null,CMStrings.removeColors(str),false));
+								}
+							}
+						}
+					}
+				}
+			}
+
+//		CMLib.commands().postSay(mob,target,combinedCommands,true);
 		if((target.session()!=null)&&(target.session().afkFlag()))
 			mob.tell(target.session().afkMessage());
 		return false;
 	}
 	// the reason this is not 0ed is because of combat -- we want the players to use SAY, and pay for it when coordinating.
-    public double combatActionsCost(MOB mob, Vector cmds){return CMath.div(CMProps.getIntVar(CMProps.SYSTEMI_DEFCOMCMDTIME),100.0);}
+	public double combatActionsCost(MOB mob, Vector cmds){return CMath.div(CMProps.getIntVar(CMProps.SYSTEMI_DEFCOMCMDTIME),100.0);}
 	public boolean canBeOrdered(){return false;}
 
 	

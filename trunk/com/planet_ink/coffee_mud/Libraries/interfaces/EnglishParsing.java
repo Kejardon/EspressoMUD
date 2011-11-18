@@ -50,12 +50,16 @@ public interface EnglishParsing extends CMLibrary
 	public Object[] fetchFlags(String srchStr);
 	public CMObject fetchObject(Vector<? extends CMObject> list, String srchStr, boolean exactOnly);
 	public int fetchInteractableIndex(Vector<? extends Interactable> list, String srchStr, boolean exactOnly);
+//	public Interactable fetchAvailable   (Vector<? extends Interactable> list, String srchStr, boolean exactOnly);
 	public Interactable fetchInteractable(Vector<? extends Interactable> list, String srchStr, boolean exactOnly);
-	public Interactable fetchInteractable(Hashtable<String, Interactable> list, String srchStr, boolean exactOnly);
+//	public Interactable fetchInteractable(Hashtable<String, Interactable> list, String srchStr, boolean exactOnly);
 	public Interactable fetchInteractable(Interactable[] list, String srchStr, boolean exactOnly);
-	public Vector fetchInteractables(Vector<? extends Interactable> list, String srchStr, boolean exactOnly);
-	public Item fetchAvailableItem(Vector list, String srchStr, boolean exactOnly);
-	public Vector fetchAvailableItems(Vector list, String srchStr, boolean exactOnly);
+	public Interactable fetchInteractable(String srchStr, boolean exactOnly, int maxDepth, Object... list);
+	public Vector<Interactable> fetchInteractables(String srchStr, boolean exactOnly, int maxDepth, int toFind, Object... list);
+	public Vector<Interactable> fetchInteractables(Vector<? extends Interactable> list, String srchStr, boolean exactOnly);
+//	public Item fetchAvailableItem(Vector list, String srchStr, boolean exactOnly);
+//	public Vector fetchAvailableItems(Vector list, String srchStr, boolean exactOnly);
+	public Vector fetchItemList(Interactable from, MOB mob, Item container, Vector commands, boolean visionMatters);
 	public int getContextNumber(Object[] list, Interactable E);
 	public int getContextNumber(Vector<? extends Interactable> list, Interactable E);
 	public String getContextName(Vector<? extends Interactable> list, Interactable E);
@@ -64,8 +68,6 @@ public interface EnglishParsing extends CMLibrary
 	public int getContextSameNumber(Vector<? extends Interactable> list, Interactable E);
 	public String getContextSameName(Vector<? extends Interactable> list, Interactable E);
 	public String getContextSameName(Object[] list, Interactable E);
-	public Interactable fetchAvailable(Vector<? extends Interactable> list, String srchStr, boolean exactOnly);
-	public Vector fetchItemList(Interactable from, MOB mob, Item container, Vector commands, boolean visionMatters);
 //	public long numPossibleGold(MOB mine, String itemID);
 //	public String numPossibleGoldCurrency(Interactable mine, String itemID);
 //	public double numPossibleGoldDenomination(Environmental mine, String currency, String itemID);
@@ -78,6 +80,9 @@ public interface EnglishParsing extends CMLibrary
 	public Item possibleContainer(MOB mob, Vector commands, boolean withStuff);
 	public String returnTime(long millis, long ticks);
 	public int calculateMaxToGive(MOB mob, Vector commands, boolean breakPackages, Interactable checkWhat, boolean getOnly);
+	public int getPartitionIndex(Vector<String> commands, String partitionName);
+	public int getPartitionIndex(Vector<String> commands, String partitionName, int defaultTo);
+	
 /*
 	public Interactable parseShopkeeper(MOB mob, Vector commands, String error);
 	public boolean evokedBy(Ability thisAbility, String thisWord);

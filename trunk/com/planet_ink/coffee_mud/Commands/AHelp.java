@@ -4,7 +4,6 @@ import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -56,66 +55,20 @@ public class AHelp extends StdCommand
 				StringBuffer theRest=(StringBuffer)Resources.getResource("arc_help.therest");
 				if(theRest==null)
 				{
-					Vector V=new Vector();
+					Vector<String> V=new Vector();
 					theRest=new StringBuffer("");
 
-					for(Enumeration a=CMClass.abilities();a.hasMoreElements();)
-					{
-						Ability A=(Ability)a.nextElement();
-						if((A!=null)&&((A.classificationCode()&Ability.ALL_ACODES)==Ability.ACODE_PROPERTY))
-							V.addElement(A.ID());
-					}
+					for(Iterator<? extends CMObject> a=CMClass.Objects.EFFECT.all();a.hasNext();)
+						V.addElement(a.next().ID());
 					if(V.size()>0)
 					{
-					    theRest.append("\n\rProperties:\n\r");
+					    theRest.append("\n\rEffects:\n\r");
 						theRest.append(CMLib.lister().fourColumns(V));
 					}
 
 					V.clear();
-					for(Enumeration a=CMClass.abilities();a.hasMoreElements();)
-					{
-						Ability A=(Ability)a.nextElement();
-						if((A!=null)&&((A.classificationCode()&Ability.ALL_ACODES)==Ability.ACODE_DISEASE))
-							V.addElement(A.ID());
-					}
-					if(V.size()>0)
-					{
-					    theRest.append("\n\rDiseases:\n\r");
-						theRest.append(CMLib.lister().fourColumns(V));
-					}
-
-					V.clear();
-					for(Enumeration a=CMClass.abilities();a.hasMoreElements();)
-					{
-						Ability A=(Ability)a.nextElement();
-						if((A!=null)&&((A.classificationCode()&Ability.ALL_ACODES)==Ability.ACODE_POISON))
-							V.addElement(A.ID());
-					}
-					if(V.size()>0)
-					{
-					    theRest.append("\n\rPoisons:\n\r");
-						theRest.append(CMLib.lister().fourColumns(V));
-					}
-
-					V.clear();
-					for(Enumeration a=CMClass.abilities();a.hasMoreElements();)
-					{
-						Ability A=(Ability)a.nextElement();
-						if((A!=null)&&((A.classificationCode()&Ability.ALL_ACODES)==Ability.ACODE_SUPERPOWER))
-							V.addElement(A.ID());
-					}
-					if(V.size()>0)
-					{
-					    theRest.append("\n\rSuper Powers:\n\r");
-						theRest.append(CMLib.lister().fourColumns(V));
-					}
-
-					V.clear();
-					for(Enumeration b=CMClass.behaviors();b.hasMoreElements();)
-					{
-						Behavior B=(Behavior)b.nextElement();
-						if(B!=null) V.addElement(B.ID());
-					}
+					for(Iterator<? extends CMObject> b=CMClass.Objects.BEHAVIOR.all();b.hasNext();)
+						V.addElement(b.next().ID());
 					if(V.size()>0)
 					{
 					    theRest.append("\n\r\n\rBehaviors:\n\r");

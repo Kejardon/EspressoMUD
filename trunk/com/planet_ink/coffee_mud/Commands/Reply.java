@@ -72,10 +72,11 @@ public class Reply extends StdCommand
 				mob.tell(pstats.replyTo().Name()+" is no longer in the room.");
 				return false;
 			}
-			CMLib.commands().postSay(mob,pstats.replyTo(),CMParms.combine(commands,1),false,false);
+			CMLib.commands().postSay(mob,pstats.replyTo(),CMParms.combine(commands,1),false);
 			break;
 		case PlayerStats.REPLY_TELL:
-			CMLib.commands().postSay(mob,pstats.replyTo(),CMParms.combine(commands,1),true,true);
+			//TODO: Fix this with proper tell stuff
+			CMLib.commands().postSay(mob,pstats.replyTo(),CMParms.combine(commands,1),true);
 			break;
 		case PlayerStats.REPLY_YELL:
 			{

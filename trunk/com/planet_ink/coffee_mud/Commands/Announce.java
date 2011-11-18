@@ -42,10 +42,7 @@ public class Announce extends StdCommand
 	public void sendAnnounce(MOB from, String announcement, Session S)
 	{
 		StringBuffer Message=new StringBuffer("");
-		if((from!=null)&&(from.playerStats()!=null)&&(from.playerStats().announceMessage().length()>0))
-			Message.append(from.playerStats().announceMessage()+" '"+announcement+"'.^.^N");
-		else
-			Message.append("^pA powerful voice rings out '"+announcement+"'.^N");
+		Message.append("^pA powerful voice rings out '"+announcement+"'.^N");
 		S.stdPrintln(Message.toString());
 	}
 
@@ -54,35 +51,17 @@ public class Announce extends StdCommand
 	{
 		
 		String cmd=((String)commands.firstElement()).toUpperCase();
-		if((!cmd.equalsIgnoreCase("ANNOUNCEMSG"))
-		&&(!cmd.equalsIgnoreCase("ANNOUNCETO"))
+		if((!cmd.equalsIgnoreCase("ANNOUNCETO"))
 		&&(!cmd.equalsIgnoreCase("ANNOUNCE")))
 		{
-			boolean cmdm="ANNOUNCEMSG".toUpperCase().startsWith(cmd);
 			boolean cmdt="ANNOUNCETO".toUpperCase().startsWith(cmd);
 			boolean cmd1="ANNOUNCE".toUpperCase().startsWith(cmd);
-			if(cmdm&&(!cmdt)&&(!cmd1))
-				cmd="ANNOUNCEMSG";
-			else
-			if(cmdt&&(!cmdm)&&(!cmd1))
+			if(cmdt&&(!cmd1))
 				cmd="ANNOUNCETO";
 			else
-			if(cmd1&&(!cmdm)&&(!cmdt))
+			if(cmd1&&(!cmdt))
 				cmd="ANNOUNCE";
 		}
-		if(cmd.equalsIgnoreCase("ANNOUNCEMSG"))
-		{
-			String s=CMParms.combine(commands,1);
-			if(s.length()==0)
-				mob.tell("Your announce message is currently: "+mob.playerStats().announceMessage());
-			else
-			{
-				if(mob.playerStats()!=null)
-					mob.playerStats().setAnnounceMessage(s);
-				mob.tell("Your announce message has been changed.");
-			}
-		}
-		else
 		if(commands.size()>1)
 		{
 			if((!cmd.equalsIgnoreCase("ANNOUNCETO"))

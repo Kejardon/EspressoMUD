@@ -4,7 +4,6 @@ import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -23,7 +22,7 @@ import java.util.*;
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+	   http://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -51,7 +50,7 @@ public class Channel extends StdCommand
 			boolean systemMsg=((Boolean)commands.firstElement()).booleanValue();
 			String channelName=(String)commands.elementAt(1);
 			String message=(String)commands.elementAt(2);
-            CMLib.channels().reallyChannel(mob,channelName,message,systemMsg);
+			CMLib.channels().reallyChannel(mob,channelName,message,systemMsg);
 			return true;
 		}
 		return channel(mob, commands, false);
@@ -65,7 +64,7 @@ public class Channel extends StdCommand
 		int channelInt=CMLib.channels().getChannelIndex(channelName);
 		int channelNum=CMLib.channels().getChannelCodeNumber(channelName);
 
-		if((pstats!=null)&&(CMath.isSet(pstats.getChannelMask(),channelInt)))
+		if((pstats!=null)&&((pstats.getChannelMask()&(1<<channelInt))>0))
 		{
 			pstats.setChannelMask(pstats.getChannelMask()&(pstats.getChannelMask()-channelNum));
 			mob.tell(channelName+" has been turned on.  Use `NO"+channelName.toUpperCase()+"` to turn it off again.");
@@ -89,9 +88,9 @@ public class Channel extends StdCommand
 			mob.tell("This channel is not available to you.");
 			return false;
 		}
-        
-        HashSet<ChannelsLibrary.ChannelFlag> flags=CMLib.channels().getChannelFlags(channelInt);
-        
+		
+		HashSet<ChannelsLibrary.ChannelFlag> flags=CMLib.channels().getChannelFlags(channelInt);
+		
 		if((commands.size()==2)
 		&&(mob.session()!=null)
 		&&(((String)commands.firstElement()).equalsIgnoreCase("last"))
@@ -107,7 +106,8 @@ public class Channel extends StdCommand
 				for(int i=que.size()-num;i<que.size();i++)
 				{
 					CMMsg msg=(CMMsg)que.elementAt(i);
-					showedAny=CMLib.channels().channelTo(mob.session(),areareq,channelInt,msg,msg.source())||showedAny;
+					MOB target=(msg.firstSource() instanceof MOB)?(MOB)msg.firstSource():null;
+					showedAny=CMLib.channels().channelTo(mob.session(),areareq,channelInt,msg,target)||showedAny;
 				}
 			}
 			if(!showedAny)
@@ -117,23 +117,23 @@ public class Channel extends StdCommand
 			}
 		}
 		else
-        if(flags.contains("READONLY"))
-        {
-            mob.tell("This channel is read-only.");
-            return false;
-        }
-        else
-        if(flags.contains("PLAYERREADONLY")&&(!mob.isMonster()))
-        {
-            mob.tell("This channel is read-only.");
-            return false;
-        }
-        else
-            CMLib.channels().reallyChannel(mob,channelName,CMParms.combine(commands,0),systemMsg);
+		if(flags.contains("READONLY"))
+		{
+			mob.tell("This channel is read-only.");
+			return false;
+		}
+		else
+		if(flags.contains("PLAYERREADONLY")&&(!mob.isMonster()))
+		{
+			mob.tell("This channel is read-only.");
+			return false;
+		}
+		else
+			CMLib.channels().reallyChannel(mob,channelName,CMParms.combine(commands,0),systemMsg);
 		return false;
 	}
 
 	
 	public boolean canBeOrdered(){return true;}
-    public double combatActionsCost(MOB mob, Vector cmds){return CMath.div(CMProps.getIntVar(CMProps.SYSTEMI_DEFCOMCMDTIME),100.0);}
+//	public double combatActionsCost(MOB mob, Vector cmds){return 0;}
 }

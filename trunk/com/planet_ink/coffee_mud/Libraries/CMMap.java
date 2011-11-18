@@ -45,6 +45,7 @@ public class CMMap extends StdLibrary implements WorldMap
 
 	private class OpenExit implements Exit
 	{
+		//NOTE: myEnvironmental needs to be protected somehow. It should be immutable.
 		protected Environmental.DefaultEnv myEnvironmental=new Environmental.DefaultEnv(this);
 		protected EnumSet<ListenHolder.Flags> lFlags=EnumSet.of(ListenHolder.Flags.OK,ListenHolder.Flags.EXC);
 
@@ -123,6 +124,8 @@ public class CMMap extends StdLibrary implements WorldMap
 			if(!(E instanceof OpenExit)) return false;
 			return true;
 		}
+		public void setSave(boolean b){}
+		public boolean needSave(){return false;}
 		
 		public SaveEnum[] totalEnumS(){return new SaveEnum[0];}
 		public Enum[] headerEnumS(){return new Enum[0];}

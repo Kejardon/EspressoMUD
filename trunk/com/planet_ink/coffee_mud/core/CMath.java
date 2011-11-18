@@ -829,4 +829,26 @@ public class CMath
 
 	public static double random(){return rand.nextDouble();}
 	public static int random(int max){return rand.nextInt(max);}
+	public static int gcd(int a, int b)
+	{
+		int c;
+		while(b!=0)
+		{
+			c=a;
+			a=b;
+			b=c%b;
+		}
+		return a;
+	}
+	public static long gcd(long a, long b)
+	{
+		long c;
+		while(b!=0)
+		{
+			c=a;
+			a=b;
+			b=c%b;
+		}
+		return a;
+	}
 }

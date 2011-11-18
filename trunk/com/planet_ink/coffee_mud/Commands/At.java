@@ -4,7 +4,6 @@ import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -22,7 +21,7 @@ import java.util.*;
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+	   http://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -64,9 +63,9 @@ public class At extends StdCommand
 			return false;
 		}
 		Room R=mob.location();
-		if(R!=room)	room.bringMobHere(mob);
+		if(R!=room)	room.bringHere(mob.body(), true);
 		mob.doCommand(commands,metaFlags);
-		if(mob.location()!=R) R.bringMobHere(mob);
+		if(mob.location()!=R) R.bringHere(mob.body(), true);
 		return false;
 	}
 	

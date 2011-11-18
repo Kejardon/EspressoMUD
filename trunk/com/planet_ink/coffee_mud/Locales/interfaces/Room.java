@@ -32,6 +32,18 @@ import java.util.*;
 @SuppressWarnings("unchecked")
 public interface Room extends ItemCollection.ItemHolder, Interactable, CMSavable, CMModifiable //ContainableRoom will extend Item.
 {
+	public static class REMap
+	{
+		public final Room room;
+		public final Exit exit;
+		public REMap(Room R, Exit E){room=R; exit=E;}
+		public boolean equals(Object O)
+		{
+			if(O instanceof REMap)
+				return (((REMap)O).exit==exit)&&(((REMap)O).room==room);
+			return false;
+		}
+	}
 	public enum Domain
 	{
 		UNDERWATER, AIR, WATERSURFACE,
@@ -53,20 +65,23 @@ public interface Room extends ItemCollection.ItemHolder, Interactable, CMSavable
 
 	public int numExits();
 	public void addExit(Exit E, Room destination);
-	public void removeExit(Exit E);
-	public void removeExit(int i);	//not recommended for use
+	public void addExit(REMap R);
+	public void removeExit(REMap R);
+	public void removeExit(Exit E, Room R);
 	public Exit getExit(int i);
 	public Exit getExit(String target);
-	public int getExitIndex(String target);
 	public Room getExitDestination(int i);
 	public Room getExitDestination(Exit E);
-	public boolean changeExit(int i, Exit newExit);
-	public boolean changeExit(Exit oldExit, Exit newExit);
-	public boolean changeRoom(int i, Room R);
-	public boolean changeRoom(Exit E, Room R);
-	public int getExitIndex(Exit E, Room R);
+	public REMap getREMap(int i);
+	public REMap getREMap(String target);
+	public boolean changeExit(REMap M, Exit newE);
+	public boolean changeExit(REMap M, Room newR);
+	public boolean changeExit(REMap M, REMap newM);
+//	public int getExitIndex(String target);
+//	public int getExitIndex(Exit E, Room R);
 	public void initExits();
 
+	public boolean doMessage(CMMsg msg);
 	public void send(CMMsg msg);
 	public void showHappens(EnumSet<CMMsg.MsgCode> allCode, Object like, String allMessage);
 	public boolean show(Object source,
@@ -90,6 +105,7 @@ public interface Room extends ItemCollection.ItemHolder, Interactable, CMSavable
 	public Item fetchItem(String itemID);
 	public Vector<Item> fetchItems(String itemID);
 	public Vector<MOB> fetchInhabitants(String inhabitantID);
+	public MOB fetchInhabitant(String inhabitantID);
 
 /*
 	public void sendOthers(CMObject source, CMMsg msg);

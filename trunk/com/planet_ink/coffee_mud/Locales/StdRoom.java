@@ -41,8 +41,9 @@ public class StdRoom implements Room
 	protected String display="Standard Room";
 	protected String desc="";
 	protected Area myArea=null;
-	protected Vector<Exit> exits=new Vector(1);
-	protected Vector<Room> exitDests=new Vector(1);
+	protected Vector<REMap> exits=new Vector(1);
+//	protected Vector<Exit> exits=new Vector(1);
+//	protected Vector<Room> exitDests=new Vector(1);
 	protected Vector<OkChecker> okCheckers=null;
 	protected Vector<ExcChecker> excCheckers=null;
 	protected Vector<TickActer> tickActers=null;
@@ -105,29 +106,19 @@ public class StdRoom implements Room
 	public int numExits() { return exits.size(); }
 	public void addExit(Exit E, Room destination)
 	{
-		synchronized(exits)
-		{
-			for(int i=0; i<exits.size();i++)
-				if(exits.get(i)==E)
-					if(exitDests.get(i)==destination)
-						return;
-			exits.add(E);
-			exitDests.add(destination);
-		}
+		addExit(new REMap(destination, E));
 	}
-	public void removeExit(Exit E)
+	public void addExit(REMap R)
 	{
+		R.exit.setSave(true);
 		synchronized(exits)
 		{
-			for(int i=0; i<exits.size();i++)
-				if(exits.get(i)==E)
-				{
-					exits.remove(i);
-					exitDests.remove(i);
-					return;
-				}
+			if(exits.contains(R))
+				return;
+			exits.add(R);
 		}
 	}
+/*
 	public void removeExit(int i)
 	{
 		try{
@@ -138,92 +129,97 @@ public class StdRoom implements Room
 		} }
 		catch(ArrayIndexOutOfBoundsException e){}
 	}
+*/
+	public void removeExit(Exit E, Room R)
+	{
+		removeExit(new REMap(R, E));
+	}
+	public void removeExit(REMap R)
+	{
+		synchronized(exits)
+		{
+			exits.remove(R);
+		}
+	}
 	public Exit getExit(int i)
 	{
-		try{ return exits.get(i); }
+		try{ return exits.get(i).exit; }
 		catch(ArrayIndexOutOfBoundsException e){}
 		return null;
 	}
 	public Exit getExit(String target)
 	{
-		return (Exit)CMLib.english().fetchInteractable(exits, target, true);
-	}
-	public int getExitIndex(String target)
-	{
-		int i=CMLib.english().fetchInteractableIndex(exits, target, true);
-		if(i==-1) i=CMLib.english().fetchInteractableIndex(exits, target, false);
-		return i;
+		//TODO: This totally doesn't work.
+//		return (Exit)CMLib.english().fetchInteractable(exits, target, true);
+		return null;
 	}
 	public Room getExitDestination(int i)
 	{
-		try{ return exitDests.get(i); }
+		try{ return exits.get(i).room; }
 		catch(ArrayIndexOutOfBoundsException e){}
 		return null;
 	}
 	public Room getExitDestination(Exit E)
 	{
 		for(int i=0; i<exits.size();i++)
-			if(exits.get(i)==E)
-				return exitDests.get(i);
+			if(exits.get(i).exit==E)
+				return exits.get(i).room;
 		return null;
 	}
-	public boolean changeExit(int i, Exit newExit)
+	public REMap getREMap(int i)
 	{
-		try{
+		return exits.get(i);
+	}
+	public REMap getREMap(String S)
+	{
+		//Definitely need TODO
+		return null;
+	}
+	public boolean changeExit(REMap R, Exit newExit)
+	{
 		synchronized(exits)
 		{
-			exits.set(i, newExit);
+			int i=exits.indexOf(R);
+			if(i<0)
+				return false;
+			exits.set(i, new REMap(exits.get(i).room, newExit));
 			return true;
-		} }
-		catch(ArrayIndexOutOfBoundsException e){}
-		return false;
-	}
-	public boolean changeExit(Exit oldExit, Exit newExit)
-	{
-		synchronized(exits)
-		{
-			for(int i=0; i<exits.size();i++)
-				if(exits.get(i)==oldExit)
-				{
-					exits.set(i, newExit);
-					return true;
-				}
 		}
-		return false;
 	}
-	public boolean changeRoom(int i, Room R)
+	public boolean changeExit(REMap R, Room newRoom)
 	{
-		try{
 		synchronized(exits)
 		{
-			exitDests.set(i, R);
+			int i=exits.indexOf(R);
+			if(i<0)
+				return false;
+			exits.set(i, new REMap(newRoom, exits.get(i).exit));
 			return true;
-		} }
-		catch(ArrayIndexOutOfBoundsException e){}
-		return false;
+		}
 	}
-	public boolean changeRoom(Exit E, Room R)
+	public boolean changeExit(REMap R, REMap newMap)
 	{
 		synchronized(exits)
 		{
-			for(int i=0; i<exits.size();i++)
-				if(exits.get(i)==E)
-				{
-					exitDests.set(i, R);
-					return true;
-				}
+			int i=exits.indexOf(R);
+			if(i<0)
+				return false;
+			exits.set(i, newMap);
+			return true;
 		}
-		return false;
+	}
+/*	public int getExitIndex(String target)
+	{
+//		int i=CMLib.english().fetchInteractableIndex(exits, target, true);
+//		if(i==-1) i=CMLib.english().fetchInteractableIndex(exits, target, false);
+//		return i;
+		return -1;
 	}
 	public int getExitIndex(Exit E, Room R)
 	{
-		for(int i=0; i<exits.size();i++)
-			if(exits.get(i)==E)
-				if(exitDests.get(i)==R)
-					return i;
-		return -1;
+		return exits.indexOf(new REMap(R, E));
 	}
-
+*/
 
 	public Domain domain(){return myDom;} 
 	public Enclosure enclosure(){return myEnc;}
@@ -357,6 +353,15 @@ public class StdRoom implements Room
 		}
 	}
 
+	public boolean doMessage(CMMsg msg)
+	{
+		if((okMessage(this,msg))&&(msg.handleResponses()))
+		{
+			reallySend(msg,0);
+			return true;
+		}
+		return false;
+	}
 	public void send(CMMsg msg)
 	{
 		reallySend(msg,0);
@@ -431,16 +436,39 @@ public class StdRoom implements Room
 	}
 	public Item fetchItem(String itemID)
 	{
-		Item item=CMLib.english().fetchAvailableItem(inventory.allItems(),itemID,true);
-		if(item==null) item=CMLib.english().fetchAvailableItem(inventory.allItems(),itemID,false);
+		Item item=(Item)CMLib.english().fetchInteractable(inventory.allItems(),itemID,true);
+		if(item==null) item=(Item)CMLib.english().fetchInteractable(inventory.allItems(),itemID,false);
 		return item;
 	}
 	public Vector<Item> fetchItems(String itemID)
 	{
-		Vector items=CMLib.english().fetchAvailableItems(inventory.allItems(),itemID,true);
+		Vector items=CMLib.english().fetchInteractables(inventory.allItems(),itemID,true);
 		if(items.size()==0)
-			items=CMLib.english().fetchAvailableItems(inventory.allItems(),itemID,false);
+			items=CMLib.english().fetchInteractables(inventory.allItems(),itemID,false);
 		return items;
+	}
+	public MOB fetchInhabitant(String inhabitantID)
+	{
+		MOB M=null;
+		if(inhabitantID.equals("ALL"))
+		{
+			Vector<Item> items=inventory.allItems();
+			for(int i=0;i<items.size();i++)
+				if((items.get(i) instanceof Body)&&((M=((Body)items.get(i)).mob())!=null))
+					return M;
+		}
+		else
+		{
+			Vector<Item> items=(Vector<Item>)CMLib.english().fetchInteractable(inventory.allItems(),inhabitantID,true);
+			for(int i=0;i<items.size();i++)
+				if((items.get(i) instanceof Body)&&((M=((Body)items.get(i)).mob())!=null))
+					return M;
+			items=(Vector<Item>)CMLib.english().fetchInteractable(inventory.allItems(),inhabitantID, false);
+			for(int i=0;i<items.size();i++)
+				if((items.get(i) instanceof Body)&&((M=((Body)items.get(i)).mob())!=null))
+					return M;
+		}
+		return null;
 	}
 	public Vector<MOB> fetchInhabitants(String inhabitantID)
 	{
@@ -455,13 +483,13 @@ public class StdRoom implements Room
 		}
 		else
 		{
-			Vector<Item> items=CMLib.english().fetchAvailableItems(inventory.allItems(),inhabitantID,true);
+			Vector<Item> items=(Vector<Item>)CMLib.english().fetchInteractable(inventory.allItems(),inhabitantID,true);
 			for(int i=0;i<items.size();i++)
 				if((items.get(i) instanceof Body)&&((M=((Body)items.get(i)).mob())!=null))
 					inhabs.add(M);
 			if(inhabs.size()==0)
 			{
-				items=CMLib.english().fetchAvailableItems(inventory.allItems(),inhabitantID, false);
+				items=(Vector<Item>)CMLib.english().fetchInteractable(inventory.allItems(),inhabitantID, false);
 				for(int i=0;i<items.size();i++)
 					if((items.get(i) instanceof Body)&&((M=((Body)items.get(i)).mob())!=null))
 						inhabs.add(M);
@@ -492,7 +520,7 @@ public class StdRoom implements Room
 		synchronized(exits)
 		{
 			for(int i=0;i<exits.size();i++)
-				S.append(exits.get(i).exitID()+";"+exitDests.get(i).roomID()+";");
+				S.append(exits.get(i).exit.exitID()+";"+exits.get(i).room.roomID()+";");
 		}
 		return S.toString();
 	}
@@ -713,7 +741,7 @@ public class StdRoom implements Room
 		EXITS(){
 			public String brief(StdRoom E){return ""+E.exits.size();}
 			public String prompt(StdRoom E){return "";}
-			public void mod(StdRoom E, MOB M){CMLib.genEd().modExits(E.exits, E.exitDests, M);} },
+			public void mod(StdRoom E, MOB M){CMLib.genEd().modExits(E.exits, M);} },
 		EFFECTS(){
 			public String brief(StdRoom E){return ""+E.affects.size();}
 			public String prompt(StdRoom E){return "";}

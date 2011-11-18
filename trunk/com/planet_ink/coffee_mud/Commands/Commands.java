@@ -4,7 +4,6 @@ import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -22,7 +21,7 @@ import java.util.*;
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+	   http://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -40,35 +39,30 @@ public class Commands extends StdCommand
 	public boolean execute(MOB mob, Vector commands, int metaFlags)
 		throws java.io.IOException
 	{
-		if(!mob.isMonster())
+		Session S=mob.session();
+		if(S!=null)
 		{
 			StringBuffer commandList=new StringBuffer("");
-			Vector commandSet=new Vector();
+			TreeSet<String> commandSet=new TreeSet<String>();
 			int col=0;
-			HashSet done=new HashSet();
-			for(Enumeration e=CMClass.commands();e.hasMoreElements();)
+			for(Iterator e=CMClass.Objects.COMMAND.all();e.hasNext();)
 			{
-				Command C=(Command)e.nextElement();
+				Command C=(Command)e.next();
 				String[] access=C.getAccessWords();
 				if((access!=null)
 				&&(access.length>0)
 				&&(access[0].length()>0)
-				&&(!done.contains(access[0]))
 				&&(C.securityCheck(mob)))
-				{
-				    done.add(access[0]);
-				    commandSet.add(access[0]);
-				}
+					commandSet.add(access[0]);
 			}
-			Collections.sort(commandSet);
 			for(Iterator i=commandSet.iterator();i.hasNext();)
 			{
-			    String s=(String)i.next();
+				String s=(String)i.next();
 				if(++col>3){ commandList.append("\n\r"); col=0;}
 				commandList.append(CMStrings.padRight("^<HELP^>"+s+"^</HELP^>",19));
 			}
 			commandList.append("\n\r\n\rEnter HELP 'COMMAND' for more information on these commands.\n\r");
-			mob.session().colorOnlyPrintln("^HComplete commands list:^?\n\r"+commandList.toString(),false);
+			S.colorOnlyPrintln("^HComplete commands list:^?\n\r"+commandList.toString(),false);
 		}
 		return false;
 	}

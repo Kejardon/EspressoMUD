@@ -41,6 +41,8 @@ public interface Exit extends Interactable, Closeable.CloseableHolder, CMModifia
 	public void setVisible(boolean b);
 	public String exitID();
 	public void setExitID(String newID);
+	public void setSave(boolean b);
+	public boolean needSave();
 //	public boolean canGo(MOB mob, Room destination);
 
 }

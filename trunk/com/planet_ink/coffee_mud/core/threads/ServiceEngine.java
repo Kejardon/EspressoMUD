@@ -379,17 +379,6 @@ public class ServiceEngine implements ThreadEngine
 		}
 		CMProps.Strings.MUDSTATUS.setProperty("Shutting down...shutting down Service Engine: "+ID()+": thread shutdown");
 		thread.shutdown();
-		// force final time tick!
-		Vector timeObjects=new Vector();
-		for(Enumeration e=CMLib.map().areas();e.hasMoreElements();)
-		{
-			Area A=((Area)e.nextElement());
-			if(!timeObjects.contains(A.getTimeObj()))
-				timeObjects.addElement(A.getTimeObj());
-		}
-		CMProps.Strings.MUDSTATUS.setProperty("Shutting down...shutting down Service Engine: "+ID()+": saving time objects");
-		for(int t=0;t<timeObjects.size();t++)
-			((TimeClock)timeObjects.elementAt(t)).save();
 		Log.sysOut("ServiceEngine","Shutdown complete.");
 		return true;
 	}

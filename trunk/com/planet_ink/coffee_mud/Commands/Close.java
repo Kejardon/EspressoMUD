@@ -4,7 +4,6 @@ import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -22,7 +21,7 @@ import java.util.*;
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+	   http://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -46,21 +45,20 @@ public class Close extends StdCommand
 			mob.tell("Close what?");
 			return false;
 		}
-		Environmental closeThis=null;
+		Interactable closeThis=CMLib.english().fetchInteractable(whatToClose, false, 1, mob, mob.location());
+/*
 		int dirCode=Directions.getGoodDirectionCode(whatToClose);
 		if(dirCode>=0)
 			closeThis=mob.location().getExitInDir(dirCode);
-		if(closeThis==null)
-			closeThis=mob.location().fetchFromMOBRoomItemExit(mob,null,whatToClose,Wearable.FILTER_ANY);
+*/
 
-		if((closeThis==null)||(!CMLib.flags().canBeSeenBy(closeThis,mob)))
+		if(closeThis==null)
 		{
 			mob.tell("You don't see '"+whatToClose+"' here.");
 			return false;
 		}
-		String closeWord=(!(closeThis instanceof Exit))?"close":((Exit)closeThis).closeWord();
-		CMMsg msg=CMClass.getMsg(mob,closeThis,null,CMMsg.MSG_CLOSE,"<S-NAME> "+closeWord+"(s) <T-NAMESELF>."+CMProps.msp("dooropen.wav",10));
-		if(closeThis instanceof Exit)
+		CMMsg msg=CMClass.getMsg(mob,closeThis,null,EnumSet.of(CMMsg.MsgCode.CLOSE),"<S-NAME> close(s) <T-NAMESELF>."+CMProps.msp("dooropen.wav",10));
+/*		if(closeThis instanceof Exit)
 		{
 			boolean open=((Exit)closeThis).isOpen();
 			if((mob.location().okMessage(msg.source(),msg))
@@ -90,12 +88,12 @@ public class Close extends StdCommand
 			}
 		}
 		else
-		if(mob.location().okMessage(mob,msg))
-			mob.location().send(mob,msg);
+*/
+		mob.location().doMessage(msg);
 		return false;
 	}
-    public double combatActionsCost(MOB mob, Vector cmds){return CMath.div(CMProps.getIntVar(CMProps.SYSTEMI_DEFCOMCMDTIME),100.0);}
-    public double actionsCost(MOB mob, Vector cmds){return CMath.div(CMProps.getIntVar(CMProps.SYSTEMI_DEFCMDTIME),100.0);}
+//	public double combatActionsCost(MOB mob, Vector cmds){return DEFAULT_NONCOMBATACTION;}
+	public double actionsCost(MOB mob, Vector cmds){return DEFAULT_NONCOMBATACTION;}
 	public boolean canBeOrdered(){return true;}
 
 	

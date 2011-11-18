@@ -1,8 +1,7 @@
 package com.planet_ink.coffee_mud.core;
 import java.util.*;
 
-import com.planet_ink.coffee_mud.core.interfaces.CMObject;
-import com.planet_ink.coffee_mud.core.interfaces.Environmental;
+import com.planet_ink.coffee_mud.core.interfaces.*;
 
 /*
    Copyright 2000-2010 Bo Zimmerman
@@ -1252,28 +1251,28 @@ public class CMParms
 		return s.toString().substring(2);
 	}
 
-	public static String toEnvironmentalStringList(Enumeration e)
+	public static String toInteractableStringList(Enumeration<? extends Interactable> e)
 	{
 		if(!e.hasMoreElements()) return "";
 		StringBuffer s=new StringBuffer("");
-		Environmental o=null;
+		Interactable o=null;
 		for(;e.hasMoreElements();)
 		{
-			o=(Environmental)e.nextElement();
-			s.append(", "+o.ID());
+			o=e.nextElement();
+			s.append(", "+o.name());
 		}
 		if(s.length()==0) return "";
 		return s.toString().substring(2);
 	}
 
-	public static String toCMObjectStringList(Enumeration e)
+	public static String toCMObjectStringList(Enumeration<? extends CMObject> e)
 	{
 		if(!e.hasMoreElements()) return "";
 		StringBuffer s=new StringBuffer("");
 		CMObject o=null;
 		for(;e.hasMoreElements();)
 		{
-			o=(CMObject)e.nextElement();
+			o=e.nextElement();
 			s.append(", "+o.ID());
 		}
 		if(s.length()==0) return "";

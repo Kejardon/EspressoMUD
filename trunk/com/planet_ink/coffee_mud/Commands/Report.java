@@ -68,7 +68,7 @@ public class Report extends StdCommand
 			if(say.length()==0)
 				mob.tell("'"+s+"' is unknown.  Try STATS, or ALL.");
 			else
-				CMLib.commands().postSay(mob,null,say.toString(),false,false);
+				CMLib.commands().postSay(mob,null,say.toString(),false);
 		}
 		return false;
 	}

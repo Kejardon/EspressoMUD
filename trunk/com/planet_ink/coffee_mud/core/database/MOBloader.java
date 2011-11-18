@@ -390,7 +390,6 @@ public class MOBloader
 	public void DBUpdateAccount(PlayerAccount account)
 	{
 		if(account == null) return;
-		String characters = CMParms.toSemicolonList(account.getPlayers());
 		DB.update("UPDATE CMACCT SET CMDATA='"+account.accountName()+"','"+CMLib.coffeeMaker().getPropertiesStr(account)+"',  WHERE CMANAM='"+account.accountName()+"'");
 	}
 
@@ -404,7 +403,6 @@ public class MOBloader
 	{
 		if(account == null) return;
 		account.setAccountName(CMStrings.capitalizeAndLower(account.accountName()));
-		String characters = CMParms.toSemicolonList(account.getPlayers());
 		DB.update("INSERT INTO CMACCT (CMANAM, CMDATA) VALUES ('"+account.accountName()+"','"+CMLib.coffeeMaker().getPropertiesStr(account)+"')");
 	}
 	

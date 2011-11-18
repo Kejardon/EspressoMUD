@@ -4,7 +4,6 @@ import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -22,7 +21,7 @@ import java.util.*;
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+	   http://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -31,49 +30,27 @@ import java.util.*;
    limitations under the License.
 */
 @SuppressWarnings("unchecked")
-public class Crawl extends Go
+public class Crawl extends StdCommand
 {
 	public Crawl(){}
 
 	private String[] access={"CRAWL","CR"};
 	public String[] getAccessWords(){return access;}
-    
-    public boolean preExecute(MOB mob, Vector commands, int metaFlags, int secondsElapsed, double actionsRemaining)
-        throws java.io.IOException
-    {
-        if(secondsElapsed==0)
-        {
-            int direction=Directions.getGoodDirectionCode(CMParms.combine(commands,1));
-            if(direction<0)
-            {
-                mob.tell("Crawl which way?\n\rTry north, south, east, west, up, or down.");
-                return false;
-            }
-        }
-        return true;
-    }
+	
+	public boolean preExecute(MOB mob, Vector commands, int metaFlags, int secondsElapsed, double actionsRemaining)
+		throws java.io.IOException
+	{
+		return true;
+	}
 	public boolean execute(MOB mob, Vector commands, int metaFlags)
 		throws java.io.IOException
 	{
-		int direction=Directions.getGoodDirectionCode(CMParms.combine(commands,1));
-		if(direction>=0)
-		{
-			CMMsg msg=CMClass.getMsg(mob,null,null,CMMsg.MSG_LAYDOWN,null);
-			if(CMLib.flags().isLayingDown(mob)||(mob.location().okMessage(mob,msg)))
-			{
-				if(!CMLib.flags().isLayingDown(mob))
-					mob.location().send(mob,msg);
-				move(mob,direction,false,false,false);
-			}
-		}
-		else
-		{
-			mob.tell("Crawl which way?\n\rTry north, south, east, west, up, or down.");
-			return false;
-		}
+		CMMsg msg=CMClass.getMsg(mob,null,null,EnumSet.of(CMMsg.MsgCode.LAYDOWN),"<S-NAME> lay(s) down and start(s) to crawl.");
+		mob.location().doMessage(msg);
+
 		return false;
 	}
-    public double actionsCost(MOB mob, Vector cmds){return CMath.div(CMProps.getIntVar(CMProps.SYSTEMI_DEFCMDTIME),150.0);}
+	public double actionsCost(MOB mob, Vector cmds){return DEFAULT_NONCOMBATACTION*1.5;}
 	public boolean canBeOrdered(){return true;}
 
 	

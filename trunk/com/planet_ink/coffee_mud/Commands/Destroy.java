@@ -4,7 +4,6 @@ import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -51,7 +50,6 @@ public class Destroy extends StdCommand
 		if(commands.size()<3)
 		{
 			mob.tell("You have failed to specify the proper fields.\n\rThe format is DESTROY MOB [MOB NAME]\n\r");
-			mob.location().showOthers(mob,null,CMMsg.MSG_OK_ACTION,"<S-NAME> flub(s) a powerful spell.");
 			return false;
 		}
 
@@ -59,43 +57,38 @@ public class Destroy extends StdCommand
 		boolean allFlag=((String)commands.elementAt(2)).equalsIgnoreCase("all");
 		if(mobID.toUpperCase().startsWith("ALL.")){ allFlag=true; mobID="ALL "+mobID.substring(4);}
 		if(mobID.toUpperCase().endsWith(".ALL")){ allFlag=true; mobID="ALL "+mobID.substring(0,mobID.length()-4);}
-		MOB deadMOB=mob.location().fetchInhabitant(mobID);
+		Vector<MOB> V=mob.location().fetchInhabitants(mobID);
 		boolean doneSomething=false;
-		while(deadMOB!=null)
+		while(V.size()>0)
 		{
+			MOB deadMOB=V.remove(0);
 			if(!deadMOB.isMonster())
 			{
 				mob.tell(deadMOB.name()+" is a PLAYER!!\n\r");
-				if(!doneSomething)
-					mob.location().showOthers(mob,null,CMMsg.MSG_OK_ACTION,"<S-NAME> flub(s) a powerful spell.");
-				return false;
+				continue;
 			}
 			doneSomething=true;
-			mob.location().showHappens(CMMsg.MSG_OK_VISUAL,deadMOB.name()+" vanishes in a puff of smoke.");
-			Log.sysOut("Mobs",mob.Name()+" destroyed mob "+deadMOB.Name()+".");
+			mob.location().showHappens(EnumSet.of(CMMsg.MsgCode.VISUAL),null,deadMOB.name()+" vanishes in a puff of smoke.");
+			Log.sysOut("Mobs",mob.name()+" destroyed mob "+deadMOB.name()+".");
 			deadMOB.destroy();
-			mob.location().delInhabitant(deadMOB);
-			deadMOB=mob.location().fetchInhabitant(mobID);
+//			mob.location().delInhabitant(deadMOB);
+//			deadMOB=mob.location().fetchInhabitant(mobID);
 			if(!allFlag) break;
 		}
 		if(!doneSomething)
 		{
 			mob.tell("I don't see '"+mobID+" here.\n\r");
-			mob.location().showOthers(mob,null,CMMsg.MSG_OK_ACTION,"<S-NAME> flub(s) a powerful spell.");
 			return false;
 		}
 		return true;
 	}
 
-
 	public void accounts(MOB mob, Vector commands)
 	throws IOException
 	{
-		mob.location().showOthers(mob,null,CMMsg.MSG_OK_ACTION,"<S-NAME> wave(s) <S-HIS-HER> hands around the heavens.");
 		if(commands.size()<3) 
 		{ 
 			mob.tell("You have failed to specify the proper fields.\n\rThe format is DESTROY ACCOUNT ([NAME])\n\r");
-			mob.location().showOthers(mob,null,CMMsg.MSG_OK_ACTION,"<S-NAME> flub(s) a powerful spell.");
 			return;
 		}
 		String accountName=CMStrings.capitalizeAndLower(CMParms.combine(commands, 2));
@@ -103,23 +96,22 @@ public class Destroy extends StdCommand
 		if(theAccount==null)
 		{
 			mob.tell("There is no account called '"+accountName+"'!\n\r");
-			mob.location().showOthers(mob,null,CMMsg.MSG_OK_ACTION,"<S-NAME> flub(s) a powerful spell.");
 			return;
 		}
-		String playerList = CMParms.toStringList(theAccount.getPlayers());
+		String playerList = CMParms.toInteractableStringList(theAccount.getLoadPlayers());
 		if(mob.session().confirm("This will complete OBLITERATE the account '"+theAccount.accountName()+"' and players '"+playerList+"' forever.  Are you SURE?! (y/N)?","N"))
 		{
-			for(Enumeration<String> p=theAccount.getPlayers();p.hasMoreElements();)
+			for(Enumeration<MOB> p=theAccount.getLoadPlayers();p.hasMoreElements();)
 			{
-				MOB deadMOB=CMLib.players().getLoadPlayer(p.nextElement());
+				MOB deadMOB=p.nextElement();
 				CMLib.players().obliteratePlayer(deadMOB,false);
 				mob.tell("The user '"+CMParms.combine(commands,2)+"' is no more!\n\r");
-				Log.sysOut("Mobs",mob.Name()+" destroyed user "+deadMOB.Name()+".");
+				Log.sysOut("Mobs",mob.name()+" destroyed user "+deadMOB.name()+".");
 				deadMOB.destroy();
 			}
 			CMLib.players().obliterateAccountOnly(theAccount);
 			mob.location().recoverRoomStats();
-			Log.sysOut("Destroy",mob.Name()+" destroyed account "+theAccount.accountName()+" and players '"+playerList+"'.");
+			Log.sysOut("Destroy",mob.name()+" destroyed account "+theAccount.accountName()+" and players '"+playerList+"'.");
 		}
 	}
 
@@ -129,18 +121,15 @@ public class Destroy extends StdCommand
 		if(commands.size()<3)
 		{
 			mob.tell("You have failed to specify the proper fields.\n\rThe format is DESTROY USER [USER NAME]\n\r");
-			mob.location().showOthers(mob,null,CMMsg.MSG_OK_ACTION,"<S-NAME> flub(s) a powerful spell.");
 			return false;
 		}
 
-		
 		String name=CMStrings.capitalizeAndLower(CMParms.combine(commands,2));
 		boolean found=CMLib.players().playerExists(name);
 
 		if(!found)
 		{
 			mob.tell("The user '"+CMParms.combine(commands,2)+"' does not exist!\n\r");
-			mob.location().showOthers(mob,null,CMMsg.MSG_OK_ACTION,"<S-NAME> flub(s) a powerful spell.");
 			return false;
 		}
 
@@ -149,14 +138,13 @@ public class Destroy extends StdCommand
 			MOB deadMOB=CMLib.players().getLoadPlayer(name);
 			CMLib.players().obliteratePlayer(deadMOB,false);
 			mob.tell("The user '"+CMParms.combine(commands,2)+"' is no more!\n\r");
-			Log.sysOut("Mobs",mob.Name()+" destroyed user "+deadMOB.Name()+".");
+			Log.sysOut("Mobs",mob.name()+" destroyed user "+deadMOB.name()+".");
 			deadMOB.destroy();
 			return true;
 		}
 		return true;
 	}
-	
-	
+
 	public Thread findThreadGroup(String threadName,ThreadGroup tGroup)
 	{
 		int ac = tGroup.activeCount();
@@ -171,14 +159,13 @@ public class Destroy extends StdCommand
 		{
 			if (tArray[i] != null)
 			{
-				if((tArray[i] instanceof TickableGroup)
-				&&(((TickableGroup)tArray[i]).lastTicked()!=null)
-				&&(((TickableGroup)tArray[i]).lastTicked().getTickStatus()==0))
+				if(tArray[i] instanceof TickableGroup)
+//				&&(((TickableGroup)tArray[i]).lastTicked()!=null)
+//				&&(((TickableGroup)tArray[i]).lastTicked().getTickStatus()==Tickable.TickStat.Not))
 					continue;
 				if((tArray[i] instanceof Tickable)
-				&&(((Tickable)tArray[i]).getTickStatus()==0))
+				&&(((Tickable)tArray[i]).getTickStatus()==Tickable.TickStat.Not))
 					continue;
-				
 				if(tArray[i].getName().equalsIgnoreCase(threadName))
 					return tArray[i];
 			}
@@ -198,7 +185,6 @@ public class Destroy extends StdCommand
 		return null;
 	}
 
-
 	public Thread findThread(String threadName)
 	{
 		Thread t=null;
@@ -209,13 +195,9 @@ public class Destroy extends StdCommand
 				topTG = topTG.getParent();
 			if (topTG != null)
 				t=findThreadGroup(threadName,topTG);
-
 		}
-		catch (Exception e)
-		{
-		}
+		catch (Exception e){}
 		return t;
-
 	}
 
 	public void rooms(MOB mob, Vector commands)
@@ -224,161 +206,86 @@ public class Destroy extends StdCommand
 		String thecmd=((String)commands.elementAt(0)).toLowerCase();
 		if(commands.size()<3)
 		{
-			if(thecmd.equalsIgnoreCase("UNLINK"))
-				mob.tell("You have failed to specify the proper fields.\n\rThe format is UNLINK (N,S,E,W,U, or D)\n\r");
-			else
-				mob.tell("You have failed to specify the proper fields.\n\rThe format is DESTROY ROOM ([DIRECTION],[ROOM ID])\n\r");
-			mob.location().showOthers(mob,null,CMMsg.MSG_OK_ACTION,"<S-NAME> flub(s) a powerful spell.");
+			mob.tell("You have failed to specify the proper fields.\n\rThe format is DESTROY ROOM [ROOM ID]\n\r");
 			return;
 		}
-		boolean confirmed=false;
-		if((commands.size()>3))
-		{
-			if(((String)commands.lastElement()).equalsIgnoreCase("CONFIRMED"))
-			{
-				commands.removeElementAt(commands.size()-1);
-				confirmed=true;
-			}
-		}
-		String roomdir=CMParms.combine(commands,2);
-		int direction=Directions.getGoodDirectionCode(roomdir);
+		String roomName=CMParms.combine(commands,2);
 		Room deadRoom=null;
-		if(!thecmd.equalsIgnoreCase("UNLINK"))
-			deadRoom=CMLib.map().getRoom(roomdir);
-		if((deadRoom==null)&&(direction<0))
+		if(roomName.equalsIgnoreCase("HERE"))
+			deadRoom=mob.location();
+		else
+			deadRoom=CMLib.map().getRoom(roomName);
+		if(deadRoom==null)
 		{
-			if(thecmd.equalsIgnoreCase("UNLINK"))
-				mob.tell("You have failed to specify a direction.  Try ("+Directions.DIRECTIONS_DESC()+").\n\r");
-			else
-				mob.tell("You have failed to specify a direction.  Try a VALID ROOM ID, or ("+Directions.DIRECTIONS_DESC()+").\n\r");
-			mob.location().showOthers(mob,null,CMMsg.MSG_OK_ACTION,"<S-NAME> flub(s) a powerful spell.");
+			mob.tell("You have failed to specify a room.  Try a VALID ROOM ID, or \"HERE\".\n\r");
 			return;
 		}
-		else
-		if(mob.isMonster())
+		if(!CMSecurity.isAllowed(mob,deadRoom,"CMDROOMS"))
 		{
-			mob.tell("Sorry Charlie!");
-			mob.location().showOthers(mob,null,CMMsg.MSG_OK_ACTION,"<S-NAME> flub(s) a powerful spell.");
+			mob.tell("Sorry Charlie! Not your room!");
 			return;
+		}
 
-		}
-		if(deadRoom!=null)
-		{
-			if(!CMSecurity.isAllowed(mob,deadRoom,"CMDROOMS"))
-			{
-				mob.tell("Sorry Charlie! Not your room!");
-				mob.location().showOthers(mob,null,CMMsg.MSG_OK_ACTION,"<S-NAME> flub(s) a powerful spell.");
-				return;
-			}
-			if(mob.location()==deadRoom)
-			{
-				mob.tell("You dip! You have to leave this room first!");
-				mob.location().showOthers(mob,null,CMMsg.MSG_OK_ACTION,"<S-NAME> flub(s) a powerful spell.");
-				return;
-			}
-
-			if(!confirmed)
-				if(!mob.session().confirm("You are fixing to permanantly destroy Room \""+deadRoom.roomID()+"\".  Are you ABSOLUTELY SURE (y/N)","N")) 
-					return;
-			CMLib.map().obliterateRoom(deadRoom);
-			mob.tell("The sound of massive destruction rings in your ears.");
-			mob.location().showOthers(mob,null,CMMsg.MSG_NOISE,"The sound of massive destruction rings in your ears.");
-			Log.sysOut("Rooms",mob.Name()+" destroyed room "+deadRoom.roomID()+".");
-		}
-		else
-		{
-			if(!CMSecurity.isAllowed(mob,mob.location(),"CMDEXITS"))
-			{
-				errorOut(mob);
-				return;
-			}
-			Room unRoom=mob.location().rawDoors()[direction];
-			{
-				mob.location().rawDoors()[direction]=null;
-				mob.location().setRawExit(direction,null);
-				CMLib.database().DBUpdateExits(mob.location());
-			}
-			mob.location().getArea().fillInAreaRoom(mob.location());
-			mob.location().showHappens(CMMsg.MSG_OK_ACTION,"A wall of inhibition falls "+Directions.getInDirectionName(direction)+".");
-			Log.sysOut("Rooms",mob.Name()+" unlinked direction "+Directions.getDirectionName(direction)+" from room "+mob.location().roomID()+".");
-		}
+		if(!mob.session().confirm("You are fixing to permanantly destroy Room \""+deadRoom.roomID()+"\".  Are you ABSOLUTELY SURE (y/N)","N"))
+			return;
+		CMLib.map().obliterateRoom(deadRoom);
+		mob.tell("The room has been destroyed.");
+		Log.sysOut("Rooms",mob.name()+" destroyed room "+deadRoom.roomID()+".");
 	}
 
 	public void exits(MOB mob, Vector commands)
 	{
-		if(mob.location().roomID().equals(""))
-		{
-			mob.tell("This command is invalid from within a GridLocaleChild room.");
-			mob.location().showOthers(mob,null,CMMsg.MSG_OK_ACTION,"<S-NAME> flub(s) a powerful spell.");
-			return;
-		}
 		if(commands.size()<3)
 		{
-			mob.tell("You have failed to specify the proper fields.\n\rThe format is DESTROY EXIT [DIRECTION]\n\r");
-			mob.location().showOthers(mob,null,CMMsg.MSG_OK_ACTION,"<S-NAME> flub(s) a spell..");
+			mob.tell("You have failed to specify the proper fields.\n\rThe format is DESTROY EXIT [EXIT NAME]");
 			return;
 		}
 
-		int direction=Directions.getGoodDirectionCode(((String)commands.elementAt(2)));
-		if(direction<0)
+		Room.REMap target=mob.location().getREMap((String)commands.elementAt(2));
+		if(target==null)
 		{
-			mob.tell("You have failed to specify a direction.  Try "+Directions.DIRECTIONS_DESC()+".\n\r");
-			mob.location().showOthers(mob,null,CMMsg.MSG_OK_ACTION,"<S-NAME> flub(s) a spell..");
+			mob.tell("No exit with that name was found here.\n\r");
 			return;
 		}
-		if(mob.isMonster())
+		if(mob.session().confirm("Remove this exit from the opposite room too?",""))
 		{
-			mob.tell("Sorry Charlie!");
-			mob.location().showOthers(mob,null,CMMsg.MSG_OK_ACTION,"<S-NAME> flub(s) a spell..");
-			return;
-
+			target.room.removeExit(target.exit, mob.location());
+			Log.sysOut("Exits",mob.location().roomID()+" and "+target.room.roomID()+" exit, "+target.exit.exitID()+" destroyed by "+mob.name()+".");
 		}
-		mob.location().setRawExit(direction,null);
-		CMLib.database().DBUpdateExits(mob.location());
-		mob.location().getArea().fillInAreaRoom(mob.location());
-		mob.location().showHappens(CMMsg.MSG_OK_ACTION,"A wall of inhibition falls "+Directions.getInDirectionName(direction)+".");
-		Log.sysOut("Exits",mob.location().roomID()+" exits destroyed by "+mob.Name()+".");
+		else
+			Log.sysOut("Exits",mob.location().roomID()+" exit "+target.exit.exitID()+" unlinked by "+mob.name()+".");
+		mob.location().removeExit(target);
+		mob.location().showHappens(EnumSet.of(CMMsg.MsgCode.VISUAL),null,"A wall of inhibition covers "+target.exit.directLook(mob, target.room)+".");
+		
 	}
 
 	public boolean items(MOB mob, Vector commands)
 	{
 		if(commands.size()<3)
 		{
-			mob.tell("You have failed to specify the proper fields.\n\rThe format is DESTROY ITEM [ITEM NAME](@ room/[MOB NAME])\n\r");
-			mob.location().showOthers(mob,null,CMMsg.MSG_OK_ACTION,"<S-NAME> flub(s) a spell..");
+			mob.tell("You have failed to specify the proper fields.\n\rThe format is DESTROY ITEM [ITEM NAME](@[MOB NAME])\n\r");
 			return false;
 		}
 		
 		String itemID=CMParms.combine(commands,2);
 		MOB srchMob=mob;
-		Item srchContainer=null;
 		Room srchRoom=mob.location();
 		int x=itemID.indexOf("@");
 		if(x>0)
 		{
 			String rest=itemID.substring(x+1).trim();
 			itemID=itemID.substring(0,x).trim();
-			if(rest.equalsIgnoreCase("room"))
-				srchMob=null;
-			else
 			if(rest.length()>0)
 			{
-				MOB M=srchRoom.fetchInhabitant(rest);
-				if(M==null)
+				Vector<MOB> V=srchRoom.fetchInhabitants(rest);
+				if(V.size()==0)
 				{
-					Item I = srchRoom.fetchItem(null, rest);
-					if(I instanceof Container)
-						srchContainer=(Container)I;
-					else
-					{
-						mob.tell("MOB or Container '"+rest+"' not found.");
-						mob.location().showOthers(mob,null,CMMsg.MSG_OK_ACTION,"<S-NAME> flub(s) a spell..");
-						return false;
-					}
+					mob.tell("MOB '"+rest+"' not found.");
+					return false;
 				}
 				else
 				{
-					srchMob=M;
+					srchMob=V.get(0);
 					srchRoom=null;
 				}
 			}
@@ -389,30 +296,21 @@ public class Destroy extends StdCommand
 		if(itemID.toUpperCase().endsWith(".ALL")){ allFlag=true; itemID="ALL "+itemID.substring(0,itemID.length()-4);}
 		boolean doneSomething=false;
 		Item deadItem=null;
-		deadItem=(srchRoom==null)?null:srchRoom.fetchItem(srchContainer,itemID);
-		if((!allFlag)&&(deadItem==null)) deadItem=(srchMob==null)?null:srchMob.fetchInventory(null,itemID);
-		while(deadItem!=null)
+		Vector<Item> V=(srchRoom==null)?null:srchRoom.fetchItems(itemID);
+		if(V.size()==0) V=(srchMob==null)?null:srchMob.fetchInventories(itemID);
+		while(V.size()>0)
 		{
-			mob.location().recoverRoomStats();
-			mob.location().show(mob,null,CMMsg.MSG_OK_ACTION,deadItem.name()+" disintegrates!");
+			deadItem=V.remove(0);
+			mob.location().show(mob,null,null,EnumSet.of(CMMsg.MsgCode.VISUAL),deadItem.name()+" disintegrates!");
 			doneSomething=true;
-			Log.sysOut("Items",mob.Name()+" destroyed item "+deadItem.name()+".");
-			if(srchMob!=null)
-				deadItem.setOwner(srchMob);
-			else
-			if(srchRoom!=null)
-				deadItem.setOwner(srchRoom);
+			Log.sysOut("Items",mob.name()+" destroyed item "+deadItem.name()+".");
 			deadItem.destroy();
-			mob.location().removeItem(deadItem);
 			deadItem=null;
-			if(!allFlag) deadItem=(srchMob==null)?null:srchMob.fetchInventory(null,itemID);
-			if(deadItem==null) deadItem=(srchRoom==null)?null:srchRoom.fetchItem(null,itemID);
 			if(!allFlag) break;
 		}
 		if(!doneSomething)
 		{
 			mob.tell("I don't see '"+itemID+" here.\n\r");
-			mob.location().showOthers(mob,null,CMMsg.MSG_OK_ACTION,"<S-NAME> flub(s) a spell..");
 			return false;
 		}
 		return true;
@@ -424,28 +322,20 @@ public class Destroy extends StdCommand
 	{
 		if(commands.size()<3)
 		{
-			mob.tell("You have failed to specify the proper fields.\n\rThe format is DESTROY AREA [AREA NAME]\n\r");
-			mob.location().showOthers(mob,null,CMMsg.MSG_OK_ACTION,"<S-NAME> flub(s) a thunderous spell.");
+			mob.tell("You have failed to specify the proper fields.\n\rThe format is DESTROY AREA (HERE,[AREA NAME])\n\r");
 			return;
-		}
-		boolean confirmed=false;
-		if((commands.size()>3))
-		{
-			if(((String)commands.lastElement()).equalsIgnoreCase("CONFIRMED"))
-			{
-				commands.removeElementAt(commands.size()-1);
-				confirmed=true;
-			}
 		}
 
 		String areaName=CMParms.combine(commands,2);
-		if(CMLib.map().getArea(areaName)==null)
+		Area A=CMLib.map().getArea(areaName);
+		if((A==null)&&(areaName.equals("HERE")))
+			A=mob.location().getArea();
+		if(A==null)
 		{
 			mob.tell("There is no such area as '"+areaName+"'");
-			mob.location().showOthers(mob,null,CMMsg.MSG_OK_ACTION,"<S-NAME> flub(s) a thunderous spell.");
 			return;
 		}
-		Area A=CMLib.map().getArea(areaName);
+
 		Room R=A.getRandomProperRoom();
 		if((R!=null)&&(!CMSecurity.isAllowed(mob,R,"CMDAREAS")))
 		{
@@ -453,273 +343,17 @@ public class Destroy extends StdCommand
 			return;
 		}
 			
-		if(!confirmed)
-			if(mob.session().confirm("Area: \""+areaName+"\", OBLITERATE IT???","N"))
-			{
-				if(mob.location().getArea().Name().equalsIgnoreCase(areaName))
-				{
-					mob.tell("You dip!  You are IN that area!  Leave it first...");
-					mob.location().showOthers(mob,null,CMMsg.MSG_OK_ACTION,"<S-NAME> flub(s) a thunderous spell.");
-					return;
-				}
-				confirmed=true;
-			}
-		CMLib.map().obliterateArea(areaName);
-		if(confirmed)
+		if(mob.session().confirm("Area: \""+areaName+"\", OBLITERATE IT???","N"))
 		{
-			mob.location().showHappens(CMMsg.MSG_OK_ACTION,"A thunderous boom of destruction is heard in the distance.");
-			Log.sysOut("Rooms",mob.Name()+" destroyed area "+areaName+".");
+			CMLib.map().obliterateArea(areaName);
+//			mob.location().showHappens(CMMsg.MSG_OK_ACTION,"A thunderous boom of destruction is heard in the distance.");
+			Log.sysOut("Rooms",mob.name()+" destroyed area "+areaName+".");
 		}
 	}
 
-	public boolean races(MOB mob, Vector commands)
-	{
-		if(commands.size()<3)
-		{
-			mob.tell("You have failed to specify the proper fields.\n\rThe format is DESTROY RACE [RACE ID]\n\r");
-			mob.location().showOthers(mob,null,CMMsg.MSG_OK_ACTION,"<S-NAME> flub(s) a spell..");
-			return false;
-		}
-
-		String raceID=CMParms.combine(commands,2);
-		Race R=CMClass.getRace(raceID);
-		if(R==null)
-		{
-			mob.tell("'"+raceID+"' is an invalid race id.");
-			mob.location().showOthers(mob,null,CMMsg.MSG_OK_ACTION,"<S-NAME> flub(s) a spell..");
-			return false;
-		}
-		if(!(R.isGeneric()))
-		{
-			mob.tell("'"+R.ID()+"' is not generic, and may not be deleted.");
-			mob.location().showOthers(mob,null,CMMsg.MSG_OK_ACTION,"<S-NAME> flub(s) a spell..");
-			return false;
-		}
-		String oldRID=R.ID();
-		CMClass.delRace(R);
-		CMLib.database().DBDeleteRace(R.ID());
-		CMClass.loadClass("RACE","com/planet_ink/coffee_mud/Races/"+oldRID+".class",true);
-		Race oldR=CMClass.getRace(oldRID);
-		if(oldR==null) oldR=CMClass.getRace("StdRace");
-		CMLib.utensils().swapRaces(oldR,R);
-		if(!oldR.ID().equals("StdRace"))
-			mob.location().showHappens(CMMsg.MSG_OK_ACTION,"The diversity of the world just changed?!");
-		else
-			mob.location().showHappens(CMMsg.MSG_OK_ACTION,"The diversity of the world just decreased!");
-		return true;
-	}
-
-	public boolean titles(MOB mob, Vector commands)
-	{
-		mob.tell("Destroying a title will not remove the title from all players who may have it.");
-		mob.tell("If this is important, you should destroy and then re-add the exact same title with an unreachable " +
-				 "mask for a few days to allow the system to remove the title from the players as they log in.\n\r");
-		if(commands.size()<3)
-		{
-			mob.tell("You have failed to specify the proper fields.\n\rThe format is DESTROY TITLE [TITLE STRING]\n\r");
-			mob.location().showOthers(mob,null,CMMsg.MSG_OK_ACTION,"<S-NAME> flub(s) a spell..");
-			return false;
-		}
-
-		String classID=CMParms.combine(commands,2);
-		if(!CMLib.titles().isExistingAutoTitle(classID))
-		{
-			mob.tell("'"+classID+"' is not an existing auto-title, try LIST TITLES.");
-			mob.location().showOthers(mob,null,CMMsg.MSG_OK_ACTION,"<S-NAME> flub(s) a spell..");
-			return false;
-		}
-		CMLib.titles().dispossesTitle(classID);
-		CMFile F=new CMFile(Resources.makeFileResourceName("titles.txt"),null,true);
-		boolean removed=Resources.findRemoveProperty(F, classID);
-		if(removed)
-		{
-			mob.location().showHappens(CMMsg.MSG_OK_ACTION,"The prestige of players just decreased!");
-			Resources.removeResource("titles.txt");
-			CMLib.titles().reloadAutoTitles();
-		}
-		return true;
-	}
-	
-	public void socials(MOB mob, Vector commands)
-		throws IOException
-	{
-		if(commands.size()<3)
-		{
-			mob.session().rawPrintln("but fail to specify the proper fields.\n\rThe format is DESTROY SOCIAL [NAME] ([<T-NAME>], [SELF])\n\r");
-			mob.location().showOthers(mob,null,CMMsg.MSG_OK_ACTION,"<S-NAME> flub(s) a powerful spell.");
-			return;
-		}
-		else
-		if(commands.size()>3)
-		{
-			String therest=CMParms.combine(commands,3);
-			if(!((therest.equalsIgnoreCase("<T-NAME>")
-					||therest.equalsIgnoreCase("SELF")
-					||therest.equalsIgnoreCase("ALL"))))
-			{
-				mob.session().rawPrintln("but fail to specify the proper second parameter.\n\rThe format is DESTROY SOCIAL [NAME] ([<T-NAME>], [SELF])\n\r");
-				mob.location().showOthers(mob,null,CMMsg.MSG_OK_ACTION,"<S-NAME> flub(s) a powerful spell.");
-				return;
-			}
-		}
-
-		Social soc2=CMLib.socials().fetchSocial(CMParms.combine(commands,2).toUpperCase(),true);
-		if(soc2==null)
-		{
-			mob.tell("but fail to specify an EXISTING SOCIAL!\n\r");
-			mob.location().showOthers(mob,null,CMMsg.MSG_OK_ACTION,"<S-NAME> flub(s) a powerful spell.");
-			return;
-		}
-		if(mob.session().confirm("Are you sure you want to delete that social (y/N)? ","N"))
-		{
-			CMLib.socials().remove(soc2.name());
-			CMLib.socials().save(mob);
-			mob.location().showHappens(CMMsg.MSG_OK_ACTION,"The happiness of all mankind has just decreased!");
-			Log.sysOut("SysopSocials",mob.Name()+" destroyed social "+soc2.name()+".");
-		}
-		else
-			mob.location().showHappens(CMMsg.MSG_OK_ACTION,"The happiness of all mankind has just increased!");
-	}
-	
-	public static boolean destroyItem(MOB mob, Environmental dropThis, boolean quiet, boolean optimize)
-	{
-		String msgstr=null;
-		int material=(dropThis instanceof Item)?((Item)dropThis).material():-1;
-		if(!quiet)
-		switch(material&RawMaterial.MATERIAL_MASK)
-		{
-		case RawMaterial.MATERIAL_LIQUID:
-			msgstr="<S-NAME> pour(s) out <T-NAME>.";
-			break;
-		case RawMaterial.MATERIAL_PAPER:
-			msgstr="<S-NAME> tear(s) up <T-NAME>.";
-			break;
-		case RawMaterial.MATERIAL_GLASS:
-			msgstr="<S-NAME> smash(es) <T-NAME>.";
-			break;
-		default:
-			return false;
-		}
-		CMMsg msg=CMClass.getMsg(mob,dropThis,null,CMMsg.MSG_NOISYMOVEMENT,(optimize?CMMsg.MASK_OPTIMIZE:0)|CMMsg.MASK_ALWAYS|CMMsg.MSG_DEATH,CMMsg.MSG_NOISYMOVEMENT,msgstr);
-		if(mob.location().okMessage(mob,msg))
-		{
-			mob.location().send(mob,msg);
-			return true;
-		}
-		if(dropThis instanceof Coins)
-			((Coins)dropThis).putCoinsBack();
-		if(dropThis instanceof RawMaterial)
-			((RawMaterial)dropThis).rebundle();
-		return false;
-	}
-
-	
 	public boolean execute(MOB mob, Vector commands, int metaFlags)
 		throws java.io.IOException
 	{
-		if((!CMSecurity.isAllowedStartsWith(mob,"CMD"))
-		&&(!CMSecurity.isAllowedStartsWith(mob,mob.location(),"KILL"))
-		&&(!CMSecurity.isAllowed(mob,mob.location(),"BAN"))
-		&&(!CMSecurity.isAllowed(mob,mob.location(),"NOPURGE")))
-		{
-			commands.removeElementAt(0);
-			if(commands.size()==0)
-			{
-				mob.tell("Destroy what?");
-				return false;
-			}
-			if(mob.location().fetchInhabitant(CMParms.combine(commands,0))!=null)
-			{
-				Command C=CMClass.getCommand("Kill");
-				commands.insertElementAt("KILL",0);
-				if(C!=null) C.execute(mob,commands,metaFlags);
-				return false;
-			}
-
-			Vector V=new Vector();
-			int maxToDrop=Integer.MAX_VALUE;
-			
-			if((commands.size()>1)
-			&&(CMath.s_int((String)commands.firstElement())>0))
-			{
-				maxToDrop=CMath.s_int((String)commands.firstElement());
-				commands.setElementAt("all",0);
-			}
-
-			String whatToDrop=CMParms.combine(commands,0);
-			boolean allFlag=(commands.size()>0)?((String)commands.elementAt(0)).equalsIgnoreCase("all"):false;
-			if(whatToDrop.toUpperCase().startsWith("ALL.")){ allFlag=true; whatToDrop="ALL "+whatToDrop.substring(4);}
-			if(whatToDrop.toUpperCase().endsWith(".ALL")){ allFlag=true; whatToDrop="ALL "+whatToDrop.substring(0,whatToDrop.length()-4);}
-			int addendum=1;
-			String addendumStr="";
-			boolean doBugFix = true;
-			while(doBugFix || ((allFlag)&&(addendum<=maxToDrop)))
-			{
-				doBugFix=false;
-				Item dropThis=mob.fetchCarried(null,whatToDrop+addendumStr);
-				if((dropThis==null)
-				&&(V.size()==0)
-				&&(addendumStr.length()==0)
-				&&(!allFlag))
-				{
-					dropThis=mob.fetchWornItem(whatToDrop);
-					if(dropThis!=null)
-					{
-						int matType=dropThis.material()&RawMaterial.MATERIAL_MASK;
-						if((matType!=RawMaterial.MATERIAL_GLASS)
-						&&(matType!=RawMaterial.MATERIAL_LIQUID)
-						&&(matType!=RawMaterial.MATERIAL_PAPER))
-						{
-							mob.tell(dropThis.Name()+" can not be easily destroyed.");
-							return false;
-						}
-						else
-						if((!dropThis.amWearingAt(Wearable.WORN_HELD))&&(!dropThis.amWearingAt(Wearable.WORN_WIELD)))
-						{
-							mob.tell("You must remove that first.");
-							return false;
-						}
-						else
-						{
-							CMMsg newMsg=CMClass.getMsg(mob,dropThis,null,CMMsg.MSG_REMOVE,null);
-							if(mob.location().okMessage(mob,newMsg))
-								mob.location().send(mob,newMsg);
-							else
-								return false;
-						}
-					}
-				}
-				if(dropThis==null) break;
-				if((CMLib.flags().canBeSeenBy(dropThis,mob))
-				&&(!V.contains(dropThis)))
-					V.addElement(dropThis);
-				addendumStr="."+(++addendum);
-			}
-
-			boolean didAnything=false;
-			for(int i=0;i<V.size();i++)
-			{
-				if(destroyItem(mob,(Item)V.elementAt(i),false,true))
-					didAnything=true;
-				else
-				if(V.elementAt(i) instanceof Coins)
-					((Coins)V.elementAt(i)).putCoinsBack();
-				else
-				if(V.elementAt(i) instanceof RawMaterial)
-					((RawMaterial)V.elementAt(i)).rebundle();
-			}
-			if(!didAnything)
-			{
-				if(V.size()==0)
-					mob.tell("You don't seem to be carrying that.");
-				else
-					mob.tell("You can't destroy that easily...");
-			}
-			mob.location().recoverRoomStats();
-			mob.location().recoverRoomStats();
-			return false;
-		}
-		
 		String commandType="";
 
 		if(commands.size()>1)
@@ -729,80 +363,37 @@ public class Destroy extends StdCommand
 		if(commandType.equals("EXIT"))
 		{
 			if(!CMSecurity.isAllowed(mob,mob.location(),"CMDEXITS")) return errorOut(mob);
-			mob.location().show(mob,null,CMMsg.MSG_OK_VISUAL,"^S<S-NAME> wave(s) <S-HIS-HER> arms...^?");
 			exits(mob,commands);
 		}
 		else
 		if(commandType.equals("ITEM"))
 		{
 			if(!CMSecurity.isAllowed(mob,mob.location(),"CMDITEMS")) return errorOut(mob);
-			mob.location().show(mob,null,CMMsg.MSG_OK_VISUAL,"^S<S-NAME> wave(s) <S-HIS-HER> arms...^?");
 			items(mob,commands);
 		}
 		else
 		if(commandType.equals("AREA"))
 		{
-			mob.location().show(mob,null,CMMsg.MSG_OK_VISUAL,"^S<S-NAME> wave(s) <S-HIS-HER> arms...^?");
 			areas(mob,commands);
 		}
 		else
 		if(commandType.equals("ROOM"))
 		{
-			mob.location().show(mob,null,CMMsg.MSG_OK_VISUAL,"^S<S-NAME> wave(s) <S-HIS-HER> arms...^?");
 			rooms(mob,commands);
-		}
-		else
-		if(commandType.equals("TITLE"))
-		{
-			if(!CMSecurity.isAllowed(mob,mob.location(),"TITLES")) return errorOut(mob);
-			mob.location().show(mob,null,CMMsg.MSG_OK_VISUAL,"^S<S-NAME> wave(s) <S-HIS-HER> arms...^?");
-			titles(mob,commands);
 		}
 		else
 		if(commandType.equals("USER"))
 		{
 			if(!CMSecurity.isAllowed(mob,mob.location(),"CMDPLAYERS")) return errorOut(mob);
-			mob.location().show(mob,null,CMMsg.MSG_OK_VISUAL,"^S<S-NAME> wave(s) <S-HIS-HER> arms...^?");
 			players(mob,commands);
 		}
 		else
-		if((commandType.equals("ACCOUNT"))&&(CMProps.getIntVar(CMProps.SYSTEMI_COMMONACCOUNTSYSTEM)>1))
+		if((commandType.equals("ACCOUNT"))&&(CMProps.Ints.COMMONACCOUNTSYSTEM.property()>1))
 		{
 			if(!CMSecurity.isAllowed(mob,mob.location(),"CMDPLAYERS")) return errorOut(mob);
-			mob.location().show(mob,null,CMMsg.MSG_OK_VISUAL,"^S<S-NAME> wave(s) <S-HIS-HER> arms...^?");
 			accounts(mob,commands);
 		}
-		else
-		if(commandType.equals("SOCIAL"))
-		{
-			if(!CMSecurity.isAllowed(mob,mob.location(),"CMDSOCIALS")) return errorOut(mob);
-			mob.location().show(mob,null,CMMsg.MSG_OK_VISUAL,"^S<S-NAME> wave(s) <S-HIS-HER> arms...^?");
-			socials(mob,commands);
-		}
-		else
-		if(commandType.equals("NOPURGE"))
-		{
-			if(!CMSecurity.isAllowed(mob,mob.location(),"NOPURGE")) return errorOut(mob);
-			int which=-1;
-			if(commands.size()>2)
-				which=CMath.s_int((String)commands.elementAt(2));
-			if(which<=0)
-				mob.tell("Please enter a valid player number to delete.  Use List nopurge for more information.");
-			else
-			{
-				StringBuffer newNoPurge=new StringBuffer("");
-				Vector protectedOnes=Resources.getFileLineVector(Resources.getFileResource("protectedplayers.ini",false));
-				if((protectedOnes!=null)&&(protectedOnes.size()>0))
-					for(int b=0;b<protectedOnes.size();b++)
-					{
-						String B=(String)protectedOnes.elementAt(b);
-						if(((b+1)!=which)&&(B.trim().length()>0))
-							newNoPurge.append(B+"\n");
-					}
-				Resources.updateFileResource("protectedplayers.ini",newNoPurge);
-				mob.tell("Ok.");
-			}
-		}
+/*
 		else
 		if(commandType.equals("TICKS"))
 		{
@@ -829,6 +420,7 @@ public class Destroy extends StdCommand
 				}
 			}
 		}
+*/
 		else
 		if(commandType.equals("BAN"))
 		{
@@ -857,7 +449,7 @@ public class Destroy extends StdCommand
 			else
 			{
 				CMLib.killThread(whichT,500,1);
-				Log.sysOut("CreateEdit",mob.Name()+" destroyed thread "+whichT.getName()+".");
+				Log.sysOut("CreateEdit",mob.name()+" destroyed thread "+whichT.getName()+".");
 				mob.tell("Stop sent to: "+whichT.getName()+".");
 			}
 		}
@@ -884,79 +476,17 @@ public class Destroy extends StdCommand
 		if(commandType.equals("MOB"))
 		{
 			if(!CMSecurity.isAllowed(mob,mob.location(),"CMDMOBS")) return errorOut(mob);
-			mob.location().show(mob,null,CMMsg.MSG_OK_VISUAL,"^S<S-NAME> wave(s) <S-HIS-HER> arms...^?");
 			mobs(mob,commands);
 		}
 		else
 		{
-			String allWord=CMParms.combine(commands,1);
-			Environmental thang=mob.location().fetchFromRoomFavorItems(null,allWord,Wearable.FILTER_ANY);
-			if(thang==null)
-				thang=mob.location().fetchFromMOBRoomFavorsItems(mob,null,allWord,Wearable.FILTER_ANY);
-			if((thang!=null)&&(thang instanceof Item))
-			{
-				commands.insertElementAt("ITEM",1);
-				execute(mob,commands,metaFlags);
-			}
-			else
-			if((thang!=null)&&(thang instanceof MOB))
-			{
-				if(((MOB)thang).isMonster())
-					commands.insertElementAt("MOB",1);
-				else
-					commands.insertElementAt("USER",1);
-				execute(mob,commands,metaFlags);
-			}
-			else
-			{
-				Room theRoom=null;
-				if(allWord.length()>0)
-				{
-					try{ theRoom=CMLib.map().getRoom(allWord); }catch(NoSuchElementException e){}
-				}
-				if(theRoom!=null)
-				{
-					commands=new Vector();
-					commands.addElement("DESTROY");
-					commands.addElement("ROOM");
-					commands.addElement(theRoom.roomID());
-					execute(mob,commands,metaFlags);
-				}
-				else
-				{
-					if(Directions.getGoodDirectionCode(allWord)>=0)
-					{
-						commands=new Vector();
-						commands.addElement("DESTROY");
-						commands.addElement("ROOM");
-						commands.addElement(allWord);
-						execute(mob,commands,metaFlags);
-
-						commands=new Vector();
-						commands.addElement("DESTROY");
-						commands.addElement("EXIT");
-						commands.addElement(allWord);
-						execute(mob,commands,metaFlags);
-					}
-					else
-					if(CMLib.socials().fetchSocial(allWord,true)!=null)
-					{
-						commands.insertElementAt("SOCIAL",1);
-						execute(mob,commands,metaFlags);
-					}
-					else
-					mob.tell(
-						"\n\rYou cannot destroy a '"+commandType+"'. "
-						+"However, you might try an "
-						+"EXIT, ITEM, AREA, USER, MOB, SESSION, TICKS, THREAD, SOCIAL, CLASS, ABILITY, COMPONENT, RACE, TITLE, BAN, NOPURGE, BUG, TYPO, IDEA, or a ROOM.");
-				}
-			}
+			mob.tell("\n\rYou cannot destroy a '"+commandType+
+			"'. However, you might try an EXIT, ITEM, AREA, USER, MOB, SESSION, TICKS, THREAD, BAN, or a ROOM.");
 		}
 		return false;
 	}
-	public double combatActionsCost(MOB mob, Vector cmds){return CMath.div(CMProps.getIntVar(CMProps.SYSTEMI_DEFCOMCMDTIME),100.0);}
-	public double actionsCost(MOB mob, Vector cmds){return CMath.div(CMProps.getIntVar(CMProps.SYSTEMI_DEFCMDTIME),100.0);}
 	public boolean canBeOrdered(){return false;}
+	public boolean securityCheck(MOB mob){return CMSecurity.isAllowedStartsWith(mob,mob.location(),"CMD");}
 
 	
 }

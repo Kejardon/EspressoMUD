@@ -4,7 +4,6 @@ import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -54,7 +53,7 @@ public class Channels extends StdCommand
 					col=1;
 				}
 				String channelName=names[x];
-				boolean onoff=CMath.isSet(pstats.getChannelMask(),x);
+				boolean onoff=(pstats.getChannelMask()&(1<<x))>0;
 				buf.append(CMStrings.padRight("^<CHANNELS '"+(onoff?"":"NO")+"'^>"+channelName+"^</CHANNELS^>"+(onoff?" (OFF)":""),24));
 			}
 		if(names.length==0)

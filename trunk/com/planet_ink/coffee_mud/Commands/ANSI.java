@@ -4,7 +4,6 @@ import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -22,7 +21,7 @@ import java.util.*;
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+	   http://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -40,24 +39,42 @@ public class ANSI extends StdCommand
 	public boolean execute(MOB mob, Vector commands, int metaFlags)
 		throws java.io.IOException
 	{
-		if(!mob.isMonster())
+		PlayerStats ps=mob.playerStats();
+		if(ps==null) return false;
+		PlayerAccount acct = ps.getAccount();
+		if(commands.size()>1)
 		{
-			PlayerAccount acct = null;
-			if(mob.playerStats()!=null)
-				acct = mob.playerStats().getAccount();
-			if(acct != null) acct.setFlag(PlayerAccount.FLAG_ANSI, true);
-			if(!CMath.bset(mob.playerStats().getBitmap(),PlayerStats.ATT_ANSI))
+			if(((String)commands.get(1)).equalsIgnoreCase("on"))
 			{
-				mob.playerStats().setBitmap(CMath.setb(mob.playerStats().getBitmap(),PlayerStats.ATT_ANSI));
-				mob.tell("^!ANSI^N ^Hcolour^N enabled.\n\r");
+				if(acct != null) acct.setFlag(PlayerAccount.FLAG_ANSI, true);
+				if((ps.getBitmap()&PlayerStats.ATT_ANSI)==0)
+				{
+					ps.setBitmap(ps.getBitmap()|PlayerStats.ATT_ANSI);
+					mob.tell("^!ANSI^N ^Hcolour^N enabled.\n\r");
+				}
+				else
+					mob.tell("^!ANSI^N is ^Halready^N enabled.\n\r");
+				mob.session().setClientTelnetMode(Session.TELNET_ANSI,true);
+				mob.session().setServerTelnetMode(Session.TELNET_ANSI,true);
+				return false;
 			}
-			else
+			else if(((String)commands.get(1)).equalsIgnoreCase("off"))
 			{
-				mob.tell("^!ANSI^N is ^Halready^N enabled.\n\r");
+				if(acct != null) acct.setFlag(PlayerAccount.FLAG_ANSI, false);
+				if((ps.getBitmap()&PlayerStats.ATT_ANSI)>0)
+				{
+					ps.setBitmap(ps.getBitmap()&~PlayerStats.ATT_ANSI);
+					mob.tell("ANSI colour disabled.\n\r");
+				}
+				else
+					mob.tell("ANSI is already disabled.\n\r");
+				mob.session().setClientTelnetMode(Session.TELNET_ANSI,false);
+				mob.session().setServerTelnetMode(Session.TELNET_ANSI,false);
+				return false;
 			}
-            mob.session().setClientTelnetMode(Session.TELNET_ANSI,true);
-            mob.session().setServerTelnetMode(Session.TELNET_ANSI,true);
 		}
+		mob.tell(((ps.getBitmap()&PlayerStats.ATT_ANSI)>0)?("^!ANSI^N is ^Hcurrently^N enabled.\n\r"):("ANSI is currently disabled.\n\r"));
+		mob.tell("Use 'ansi on' or 'ansi off' to set colour.\n\r");
 		return false;
 	}
 	

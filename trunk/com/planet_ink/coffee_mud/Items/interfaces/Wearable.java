@@ -9,6 +9,13 @@ import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
 
 
+/* General TODO stuff
+Default wear location recognition for a mob and an item
+Specified wear location for a mob and an item
+	Both should be in the mob or item itself for more accessible, not just in a command
+Tools/assistance required to wear?
+*/
+
 public interface Wearable extends Item
 {
 	public enum WearType
