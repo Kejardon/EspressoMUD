@@ -49,7 +49,7 @@ public class Unload extends StdCommand
 			return false;
 		}
 		String what=(String)commands.elementAt(1);
-		if((what.equalsIgnoreCase("CLASS")||(CMClass.classCode(what)>=0))
+		if((what.equalsIgnoreCase("CLASS")||(CMClass.valueOf(CMClass.Objects.class, what)!=null))
 		&&(CMSecurity.isASysOp(mob)))
 		{
 			if(commands.size()<3)
@@ -62,11 +62,11 @@ public class Unload extends StdCommand
 				Object O=CMClass.getClass((String)commands.elementAt(2));
 				if(O!=null)
 				{
-					int x=CMClass.classCode(O);
-					if(x>=0) what=CMClass.OBJECT_DESCS[x];
+					CMClass.Objects x=CMClass.classCode(O);
+					if(x!=null) what=x.toString();
 				}
 			}
-			if(CMClass.classCode(what)<0)
+			if(CMClass.valueOf(CMClass.Objects.class, what)==null)
 				mob.tell("Don't know how to load a '"+what+"'.  Try one of the following: "+list);
 			else
 			{
@@ -79,7 +79,7 @@ public class Unload extends StdCommand
 					if(!(O instanceof CMObject))
 						mob.tell("Class '"+name+"' was not found in the class loader.");
 					else
-					if(!CMClass.delClass(what,(CMObject)O))
+					if(!CMClass.classCode(what).remove((CMObject)O))
 						mob.tell("Failed to unload class '"+name+"' from the class loader.");
 					else
 						mob.tell("Class '"+name+"' was unloaded.");
@@ -144,14 +144,6 @@ public class Unload extends StdCommand
 				}
 				if(saveFirst)
 				{
-					// important! shutdown their affects!
-					for(int a=M.numEffects()-1;a>=0;a--)
-					{
-						Ability A=M.fetchEffect(a);
-						if((A!=null)&&(A.canBeUninvoked()))
-							A.unInvoke();
-						M.delEffect(A);
-					}
 					CMLib.database().DBUpdatePlayer(M);
 				}
 			}
@@ -234,6 +226,4 @@ public class Unload extends StdCommand
 	
 	public boolean canBeOrdered(){return true;}
 	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,mob.location(),"LOADUNLOAD");}
-
-	
 }

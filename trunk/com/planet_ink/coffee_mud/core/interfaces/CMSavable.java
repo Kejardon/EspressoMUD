@@ -54,7 +54,7 @@ public interface CMSavable extends CMObject
 	public Enum[] headerEnumS()
 	{
 		if(headerEnumS==null)
-			headerEnumS=CMath.combineArrays(new Enum[] {SCode.values()[0]}, super.headerEnumS());
+			headerEnumS=(Enum[])CMath.combineArrays(new Enum[] {SCode.values()[0]}, super.headerEnumS());
 		return headerEnumS;
 	}
 

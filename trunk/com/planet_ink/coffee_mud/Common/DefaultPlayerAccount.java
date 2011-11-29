@@ -136,10 +136,10 @@ public class DefaultPlayerAccount implements PlayerAccount
 
 	private enum SCode implements CMSavable.SaveEnum{
 		FRN(){
-			public String save(DefaultPlayerAccount E){ return CMLib.coffeeMaker().savAString((String[])E.friends.toArray()); }
+			public String save(DefaultPlayerAccount E){ return CMLib.coffeeMaker().savAString((String[])E.friends.toArray(new String[0])); }
 			public void load(DefaultPlayerAccount E, String S){ for(String newF : CMLib.coffeeMaker().loadAString(S)) E.friends.add(newF); } },
 		IGN(){
-			public String save(DefaultPlayerAccount E){ return CMLib.coffeeMaker().savAString((String[])E.ignored.toArray()); }
+			public String save(DefaultPlayerAccount E){ return CMLib.coffeeMaker().savAString((String[])E.ignored.toArray(new String[0])); }
 			public void load(DefaultPlayerAccount E, String S){ for(String newI : CMLib.coffeeMaker().loadAString(S)) E.ignored.add(newI); } },
 		LIP(){
 			public String save(DefaultPlayerAccount E){ return E.lastIP; }
@@ -148,7 +148,7 @@ public class DefaultPlayerAccount implements PlayerAccount
 			public String save(DefaultPlayerAccount E){ return E.Password; }
 			public void load(DefaultPlayerAccount E, String S){ E.Password=S.intern(); } },
 		FLG(){
-			public String save(DefaultPlayerAccount E){ return CMLib.coffeeMaker().savAString((String[])E.acctFlags.toArray()); }
+			public String save(DefaultPlayerAccount E){ return CMLib.coffeeMaker().savAString((String[])E.acctFlags.toArray(new String[0])); }
 			public void load(DefaultPlayerAccount E, String S){ for(String newF : CMLib.coffeeMaker().loadAString(S)) E.acctFlags.add(newF); } },
 		;
 		public abstract String save(DefaultPlayerAccount E);
@@ -175,7 +175,7 @@ public class DefaultPlayerAccount implements PlayerAccount
 						else if(action=='M') CMLib.genEd().genMiscSet(M, V.get(i)); } } } },
 		FLAGS(){
 			public String brief(DefaultPlayerAccount E){return ""+E.acctFlags.size();}
-			public String prompt(DefaultPlayerAccount E){return ""+E.acctFlags.toArray();}
+			public String prompt(DefaultPlayerAccount E){return ""+E.acctFlags.toArray(new String[0]);}
 			public void mod(DefaultPlayerAccount E, MOB M){
 				boolean done=false;
 				while((M.session()!=null)&&(!M.session().killFlag())&&(!done)) {

@@ -172,7 +172,7 @@ public class Emoter extends ActiveTicker
 			if(behaver instanceof Room)
 			{
 				emoter=(Item)CMClass.Objects.ITEM.getNew("StdItem");
-				for(MOB M : (MOB[])msg.source().toArray())
+				for(MOB M : (MOB[])msg.source().toArray(new MOB[0]))
 					emoteHere((Room)behaver,emoter,emote,M,false);
 				emoter.destroy();
 				return;

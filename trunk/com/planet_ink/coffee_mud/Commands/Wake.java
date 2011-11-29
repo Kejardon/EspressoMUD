@@ -40,21 +40,17 @@ public class Wake extends StdCommand
 	public boolean execute(MOB mob, Vector commands, int metaFlags)
 		throws java.io.IOException
 	{
-		if(commands!=null)
-			commands.removeElementAt(0);
-		if((commands==null)||(commands.size()==0))
+		commands.removeElementAt(0);
+		if(commands.size()==0)
 		{
-			if(!CMLib.flags().isSleeping(mob))
-				mob.tell("You aren't sleeping!?");
-			else
-			{
-				CMMsg msg=CMClass.getMsg(mob,null,null,CMMsg.MSG_STAND,"<S-NAME> awake(s) and stand(s) up.");
-				if(mob.location().okMessage(mob,msg))
-					mob.location().send(mob,msg);
-			}
+//			if(!CMLib.flags().isSleeping(mob))
+//				mob.tell("You aren't sleeping!?");
+//			else
+				mob.location().doMessage(CMClass.getMsg(mob,null,null,EnumSet.of(CMMsg.MsgCode.STAND),"<S-NAME> awake(s) and stand(s) up."));
 		}
 		else
 		{
+/*	TODO. Need some way to decide if should attempt SOUND or KNOCK
 			String whom=CMParms.combine(commands,0);
 			MOB M=mob.location().fetchInhabitant(whom);
 			if((M==null)||(!CMLib.flags().canBeSeenBy(M,mob)))
@@ -68,16 +64,12 @@ public class Wake extends StdCommand
 				return false;
 			}
 			CMMsg msg=CMClass.getMsg(mob,M,null,CMMsg.MSG_NOISYMOVEMENT,"<S-NAME> attempt(s) to wake <T-NAME> up.");
-			if(mob.location().okMessage(mob,msg))
-			{
-				mob.location().send(mob,msg);
-				execute(M,null,metaFlags|Command.METAFLAG_ORDER);
-			}
+			mob.location().doMessage(msg);
+*/
 		}
 		return false;
 	}
-    public double combatActionsCost(MOB mob, Vector cmds){return CMath.div(CMProps.getIntVar(CMProps.SYSTEMI_DEFCOMCMDTIME),100.0);}
-    public double actionsCost(MOB mob, Vector cmds){return CMath.div(CMProps.getIntVar(CMProps.SYSTEMI_DEFCMDTIME),100.0);}
+	public double actionsCost(MOB mob, Vector cmds){return DEFAULT_NONCOMBATACTION;}
 	public boolean canBeOrdered(){return true;}
 
 	

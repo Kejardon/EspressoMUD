@@ -4,7 +4,6 @@ import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -38,104 +37,33 @@ public class Stat  extends StdCommand
 	private String[] access={"STAT"};
 	public String[] getAccessWords(){return access;}
 
-	public static final int ABLETYPE_EQUIPMENT=-2;
-	public static final int ABLETYPE_INVENTORY=-3;
-	public static final int ABLETYPE_TITLES=-8;
-	public static final int ABLETYPE_ROOMSEXPLORED=-9;
-	public static final int ABLETYPE_AREASEXPLORED=-10;
-	public static final int ABLETYPE_WORLDEXPLORED=-11;
+	public static final int ABLETYPE_EQUIPMENT=0;
+	public static final int ABLETYPE_INVENTORY=1;
+	public static final int ABLETYPE_TITLES=2;
 	
 	public static final String[][] ABLETYPE_DESCS={
 		{"EQUIPMENT","EQ","EQUIP"},
 		{"INVENTORY","INVEN","INV"},
-		{"COMBAT"},
 		{"TITLES","TITLE"},
-		{"ROOMSEXPLORED"},
-		{"AREASEXPLORED"},
-		{"WORLDEXPLORED"},
 	};
-	
-	public MOB getTarget(MOB mob, String targetName, boolean quiet)
-	{
-		MOB target=null;
-		if(targetName.length()>0)
-		{
-			target=mob.location().fetchInhabitant(targetName);
-			if(target==null)
-			{
-				Environmental t=mob.location().fetchFromRoomFavorItems(null,targetName,Wearable.FILTER_UNWORNONLY);
-				if((t!=null)&&(!(t instanceof MOB)))
-				{
-					if(!quiet)
-						mob.tell(mob,t,null,"You can't do that to <T-NAMESELF>.");
-					return null;
-				}
-			}
-		}
-		return target;
-	}
-
-	public boolean showTableStats(MOB mob, int days, int scale, String rest)
-	{
-		Calendar ENDQ=Calendar.getInstance();
-		ENDQ.add(Calendar.DATE,-days);
-		ENDQ.set(Calendar.HOUR_OF_DAY,23);
-		ENDQ.set(Calendar.MINUTE,59);
-		ENDQ.set(Calendar.SECOND,59);
-		ENDQ.set(Calendar.MILLISECOND,999);
-		mob.tell("No Stats?!");
-		return false;
-	}
 
 	public boolean execute(MOB mob, Vector commands, int metaFlags)
 		throws java.io.IOException
 	{
+		if(mob.isMonster()) return false;
 		commands.removeElementAt(0);
 		if((commands.size()>0)
-		&&(commands.firstElement() instanceof String)
 		&&((String)commands.firstElement()).equals("?"))
 		{
 			StringBuilder msg = new StringBuilder("STAT allows the following options: \n\r");
-			msg.append("[MOB/PLAYER NAME], [NUMBER] [DAYS/WEEKS/MONTHS], ");
+			msg.append("[MOB/PLAYER NAME]");
 			for(int i=0;i<ABLETYPE_DESCS.length;i++)
-				msg.append(ABLETYPE_DESCS[i][0]+", ");
-			msg.append(CMParms.toStringList(Ability.ACODE_DESCS));
+				msg.append(", "+ABLETYPE_DESCS[i][0]);
 			mob.tell(msg.toString());
 			return false;
 		}
-		if(commands.size()==0) commands.addElement("TODAY");
 		String s1=(commands.size()>0)?((String)commands.elementAt(0)).toUpperCase():"";
 		String s2=(commands.size()>1)?((String)commands.elementAt(1)).toUpperCase():"";
-		if(s1.equalsIgnoreCase("TODAY"))
-			return showTableStats(mob,1,1,CMParms.combine(commands,1));
-		else
-		if(commands.size()>1)
-		{
-			String rest=(commands.size()>2)?CMParms.combine(commands,2):"";
-			if(s2.equals("DAY")&&(CMath.isNumber(s1)))
-				return showTableStats(mob,(CMath.s_int(s1)),1,rest);
-			else
-			if(s2.equals("DAYS")&&(CMath.isNumber(s1)))
-				return showTableStats(mob,(CMath.s_int(s1)),1,rest);
-			else
-			if(s2.equals("WEEK")&&(CMath.isNumber(s1)))
-				return showTableStats(mob,(CMath.s_int(s1)*7),7,rest);
-			else
-			if(s2.equals("WEEKS")&&(CMath.isNumber(s1)))
-				return showTableStats(mob,(CMath.s_int(s1)*7),7,rest);
-			else
-			if(s2.equals("MONTH")&&(CMath.isNumber(s1)))
-				return showTableStats(mob,(CMath.s_int(s1)*30),30,rest);
-			else
-			if(s2.equals("MONTHS")&&(CMath.isNumber(s1)))
-				return showTableStats(mob,(CMath.s_int(s1)*30),30,rest);
-			else
-			if(s2.equals("YEAR")&&(CMath.isNumber(s1)))
-				return showTableStats(mob,(CMath.s_int(s1)*365),365,rest);
-			else
-			if(s2.equals("YEARS")&&(CMath.isNumber(s1)))
-				return showTableStats(mob,(CMath.s_int(s1)*365),365,rest);
-		}
 		
 		int ableTypes=-1;
 		if(commands.size()>1)
@@ -145,42 +73,13 @@ public class Stat  extends StdCommand
 				for(int is=0;is<ABLETYPE_DESCS[i].length;is++)
 					if(s.equals(ABLETYPE_DESCS[i][is]))
 					{
-						ableTypes=-2 -i;
+						ableTypes=i;
 						commands.removeElementAt(0);
 						break;
 					}
-			if(ableTypes==-1)
-			for(int a=0;a<Ability.ACODE_DESCS.length;a++)
-			{
-				if((Ability.ACODE_DESCS[a]+"S").equals(s)||(Ability.ACODE_DESCS[a]).equals(s))
-				{
-					ableTypes=a;
-					commands.removeElementAt(0);
-					break;
-				}
-			}
 		}
 		String MOBname=CMParms.combine(commands,0);
-		MOB target=getTarget(mob,MOBname,true);
-		if((target==null)||(!target.isMonster()))
-			target=mob.location().fetchInhabitant(MOBname);
-		if((target==null)||(!target.isMonster()))
-		{
-			try
-			{
-				Vector inhabs=CMLib.map().findInhabitants(CMLib.map().rooms(), mob,MOBname,100);
-				for(Enumeration m=inhabs.elements();m.hasMoreElements();)
-				{
-					MOB mob2=(MOB)m.nextElement();
-					Room R=mob2.location();
-					if(CMSecurity.isAllowed(mob,R,"STAT"))
-					{
-						target=mob2;
-						break;
-					}
-				}
-			}catch(NoSuchElementException nse){}
-		}
+		MOB target=mob.location().fetchInhabitant(MOBname);
 		if(target==null)
 			target=CMLib.players().getLoadPlayer(MOBname);
 		if(target==null)
@@ -213,74 +112,10 @@ public class Stat  extends StdCommand
 			str.append("\n\r");
 		}
 		else
-		if(ableTypes==ABLETYPE_WORLDEXPLORED)
-		{
-			if(target.playerStats()!=null)
-				str.append(target.name()+" has explored "+mob.playerStats().percentVisited(mob,null)+"% of the world.\n\r");
-			else
-				str.append("Exploration data is not kept on mobs.\n\r");
-		}
-		else
-		if(ableTypes==ABLETYPE_AREASEXPLORED)
-		{
-			if(target.playerStats()!=null)
-			{
-				for(Enumeration e=CMLib.map().areas();e.hasMoreElements();)
-				{
-					Area A=(Area)e.nextElement();
-					int pct=mob.playerStats().percentVisited(target, A);
-					if(pct>0) str.append("^H"+A.name()+"^N: "+pct+"%, ");
-				}
-				str=new StringBuilder(str.toString().substring(0,str.toString().length()-2)+"\n\r");
-			}
-			else
-				str.append("Exploration data is not kept on mobs.\n\r");
-		}
-		else
-		if(ableTypes==ABLETYPE_ROOMSEXPLORED)
-		{
-			if(target.playerStats()!=null)
-			{
-				for(Enumeration e=CMLib.map().rooms();e.hasMoreElements();)
-				{
-					Room R=(Room)e.nextElement();
-					if((R.roomID().length()>0)&&(mob.playerStats().hasVisited(R)))
-						str.append("^H"+R.roomID()+"^N, ");
-				}
-				str=new StringBuilder(str.toString().substring(0,str.toString().length()-2)+"\n\r");
-			}
-			else
-				str.append("Exploration data is not kept on mobs.\n\r");
-		}
-		else
 			str=CMLib.commands().getScore(target);
-		if(!mob.isMonster())
-			mob.session().wraplessPrintln(str.toString());
+		mob.session().wraplessPrintln(str.toString());
 		return false;
 	}
-
-	public void recoverMOB(MOB M)
-	{
-		M.recoverCharStats();
-		M.recoverEnvStats();
-		M.resetToMaxState();
-	}
-	public void testMOB(MOB target,MOB M, Environmental test)
-	{
-		test.affectCharStats(target,M.charStats());
-		test.affectEnvStats(target,M.envStats());
-	}
-	public void reportOnDiffMOB(Environmental test, int diff, StringBuilder str)
-	{
-		if(diff>0)
-			str.append("^C"+CMStrings.padRight(test.Name(),40)+": ^W+"+diff+"\n\r");
-		else
-		if(diff<0)
-			str.append("^C"+CMStrings.padRight(test.Name(),40)+": ^W"+diff+"\n\r");
-	}
-	
 	public boolean canBeOrdered(){return true;}
 	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,mob.location(),"STAT");}
-
-	
 }

@@ -4,7 +4,6 @@ import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -22,7 +21,7 @@ import java.util.*;
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+	   http://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -41,30 +40,27 @@ public class Logoff extends StdCommand
 	public boolean execute(MOB mob, Vector commands, int metaFlags)
 		throws java.io.IOException
 	{
-		if(mob.soulMate()!=null)
-			Quit.dispossess(mob);
-		else
 		if(!mob.isMonster())
 		{
 			Session session=mob.session();
-            if((session!=null)
-            &&(session.getLastPKFight()>0)
-            &&((System.currentTimeMillis()-session.getLastPKFight())<(5*60*1000)))
-            {
-                mob.tell("You must wait a few more minutes before you are allowed to logout.");
-                return false;
-            }
+			if((session!=null)
+			&&(session.getLastPKFight()>0)
+			&&((System.currentTimeMillis()-session.getLastPKFight())<(5*60*1000)))
+			{
+				mob.tell("You must wait a few more minutes before you are allowed to logout.");
+				return false;
+			}
 			try
 			{
 				if ((session != null)&& (session.confirm("\n\rLogout -- are you sure (y/N)?","N")))
 				{
-		            CMMsg msg=CMClass.getMsg(mob,null,CMMsg.MSG_QUIT,null);
-		            Room R=mob.location();
-	                if((R!=null)&&(R.okMessage(mob,msg))) 
-	                {
-	                    CMLib.map().sendGlobalMessage(mob,CMMsg.TYP_QUIT, msg);
-	                    session.logout(true);
-	                }
+					CMMsg msg=CMClass.getMsg(mob,null,null,EnumSet.of(CMMsg.MsgCode.QUIT),null);
+					Room R=mob.location();
+					if((R!=null)&&(R.okMessage(mob,msg))) 
+					{
+						CMLib.map().sendGlobalMessage(mob,EnumSet.of(CMMsg.MsgCode.QUIT), msg);
+						session.logout(true);
+					}
 				}
 			}
 			catch(Exception e)

@@ -4,7 +4,6 @@ import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -22,7 +21,7 @@ import java.util.*;
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+	   http://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -38,9 +37,20 @@ public class Read extends StdCommand
 	private String[] access={"READ"};
 	public String[] getAccessWords(){return access;}
 
-	public void read(MOB mob, Environmental thisThang, String theRest)
+	public boolean execute(MOB mob, Vector commands, int metaFlags)
+		throws java.io.IOException
 	{
-		if((thisThang==null)||((!(thisThang instanceof Item)&&(!(thisThang instanceof Exit))))||(!CMLib.flags().canBeSeenBy(thisThang,mob)))
+		if(commands.size()<2)
+		{
+			mob.tell("Read what?");
+			return false;
+		}
+		commands.remove(0);
+
+		Interactable thisThang=CMLib.english().fetchInteractable(CMParms.combine(commands,0),false,1,mob,mob.location());
+		//TODO: How do I want Readables to work exactly?
+/*
+		if((thisThang==null)||((!(thisThang instanceof Item)&&(!(thisThang instanceof Exit)))))
 		{
 			mob.tell("You don't seem to have that.");
 			return;
@@ -58,45 +68,10 @@ public class Read extends StdCommand
 		String soMsg=(mob.isMine(thisThang)?srcMsg:null);
 		String tMsg=theRest;
 		if((tMsg==null)||(tMsg.trim().length()==0)||(thisThang instanceof MOB)) tMsg=soMsg;
-		CMMsg newMsg=CMClass.getMsg(mob,thisThang,null,CMMsg.MSG_READ,srcMsg,CMMsg.MSG_READ,tMsg,CMMsg.MSG_READ,soMsg);
-		if(mob.location().okMessage(mob,newMsg))
-			mob.location().send(mob,newMsg);
-
-	}
-
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
-	{
-		if(commands.size()<2)
-		{
-			mob.tell("Read what?");
-			return false;
-		}
-		commands.removeElementAt(0);
-		if(commands.firstElement() instanceof Environmental)
-		{
-			read(mob,(Environmental)commands.firstElement(),CMParms.combine(commands,1));
-			return false;
-		}
-
-		int dir=Directions.getGoodDirectionCode(CMParms.combine(commands,0));
-		Environmental thisThang=null;
-		if(dir>=0)	thisThang=mob.location().getExitInDir(dir);
-		thisThang=mob.location().fetchFromMOBRoomFavorsItems(mob,null,(String)commands.lastElement(),Wearable.FILTER_ANY);
-		String theRest=null;
-		if(thisThang==null)
-			thisThang=mob.location().fetchFromMOBRoomFavorsItems(mob,null,CMParms.combine(commands,0),Wearable.FILTER_ANY);
-		else
-		{
-			commands.removeElementAt(commands.size()-1);
-			theRest=CMParms.combine(commands,0);
-		}
-		read(mob,thisThang, theRest);
+		mob.location().doMessage(CMClass.getMsg(mob,thisThang,null,CMMsg.MSG_READ,srcMsg,CMMsg.MSG_READ,tMsg,CMMsg.MSG_READ,soMsg));
+*/
 		return false;
 	}
-    public double combatActionsCost(MOB mob, Vector cmds){return CMath.div(CMProps.getIntVar(CMProps.SYSTEMI_DEFCOMCMDTIME),100.0);}
-    public double actionsCost(MOB mob, Vector cmds){return CMath.div(CMProps.getIntVar(CMProps.SYSTEMI_DEFCMDTIME),100.0);}
+	public double actionsCost(MOB mob, Vector cmds){return DEFAULT_NONCOMBATACTION;}
 	public boolean canBeOrdered(){return true;}
-
-	
 }

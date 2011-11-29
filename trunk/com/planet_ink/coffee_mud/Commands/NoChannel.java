@@ -22,7 +22,7 @@ import java.util.*;
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+	   http://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -35,7 +35,7 @@ public class NoChannel extends StdCommand
 {
 	public NoChannel(){}
 
-	private String[] access=null;
+	private String[] access=new String[0];
 	public String[] getAccessWords(){return access;}
 	public boolean execute(MOB mob, Vector commands, int metaFlags)
 		throws java.io.IOException
@@ -53,22 +53,22 @@ public class NoChannel extends StdCommand
 				channelName=CMLib.channels().getChannelName(c);
 			}
 		}
-        if(channelNum<0)
-        for(int c=0;c<CMLib.channels().getNumChannels();c++)
-        {
-            if(CMLib.channels().getChannelName(c).toUpperCase().startsWith(channelName))
-            {
-                channelNum=c;
-                channelName=CMLib.channels().getChannelName(c);
-            }
-        }
+		if(channelNum<0)
+		for(int c=0;c<CMLib.channels().getNumChannels();c++)
+		{
+			if(CMLib.channels().getChannelName(c).toUpperCase().startsWith(channelName))
+			{
+				channelNum=c;
+				channelName=CMLib.channels().getChannelName(c);
+			}
+		}
 		if((channelNum<0)
 		||(!CMLib.masking().maskCheck(CMLib.channels().getChannelMask(channelNum),mob,true)))
 		{
 			mob.tell("This channel is not available to you.");
 			return false;
 		}
-		if(!CMath.isSet(pstats.getChannelMask(),channelNum))
+		if((pstats.getChannelMask()&channelNum)!=0)
 		{
 			pstats.setChannelMask(pstats.getChannelMask()|(1<<channelNum));
 			mob.tell("The "+channelName+" channel has been turned off.  Use `"+channelName.toUpperCase()+"` to turn it back on.");

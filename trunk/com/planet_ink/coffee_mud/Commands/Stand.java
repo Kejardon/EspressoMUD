@@ -4,7 +4,6 @@ import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -42,24 +41,14 @@ public class Stand extends StdCommand
 		throws java.io.IOException
 	{
 		boolean ifnecessary=((commands.size()>1)&&(((String)commands.lastElement()).equalsIgnoreCase("IFNECESSARY")));
-		Room room = CMLib.map().roomLocation(mob);
+/*
 		if(CMLib.flags().isStanding(mob))
-		{
-			if(!ifnecessary)
-				mob.tell("You are already standing!");
-		}
+			mob.tell("You are already standing!");
 		else
-		if(room!=null)
-		{
-			CMMsg msg=CMClass.getMsg(mob,null,null,CMMsg.MSG_STAND,mob.amDead()?null:"<S-NAME> stand(s) up.");
-			if(room.okMessage(mob,msg))
-				room.send(mob,msg);
-		}
+*/
+			mob.location().doMessage(CMClass.getMsg(mob,null,null,EnumSet.of(CMMsg.MsgCode.STAND),"<S-NAME> stand(s) up."));
 		return false;
 	}
-    public double combatActionsCost(MOB mob, Vector cmds){return CMath.div(CMProps.getIntVar(CMProps.SYSTEMI_DEFCOMCMDTIME),100.0);}
-    public double actionsCost(MOB mob, Vector cmds){return CMath.div(CMProps.getIntVar(CMProps.SYSTEMI_DEFCMDTIME),100.0);}
+	public double actionsCost(MOB mob, Vector cmds){return DEFAULT_NONCOMBATACTION;}
 	public boolean canBeOrdered(){return true;}
-
-	
 }

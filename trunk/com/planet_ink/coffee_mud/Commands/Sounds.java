@@ -42,32 +42,51 @@ public class Sounds extends StdCommand
 	public boolean execute(MOB mob, Vector commands, int metaFlags)
 		throws java.io.IOException
 	{
-		if(!mob.isMonster())
+		PlayerStats ps=mob.playerStats();
+		if(ps==null) return false;
+		if(commands.size()>1)
 		{
-			if((!CMath.bset(mob.playerStats().getBitmap(),PlayerStats.ATT_SOUND))
-			||(!mob.session().clientTelnetMode(Session.TELNET_MSP)))
+			if(((String)commands.get(1)).equalsIgnoreCase("on"))
 			{
-				mob.session().changeTelnetMode(Session.TELNET_MSP,true);
-				for(int i=0;((i<5)&&(!mob.session().clientTelnetMode(Session.TELNET_MSP)));i++)
+				if(((ps.getBitmap()&PlayerStats.ATT_SOUND)==0)
+				||(!mob.session().clientTelnetMode(Session.TELNET_MSP)))
 				{
-					try{mob.session().prompt("",100);}catch(Exception e){}
-				}
-				if(mob.session().clientTelnetMode(Session.TELNET_MSP))
-				{
-					mob.playerStats().setBitmap(CMath.setb(mob.playerStats().getBitmap(),PlayerStats.ATT_SOUND));
-					mob.tell("MSP Sound/Music enabled.\n\r");
+					mob.session().changeTelnetMode(Session.TELNET_MSP,true);
+					for(int i=0;((i<5)&&(!mob.session().clientTelnetMode(Session.TELNET_MSP)));i++)
+					{
+						try{mob.session().prompt("",100);}catch(Exception e){}
+					}
+					if(mob.session().clientTelnetMode(Session.TELNET_MSP))
+					{
+						mob.playerStats().setBitmap(mob.playerStats().getBitmap()|PlayerStats.ATT_SOUND);
+						mob.tell("MSP Sound/Music enabled.\n\r");
+					}
+					else
+						mob.tell("Your client does not appear to support MSP.");
 				}
 				else
-					mob.tell("Your client does not appear to support MSP.");
+					mob.tell("MSP Sound/Music is already enabled.\n\r");
+				return false;
 			}
-			else
+			else if(((String)commands.get(1)).equalsIgnoreCase("off"))
 			{
-				mob.tell("MSP Sound/Music is already enabled.\n\r");
+				if(((ps.getBitmap()&PlayerStats.ATT_SOUND)>0)||(mob.session().clientTelnetMode(Session.TELNET_MSP)))
+				{
+					mob.playerStats().setBitmap(mob.playerStats().getBitmap()&~PlayerStats.ATT_SOUND);
+					mob.session().changeTelnetMode(Session.TELNET_MSP,false);
+					mob.session().setClientTelnetMode(Session.TELNET_MSP,false);
+					mob.tell("MSP Sound/Music disabled.\n\r");
+				}
+				else
+					mob.tell("MSP Sound/Music already disabled.\n\r");
+				return false;
 			}
 		}
+		mob.tell(((ps.getBitmap()&PlayerStats.ATT_SOUND)>0)?("MSP Sound/Music is currently enabled.\n\r"):("MSP Sound/Music is currently disabled.\n\r"));
+		mob.tell("Use 'sounds on' or 'sounds off' to set.\n\r");
 		return false;
 	}
-	
+
 	public boolean canBeOrdered(){return true;}
 	public boolean securityCheck(MOB mob){return super.securityCheck(mob)&&(!CMSecurity.isDisabled("MSP"));}
 }

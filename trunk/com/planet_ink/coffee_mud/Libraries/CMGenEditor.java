@@ -443,7 +443,7 @@ public class CMGenEditor extends StdLibrary implements GenericEditor
 						R=CMLib.map().getRoom(roomID);
 					}
 					if(R!=null)
-						exits.add(new REMap(R, e));
+						exits.add(new Room.REMap(R, e));
 				}
 			}
 			else if(i<V.size())
@@ -460,7 +460,15 @@ public class CMGenEditor extends StdLibrary implements GenericEditor
 						if(roomID.equals("")) break;
 						R=CMLib.map().getRoom(roomID);
 					}
-					if(R!=null) exits.changeExit(V.get(i), R);
+					if(R!=null) synchronized(exits)
+					{
+						Room.REMap old=V.get(i);
+						i=exits.indexOf(old);
+						if(i<0)
+							M.tell("Whoops, that exit disappeared when I wasn't looking!");
+						else
+							exits.set(i, new Room.REMap(R, old.exit));
+					}
 				}
 			}
 		}
@@ -519,7 +527,7 @@ public class CMGenEditor extends StdLibrary implements GenericEditor
 				S.append(E.toString());
 			M.session().rawPrintln(S.toString());
 			S=new StringBuilder("Current: ");
-			for(Enum E : (Enum[])set.toArray())
+			for(Enum E : (Enum[])set.toArray(new Enum[0]))
 				S.append(E.toString());
 			M.session().rawPrintln(S.toString());
 			String newString=M.session().prompt("Enter an option to toggle: ","");

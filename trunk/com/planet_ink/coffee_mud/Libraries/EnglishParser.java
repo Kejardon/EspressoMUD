@@ -107,7 +107,7 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 		return str.substring(0,x)+" "+adjective+" "+str.substring(x+1);
 	}
 	
-	public Object findCommand(MOB mob, Vector commands)
+	public Command findCommand(MOB mob, Vector commands)
 	{
 		if((mob==null)
 		||(commands==null)
@@ -468,8 +468,8 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 	}
 
 	public Interactable fetchInteractable(Vector<? extends Interactable> list, String srchStr, boolean exactOnly)
-	{ return fetchInteractable(list.toArray(), srchStr, exactOnly); }
-	protected boolean thingCheck(Vector<? extends Interactable> V, Interactable thisThang, String srchStr, boolean allFlag, boolean exact, int maxDepth, int[] numLeft)
+	{ return fetchInteractable((Interactable[])list.toArray(new Interactable[0]), srchStr, exactOnly); }
+	protected boolean thingCheck(Vector<Interactable> V, Interactable thisThang, String srchStr, boolean allFlag, boolean exact, int maxDepth, int[] numLeft)
 	{
 		if(exact)
 		{
@@ -497,7 +497,7 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 		{
 			ItemCollection col=ItemCollection.DefaultItemCol.getFrom(thisThang);
 			if(col!=null)
-				if(thingArrayCheck(V, (Item[])col.allItems().toArray(), srchStr, allFlag, exact, maxDepth-1, numLeft))
+				if(thingArrayCheck(V, (Item[])col.allItems().toArray(new Item[0]), srchStr, allFlag, exact, maxDepth-1, numLeft))
 					return true;
 			if(thisThang instanceof Room)
 			{
@@ -505,14 +505,14 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 				for(int i=0;i<R.numExits();i++)
 				{
 					Exit E=R.getExit(i);
-					if((E!=null)&&(thingCheck(E, srchStr, allFlag, exact, maxDepth-1, numLeft)))
+					if((E!=null)&&(thingCheck(V, E, srchStr, allFlag, exact, maxDepth-1, numLeft)))
 						return true;
 				}
 			}
 		}
 		return false;
 	}
-	protected boolean thingArrayCheck(Vector<? extends Interactable> V, Interactable[] stuff, String srchStr, boolean allFlag, boolean exact, int maxDepth, int[] numLeft)
+	protected boolean thingArrayCheck(Vector<Interactable> V, Interactable[] stuff, String srchStr, boolean allFlag, boolean exact, int maxDepth, int[] numLeft)
 	{
 		for(Interactable I : stuff)
 		{
@@ -521,9 +521,9 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 		}
 		return false;
 	}
-	public Vector<Interactable> fetchInteractables(String srchStr, boolean exactOnly, int maxDepth, int toFind, Object... list);
+	public Vector<Interactable> fetchInteractables(String srchStr, boolean exactOnly, int maxDepth, int toFind, Object... list)
 	{
-		Vector<? extends Interactable> V=new Vector();
+		Vector<Interactable> V=new Vector();
 		Object[] flags=fetchFlags(srchStr);
 		if(flags==null) return null;
 		srchStr=(String)flags[FLAG_STR];
@@ -536,11 +536,11 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 			if(O instanceof Interactable)
 				{ if(thingCheck(V, (Interactable)O, srchStr, allFlag, exactOnly, maxDepth, numLeft)) return V; }
 			else if((maxDepth>0)&&(O instanceof ItemCollection))
-				{ if(thingArrayCheck(V, (Interactable[])((ItemCollection)O).allItems().toArray(), srchStr, allFlag, exactOnly, maxDepth-1, numLeft)) return V; }
+				{ if(thingArrayCheck(V, (Interactable[])((ItemCollection)O).allItems().toArray(new Interactable[0]), srchStr, allFlag, exactOnly, maxDepth-1, numLeft)) return V; }
 			else if((maxDepth>0)&&(O instanceof ItemCollection.ItemHolder))
-				{ if(thingArrayCheck(V, (Interactable[])((ItemCollection.ItemHolder)O).getItemCollection().allItems().toArray(), srchStr, allFlag, exactOnly, maxDepth-1, numLeft)) return V; }
+				{ if(thingArrayCheck(V, (Interactable[])((ItemCollection.ItemHolder)O).getItemCollection().allItems().toArray(new Interactable[0]), srchStr, allFlag, exactOnly, maxDepth-1, numLeft)) return V; }
 			else if(O instanceof Vector)
-				{ if(thingArrayCheck(V, (Interactable[])((Vector)O).toArray(), srchStr, allFlag, exactOnly, maxDepth, numLeft)) return V; }
+				{ if(thingArrayCheck(V, (Interactable[])((Vector)O).toArray(new Interactable[0]), srchStr, allFlag, exactOnly, maxDepth, numLeft)) return V; }
 		}
 		return V;
 	}
@@ -560,14 +560,21 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 			if(O instanceof Interactable)
 				thisThang=thingCheck((Interactable)O, srchStr, allFlag, exactOnly, myOccurrance, maxDepth);
 			else if((maxDepth>0)&&(O instanceof ItemCollection))
-				thisThang=thingArrayCheck((Interactable[])((ItemCollection)O).allItems().toArray(), srchStr, allFlag, exactOnly, myOccurrance, maxDepth-1);
+				thisThang=thingArrayCheck((Interactable[])((ItemCollection)O).allItems().toArray(new Interactable[0]), srchStr, allFlag, exactOnly, myOccurrance, maxDepth-1);
 			else if((maxDepth>0)&&(O instanceof ItemCollection.ItemHolder))
-				thisThang=thingArrayCheck((Interactable[])((ItemCollection.ItemHolder)O).getItemCollection().allItems().toArray(), srchStr, allFlag, exactOnly, myOccurrance, maxDepth-1);
+				thisThang=thingArrayCheck((Interactable[])((ItemCollection.ItemHolder)O).getItemCollection().allItems().toArray(new Interactable[0]), srchStr, allFlag, exactOnly, myOccurrance, maxDepth-1);
 			else if(O instanceof Vector)
-				thisThang=thingArrayCheck((Interactable[])((Vector)O).toArray(), srchStr, allFlag, exactOnly, myOccurrance, maxDepth);
+				thisThang=thingArrayCheck((Interactable[])((Vector)O).toArray(new Interactable[0]), srchStr, allFlag, exactOnly, myOccurrance, maxDepth);
 			if(thisThang!=null) return thisThang;
 		}
 		return null;
+	}
+	public boolean isCalled(Interactable thing, String name, boolean exact)
+	{
+		if(exact)
+			return (thing.ID().equalsIgnoreCase(name)||thing.name().equalsIgnoreCase(name));
+		else
+			return (containsString(thing.name(),name));
 	}
 	protected Interactable thingCheck(Interactable thisThang, String srchStr, boolean allFlag, boolean exact, int[] myOccurrance, int maxDepth)
 	{
@@ -594,7 +601,7 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 			ItemCollection col=ItemCollection.DefaultItemCol.getFrom(thisThang);
 			if(col!=null)
 			{
-				found=thingArrayCheck((Item[])col.allItems().toArray(), srchStr, allFlag, exact, myOccurrance, maxDepth-1);
+				found=thingArrayCheck((Item[])col.allItems().toArray(new Item[0]), srchStr, allFlag, exact, myOccurrance, maxDepth-1);
 				if(found!=null) return found;
 			}
 			if(thisThang instanceof Room)
@@ -900,7 +907,7 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 			&&((!withContentOnly)||(o.numItems()>0)))
 //			&&(CMLib.flags().canBeSeenBy(thisThang.getEnvObject(),mob)||mob.isMine(thisThang))
 			{
-				V.addElement(thisThang);
+				V.add((Container)thisThang);
 				if(V.size()==1)
 				{
 					while((fromDex>=0)&&(commands.size()>fromDex))
@@ -991,7 +998,7 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 						mob.tell("You can only handle "+max+" at a time.");
 						return -1;
 					}
-//					Interactable toWhat=CMLib.materials().unbundle((Item)fromWhat,maxToGive);
+/*					Interactable toWhat=CMLib.materials().unbundle((Item)fromWhat,maxToGive);
 					if(getOnly&&mob.isMine(fromWhat)&&mob.isMine(toWhat))
 					{
 						mob.tell("Ok");
@@ -1007,7 +1014,7 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 						commands.addElement(o);
 						commands.addElement(toWhat.name());
 					}
-				}
+*/				}
 			}
 		}
 		return maxToGive;

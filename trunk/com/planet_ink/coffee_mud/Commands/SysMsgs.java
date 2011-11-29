@@ -40,11 +40,35 @@ public class SysMsgs extends StdCommand
 	public boolean execute(MOB mob, Vector commands, int metaFlags)
 		throws java.io.IOException
 	{
-		if(CMath.bset(mob.playerStats().getBitmap(),PlayerStats.ATT_SYSOPMSGS))
-			mob.playerStats().setBitmap(CMath.unsetb(mob.playerStats().getBitmap(),PlayerStats.ATT_SYSOPMSGS));
-		else
-			mob.playerStats().setBitmap(CMath.setb(mob.playerStats().getBitmap(),PlayerStats.ATT_SYSOPMSGS));
-		mob.tell("Extended messages are now : "+((CMath.bset(mob.playerStats().getBitmap(),PlayerStats.ATT_SYSOPMSGS))?"ON":"OFF"));
+		PlayerStats ps=mob.playerStats();
+		if(ps==null) return false;
+		if(commands.size()>1)
+		{
+			if(((String)commands.get(1)).equalsIgnoreCase("on"))
+			{
+				if((ps.getBitmap()&PlayerStats.ATT_SYSOPMSGS)==0)
+				{
+					mob.playerStats().setBitmap(mob.playerStats().getBitmap()|PlayerStats.ATT_SYSOPMSGS);
+					mob.tell("Extended messages enabled.\n\r");
+				}
+				else
+					mob.tell("Extended messages are already enabled.\n\r");
+				return false;
+			}
+			else if(((String)commands.get(1)).equalsIgnoreCase("off"))
+			{
+				if((ps.getBitmap()&PlayerStats.ATT_SYSOPMSGS)>0)
+				{
+					mob.playerStats().setBitmap(mob.playerStats().getBitmap()&~PlayerStats.ATT_SYSOPMSGS);
+					mob.tell("Extended messages disabled.\n\r");
+				}
+				else
+					mob.tell("Extended messages are already disabled.\n\r");
+				return false;
+			}
+		}
+		mob.tell(((ps.getBitmap()&PlayerStats.ATT_SYSOPMSGS)>0)?("Extended messages are currently enabled.\n\r"):("Extended messages are currently disabled.\n\r"));
+		mob.tell("Use 'sysmsgs on' or 'sysmsgs off' to set.\n\r");
 		return false;
 	}
 	

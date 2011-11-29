@@ -294,7 +294,7 @@ public class CharCreation extends StdLibrary implements CharCreationLibrary
 				if((password==null)||(password.trim().length()==0))
 					session.println("Aborted.");
 				else
-				if(!password.equalsIgnoreCase(ps.password()))
+				if(!BCrypt.checkpw(password, ps.password()))
 					session.println("Character password is incorrect.");
 				else
 				{
@@ -374,7 +374,7 @@ public class CharCreation extends StdLibrary implements CharCreationLibrary
 			}
 		}
 		acct.setAccountName(login);
-		acct.setPassword(password);
+		acct.setPassword(BCrypt.hashpw(password, BCrypt.gensalt()));
 		acct.setLastIP(session.getAddress());
 		acct.setLastDateTime(System.currentTimeMillis());
 		CMLib.database().DBCreateAccount(acct);
@@ -414,7 +414,7 @@ public class CharCreation extends StdLibrary implements CharCreationLibrary
 			
 			if((acct==null)||(acct.password().length()==0))
 			{
-				mob.playerStats().setPassword(password);
+				mob.playerStats().setPassword(BCrypt.hashpw(password, BCrypt.gensalt()));
 			}
 			mob.playerStats().setAccount(acct);
 			Log.sysOut("FrontDoor","Creating user: "+mob.name());
@@ -451,7 +451,8 @@ public class CharCreation extends StdLibrary implements CharCreationLibrary
 				try { introText = CMLib.httpUtils().doVirtualPage(introText);}catch(Exception ex){}
 				session.println(null,null,null,introText.toString());
 			}
-	
+
+			Body newBody=new Body.DefaultBody();
 			StringBuffer listOfRaces=new StringBuffer("[");
 			boolean tmpFirst = true;
 			Vector qualRaces = raceQualifies();
@@ -575,7 +576,7 @@ public class CharCreation extends StdLibrary implements CharCreationLibrary
 			mob.setSession(null);
 			session.setMob(null);
 			mob.destroy();
-			if((t.getMessage()!=null)&&(t.getMessage().trim().length()>0))
+			//if((t.getMessage()!=null)&&(t.getMessage().trim().length()>0))
 				Log.errOut("CharCreation",t);
 		}
 		return logoff?LoginResult.NO_LOGIN:LoginResult.CCREATION_EXIT;
@@ -674,7 +675,7 @@ public class CharCreation extends StdLibrary implements CharCreationLibrary
 		rpt.append("\r\n"); rpt.append("FAMILY");
 		rpt.append("\t"); rpt.append("CoffeeMUD");
 		rpt.append("\r\n"); rpt.append("CODEBASE");
-		rpt.append("\t"); rpt.append("CoffeeMud v"+CMProps.Strings.MUDVER.property());
+		rpt.append("\t"); rpt.append("EspressoMUD v"+CMProps.Strings.MUDVER.property());
 		rpt.append("\r\n"); rpt.append("AREAS");
 		rpt.append("\t"); rpt.append(Integer.toString(CMLib.map().numAreas()));
 		rpt.append("\r\n"); rpt.append("HELPFILES");
@@ -711,7 +712,7 @@ public class CharCreation extends StdLibrary implements CharCreationLibrary
 			login=session.prompt("\n\raccount name: ");
 		else
 			login=session.prompt("\n\rname: ");
-		if(login==null) 
+		if(login==null)
 			return LoginResult.NO_LOGIN;
 		login=login.trim();
 		if(login.length()==0) 
@@ -739,7 +740,7 @@ public class CharCreation extends StdLibrary implements CharCreationLibrary
 						session.print("password for "+player.name()+": ");
 						String password=session.blockingIn();
 						boolean done = true;
-						if(password.equalsIgnoreCase(ps.password()))
+						if(BCrypt.checkpw(password, ps.password()))
 						{
 							session.println("\n\rThis mud is now using an account system.  "
 									+"Please create a new account and use the IMPORT command to add your character(s) to your account.");
@@ -762,7 +763,7 @@ public class CharCreation extends StdLibrary implements CharCreationLibrary
 			{
 				session.print("password: ");
 				String password=session.blockingIn();
-				if(password.equalsIgnoreCase(acct.password()))
+				if(BCrypt.checkpw(password, acct.password()))
 				{
 					LoginResult prelimResults = prelimChecks(session,login,null);
 					if(prelimResults!=null)
@@ -785,7 +786,7 @@ public class CharCreation extends StdLibrary implements CharCreationLibrary
 			{
 				session.print("password: ");
 				String password=session.blockingIn();
-				if(password.equalsIgnoreCase(player.playerStats().password()))
+				if(BCrypt.checkpw(password, player.playerStats().password()))
 				{
 					LoginResult prelimResults = prelimChecks(session,login,player);
 					if(prelimResults!=null)

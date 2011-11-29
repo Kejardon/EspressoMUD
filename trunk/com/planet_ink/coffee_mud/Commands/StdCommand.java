@@ -45,7 +45,7 @@ public class StdCommand implements Command
 	}
 
 	//TODO: Reprogram subclasses to initialize access, not declare access.
-	private String[] access=null;
+	private String[] access=new String[0];
 	public String[] getAccessWords(){return access;}
 	public void initializeClass(){}
 	public boolean execute(MOB mob, Vector commands, int metaFlags)

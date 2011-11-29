@@ -36,12 +36,13 @@ public interface CommonCommands extends CMLibrary
 	public StringBuilder getScore(MOB mob, String parm);
 	public StringBuilder getEquipment(MOB viewer, MOB mob);
 	public StringBuilder getInventory(MOB viewer, MOB mob);
+	public StringBuilder getInventory(MOB viewer, MOB mob, String mask);
 	public void postChannel(MOB mob, String channelName, String message, boolean systemMsg);
 	public void postChannel(String channelName, String message, boolean systemMsg);
 	public boolean postDrop(MOB mob, Environmental dropThis, boolean quiet, boolean optimized);
 	public boolean postGet(MOB mob, Item container, Item getThis, boolean quiet);
 	public boolean postRemove(MOB mob, Item item, boolean quiet);
-	public void postLook(MOB mob, boolean quiet);
+	public void postLook(MOB mob);
 	public void postFlee(MOB mob, String whereTo);
 	public void postSheath(MOB mob, boolean ifPossible);
 	public void postDraw(MOB mob, boolean doHold, boolean ifNecessary);

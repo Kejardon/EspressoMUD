@@ -67,7 +67,7 @@ public class DBConnector
 	{
 		if(DBs!=null){ DBs.deregisterDriver(); DBs.killConnections();}
 		DBs=new DBConnections(DBClass,DBService,DBUser,DBPass,numConnections,DBReuse,DoErrorQueueing);
-		if(DBs.amIOk()&&NewErrorQueueing) DBs.retryQueuedErrors();
+//		if(DBs.amIOk()&&NewErrorQueueing) DBs.retryQueuedErrors();
 	}
 	
 	public String service(){ return DBService;}
@@ -210,8 +210,8 @@ public class DBConnector
 	 * 
 	 * <br><br><b>Usage:</b> RetryQueuedErrors();
 	 */
-	public void retryQueuedErrors()
-	{ if(DBs!=null)DBs.retryQueuedErrors();}
+//	public void retryQueuedErrors()
+//	{ if(DBs!=null)DBs.retryQueuedErrors();}
 	
 	/** list the connections 
 	 * 

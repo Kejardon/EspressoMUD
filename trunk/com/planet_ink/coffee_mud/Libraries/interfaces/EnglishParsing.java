@@ -44,12 +44,13 @@ public interface EnglishParsing extends CMLibrary
 	public String stripPunctuation(String str);
 	public String insertUnColoredAdjective(String str, String adjective);
 	public String startWithAorAn(String str);
-	public Object findCommand(MOB mob, Vector commands);
+	public Command findCommand(MOB mob, Vector commands);
 	public boolean containsString(String toSrchStr, String srchStr);
+	public boolean isCalled(Interactable thing, String name, boolean exact);
 	public String bumpDotNumber(String srchStr);
 	public Object[] fetchFlags(String srchStr);
 	public CMObject fetchObject(Vector<? extends CMObject> list, String srchStr, boolean exactOnly);
-	public int fetchInteractableIndex(Vector<? extends Interactable> list, String srchStr, boolean exactOnly);
+//	public int fetchInteractableIndex(Vector<? extends Interactable> list, String srchStr, boolean exactOnly);
 //	public Interactable fetchAvailable   (Vector<? extends Interactable> list, String srchStr, boolean exactOnly);
 	public Interactable fetchInteractable(Vector<? extends Interactable> list, String srchStr, boolean exactOnly);
 //	public Interactable fetchInteractable(Hashtable<String, Interactable> list, String srchStr, boolean exactOnly);

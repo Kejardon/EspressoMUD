@@ -5,7 +5,6 @@ import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -42,12 +41,6 @@ public class Kill extends StdCommand
 	public boolean execute(MOB mob, Vector commands, int metaFlags)
 		throws java.io.IOException
 	{
-		if(commands==null)
-		{
-			CMLib.combat().postAttack(mob,mob.getVictim(),mob.fetchWieldedItem());
-			return true;
-		}
-		
 		MOB target=null;
 		if(commands.size()<2)
 		{
@@ -70,69 +63,39 @@ public class Kill extends StdCommand
 		if(target==null)
 		{
 			target=mob.location().fetchInhabitant(whomToKill);
-			if((target==null)||(!CMLib.flags().canBeSeenBy(target,mob)))
+			if(target==null)
 			{
-				mob.tell("I don't see '"+whomToKill+"' here.");
+				mob.tell("You don't see '"+whomToKill+"' here.");
 				return false;
 			}
 		}
 		
 		if(reallyKill)
 		{
-			CMMsg msg=CMClass.getMsg(mob,target,null,CMMsg.MSG_OK_ACTION,"^F^<FIGHT^><S-NAME> touch(es) <T-NAMESELF>.^</FIGHT^>^?");
+			CMMsg msg=CMClass.getMsg(mob,target,null,EnumSet.of(CMMsg.MsgCode.VISUAL),"^F^<FIGHT^><S-NAME> touch(es) <T-NAMESELF>.^</FIGHT^>^?");
 			CMLib.color().fixSourceFightColor(msg);
-			if(mob.location().okMessage(mob,msg))
+			if(mob.location().doMessage(msg))
 			{
-				mob.location().send(mob,msg);
-				target.charStats().setPoints(CharStats.STAT_HITPOINTS, 0);
-				CMLib.combat().postDeath(mob,target,null);
+				target.body().charStats().setPoints(CharStats.Points.HIT, 0);
+//				CMLib.combat().postDeath(mob,target,null);
 			}
 			return false;
 		}
 		
-		MOB oldVictim=mob.getVictim();
-		if(((oldVictim!=null)&&(oldVictim==target)
-		&&(CMProps.getIntVar(CMProps.SYSTEMI_COMBATSYSTEM)==CombatLibrary.COMBAT_DEFAULT)))
+		Interactable oldVictim=mob.getVictim();
+		if((oldVictim!=null)&&(oldVictim==target))
 		{
 			mob.tell("^f^<FIGHT^>You are already fighting "+mob.getVictim().name()+".^</FIGHT^>^?");
 			return false;
 		}
 		
-		if((mob.location().okMessage(mob,CMClass.getMsg(mob,target,CMMsg.MSG_WEAPONATTACK,null)))
-		&&(oldVictim!=target))
+		if(mob.location().okMessage(mob,CMClass.getMsg(mob,target,null,EnumSet.of(CMMsg.MsgCode.ATTACK),null)))
 		{
 			mob.tell("^f^<FIGHT^>You are now targeting "+target.name()+".^</FIGHT^>^?");
 			mob.setVictim(target);
 			return false;
 		}
-		
-		else
-		{
-			Item weapon=mob.fetchWieldedItem();
-			if(weapon==null)
-			{
-				Item possibleOtherWeapon=mob.fetchFirstWornItem(Wearable.WORN_HELD);
-				if((possibleOtherWeapon!=null)
-				&&(possibleOtherWeapon instanceof Weapon)
-				&&possibleOtherWeapon.fitsOn(Wearable.WORN_WIELD)
-				&&(CMLib.flags().canBeSeenBy(possibleOtherWeapon,mob))
-				&&(CMLib.flags().isRemovable(possibleOtherWeapon)))
-				{
-					CMLib.commands().postRemove(mob,possibleOtherWeapon,false);
-					if(possibleOtherWeapon.amWearingAt(Wearable.IN_INVENTORY))
-					{
-						Command C=CMClass.getCommand("Wield");
-						if(C!=null) C.execute(mob,(Vector)CMParms.makeVector("WIELD",possibleOtherWeapon),metaFlags);
-					}
-				}
-			}
-			CMLib.combat().postAttack(mob,target,mob.fetchWieldedItem());
-		}
 		return false;
 	}
-	public double combatActionsCost(MOB mob, Vector cmds){return CMath.div(CMProps.getIntVar(CMProps.SYSTEMI_DEFCOMCMDTIME),100.0);}
-	public double actionsCost(MOB mob, Vector cmds){return CMath.div(CMProps.getIntVar(CMProps.SYSTEMI_DEFCMDTIME),100.0);}
 	public boolean canBeOrdered(){return true;}
-
-	
 }

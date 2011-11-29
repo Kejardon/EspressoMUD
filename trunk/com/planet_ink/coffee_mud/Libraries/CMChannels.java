@@ -255,7 +255,7 @@ public class CMChannels extends StdLibrary implements ChannelsLibrary
 	}
 	public String[] getChannelNames()
 	{
-		if(channelNames.size()==0) return null;
+//		if(channelNames.size()==0) return null;
 		return CMParms.toStringArray(channelNames);
 	}
 	

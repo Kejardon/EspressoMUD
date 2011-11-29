@@ -4,7 +4,6 @@ import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -46,20 +45,15 @@ public class Lock extends StdCommand
 			mob.tell("Lock what?");
 			return false;
 		}
-		Environmental lockThis=null;
-		int dirCode=Directions.getGoodDirectionCode(whatTolock);
-		if(dirCode>=0)
-			lockThis=mob.location().getExitInDir(dirCode);
-		if(lockThis==null)
-			lockThis=mob.location().fetchFromMOBRoomItemExit(mob,null,whatTolock,Wearable.FILTER_ANY);
+		Interactable lockThis=CMLib.english().fetchInteractable(whatTolock, false, 1, mob, mob.location());
 
-		if((lockThis==null)||(!CMLib.flags().canBeSeenBy(lockThis,mob)))
+		if(lockThis==null)
 		{
 			mob.tell("You don't see '"+whatTolock+"' here.");
 			return false;
 		}
-		CMMsg msg=CMClass.getMsg(mob,lockThis,null,CMMsg.MSG_LOCK,"<S-NAME> lock(s) <T-NAMESELF>."+CMProps.msp("doorlock.wav",10));
-		if(lockThis instanceof Exit)
+		CMMsg msg=CMClass.getMsg(mob,lockThis,null,EnumSet.of(CMMsg.MsgCode.LOCK),"<S-NAME> lock(s) <T-NAMESELF>."+CMProps.msp("doorlock.wav",10));
+/*		if(lockThis instanceof Exit)
 		{
 			boolean locked=((Exit)lockThis).isLocked();
 			if((mob.location().okMessage(msg.source(),msg))
@@ -88,13 +82,10 @@ public class Lock extends StdCommand
 				}
 			}
 		}
-		else
-		if(mob.location().okMessage(mob,msg))
-			mob.location().send(mob,msg);
+		else */
+		mob.location().doMessage(msg);
 		return false;
 	}
-	
+	public double actionsCost(MOB mob, Vector cmds){return DEFAULT_NONCOMBATACTION;}
 	public boolean canBeOrdered(){return true;}
-
-	
 }

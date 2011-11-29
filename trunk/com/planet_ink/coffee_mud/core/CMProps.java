@@ -52,7 +52,7 @@ public class CMProps extends Properties
 	public static final long serialVersionUID=0;
 	public enum Strings
 	{
-		PLAYERKILL, PLAYERDEATH, FLEE, DOMAIN, DEFAULTPROMPT, COLORSCHEME, CHARSETINPUT, CHARSETOUTPUT, MUDVER, 
+		PLAYERKILL, PLAYERDEATH, FLEE, DOMAIN, DEFAULTPROMPT, COLORSCHEME, CHARSETINPUT, CHARSETOUTPUT, MUDVER, MUDNAME, 
 		//Below do not get their Strings set on reset
 		MUDSTATUS, MUDPORTS, INIPATH, MUDBINDADDRESS;
 		private String property="";

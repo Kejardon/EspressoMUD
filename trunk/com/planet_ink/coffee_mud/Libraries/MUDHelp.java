@@ -179,12 +179,12 @@ public class MUDHelp extends StdLibrary implements HelpLibrary
 				
 				String s=R.getStatAdjDesc();
 				prepend.append(columnHelper("^HStat Mods.:^N",s,wrap));
-				s=R.getSensesChgDesc();
-				if(R.getDispositionChgDesc().length()>0)
-					s+=((s.length()>0)?", ":"")+R.getDispositionChgDesc();
-				if(R.getAbilitiesDesc().length()>0)
-					s+=((s.length()>0)?", ":"")+R.getAbilitiesDesc();
-				prepend.append(columnHelper("^HAbilities :^N",s,wrap));
+				s=""; //R.getSensesChgDesc();
+//				if(R.getDispositionChgDesc().length()>0)
+//					s+=((s.length()>0)?", ":"")+R.getDispositionChgDesc();
+//				if(R.getAbilitiesDesc().length()>0)
+//					s+=((s.length()>0)?", ":"")+R.getAbilitiesDesc();
+//				prepend.append(columnHelper("^HAbilities :^N",s,wrap));
 				prepend.append(columnHelper("^HLanguages :^N",R.getLanguagesDesc(),wrap));
 //				prepend.append(columnHelper("^HLife Exp. :^N",R.getAgingChart()[Race.AGE_ANCIENT]+" years",wrap));
 				prepend.append("^HDesc.     : ^N");

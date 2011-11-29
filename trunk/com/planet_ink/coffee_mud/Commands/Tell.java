@@ -4,7 +4,6 @@ import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -71,8 +70,7 @@ public class Tell extends StdCommand
 			Session thisSession=CMLib.sessions().elementAt(s);
 			if((thisSession.mob()!=null)
 			   &&(!thisSession.killFlag())
-			   &&((thisSession.mob().name().equalsIgnoreCase(targetName))
-				  ||(thisSession.mob().Name().equalsIgnoreCase(targetName))))
+			   &&(thisSession.mob().name().equalsIgnoreCase(targetName)))
 			{
 				target=thisSession.mob();
 				break;
@@ -84,8 +82,7 @@ public class Tell extends StdCommand
 			Session thisSession=CMLib.sessions().elementAt(s);
 			if((thisSession.mob()!=null)
 			   &&(!thisSession.killFlag())
-			   &&((CMLib.english().containsString(thisSession.mob().name(),targetName))
-				  ||(CMLib.english().containsString(thisSession.mob().Name(),targetName))))
+			   &&(CMLib.english().containsString(thisSession.mob().name(),targetName)))
 			{
 				target=thisSession.mob();
 				break;
@@ -103,63 +100,36 @@ public class Tell extends StdCommand
 			mob.tell("Tell them what?");
 			return false;
 		}
-		combinedCommands=CMProps.applyINIFilter(combinedCommands,CMProps.SYSTEM_SAYFILTER);
 		if(target==null)
 		{
 			mob.tell("That person doesn't appear to be online.");
 			return false;
 		}
 		
+		boolean ignore=((target.playerStats()!=null)&&(target.playerStats().getIgnored().contains(mob.name())));
+		String msg="^t^<TELL \""+mob.name()+"\"^><S-NAME> tell(s) <T-NAME> '"+combinedCommands+"'^</TELL^>^?^.";
+		mob.tell(mob,target,null,msg);
+		if((mob!=target)&&(!ignore))
+		{
+			target.tell(mob,target,null,msg);
+			if((!mob.isMonster())&&(!target.isMonster()))
 			{
-				String targetName=target.name();
+				if(mob.playerStats()!=null)
 				{
-					boolean ignore=((target.playerStats()!=null)&&(target.playerStats().getIgnored().contains(mob.name())));
-					CMMsg msg=null;
-					msg=CMClass.getMsg(mob,target,null,EnumSet.of(CMMsg.MsgCode.TELL),"^t^<TELL \""+mob.name()+"\"^><S-NAME> tell(s) <T-NAME> '"+text+"'^</TELL^>^?^.");
-					if((mob.location().okMessage(mob,msg))
-					&&((ignore)||(target.okMessage(target,msg))))
-					{
-						mob.executeMsg(mob,msg);
-						if((mob!=target)&&(!ignore))
-						{
-							target.executeMsg(target,msg);
-							if(msg.trailerMsgs()!=null)
-							{
-								for(int i=0;i<msg.trailerMsgs().size();i++)
-								{
-									CMMsg msg2=(CMMsg)msg.trailerMsgs().elementAt(i);
-									if((msg!=msg2)&&(target.okMessage(target,msg2)))
-										target.executeMsg(target,msg2);
-								}
-								msg.trailerMsgs().clear();
-							}
-							if((!mob.isMonster())&&(!target.isMonster()))
-							{
-								if(mob.playerStats()!=null)
-								{
-									mob.playerStats().setReplyTo(target,PlayerStats.REPLY_TELL);
-									mob.playerStats().addTellStack(CMLib.coffeeFilter().fullOutFilter(mob.session(),mob,mob,target,null,CMStrings.removeColors(msg.sourceMessage()),false));
-								}
-								if(target.playerStats()!=null)
-								{
-									target.playerStats().setReplyTo(mob,PlayerStats.REPLY_TELL);
-									String str=msg.targetMessage();
-									target.playerStats().addTellStack(CMLib.coffeeFilter().fullOutFilter(target.session(),target,mob,target,null,CMStrings.removeColors(str),false));
-								}
-							}
-						}
-					}
+					mob.playerStats().setReplyTo(target,PlayerStats.REPLY_TELL);
+					mob.playerStats().addTellStack(CMLib.coffeeFilter().fullOutFilter(mob.session(),mob,mob,target,null,CMStrings.removeColors(msg),false));
+				}
+				if(target.playerStats()!=null)
+				{
+					target.playerStats().setReplyTo(mob,PlayerStats.REPLY_TELL);
+					target.playerStats().addTellStack(CMLib.coffeeFilter().fullOutFilter(target.session(),target,mob,target,null,CMStrings.removeColors(msg),false));
 				}
 			}
+		}
 
-//		CMLib.commands().postSay(mob,target,combinedCommands,true);
 		if((target.session()!=null)&&(target.session().afkFlag()))
 			mob.tell(target.session().afkMessage());
 		return false;
 	}
-	// the reason this is not 0ed is because of combat -- we want the players to use SAY, and pay for it when coordinating.
-	public double combatActionsCost(MOB mob, Vector cmds){return CMath.div(CMProps.getIntVar(CMProps.SYSTEMI_DEFCOMCMDTIME),100.0);}
 	public boolean canBeOrdered(){return false;}
-
-	
 }

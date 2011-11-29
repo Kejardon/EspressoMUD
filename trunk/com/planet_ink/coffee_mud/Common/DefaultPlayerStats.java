@@ -221,7 +221,7 @@ public class DefaultPlayerStats implements PlayerStats
 	}
 	
 	public String[] getAliasNames()
-	{ return (String[])alias.keySet().toArray(); }
+	{ return (String[])alias.keySet().toArray(new String[0]); }
 	//TODO: Should this return "" or null?
 	public String getAlias(String named)
 	{
@@ -263,14 +263,14 @@ public class DefaultPlayerStats implements PlayerStats
 
 	private enum SCode implements CMSavable.SaveEnum{
 		FRN(){
-			public String save(DefaultPlayerStats E){ return CMLib.coffeeMaker().savAString((String[])E.friends.toArray()); }
+			public String save(DefaultPlayerStats E){ return CMLib.coffeeMaker().savAString((String[])E.friends.toArray(new String[0])); }
 			public void load(DefaultPlayerStats E, String S){ for(String newF : CMLib.coffeeMaker().loadAString(S)) E.friends.add(newF); } },
 		IGN(){
-			public String save(DefaultPlayerStats E){ return CMLib.coffeeMaker().savAString((String[])E.ignored.toArray()); }
+			public String save(DefaultPlayerStats E){ return CMLib.coffeeMaker().savAString((String[])E.ignored.toArray(new String[0])); }
 			public void load(DefaultPlayerStats E, String S){ for(String newI : CMLib.coffeeMaker().loadAString(S)) E.ignored.add(newI); } },
 		ALS(){
 			public String save(DefaultPlayerStats E){
-				return CMLib.coffeeMaker().savStringsInterlaced((String[])E.alias.keySet().toArray(), (String[])E.alias.values().toArray()); }
+				return CMLib.coffeeMaker().savStringsInterlaced((String[])E.alias.keySet().toArray(new String[0]), (String[])E.alias.values().toArray(new String[0])); }
 			public void load(DefaultPlayerStats E, String S){
 				String[][] vals=CMLib.coffeeMaker().loadStringsInterlaced(S, 2);
 				for(String[] entry : vals)
@@ -300,7 +300,7 @@ public class DefaultPlayerStats implements PlayerStats
 			public String save(DefaultPlayerStats E){ return ""+E.pageBreak; }
 			public void load(DefaultPlayerStats E, String S){ E.pageBreak=Integer.parseInt(S); } },
 		INT(){
-			public String save(DefaultPlayerStats E){ return CMLib.coffeeMaker().savAString((String[])E.introductions.toArray()); }
+			public String save(DefaultPlayerStats E){ return CMLib.coffeeMaker().savAString((String[])E.introductions.toArray(new String[0])); }
 			public void load(DefaultPlayerStats E, String S){ for(String newI : CMLib.coffeeMaker().loadAString(S)) E.introductions.add(newI); } },
 		BIT(){
 			public String save(DefaultPlayerStats E){ return ""+E.bitmap; }
@@ -334,7 +334,7 @@ public class DefaultPlayerStats implements PlayerStats
 					else if(i<V.size()) E.securityGroups.remove(V.get(i)); } } },
 		INTRODUCED(){
 			public String brief(DefaultPlayerStats E){return ""+E.introductions.size();}
-			public String prompt(DefaultPlayerStats E){return ""+E.introductions.toArray();}
+			public String prompt(DefaultPlayerStats E){return ""+E.introductions.toArray(new String[0]);}
 			public void mod(DefaultPlayerStats E, MOB M){
 				boolean done=false;
 				while((M.session()!=null)&&(!M.session().killFlag())&&(!done)) {

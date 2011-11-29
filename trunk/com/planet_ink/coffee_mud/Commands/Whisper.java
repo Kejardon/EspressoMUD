@@ -4,7 +4,6 @@ import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -22,7 +21,7 @@ import java.util.*;
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+	   http://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -45,55 +44,30 @@ public class Whisper extends StdCommand
 			mob.tell("Whisper what?");
 			return false;
 		}
-		Environmental target=null;
+		Interactable target=null;
 		Room R = mob.location();
 		if(commands.size()>2)
 		{
 			String possibleTarget=(String)commands.elementAt(1);
-			target=R.fetchFromRoomFavorMOBs(null,possibleTarget,Wearable.FILTER_ANY);
-			if((target!=null)&&(!target.name().equalsIgnoreCase(possibleTarget))&&(possibleTarget.length()<4))
-			   target=null;
-			if((target!=null)
-			&&(CMLib.flags().canBeSeenBy(target,mob)))
+			target=R.fetchInhabitant(possibleTarget);
+			if(target==null) target=CMLib.english().fetchInteractable(possibleTarget,false,1,mob,mob.location());
+			if(target!=null)
 				commands.removeElementAt(1);
-			else
-				target=null;
-		}
-		for(int i=1;i<commands.size();i++)
-		{
-			String s=(String)commands.elementAt(i);
-			if(s.indexOf(" ")>=0)
-				commands.setElementAt("\""+s+"\"",i);
 		}
 		String combinedCommands=CMParms.combine(commands,1);
-		if(combinedCommands.equals(""))
-		{
-			mob.tell("Whisper what?");
-			return false;
-		}
 
 		CMMsg msg=null;
 		if(target==null)
-		{
-			msg=CMClass.getMsg(mob,null,null,CMMsg.MSG_SPEAK,"^T<S-NAME> whisper(s) to <S-HIM-HERSELF> '"+combinedCommands+"'.^?"+CMProps.msp("whisper.wav",40),
-                                          CMMsg.NO_EFFECT,null,
-                                          CMMsg.MSG_QUIETMOVEMENT,"^T<S-NAME> whisper(s) to <S-HIM-HERSELF>.^?"+CMProps.msp("whisper.wav",40));
-			if(R.okMessage(mob,msg))
-				R.send(mob,msg);
-		}
+			msg=CMClass.getMsg(mob,null,null,EnumSet.of(CMMsg.MsgCode.SPEAK),"^T<S-NAME> whisper(s) to <S-HIM-HERSELF> '"+combinedCommands+"'.^?"+CMProps.msp("whisper.wav",40),
+										  EnumSet.noneOf(CMMsg.MsgCode.class),null,
+										  EnumSet.of(CMMsg.MsgCode.SPEAK),"^T<S-NAME> whisper(s) to <S-HIM-HERSELF>.^?"+CMProps.msp("whisper.wav",40));
 		else
-		{
-			msg=CMClass.getMsg(mob,target,null,CMMsg.MSG_SPEAK,"^T^<WHISPER \""+target.name()+"\"^><S-NAME> whisper(s) to <T-NAMESELF> '"+combinedCommands+"'.^</WHISPER^>^?"+CMProps.msp("whisper.wav",40)
-										   ,CMMsg.MSG_SPEAK,"^T^<WHISPER \""+target.name()+"\"^><S-NAME> whisper(s) to <T-NAMESELF> '"+combinedCommands+"'^</WHISPER^>.^?"+CMProps.msp("whisper.wav",40)
-										   ,CMMsg.MSG_QUIETMOVEMENT,"^T<S-NAME> whisper(s) something to <T-NAMESELF>.^</WHISPER^>^?"+CMProps.msp("whisper.wav",40));
-			if(R.okMessage(mob,msg))
-				R.send(mob,msg);
-		}
+			msg=CMClass.getMsg(mob,target,null,EnumSet.of(CMMsg.MsgCode.SPEAK),"^T^<WHISPER \""+target.name()+"\"^><S-NAME> whisper(s) to <T-NAMESELF> '"+combinedCommands+"'.^</WHISPER^>^?"+CMProps.msp("whisper.wav",40)
+										   ,EnumSet.of(CMMsg.MsgCode.SPEAK),"^T^<WHISPER \""+target.name()+"\"^><S-NAME> whisper(s) to <T-NAMESELF> '"+combinedCommands+"'^</WHISPER^>.^?"+CMProps.msp("whisper.wav",40)
+										   ,EnumSet.of(CMMsg.MsgCode.SPEAK),"^T<S-NAME> whisper(s) something to <T-NAMESELF>.^</WHISPER^>^?"+CMProps.msp("whisper.wav",40));
+		R.doMessage(msg);
 		return false;
 	}
-    public double combatActionsCost(MOB mob, Vector cmds){return CMath.div(CMProps.getIntVar(CMProps.SYSTEMI_DEFCOMCMDTIME),100.0);}
-    public double actionsCost(MOB mob, Vector cmds){return CMath.div(CMProps.getIntVar(CMProps.SYSTEMI_DEFCMDTIME),100.0);}
+	public double actionsCost(MOB mob, Vector cmds){return DEFAULT_NONCOMBATACTION;}
 	public boolean canBeOrdered(){return true;}
-
-	
 }

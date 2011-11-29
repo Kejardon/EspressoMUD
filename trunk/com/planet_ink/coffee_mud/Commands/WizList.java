@@ -4,7 +4,6 @@ import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -23,7 +22,7 @@ import java.util.*;
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+	   http://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -41,34 +40,34 @@ public class WizList extends StdCommand
 	public boolean execute(MOB mob, Vector commands, int metaFlags)
 		throws java.io.IOException
 	{
-		StringBuffer head=new StringBuffer("");
 		boolean isArchonLooker=CMSecurity.isASysOp(mob);
-		head.append("^x[");
-		head.append(CMStrings.padRight("Race",8)+" ");
-		head.append(CMStrings.padRight("Lvl",4)+" ");
-		if(isArchonLooker)
-			head.append(CMStrings.padRight("Last",18)+" ");
-		head.append("] Archon Character Name^.^?\n\r");
-		mob.tell("^x["+CMStrings.centerPreserve("The Archons of "+CMProps.getVar(CMProps.SYSTEM_MUDNAME),head.length()-10)+"]^.^?");
-		java.util.List<PlayerLibrary.ThinPlayer> allUsers=CMLib.database().getExtendedUserList();
-        CharClass C=CMClass.getCharClass("Archon");
-		for(PlayerLibrary.ThinPlayer U : allUsers)
+		String output=(String)Resources.getResource(isArchonLooker?"WIZLIST_ARCHON":"WIZLIST_NORMAL");
+		if(output==null)
 		{
-			if(U.charClass.equals("Archon"))
+			StringBuffer head=new StringBuffer("");
+			head.append("^x[");
+			head.append(CMStrings.padRight("Race",8)+" ");
+			if(isArchonLooker)
+				head.append(CMStrings.padRight("Last",18)+" ");
+			head.append("] Archon Character Name^.^?\n\r");
+			for(Enumeration<MOB> e=CMLib.players().players();e.hasMoreElements();)
 			{
-				head.append("[");
-				head.append(CMStrings.padRight(U.race,8)+" ");
-                if((C==null)||(!C.leveless()))
-    				head.append(CMStrings.padRight(""+U.level,4)+" ");
-                else
-                    head.append(CMStrings.padRight("    ",4)+" ");
-                if(isArchonLooker)
-					head.append(CMStrings.padRight(CMLib.time().date2String(U.last),18)+" ");
-				head.append("] "+CMStrings.padRight(U.name,25));
-				head.append("\n\r");
+				MOB U=e.nextElement();
+				if(CMSecurity.isASysOp(U))
+				{
+					head.append("[");
+					head.append(CMStrings.padRight(U.body().raceName(),8)+" ");
+					if(isArchonLooker)
+						head.append(CMStrings.padRight(CMLib.time().date2String(U.playerStats().lastDateTime()),18)+" ");
+					head.append("] "+CMStrings.padRight(U.name(),25));
+					head.append("\n\r");
+				}
 			}
+			output=head.toString();
+			Resources.submitResource((isArchonLooker?"WIZLIST_ARCHON":"WIZLIST_NORMAL"),output);
 		}
-		mob.tell(head.toString());
+		mob.tell("^x[The Archons of "+CMProps.Strings.MUDNAME.property()+"]^.^?");
+		mob.tell(output);
 		return false;
 	}
 	

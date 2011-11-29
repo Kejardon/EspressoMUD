@@ -859,7 +859,7 @@ public class DefaultSession extends Thread implements Session
 				if(tag.equals("SHUTDOWN"))
 				{
 					MOB M=CMLib.players().getLoadPlayer((String)parts.elementAt(1));
-					if((M!=null)&&(M.playerStats().password().equalsIgnoreCase((String)parts.elementAt(2)))&&(CMSecurity.isASysOp(M)))
+					if((M!=null)&&(BCrypt.checkpw((String)parts.elementAt(2),M.playerStats().password()))&&(CMSecurity.isASysOp(M)))
 					{
 						boolean keepDown=parts.size()>3?CMath.s_bool((String)parts.elementAt(3)):true;
 						String externalCmd=(parts.size()>4)?CMParms.combine(parts,4):null;

@@ -90,7 +90,7 @@ public class Go extends StdCommand
 //		mob.charStats().expendEnergy(mob,true);
 
 		if(!nolook)
-			CMLib.commands().postLook(mob,true);
+			CMLib.commands().postLook(mob);
 
 		return true;
 	}

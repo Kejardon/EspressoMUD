@@ -51,7 +51,7 @@ public class Title extends StdCommand
 		}
 		PlayerStats ps=mob.playerStats();
 		StringBuffer menu=new StringBuffer("^xTitles:^.^?\n\r");
-		CMLib.titles().evaluateAutoTitles(mob);
+//		CMLib.titles().evaluateAutoTitles(mob);
 		if(!mob.getTitles().contains("*")) mob.getTitles().addElement("*");
 		for(int i=0;i<mob.getTitles().size();i++)
 		{
@@ -60,7 +60,7 @@ public class Title extends StdCommand
 			if(title.equalsIgnoreCase("*"))
 				menu.append(CMStrings.padRight(""+(i+1),2)+": Do not use a title.\n\r");
 			else
-				menu.append(CMStrings.padRight(""+(i+1),2)+": "+CMStrings.replaceAll(title,"*",mob.Name())+"\n\r");
+				menu.append(CMStrings.padRight(""+(i+1),2)+": "+CMStrings.replaceAll(title,"*",mob.name())+"\n\r");
 		}
 		int selection=1;
 		while((mob.session()!=null)&&(!mob.session().killFlag()))

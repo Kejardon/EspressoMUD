@@ -50,7 +50,7 @@ public class TickTock extends StdCommand
 				if(h==0) h=1;
 				mob.tell("..tick..tock..");
 				mob.location().getArea().getTimeObj().tickTock(h);
-				mob.location().getArea().getTimeObj().save();
+//				mob.location().getArea().getTimeObj().save();
 			}
 			else
 			{

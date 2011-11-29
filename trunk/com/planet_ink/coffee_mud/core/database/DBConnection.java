@@ -356,8 +356,8 @@ public class DBConnection
 					failuresInARow++;
 				lastError=""+sqle;
 				Log.errOut("DBConnection",updateString+": "+sqle);
-				if(myParent!=null)
-					myParent.enQueueError(updateString,""+sqle,""+(retryNum+1));
+//				if(myParent!=null)
+//					myParent.enQueueError(updateString,""+sqle,""+(retryNum+1));
 				if(isProbablyDead())
 					if(myParent!=null)
 						myParent.resetConnections();

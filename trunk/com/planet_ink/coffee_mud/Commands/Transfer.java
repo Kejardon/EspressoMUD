@@ -4,7 +4,6 @@ import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -43,164 +42,135 @@ public class Transfer extends At
 		Room room=null;
 		if(commands.size()<3)
 		{
-			mob.tell("Transfer whom where? Try all or a mob name, followerd by a Room ID, target player name, area name, or room text!");
+			mob.tell("Transfer whom/what to where? Try all or an item/mob name, followed by a Room ID, target player name, area name, or room text!");
 			return false;
 		}
-		commands.removeElementAt(0);
-		String mobname=(String)commands.elementAt(0);
-		Room curRoom=mob.location();
-		Vector V=new Vector();
-		boolean allFlag=false;
-		if(mobname.equalsIgnoreCase("ALL"))
-		{
-			allFlag=true;
-			if(commands.size()>2)
-			{
-				commands.removeElementAt(0);
-				mobname=(String)commands.elementAt(0);
-			}
-			else
-				mobname="";
-		}
+		commands.remove(0);
+		boolean mobFlag=false;
 		boolean itemFlag=false;
-		if((mobname.equalsIgnoreCase("item")||(mobname.equalsIgnoreCase("items"))))
+		if(((String)commands.get(0)).equalsIgnoreCase("ITEM"))
 		{
 			itemFlag=true;
-			if(commands.size()>2)
-			{
-				commands.removeElementAt(0);
-				mobname=(String)commands.elementAt(0);
-			}
-			else
-				mobname="";
+			commands.remove(0);
 		}
-		if((mobname.length()==0)&&(allFlag))
+		if(((String)commands.get(0)).equalsIgnoreCase("MOB"))
+		{
+			mobFlag=true;
+			commands.remove(0);
+		}
+		if(commands.size()<2)
+		{
+			mob.tell("Be more specific, WHAT item/mob do you want to transfer?");
+			return false;
+		}
+
+		int maxToDo=CMLib.english().calculateMaxToGive(mob,commands,false,null,true);
+		if(maxToDo<0) return false;
+
+		int partition=CMLib.english().getPartitionIndex(commands, "to", 1);
+		String mobname=CMParms.combine(commands,0,partition);
+		String cmd = CMParms.combine(commands,partition);
+		Room curRoom=mob.location();
+		Vector<Item> V=null;
+
+		String whatToDo=mobname.toUpperCase();
+		boolean allFlag=whatToDo.startsWith("ALL ")||whatToDo.equals("ALL");
+		if(whatToDo.toUpperCase().startsWith("ALL.")){ allFlag=true; whatToDo="ALL "+whatToDo.substring(4);}
+		if(whatToDo.toUpperCase().endsWith(".ALL")){ allFlag=true; whatToDo="ALL "+whatToDo.substring(0,whatToDo.length()-4);}
+
+		done:
+		if(allFlag)
+		{
+			V=(Vector)CMLib.english().fetchInteractables(whatToDo,false,1,Integer.MAX_VALUE,curRoom.getItemCollection());
+			if(mobFlag) for(int i=V.size()-1;i>=0;i--)
+			{
+				Item I=V.get(i);
+				if((I instanceof Body)&&(((Body)I).mob()!=null))
+					V.remove(i);
+			}
+			else if(itemFlag) for(int i=V.size()-1;i>=0;i--)
+			{
+				Item I=V.get(i);
+				if((I instanceof Body)&&(((Body)I).mob()!=null))
+					V.remove(i);
+			}
+			if(V.size()>maxToDo)
+				V.setSize(maxToDo);
+		}
+		else
 		{
 			if(itemFlag)
-				for(int i=0;i<curRoom.numItems();i++)
-					V.addElement(curRoom.getItem(i));
-			else
-			for(int i=0;i<curRoom.numInhabitants();i++)
 			{
-				MOB M=curRoom.fetchInhabitant(i);
-				if(M!=null)
-					V.addElement(M);
-			}
-		}
-		else
-		if(itemFlag)
-		{
-				if(!allFlag)
+				V=(Vector)CMLib.english().fetchInteractables(whatToDo,false,1,Integer.MAX_VALUE,curRoom.getItemCollection());
+				for(int i=0;i<V.size();i++)
 				{
-					Environmental E=curRoom.fetchFromMOBRoomFavorsItems(mob,null,mobname,Wearable.FILTER_UNWORNONLY);
-					if(E instanceof Item) V.addElement(E);
-				}
-				else
-				if(mobname.length()>0)
-				{
-					for(int i=0;i<curRoom.numItems();i++)
+					Item I=V.get(i);
+					if(!(I instanceof Body)||(((Body)I).mob()==null))
 					{
-						Item I=curRoom.getItem(i);
-						if((I!=null)&&(CMLib.english().containsString(I.name(),mobname)))
-							V.addElement(I);
+						V=new Vector();
+						V.add(I);
+						break;
 					}
 				}
-		}
-		else
-		{
-			if(!allFlag)
+			}
+			else if(mobFlag)
+			{
+				V=(Vector)CMLib.english().fetchInteractables(whatToDo,false,1,Integer.MAX_VALUE,curRoom.getItemCollection());
+				for(int i=0;i<V.size();i++)
+				{
+					Item I=V.get(i);
+					if((I instanceof Body)&&(((Body)I).mob()!=null))
+					{
+						V=new Vector();
+						V.add(I);
+						break;
+					}
+				}
+			}
+			else
+			{
+				V=new Vector();
 				for(int s=0;s<CMLib.sessions().size();s++)
 				{
 					Session S=CMLib.sessions().elementAt(s);
 					MOB M=S.mob();
-					if((M!=null)&&(M.Name().equalsIgnoreCase(mobname)))
-						V.addElement(M);
-				}
-			if(V.size()==0)
-				for(Enumeration r=mob.location().getArea().getProperMap();r.hasMoreElements();)
-				{
-					Room R=(Room)r.nextElement();
-					MOB M=null;
-					int num=1;
-					while((num<=1)||(M!=null))
+					if((M!=null)&&(M.name().equalsIgnoreCase(mobname)))
 					{
-						M=R.fetchInhabitant(mobname+"."+num);
-						if((M!=null)&&(!V.contains(M)))
-						   V.addElement(M);
-						num++;
-						if((!allFlag)&&(V.size()>0)) break;
+						V.addElement(M.body());
+						break done;
 					}
-					if((!allFlag)&&(V.size()>0)) break;
 				}
-			if(V.size()==0)
-			{
-				try
-				{
-					for(Enumeration r=CMLib.map().rooms();r.hasMoreElements();)
-					{
-						Room R=(Room)r.nextElement();
-						MOB M=null;
-						int num=1;
-						while((num<=1)||(M!=null))
-						{
-							M=R.fetchInhabitant(mobname+"."+num);
-							if((M!=null)&&(!V.contains(M)))
-								V.addElement(M);
-							num++;
-							if((!allFlag)&&(V.size()>0)) break;
-						}
-						if((!allFlag)&&(V.size()>0)) break;
-					}
-				}catch(NoSuchElementException nse){}
+				V.add((Item)CMLib.english().fetchInteractable(whatToDo,false,1,curRoom.getItemCollection()));
 			}
 		}
 
-		if(V.size()==0)
+		if((V.size()==0)||(V.get(0)==null))
 		{
 			mob.tell("Transfer what?  '"+mobname+"' is unknown to you.");
 			return false;
 		}
 
-		StringBuffer cmd = new StringBuffer(CMParms.combine(commands,1));
-		if(cmd.toString().equalsIgnoreCase("here")||cmd.toString().equalsIgnoreCase("."))
-			room=mob.location();
+		if(cmd.equalsIgnoreCase("here")||cmd.equalsIgnoreCase("."))
+			room=curRoom;
 		else
-			room=CMLib.map().findWorldRoomLiberally(mob,cmd.toString(),"RIPME",100,120);
+			room=CMLib.map().findWorldRoomLiberally(mob,cmd,"RIPME",100,120);
 
 		if(room==null)
 		{
-			mob.tell("Transfer where? '"+cmd.toString()+"' is unknown.  Enter a Room ID, player name, area name, or room text!");
+			mob.tell("Transfer where? '"+cmd+"' is unknown.  Enter a Room ID, player name, area name, or room text!");
 			return false;
 		}
 		for(int i=0;i<V.size();i++)
-		if(V.elementAt(i) instanceof Item)
 		{
-			Item I=(Item)V.elementAt(i);
-			if(!room.isContent(I))
-				room.bringItemHere(I,0,true);
+			Item I=V.get(i);
+			room.bringHere(I,false);
+			if((I instanceof Body)&&(((Body)I).mob()!=null))
+				CMLib.commands().postLook(((Body)I).mob());
 		}
-		else
-		if(V.elementAt(i) instanceof MOB)
-		{
-			MOB M=(MOB)V.elementAt(i);
-			if(!room.isInhabitant(M))
-			{
-				if((mob.playerStats().tranPoofOut().length()>0)&&(mob.location()!=null))
-					M.location().show(mob,M,CMMsg.MSG_OK_VISUAL,mob.playerStats().tranPoofOut());
-				room.bringMobHere(M);
-				if(mob.playerStats().tranPoofIn().length()>0)
-					room.showOthers(mob,M,CMMsg.MSG_OK_VISUAL,mob.playerStats().tranPoofIn());
-				if(!M.isMonster())
-					CMLib.commands().postLook(M,true);
-			}
-		}
-		if(mob.playerStats().tranPoofOut().length()==0)
-			mob.tell("Done.");
+		mob.tell("Done.");
 		return false;
 	}
 	
 	public boolean canBeOrdered(){return true;}
 	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,mob.location(),"TRANSFER");}
-
-	
 }

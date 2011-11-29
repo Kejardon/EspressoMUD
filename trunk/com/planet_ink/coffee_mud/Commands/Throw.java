@@ -4,7 +4,6 @@ import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -46,97 +45,29 @@ public class Throw extends StdCommand
 			return false;
 		}
 		commands.removeElementAt(0);
-		String str=(String)commands.lastElement();
-		commands.removeElement(str);
-		String what=CMParms.combine(commands,0);
-		Item item=mob.fetchWornItem(what);
-		if(item==null) item=mob.fetchInventory(null,what);
-		if((item==null)||(!CMLib.flags().canBeSeenBy(item,mob)))
+		
+		int partition=CMLib.english().getPartitionIndex(commands, "at", commands.size()-1);
+		
+		String str=CMParms.combine(commands,partition);
+		String what=CMParms.combine(commands,0,partition);
+		Item item=(Item)CMLib.english().fetchInteractable(what,false,1,mob.getItemCollection());
+		if(item==null)
 		{
 			mob.tell("You don't seem to have a '"+what+"'!");
 			return false;
 		}
-		if((!item.amWearingAt(Wearable.WORN_HELD))&&(!item.amWearingAt(Wearable.WORN_WIELD)))
+
+		Interactable target=CMLib.english().fetchInteractable(str,false,1,mob.location());
+		if(target==null)
 		{
-			mob.tell("You aren't holding or wielding "+item.name()+"!");
+			mob.tell("You don't see a '"+str+"'!");
 			return false;
 		}
 
-		int dir=Directions.getGoodDirectionCode(str);
-		Environmental target=null;
-		if(dir<0)
-			target=mob.location().fetchInhabitant(str);
-		else
-		{
-			target=mob.location().getRoomInDir(dir);
-			if((target==null)
-			||(mob.location().getExitInDir(dir)==null)
-			||(!mob.location().getExitInDir(dir).isOpen()))
-			{
-				mob.tell("You can't throw anything that way!");
-				return false;
-			}
-			boolean amOutside=((mob.location().domainType()&Room.INDOORS)==0);
-			boolean isOutside=((((Room)target).domainType()&Room.INDOORS)==0);
-			boolean isUp=(mob.location().getRoomInDir(Directions.UP)==target);
-			boolean isDown=(mob.location().getRoomInDir(Directions.DOWN)==target);
-
-			if(amOutside&&isOutside&&(!isUp)&&(!isDown)
-			&&((((Room)target).domainType()&Room.DOMAIN_OUTDOORS_AIR)==0))
-			{
-				mob.tell("That's too far to throw "+item.name()+".");
-				return false;
-			}
-		}
-		if((dir<0)&&((target==null)||((target!=mob.getVictim())&&(!CMLib.flags().canBeSeenBy(target,mob)))))
-		{
-			mob.tell("You can't target "+item.name()+" at '"+str+"'!");
-			return false;
-		}
-
-		if(!(target instanceof Room))
-		{
-			CMMsg newMsg=CMClass.getMsg(mob,item,null,CMMsg.MSG_REMOVE,null);
-			if(mob.location().okMessage(mob,newMsg))
-			{
-				mob.location().send(mob,newMsg);
-				int targetMsg=CMMsg.MSG_THROW;
-				if(target instanceof MOB)
-				{
-					if(item instanceof Weapon)
-						targetMsg=CMMsg.MSG_WEAPONATTACK;
-					else
-					if(item instanceof SpellHolder)
-					{
-						Vector V=((SpellHolder)item).getSpells();
-						for(int v=0;v<V.size();v++)
-							if(((Ability)V.elementAt(v)).abstractQuality()==Ability.QUALITY_MALICIOUS)
-							{ 
-								targetMsg=CMMsg.MSG_WEAPONATTACK; 
-								break;
-							}
-					}
-				}
-				CMMsg msg=CMClass.getMsg(mob,target,item,CMMsg.MSG_THROW,targetMsg,CMMsg.MSG_THROW,"<S-NAME> throw(s) <O-NAME> at <T-NAMESELF>.");
-				if(mob.location().okMessage(mob,msg))
-					mob.location().send(mob,msg);
-			}
-		}
-		else
-		{
-			CMMsg msg=CMClass.getMsg(mob,target,item,CMMsg.MSG_THROW,"<S-NAME> throw(s) <O-NAME> "+Directions.getInDirectionName(dir).toLowerCase()+".");
-			CMMsg msg2=CMClass.getMsg(mob,target,item,CMMsg.MSG_THROW,"<O-NAME> fl(ys) in from "+Directions.getFromDirectionName(Directions.getOpDirectionCode(dir)).toLowerCase()+".");
-			if(mob.location().okMessage(mob,msg)&&((Room)target).okMessage(mob,msg2))
-			{
-				mob.location().send(mob,msg);
-				((Room)target).sendOthers(mob,msg2);
-			}
-		}
+		CMMsg msg=CMClass.getMsg(mob,target,item,EnumSet.of(CMMsg.MsgCode.THROW),"<S-NAME> throw(s) <O-NAME> at <T-NAMESELF>.");
+		mob.location().doMessage(msg);
 		return false;
 	}
-    public double combatActionsCost(MOB mob, Vector cmds){return CMath.div(CMProps.getIntVar(CMProps.SYSTEMI_DEFCOMCMDTIME),100.0);}
-    public double actionsCost(MOB mob, Vector cmds){return CMath.div(CMProps.getIntVar(CMProps.SYSTEMI_DEFCMDTIME),100.0);}
+	public double actionsCost(MOB mob, Vector cmds){return DEFAULT_NONCOMBATACTION;}
 	public boolean canBeOrdered(){return true;}
-
-	
 }

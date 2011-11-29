@@ -4,7 +4,6 @@ import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -23,7 +22,7 @@ import java.util.*;
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+	   http://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -46,70 +45,28 @@ public class Knock extends StdCommand
 			mob.tell("Knock on what?");
 			return false;
 		}
-		String knockWhat=CMParms.combine(commands,1).toUpperCase();
-		int dir=CMLib.tracking().findExitDir(mob,mob.location(),knockWhat);
-		if(dir<0)
+		int volume=-1;
+		if((commands.size()>2)&&(CMath.isInteger((String)commands.lastElement())))
 		{
-			Environmental getThis=mob.location().fetchFromMOBRoomItemExit(mob,null,knockWhat,Wearable.FILTER_UNWORNONLY);
-			if(getThis==null)
-			{
-				mob.tell("You don't see '"+knockWhat.toLowerCase()+"' here.");
-				return false;
-			}
-			CMMsg msg=CMClass.getMsg(mob,getThis,null,CMMsg.MSG_KNOCK,CMMsg.MSG_KNOCK,CMMsg.MSG_KNOCK,"<S-NAME> knock(s) on <T-NAMESELF>."+CMProps.msp("knock.wav",50));
-			if(mob.location().okMessage(mob,msg))
-				mob.location().send(mob,msg);
-
+			volume=CMath.s_int((String)commands.lastElement());
+			commands.remove(commands.size()-1);
+		}
+		String knockWhat=CMParms.combine(commands,1).toUpperCase();
+		Interactable I=CMLib.english().fetchInteractable(knockWhat, false, 1, mob.location());
+		if(I!=null)
+		{
+			CMMsg msg=CMClass.getMsg(mob,I,null,EnumSet.of(CMMsg.MsgCode.KNOCK),"<S-NAME> knock(s) on <T-NAMESELF>.");
+			if(volume!=-1)
+				msg.setValue(volume);
+			mob.location().doMessage(msg);
 		}
 		else
 		{
-			Exit E=mob.location().getExitInDir(dir);
-			if(E==null)
-			{
-				mob.tell("Knock on what?");
-				return false;
-			}
-			if(!E.hasADoor())
-			{
-				mob.tell("You can't knock on "+E.name()+"!");
-				return false;
-			}
-			CMMsg msg=CMClass.getMsg(mob,E,null,CMMsg.MSG_KNOCK,CMMsg.MSG_KNOCK,CMMsg.MSG_KNOCK,"<S-NAME> knock(s) on <T-NAMESELF>."+CMProps.msp("knock.wav",50));
-			if(mob.location().okMessage(mob,msg))
-			{
-				mob.location().send(mob,msg);
-				E=mob.location().getPairedExit(dir);
-				Room R=mob.location().getRoomInDir(dir);
-				if((R!=null)&&(E!=null)&&(E.hasADoor())
-				&&(R.showOthers(mob,E,null,CMMsg.MSG_KNOCK,"You hear a knock on <T-NAMESELF>."+CMProps.msp("knock.wav",50)))
-				&&((R.domainType()&Room.INDOORS)==Room.INDOORS))
-				{
-					Vector V=new Vector();
-					V.addElement(mob.location());
-					TrackingLibrary.TrackingFlags flags;
-					flags = new TrackingLibrary.TrackingFlags()
-							.add(TrackingLibrary.TrackingFlag.OPENONLY);
-					CMLib.tracking().getRadiantRooms(R,V,flags,null,5,null);
-					V.removeElement(mob.location());
-					for(int v=0;v<V.size();v++)
-					{
-						Room R2=(Room)V.elementAt(v);
-						int dir2=CMLib.tracking().radiatesFromDir(R2,V);
-						if((dir2>=0)&&((R2.domainType()&Room.INDOORS)==Room.INDOORS))
-						{
-							Room R3=R2.getRoomInDir(dir2);
-							if(((R3!=null)&&(R3.domainType()&Room.INDOORS)==Room.INDOORS))
-								R2.showHappens(CMMsg.MASK_SOUND|CMMsg.TYP_KNOCK,"You hear a knock "+Directions.getInDirectionName(dir2)+"."+CMProps.msp("knock.wav",50));
-						}
-					}
-				}
-			}
+			mob.tell("You don't see '"+knockWhat+"' here.");
+			return false;
 		}
 		return false;
 	}
-    public double combatActionsCost(MOB mob, Vector cmds){return CMath.div(CMProps.getIntVar(CMProps.SYSTEMI_DEFCOMCMDTIME),100.0);}
-    public double actionsCost(MOB mob, Vector cmds){return CMath.div(CMProps.getIntVar(CMProps.SYSTEMI_DEFCMDTIME),100.0);}
+	public double actionsCost(MOB mob, Vector cmds){return DEFAULT_NONCOMBATACTION;}
 	public boolean canBeOrdered(){return true;}
-
-	
 }

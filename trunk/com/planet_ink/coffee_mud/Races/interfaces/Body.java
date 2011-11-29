@@ -49,8 +49,9 @@ public interface Body extends Item	//, Rideable
 	public Body killMeDead();
 	public void bringToLife(Room newLocation, boolean resetStats);
 	public void bringToLife();
-	//public Race myRace();
-	//public void setRace();
+//	public Race myRace();
+//	public void setRace(Race R);
+	public String raceName();
 
 //	TODO: Make Gender object in this folder
 //	public Gender gender();
@@ -190,6 +191,9 @@ public interface Body extends Item	//, Rideable
 				if(charStats().setPoints(CharStats.Points.HIT, 1))
 					charStats().setMaxPoints(CharStats.Points.HIT, 1);
 		}
+//		public Race myRace(){return StdRace;}
+//		public void setRace(Race R){}
+		public String raceName(){return "";}
 
 		public int priority(ListenHolder L){return Integer.MAX_VALUE;}
 		public void registerListeners(ListenHolder here) { here.addListener(this, lFlags); }

@@ -4,7 +4,6 @@ import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -41,8 +40,7 @@ public class Who extends StdCommand
 	protected static final String shortHead=
 		 "^x["
 		+CMStrings.padRight("Race",12)+" "
-		+CMStrings.padRight("Class",12)+" "
-		+CMStrings.padRight("Level",7)
+//		+CMStrings.padRight("Level",7)
 		+"] Character name^.^N\n\r";
 		 
 	
@@ -50,37 +48,30 @@ public class Who extends StdCommand
 	{
 		StringBuffer msg=new StringBuffer("");
 		msg.append("[");
-		if(!CMSecurity.isDisabled("RACES"))
-		{
-			msg.append(CMStrings.padRight(who.charStats().raceName(),12)+" ");
-		}
-		msg.append(CMStrings.padRight(" ",12)+" ");
-		if(!CMSecurity.isDisabled("LEVELS"))
-			msg.append(CMStrings.padRight(" ",7));
+		msg.append(CMStrings.padRight(who.body().raceName(),12)+" ");
+//		msg.append(CMStrings.padRight(" ",7));
 		String name=null;
-		if(CMath.bset(who.envStats().disposition(),EnvStats.IS_CLOAKED))
-			name="("+(who.Name().equals(who.name())?who.titledName():who.name())+")";
-		else
-			name=(who.Name().equals(who.name())?who.titledName():who.name());
+		name=who.titledName();
 		if((who.session()!=null)&&(who.session().afkFlag()))
 		{
 			long t=(who.session().getIdleMillis()/1000);
-			String s=t+"s";
+			String s=null;
 			if(t>600)
 			{
 				t=t/60;
-				s=t+"m";
 				if(t>120)
 				{
 					t=t/60;
-					s=t+"h";
 					if(t>48)
 					{
 						t=t/24;
 						s=t+"d";
 					}
+					else s=t+"h";
 				}
+				else s=t+"m";
 			}
+			else s=t+"s";
 			name=name+(" (idle: "+s+")");
 		}
 		msg.append("] "+CMStrings.padRight(name,40));
@@ -107,43 +98,26 @@ public class Who extends StdCommand
 		{
 			Session thisSession=CMLib.sessions().elementAt(s);
 			MOB mob2=thisSession.mob();
-			if((mob2!=null)&&(mob2.soulMate()!=null))
-				mob2=mob2.soulMate();
 
 			if((mob2!=null)
 			&&(!thisSession.killFlag())
-			&&((((mob2.envStats().disposition()&EnvStats.IS_CLOAKED)==0)
-				||((CMSecurity.isAllowedAnywhere(mob,"CLOAK")||CMSecurity.isAllowedAnywhere(mob,"WIZINV"))&&(mob.envStats().level()>=mob2.envStats().level()))))
-			&&((friends==null)||(friends.contains(mob2.Name())||(friends.contains("All"))))
-			&&(CMLib.flags().isInTheGame(mob2,true))
-			&&(mob2.envStats().level()>0))
+			&&((friends==null)||(friends.contains(mob2.name())))
+			&&(CMLib.flags().isInTheGame(mob2,true)))
 				msg.append(showWhoShort(mob2));
 		}
 		if((mobName!=null)&&(msg.length()==0))
 			msg.append("That person doesn't appear to be online.\n\r");
 		else
 		{
-			StringBuffer head=new StringBuffer("");
+/*			StringBuffer head=new StringBuffer("");
 			head.append("^x[");
-			if(!CMSecurity.isDisabled("RACES"))
-				head.append(CMStrings.padRight("Race",12)+" ");
-			if(!CMSecurity.isDisabled("CLASSES"))
-				head.append(CMStrings.padRight("Class",12)+" ");
-			if(!CMSecurity.isDisabled("LEVELS"))
-				head.append(CMStrings.padRight("Level",7));
+			head.append(CMStrings.padRight("Race",12)+" ");
+//			head.append(CMStrings.padRight("Level",7));
 			head.append("] Character name^.^N\n\r");
-			if(mob!=null)
-				mob.tell(head.toString()+msg.toString());
-			else
-			{
-				commands.clear();
-				commands.addElement(head.toString()+msg.toString());
-			}
+*/			mob.tell(shortHead+msg.toString());
 		}
 		return false;
 	}
 	
 	public boolean canBeOrdered(){return true;}
-
-	
 }

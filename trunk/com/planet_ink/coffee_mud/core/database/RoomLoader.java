@@ -292,7 +292,7 @@ public class RoomLoader
 	}
 	public void DBDelete(Room room)
 	{
-		if(Log.debugChannelOn()&&(CMSecurity.isDebugging("CMROCH")||CMSecurity.isDebugging("DBROOMS")))
+		if(Log.debugChannelOn()&&(CMSecurity.isDebugging("CMROOM")||CMSecurity.isDebugging("DBROOMS")))
 			Log.debugOut("RoomLoader","Destroying room "+room.roomID());
 		room.destroy();
 		DB.update("DELETE FROM CMROOM WHERE CMROID='"+room.roomID()+"'");
@@ -328,7 +328,7 @@ public class RoomLoader
 		"INSERT INTO CMAREA ("
 		+"CMAREA,"
 		+"CMTYPE,"
-		+"CMDATA,"
+		+"CMDATA"
 		+") values ("
 		+"'"+A.name()+"',"
 		+"'"+A.ID()+"',"

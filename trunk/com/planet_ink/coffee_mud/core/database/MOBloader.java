@@ -268,7 +268,7 @@ public class MOBloader
 		// wont add if same name already exists
 	}
 
-	public List<String> getUserList()
+	public Vector<String> getUserList()
 	{
 		DBConnection D=null;
 		Vector V=new Vector();

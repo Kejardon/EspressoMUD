@@ -22,7 +22,7 @@ import java.util.*;
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+	   http://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -52,89 +52,52 @@ public class Give extends StdCommand
 			return false;
 		}
 
-		MOB recipient=mob.location().fetchInhabitant((String)commands.lastElement());
-		if((recipient==null)||(!CMLib.flags().canBeSeenBy(recipient,mob)))
+		int partition=CMLib.english().getPartitionIndex(commands, "to", commands.size()-1);
+		String targetName=CMParms.combine(commands,partition);
+		MOB recipient=mob.location().fetchInhabitant(targetName);
+		if(recipient==null)
 		{
-			mob.tell("I don't see anyone called "+(String)commands.lastElement()+" here.");
+			mob.tell("I don't see anyone called "+targetName+" here.");
 			return false;
 		}
-		commands.removeElementAt(commands.size()-1);
-		if((commands.size()>0)&&(((String)commands.lastElement()).equalsIgnoreCase("to")))
-			commands.removeElementAt(commands.size()-1);
+		commands.setSize(partition);
 
 		int maxToGive=CMLib.english().calculateMaxToGive(mob,commands,true,mob,false);
-        if(maxToGive<0) return false;
-        
-		String thingToGive=CMParms.combine(commands,0);
-		int addendum=1;
-		String addendumStr="";
-		Vector V=new Vector();
+		if(maxToGive<0) return false;
+		
+		String thingToGive=CMParms.combine(commands,0,partition);
+		Vector<Item> V=new Vector();
 		boolean allFlag=(commands.size()>0)?((String)commands.elementAt(0)).equalsIgnoreCase("all"):false;
 		if(thingToGive.toUpperCase().startsWith("ALL.")){ allFlag=true; thingToGive="ALL "+thingToGive.substring(4);}
 		if(thingToGive.toUpperCase().endsWith(".ALL")){ allFlag=true; thingToGive="ALL "+thingToGive.substring(0,thingToGive.length()-4);}
-        Item giveThis=CMLib.english().bestPossibleGold(mob,null,thingToGive);
-        if(giveThis!=null)
-        {
-            if(((Coins)giveThis).getNumberOfCoins()<CMLib.english().numPossibleGold(mob,thingToGive))
-                return false;
-            if(CMLib.flags().canBeSeenBy(giveThis,mob))
-                V.addElement(giveThis);
-        }
-		boolean doBugFix = true;
-        if(V.size()==0)
-		while(doBugFix || ((allFlag)&&(addendum<=maxToGive)))
+		
+		if(allFlag)
 		{
-			doBugFix=false;
-			giveThis=mob.fetchCarried(null,thingToGive+addendumStr);
-			if((giveThis==null)
-			&&(V.size()==0)
-			&&(addendumStr.length()==0)
-			&&(!allFlag))
+			V=mob.fetchInventories(thingToGive);
+			if(V.size()==0)
 			{
-				giveThis=mob.fetchWornItem(thingToGive);
-				if(giveThis!=null)
-				{
-					if((!(giveThis).amWearingAt(Wearable.WORN_HELD))&&(!(giveThis).amWearingAt(Wearable.WORN_WIELD)))
-					{
-						mob.tell("You must remove that first.");
-						return false;
-					}
-					CMMsg newMsg=CMClass.getMsg(mob,giveThis,null,CMMsg.MSG_REMOVE,null);
-					if(mob.location().okMessage(mob,newMsg))
-						mob.location().send(mob,newMsg);
-					else
-						return false;
-				}
+				mob.tell("You don't seem to have '"+thingToGive+"'.");
+				return false;
 			}
-            if((allFlag)&&(giveThis instanceof Coins)&&(thingToGive.equalsIgnoreCase("all")))
-                giveThis=null;
-            else
-            {
-    			if(giveThis==null) break;
-    			if(CMLib.flags().canBeSeenBy(giveThis,mob))
-    				V.addElement(giveThis);
-            }
-            addendumStr="."+(++addendum);
+		}
+		else
+		{
+			Item I=mob.fetchInventory(thingToGive);
+			if(I==null)
+			{
+				mob.tell("You don't seem to have '"+thingToGive+"'.");
+				return false;
+			}
+			V=new Vector();
+			V.add(I);
 		}
 
-		if(V.size()==0)
-			mob.tell("You don't seem to be carrying that.");
-		else
-		for(int i=0;i<V.size();i++)
-		{
-			giveThis=(Item)V.elementAt(i);
-			CMMsg newMsg=CMClass.getMsg(mob,recipient,giveThis,CMMsg.MSG_GIVE,"<S-NAME> give(s) <O-NAME> to <T-NAMESELF>.");
-			if(mob.location().okMessage(mob,newMsg))
-				mob.location().send(mob,newMsg);
-			if(giveThis instanceof Coins)
-				((Coins)giveThis).putCoinsBack();
-			if(giveThis instanceof RawMaterial)
-				((RawMaterial)giveThis).rebundle();
-		}
+		for(Item I : (Item[])V.toArray(new Item[0]))
+			if(!mob.location().doMessage(CMClass.getMsg(mob,recipient,I,EnumSet.of(CMMsg.MsgCode.GIVE),"<S-NAME> give(s) <O-NAME> to <T-NAMESELF>.")))
+				break;
 		return false;
 	}
-    public double combatActionsCost(MOB mob, Vector cmds){return CMath.div(CMProps.getIntVar(CMProps.SYSTEMI_DEFCOMCMDTIME),100.0);}
-    public double actionsCost(MOB mob, Vector cmds){return CMath.div(CMProps.getIntVar(CMProps.SYSTEMI_DEFCMDTIME),100.0);}
+	public double actionsCost(MOB mob, Vector cmds){return DEFAULT_NONCOMBATACTION;}
 	public boolean canBeOrdered(){return true;}
 
 	

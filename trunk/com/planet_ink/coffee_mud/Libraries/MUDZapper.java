@@ -525,7 +525,8 @@ public class MUDZapper extends StdLibrary implements MaskingLibrary
 			Vector V=(Vector)cset.elementAt(c);
 			if(V.size()>0) try
 			{
-			boolean positive=((Boolean)V.remove(0)).booleanValue();
+			boolean positive=true;
+			if(V.get(0) instanceof Boolean) positive=((Boolean)V.remove(0)).booleanValue();
 			switch((Mask)V.firstElement())
 			{
 			case SYSOP:

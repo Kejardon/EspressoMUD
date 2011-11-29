@@ -4,7 +4,6 @@ import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -22,7 +21,7 @@ import java.util.*;
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+	   http://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -36,140 +35,76 @@ public class Say extends StdCommand
 	public Say(){}
 
 	private String[] access={"SAY",
-                             "ASK",
-                             "`",
-                             "SA",
-                             "SAYTO"};
+							 "`",
+							 "SAYTO",
+							 "ASK",
+							 "ASKTO",
+							 "YELL",
+							 "YELLTO"};
 	public String[] getAccessWords(){return access;}
-
-    protected static final String[] impossibleTargets={
-		"HERE",
-		"THERE",
-		"IS",
-		"JUST",
-		"A",
-		"AN",
-		"TO",
-		"THE",
-		"SOME",
-		"SITS",
-		"RESTS",
-		"LEFT",
-		"HAS",
-		"BEEN"
-	};
 
 	public boolean execute(MOB mob, Vector commands, int metaFlags)
 		throws java.io.IOException
 	{
 		String theWord="Say";
 		boolean toFlag=false;
-		if(((String)commands.elementAt(0)).equalsIgnoreCase("ASK"))
-			theWord="Ask";
-		else
-		if(((String)commands.elementAt(0)).equalsIgnoreCase("YELL"))
-			theWord="Yell";
-		else
-		if(((String)commands.elementAt(0)).equalsIgnoreCase("SAYTO")
-		||((String)commands.elementAt(0)).equalsIgnoreCase("SAYT"))
 		{
-			theWord="Say";
-			toFlag=true;
+			String firstWord=((String)commands.get(0)).toUpperCase();
+			if(firstWord.startsWith("A"))
+				theWord="Ask";
+			else
+			if(firstWord.startsWith("Y"))
+				theWord="Yell";
+			else
+				theWord="Say";
+			if(firstWord.indexOf("T")>=0)
+				toFlag=true;
 		}
 
-        Room R=mob.location();
-		if((commands.size()==1)||(R==null))
+		Room R=mob.location();
+		if(commands.size()==1)
 		{
 			mob.tell(theWord+" what?");
 			return false;
 		}
 
-        
-		String whom="";
-		Environmental target=null;
-		if(commands.size()>2)
+		commands.remove(0);
+		Interactable target=null;
+		if(toFlag)
 		{
-			whom=((String)commands.elementAt(1)).toUpperCase();
-			if(!toFlag)
-				for(int i=0;i<impossibleTargets.length;i++)
-					if(impossibleTargets[i].startsWith(whom))
-					{ whom=""; break;}
-			if(whom.length()>0)
+			String whom=(String)commands.get(0);
+			if(commands.size()<2)
 			{
-				target=R.fetchFromRoomFavorMOBs(null,whom,Wearable.FILTER_ANY);
-				if((toFlag)&&(target==null))
-				    target=mob.fetchInventory(null,whom);
-
-				if((!toFlag)&&(target!=null))
-				{
-					if(!(target instanceof MOB))
-						target=null;
-					else
-					if(target.name().toUpperCase().indexOf(whom.toUpperCase())<0)
-						target=null;
-					else
-					if((!target.name().equalsIgnoreCase(whom))&&(whom.length()<4))
-						target=null;
-				}
-
-				if((target!=null)&&(CMLib.flags().canBeSeenBy(target,mob)))
-					commands.removeElementAt(1);
-				else
-					target=null;
+				mob.tell(theWord+" what to them?");
+				return false;
 			}
+			target=CMLib.english().fetchInteractable(whom, false, 1, R, mob);
+			if(target==null)
+			{
+				mob.tell("You don't see "+whom+" here to speak to.");
+				return false;
+			}
+			commands.remove(1);
 		}
-		String combinedCommands=CMParms.combineWithQuotes(commands,1);
+		String combinedCommands=CMParms.combineWithQuotes(commands,0);
 		if(combinedCommands.equals(""))
 		{
-			mob.tell(theWord+"  what?");
+			mob.tell(theWord+" what?");
 			return false;
 		}
-		if(toFlag&&((target==null)||(!CMLib.flags().canBeSeenBy(target,mob))))
-		{
-			mob.tell("you don't see "+whom+" here to speak to.");
-			return false;
-		}
-		combinedCommands=CMProps.applyINIFilter(combinedCommands,CMProps.SYSTEM_SAYFILTER);
 
-		CMMsg msg=null;
-		if((!theWord.equalsIgnoreCase("ASK"))&&(target!=null))
-		    theWord+="(s) to";
-		else
-		    theWord+="(s)";
-		String fromSelf="^T^<SAY \""+((target!=null)?target.name():mob.name())+"\"^><S-NAME> "+theWord.toLowerCase()+" <T-NAMESELF> '"+combinedCommands+"'^</SAY^>^?";
-		String toTarget="^T^<SAY \""+mob.name()+"\"^><S-NAME> "+theWord.toLowerCase()+" <T-NAMESELF> '"+combinedCommands+"'^</SAY^>^?";
-		if(target==null)
-			msg=CMClass.getMsg(mob,null,null,CMMsg.MSG_SPEAK,"^T^<SAY \""+mob.name()+"\"^><S-NAME> "+theWord.toLowerCase()+" '"+combinedCommands+"'^</SAY^>^?");
-		else
-			msg=CMClass.getMsg(mob,target,null,CMMsg.MSG_SPEAK,fromSelf,toTarget,fromSelf);
-		
-        
-        
-		if(R.okMessage(mob,msg))
+		String toTarget=null;
+		if((target!=null)&&(!theWord.equals("Ask")))
 		{
-			R.send(mob,msg);
-			if(theWord.toUpperCase().startsWith("YELL"))
-				for(int d=Directions.NUM_DIRECTIONS()-1;d>=0;d--)
-				{
-					Room R2=R.getRoomInDir(d);
-					Exit E2=R.getExitInDir(d);
-					if((R2!=null)&&(E2!=null)&&(E2.isOpen()))
-					{
-						Environmental tool=msg.tool();
-						msg=CMClass.getMsg(mob,null,null,CMMsg.MSG_SPEAK,"^TYou hear someone yell '"+combinedCommands+"' "+Directions.getInDirectionName(Directions.getOpDirectionCode(d))+"^?");
-						if((R2.okMessage(mob,msg))
-						&&((tool==null)||(tool.okMessage(mob,msg))))
-						{
-							R2.sendOthers(mob,msg);
-						}
-					}
-				}
+			if(theWord.equals("Say"))
+				toTarget="^T^<SAY \""+mob.name()+"\"^><S-NAME> say(s) to <T-NAMESELF> '"+combinedCommands+"'^</SAY^>^?";
+			else
+				toTarget="^T^<SAY \""+mob.name()+"\"^><S-NAME> yell(s) at <T-NAMESELF> '"+combinedCommands+"'^</SAY^>^?";
 		}
+		else
+			toTarget="^T^<SAY \""+mob.name()+"\"^><S-NAME> "+theWord.toLowerCase()+"(s) '"+combinedCommands+"'^</SAY^>^?";
+		R.doMessage(CMClass.getMsg(mob,target,null,EnumSet.of(CMMsg.MsgCode.SPEAK),toTarget));
 		return false;
 	}
-    public double combatActionsCost(MOB mob, Vector cmds){return CMath.div(CMProps.getIntVar(CMProps.SYSTEMI_DEFCOMCMDTIME),100.0);}
-    public double actionsCost(MOB mob, Vector cmds){return CMath.div(CMProps.getIntVar(CMProps.SYSTEMI_DEFCMDTIME),100.0);}
 	public boolean canBeOrdered(){return true;}
-
-	
 }

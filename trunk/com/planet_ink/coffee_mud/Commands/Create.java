@@ -206,6 +206,7 @@ public class Create extends StdCommand
 			return;
 		}
 		
+		thisArea.initChildren();
 		String areaName="";
 		while(areaName.length()==0)
 		{

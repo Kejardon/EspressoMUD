@@ -36,7 +36,7 @@ public class CMPlayers extends StdLibrary implements PlayerLibrary
 	public String ID(){return "CMPlayers";}
 	public Vector<MOB> playersList = new Vector<MOB>();
 	public Vector<PlayerAccount> accountsList = new Vector<PlayerAccount>();
-	
+
 	private ThreadEngine.SupportThread thread=null;
 	
 	public ThreadEngine.SupportThread getSupportThread() { return thread;}
@@ -146,7 +146,7 @@ public class CMPlayers extends StdLibrary implements PlayerLibrary
 		for(Enumeration<MOB> e=players();e.hasMoreElements();)
 			if(e.nextElement().name().equals(name))
 				return true;
-		return CMLib.players().getLoadPlayer(name)!=null;
+		return false;
 	}
 	public Enumeration players() { return (Enumeration)DVector.s_enum(playersList); }
 	public Enumeration accounts() { return (Enumeration)DVector.s_enum(accountsList); }
@@ -247,6 +247,16 @@ public class CMPlayers extends StdLibrary implements PlayerLibrary
 					MudHost.TIME_SAVETHREAD_SLEEP, this, CMSecurity.isDebugging("SAVETHREAD"));
 		if(!thread.started)
 			thread.start();
+		Vector<String> knownPlayers=CMLib.database().getUserList();
+		for(String S : (String[])knownPlayers.toArray(new String[0]))
+		{
+			MOB M=(MOB)CMClass.Objects.MOB.getNew("StdMOB");
+			M.setName(CMStrings.capitalizeAndLower(S));
+			CMLib.database().DBReadPlayer(M);
+//			if(M.playerStats()!=null)
+//				M.playerStats().setLastUpdated(M.playerStats().lastDateTime());
+//			M.recoverCharStats();
+		}
 		return true;
 	}
 	
@@ -270,6 +280,7 @@ public class CMPlayers extends StdLibrary implements PlayerLibrary
 		if((!CMSecurity.isDisabled("SAVETHREAD"))
 		&&(!CMSecurity.isDisabled("PLAYERTHREAD")))
 		{
+/*
 			thread.status("checking player titles.");
 			for(Enumeration e=players();e.hasMoreElements();)
 			{
@@ -280,6 +291,8 @@ public class CMPlayers extends StdLibrary implements PlayerLibrary
 						CMLib.database().DBUpdatePlayerMOBOnly(M);
 				}
 			}
+*/
+			thread.status("saving players");
 			savePlayers();
 			thread.status("not saving players");
 		}

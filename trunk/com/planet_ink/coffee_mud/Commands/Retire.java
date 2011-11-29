@@ -4,7 +4,6 @@ import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -48,7 +47,7 @@ public class Retire extends StdCommand
 		mob.tell("^HThis will delete your player from the system FOREVER!");
 		String pwd=session.prompt("If that's what you want, re-enter your password:","",30000);
 		if(pwd.length()==0) return false;
-		if(!pwd.equalsIgnoreCase(pstats.password()))
+		if(!BCrypt.checkpw(pwd,pstats.password()))
 		{
 			mob.tell("Password incorrect.");
 			return false;
@@ -58,14 +57,10 @@ public class Retire extends StdCommand
 			String reason=session.prompt("OK.  Please leave us a short message as to why you are deleting this"
 											  +" character.  Your answers will be kept confidential, "
 											  +"and are for administrative purposes only.\n\r: ","",120000);
-			Log.sysOut("Retire",mob.Name()+" retiring: "+reason);
+			Log.sysOut("Retire",mob.name()+" retiring: "+reason);
 		}
 		CMLib.players().obliteratePlayer(mob,false);
 		return false;
 	}
-    public double combatActionsCost(MOB mob, Vector cmds){return CMath.div(CMProps.getIntVar(CMProps.SYSTEMI_DEFCOMCMDTIME),100.0);}
-    public double actionsCost(MOB mob, Vector cmds){return CMath.div(CMProps.getIntVar(CMProps.SYSTEMI_DEFCMDTIME),100.0);}
 	public boolean canBeOrdered(){return false;}
-
-	
 }

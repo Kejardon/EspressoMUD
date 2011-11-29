@@ -312,7 +312,23 @@ public class StdRoom implements Room
 	{
 		//TODO
 	}
-	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
+	public int compareTo(CMObject o)
+	{
+		int i=CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));
+		if(i!=0) return i;
+		String thatID=((Room)o).roomID();
+		i=thatID.indexOf("#");
+		if(i<0) return i;
+		int thatNumber=CMath.s_int(thatID.substring(i+1));
+		thatID=thatID.substring(0,i);
+		i=myID.indexOf("#");
+		if(i<0) return -i;
+		int thisNumber=CMath.s_int(myID.substring(i+1));
+		String thisID=myID.substring(0,i);
+		i=thisID.compareToIgnoreCase(thatID);
+		if(i!=0) return i;
+		return thisNumber-thatNumber;
+	}
 
 // actually this should not be called much. Execute Message should handle most of it instead I think? Maybe this should be called by execute message? Probably not...
 	public void bringHere(Item I, boolean andRiders)

@@ -4,7 +4,6 @@ import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -40,44 +39,32 @@ public class Sit extends StdCommand
 	public boolean execute(MOB mob, Vector commands, int metaFlags)
 		throws java.io.IOException
 	{
+/*
 		if(CMLib.flags().isSitting(mob))
 		{
 			mob.tell("You are already sitting!");
 			return false;
 		}
+*/
 		if(commands.size()<=1)
 		{
-			CMMsg msg=CMClass.getMsg(mob,null,null,CMMsg.MSG_SIT,"<S-NAME> sit(s) down and take(s) a rest.");
-			if(mob.location().okMessage(mob,msg))
-				mob.location().send(mob,msg);
+			mob.location().doMessage(CMClass.getMsg(mob,null,null,EnumSet.of(CMMsg.MsgCode.SIT),"<S-NAME> sit(s) down and take(s) a rest."));
 			return false;
 		}
+		if("ON".equalsIgnoreCase((String)commands.get(1)))
+			commands.remove(1);
 		String possibleRideable=CMParms.combine(commands,1);
-		Environmental E=null;
-		if(possibleRideable.length()>0)
+		Interactable I=CMLib.english().fetchInteractable(possibleRideable, false, 1, mob.location());
+		if(I==null)
 		{
-			E=mob.location().fetchFromRoomFavorItems(null,possibleRideable,Wearable.FILTER_UNWORNONLY);
-			if((E==null)||(!CMLib.flags().canBeSeenBy(E,mob)))
-			{
-				mob.tell("You don't see '"+possibleRideable+"' here.");
-				return false;
-			}
-			if(E instanceof MOB)
-			{
-				Command C=CMClass.getCommand("Mount");
-				if(C!=null) return C.execute(mob,commands,metaFlags);
-			}
+			mob.tell("You don't see '"+possibleRideable+"' here.");
+			return false;
 		}
-		String mountStr=null;
-		mountStr="<S-NAME> sit(s) on <T-NAME>.";
-		CMMsg msg=CMClass.getMsg(mob,E,null,CMMsg.MSG_SIT,mountStr);
-		if(mob.location().okMessage(mob,msg))
-			mob.location().send(mob,msg);
+		String mountStr="<S-NAME> sit(s) on <T-NAME>.";
+		CMMsg msg=CMClass.getMsg(mob,I,null,EnumSet.of(CMMsg.MsgCode.SIT),mountStr);
+		mob.location().doMessage(msg);
 		return false;
 	}
-    public double combatActionsCost(MOB mob, Vector cmds){return CMath.div(CMProps.getIntVar(CMProps.SYSTEMI_DEFCOMCMDTIME),100.0);}
-    public double actionsCost(MOB mob, Vector cmds){return CMath.div(CMProps.getIntVar(CMProps.SYSTEMI_DEFCMDTIME),100.0);}
+	public double actionsCost(MOB mob, Vector cmds){return DEFAULT_NONCOMBATACTION;}
 	public boolean canBeOrdered(){return true;}
-
-	
 }

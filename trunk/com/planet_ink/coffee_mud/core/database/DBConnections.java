@@ -138,7 +138,7 @@ public class DBConnections
 		}
 		catch(Exception e)
 		{
-			enQueueError(updateString,""+e,""+0);
+//			enQueueError(updateString,""+e,""+0);
 			reportError();
 			Log.errOut("DBConnections",""+e);
 		}
@@ -510,7 +510,6 @@ public class DBConnections
 	 * Queue up a failed write/update for later processing.
 	 *
 	 * <br><br><b>Usage:</b> RetryQueuedErrors();
-	 */
 	public void retryQueuedErrors()
 	{
 		Vector Queue=new Vector();
@@ -636,6 +635,7 @@ public class DBConnections
 				Log.sysOut("DBConnections","Finished running retry Que. Successes: "+successes+"/Failures: "+unsuccesses);
 		}
 	}
+	 */
 
 	/**
 	 *

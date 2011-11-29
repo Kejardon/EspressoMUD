@@ -102,7 +102,7 @@ public class BeanCounter extends StdLibrary implements MoneyLibrary
 					DV.insertElementAt(new MoneyDenomination(d,s,shortName),insertAt);
 			}
 		}
-		CMCurrency DVs=new CMCurrency((MoneyDenomination[])DV.toArray(), code);
+		CMCurrency DVs=new CMCurrency((MoneyDenomination[])DV.toArray(new MoneyDenomination[0]), code);
 		currencies.put(code, DVs);
 		allCurrencyNames.addElement(code);
 		return DVs;

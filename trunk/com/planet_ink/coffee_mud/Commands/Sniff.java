@@ -4,7 +4,6 @@ import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -40,59 +39,33 @@ public class Sniff extends StdCommand
 	public boolean execute(MOB mob, Vector commands, int metaFlags)
 		throws java.io.IOException
 	{
-		boolean quiet=false;
-		if((commands!=null)&&(commands.size()>1)&&(((String)commands.lastElement()).equalsIgnoreCase("UNOBTRUSIVELY")))
-		{
-			commands.removeElementAt(commands.size()-1);
-			quiet=true;
-		}
-		String textMsg="<S-NAME> sniff(s)";
-		if(mob.location()==null) 
-		    return false;
 		
-		if((commands!=null)&&(commands.size()>1))
+		if(commands.size()>1)
 		{
-			Environmental thisThang=null;
+			Interactable thisThang=null;
 			
 			String ID=CMParms.combine(commands,1);
 			if(ID.equalsIgnoreCase("SELF")||ID.equalsIgnoreCase("ME"))
 				thisThang=mob;
-			
-			if(thisThang==null)
-				thisThang=mob.location().fetchFromMOBRoomFavorsItems(mob,null,ID,Wearable.FILTER_ANY);
+			else
+				thisThang=CMLib.english().fetchInteractable(ID,false,1,mob,mob.location());
 			if(thisThang!=null)
 			{
 				String name=" <T-NAMESELF>";
- 				if(thisThang instanceof Room)
-				{
-					if(thisThang==mob.location())
-						name=" around";
-				}
-				CMMsg msg=CMClass.getMsg(mob,thisThang,null,CMMsg.MSG_SNIFF,textMsg+name+".");
-				if(mob.location().okMessage(mob,msg))
-					mob.location().send(mob,msg);
+				if(thisThang==mob.location())
+					name=" around";
+				mob.location().doMessage(CMClass.getMsg(mob,thisThang,null,EnumSet.of(CMMsg.MsgCode.SNIFF),"<S-NAME> sniff(s)"+name+"."));
 			}
 			else
 				mob.tell("You don't see that here!");
 		}
 		else
 		{
-			if((commands!=null)&&(commands.size()>0))
-				if(((String)commands.elementAt(0)).toUpperCase().startsWith("E"))
-				{
-					mob.tell("Sniff what?");
-					return false;
-				}
-
-			CMMsg msg=CMClass.getMsg(mob,mob.location(),null,CMMsg.MSG_SNIFF,(quiet?null:textMsg+" around."),CMMsg.MSG_SNIFF,(quiet?null:textMsg+" you."),CMMsg.MSG_SNIFF,(quiet?null:textMsg+" around."));
-			if(mob.location().okMessage(mob,msg))
-				mob.location().send(mob,msg);
+			CMMsg msg=CMClass.getMsg(mob,mob.location(),null,EnumSet.of(CMMsg.MsgCode.SNIFF),"<S-NAME> sniff(s) around.");
+			mob.location().doMessage(msg);
 		}
 		return false;
 	}
-	public double actionsCost(MOB mob, Vector cmds){return CMath.div(CMProps.getIntVar(CMProps.SYSTEMI_DEFCMDTIME),100.0);}
-    public double combatActionsCost(MOB mob, Vector cmds){return 0.25;}
+	public double actionsCost(MOB mob, Vector cmds){return DEFAULT_NONCOMBATACTION;}
 	public boolean canBeOrdered(){return true;}
-
-	
 }

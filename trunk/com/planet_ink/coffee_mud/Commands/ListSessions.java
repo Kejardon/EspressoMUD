@@ -4,7 +4,6 @@ import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -62,7 +61,7 @@ public class ListSessions extends StdCommand
 			if (thisSession.mob() != null)
 			{
 				set[2]=CMStrings.padRight(((thisSession.mob().session()==thisSession)?"Yes":"^HNO!^?"),5)+"| ";
-				set[3]="^!"+CMStrings.padRight("^<LSTUSER^>"+thisSession.mob().Name()+"^</LSTUSER^>",17)+"^?| ";
+				set[3]="^!"+CMStrings.padRight("^<LSTUSER^>"+thisSession.mob().name()+"^</LSTUSER^>",17)+"^?| ";
 			}
 			else
 			{

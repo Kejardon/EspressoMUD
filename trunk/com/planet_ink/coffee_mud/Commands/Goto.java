@@ -48,11 +48,11 @@ public class Goto extends At
 		}
 		commands.removeElementAt(0);
 		StringBuffer cmd = new StringBuffer(CMParms.combine(commands,0));
-		Vector stack=(Vector)Resources.getResource("GOTOS_FOR_"+mob.Name().toUpperCase());
+		Vector stack=(Vector)Resources.getResource("GOTOS_FOR_"+mob.name().toUpperCase());
 		if(stack==null)
 		{
 			stack=new Vector();
-			Resources.submitResource("GOTOS_FOR_"+mob.Name().toUpperCase(),stack);
+			Resources.submitResource("GOTOS_FOR_"+mob.name().toUpperCase(),stack);
 		}
 		else
 		if(stack.size()>10)
@@ -89,14 +89,10 @@ public class Goto extends At
 		if(!"PREVIOUS".startsWith(cmd.toString().toUpperCase()))
 		{
 			if((stack.size()==0)||(stack.lastElement()!=mob.location()))
-				stack.addElement(CMLib.map().getExtendedRoomID(mob.location()));
+				stack.addElement(mob.location().roomID());
 		}
-		if(mob.playerStats().poofOut().length()>0)
-			mob.location().show(mob,null,CMMsg.MSG_OK_VISUAL,mob.playerStats().poofOut());
-		room.bringMobHere(mob);
-		if(mob.playerStats().poofIn().length()>0)
-			room.show(mob,null,CMMsg.MSG_OK_VISUAL,mob.playerStats().poofIn());
-		CMLib.commands().postLook(mob,true);
+		room.bringHere(mob.body(),false);
+		CMLib.commands().postLook(mob);
 		return false;
 	}
 	

@@ -4,7 +4,6 @@ import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -46,21 +45,14 @@ public class Open extends StdCommand
 			mob.tell("Open what?");
 			return false;
 		}
-		Environmental openThis=null;
-		int dirCode=Directions.getGoodDirectionCode(whatToOpen);
-		if(dirCode>=0)
-			openThis=mob.location().getExitInDir(dirCode);
+		Interactable openThis=CMLib.english().fetchInteractable(whatToOpen, false, 1, mob, mob.location());
 		if(openThis==null)
-			openThis=mob.location().fetchFromMOBRoomItemExit(mob,null,whatToOpen,Wearable.FILTER_ANY);
-
-		if((openThis==null)||(!CMLib.flags().canBeSeenBy(openThis,mob)))
 		{
 			mob.tell("You don't see '"+whatToOpen+"' here.");
 			return false;
 		}
-		String openWord=(!(openThis instanceof Exit))?"open":((Exit)openThis).openWord();
-		CMMsg msg=CMClass.getMsg(mob,openThis,null,CMMsg.MSG_OPEN,("<S-NAME> "+openWord+"(s) <T-NAMESELF>.")+CMProps.msp("dooropen.wav",10));
-		if(openThis instanceof Exit)
+		CMMsg msg=CMClass.getMsg(mob,openThis,null,EnumSet.of(CMMsg.MsgCode.OPEN),("<S-NAME> open(s) <T-NAMESELF>.")+CMProps.msp("dooropen.wav",10));
+/*		if(openThis instanceof Exit)
 		{
 			boolean open=((Exit)openThis).isOpen();
 			if((mob.location().okMessage(msg.source(),msg))
@@ -88,13 +80,9 @@ public class Open extends StdCommand
 			}
 		}
 		else
-		if(mob.location().okMessage(mob,msg))
-			mob.location().send(mob,msg);
+*/		mob.location().doMessage(msg);
 		return false;
 	}
-    public double combatActionsCost(MOB mob, Vector cmds){return CMath.div(CMProps.getIntVar(CMProps.SYSTEMI_DEFCOMCMDTIME),100.0);}
-    public double actionsCost(MOB mob, Vector cmds){return CMath.div(CMProps.getIntVar(CMProps.SYSTEMI_DEFCMDTIME),100.0);}
+	public double actionsCost(MOB mob, Vector cmds){return DEFAULT_NONCOMBATACTION;}
 	public boolean canBeOrdered(){return true;}
-
-	
 }

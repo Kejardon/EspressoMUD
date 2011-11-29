@@ -173,7 +173,7 @@ public class CMMap extends StdLibrary implements WorldMap
 	{
 		synchronized(exits)
 		{
-			if(E.exitID().length>0)
+			if(E.exitID().length()>0)
 			{
 				if(E.compareTo(exits.lastElement())>0)
 					exits.add(E);
@@ -181,9 +181,9 @@ public class CMMap extends StdLibrary implements WorldMap
 				{
 					int i=exits.indexOf(E);
 					if(i>=0)
-						setElementAt(E, i);
+						exits.setElementAt(E, i);
 					else
-						exits.add(-i-1, O);
+						exits.add(-i-1, E);
 				}
 			}
 			else
@@ -196,9 +196,10 @@ public class CMMap extends StdLibrary implements WorldMap
 	//Umm. Let's just go with numbers for now! Nobody's going to really see these anyways.
 	public String getNewExitID()
 	{
-		Exit last=exits.lastElement();
+		Exit last=null;
+		if(exits.size()>0) last=exits.lastElement();
 		int i=1;
-		if(lastExit!=null) i=Integer.parseInt(last.exitID())+1;
+		if(last!=null) i=Integer.parseInt(last.exitID())+1;
 		return ""+i;
 	}
 	
@@ -355,7 +356,7 @@ public class CMMap extends StdLibrary implements WorldMap
 
 	public boolean sendGlobalMessage(ListenHolder.MsgListener host, EnumSet<CMMsg.MsgCode> categories, CMMsg msg)
 	{
-		for(CMMsg.MsgCode category : (CMMsg.MsgCode[])categories.toArray())
+		for(CMMsg.MsgCode category : (CMMsg.MsgCode[])categories.toArray(new CMMsg.MsgCode[0]))
 		{
 			Vector<WeakReference<ListenHolder.MsgListener>> V=globalHandlers.get(category);
 			if(V!=null)
@@ -776,9 +777,9 @@ public class CMMap extends StdLibrary implements WorldMap
 					if(R==null) continue;
 					for(int i=R.numExits()-1;i>=0;i--)
 					{
-						Room thatRoom=R.getExitDestination(i);
-						if(thatRoom==deadRoom)
-							R.removeExit(i);
+						Room.REMap thatExit=R.getREMap(i);
+						if(thatExit.room==deadRoom)
+							R.removeExit(thatExit);
 					}
 				}
 			}

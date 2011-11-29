@@ -75,7 +75,7 @@ public class CommonMsgs extends StdLibrary implements CommonCommands
 	public StringBuilder getScore(MOB mob, String parm)
 	{
 		StringBuilder msg=new StringBuilder("^N");
-		msg.append("You are ^H"+mob.Name()+"^?.\n\r");
+		msg.append("You are ^H"+mob.name()+"^?.\n\r");
 /*
 		String genderName="neuter";
 		if(mob.charStats().gender()=='M') genderName="male";
@@ -193,13 +193,34 @@ public class CommonMsgs extends StdLibrary implements CommonCommands
 		return new StringBuilder("");
 	}
 	public StringBuilder getInventory(MOB viewer, MOB mob)
+	{ return getInventory(viewer, mob, ""); }
+	public StringBuilder getInventory(MOB viewer, MOB mob, String mask)
 	{
-		Vector V=new Vector();
-		V.addElement(viewer);
-		forceStandardCommand(mob,"Inventory",V);
-		if((V.size()>1)&&(V.elementAt(1) instanceof StringBuilder))
-			return (StringBuilder)V.elementAt(1);
-		return new StringBuilder("");
+		StringBuilder msg=new StringBuilder("");
+		Vector<Item> list = mob.getItemCollection().allItems();
+		if((mask!=null)&&(mask.trim().length()>0))
+		{
+			mask=mask.trim().toUpperCase();
+//			if(!mask.startsWith("all")) mask="all "+mask;
+//			Vector<Item> V=(Vector<Item>)list.viewItems.clone();
+//			list.viewItems.clear();
+			for(int i=list.size()-1;i>=0;i--)
+			{
+				Item I = list.get(i);
+				if(!CMLib.english().isCalled(I, mask, false))
+					list.remove(i);
+			}
+		}
+		if(list.size()==0)
+		{
+			if((mask!=null)&&(mask.length()>0))
+				msg.append("(nothing like that you can see right now)");
+			else
+				msg.append("(nothing you can see right now)");
+		}
+		else
+			msg.append(CMLib.lister().lister(viewer,list,true,"MItem","",false));
+		return msg;
 	}
 
 	public void postChannel(MOB mob,
@@ -236,12 +257,9 @@ public class CommonMsgs extends StdLibrary implements CommonCommands
 		return forceStandardCommand(mob,"Remove",CMParms.makeVector("REMOVE",item));
 	}
 
-	public void postLook(MOB mob, boolean quiet)
+	public void postLook(MOB mob)
 	{
-		if(quiet)
-			forceStandardCommand(mob,"Look",CMParms.makeVector("LOOK","UNOBTRUSIVELY"));
-		else
-			forceStandardCommand(mob,"Look",CMParms.makeVector("LOOK"));
+		forceStandardCommand(mob,"Look",CMParms.makeVector("LOOK"));
 	}
 
 	public void postFlee(MOB mob, String whereTo)

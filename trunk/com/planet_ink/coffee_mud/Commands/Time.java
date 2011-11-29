@@ -23,7 +23,7 @@ import java.util.*;
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+	   http://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -39,25 +39,24 @@ public class Time extends StdCommand
 	private String[] access={"TIME","DATE"};
 	public String[] getAccessWords(){return access;}
 	
-	
 	public boolean execute(MOB mob, Vector commands, int metaFlags)
 		throws java.io.IOException
 	{
 		Room room=mob.location();
 		if(room==null) return false;
 		mob.tell(room.getArea().getTimeObj().timeDescription(mob,room));
-		if((mob.playerStats()!=null)&&(mob.getBirthday()!=null))
+/*		if((mob.playerStats()!=null)&&(mob.getBirthday()!=null))
 		{
-		    TimeClock C=CMLib.time().globalClock();
-		    int day=C.getDayOfMonth();
-		    int month=C.getMonth();
-		    int year=C.getYear();
-		    int bday=mob.getBirthday()[0];
-		    int bmonth=mob.getBirthday()[1];
-		    if((month>bmonth)||((month==bmonth)&&(day>bday)))
-		        year++;
-		    
-		    StringBuffer timeDesc=new StringBuffer("");
+			TimeClock C=CMLib.time().globalClock();
+			int day=C.getDayOfMonth();
+			int month=C.getMonth();
+			int year=C.getYear();
+			int bday=mob.getBirthday()[0];
+			int bmonth=mob.getBirthday()[1];
+			if((month>bmonth)||((month==bmonth)&&(day>bday)))
+				year++;
+			
+			StringBuffer timeDesc=new StringBuffer("");
 			if(C.getDaysInWeek()>0)
 			{
 				long x=((long)year)*((long)C.getMonthsInYear())*C.getDaysInMonth();
@@ -71,10 +70,8 @@ public class Time extends StdCommand
 				timeDesc.append(", "+CMStrings.replaceAll(C.getYearNames()[year%C.getYearNames().length],"#",""+year));
 			mob.tell("Your next birthday is "+timeDesc.toString()+".");
 		}
+*/
 		return false;
 	}
-	
 	public boolean canBeOrdered(){return true;}
-
-	
 }

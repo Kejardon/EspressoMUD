@@ -41,8 +41,8 @@ public class StdMOB implements MOB
 	public String ID(){return "StdMOB";}
 	public String name="";
 
-	protected CharStats baseCharStats=(CharStats)CMClass.Objects.COMMON.getNew("DefaultCharStats");
-	protected CharStats charStats=(CharStats)CMClass.Objects.COMMON.getNew("DefaultCharStats");
+	protected CharStats baseCharStats=(CharStats)CMClass.Objects.COMMON.getNew("MOBCharStats");
+	protected CharStats charStats=(CharStats)CMClass.Objects.COMMON.getNew("MOBCharStats");
 
 	protected PlayerStats playerStats=null;
 
@@ -730,7 +730,7 @@ public class StdMOB implements MOB
 			public String save(StdMOB E){ return CMLib.coffeeMaker().getSubStr(E.inventory); }
 			public void load(StdMOB E, String S){ E.inventory=(ItemCollection)CMLib.coffeeMaker().loadSub(S); } },
 		TTL(){
-			public String save(StdMOB E){ return CMLib.coffeeMaker().savAString((String[])E.titles.toArray()); }
+			public String save(StdMOB E){ return CMLib.coffeeMaker().savAString((String[])E.titles.toArray(new String[0])); }
 			public void load(StdMOB E, String S){ for(String newI : CMLib.coffeeMaker().loadAString(S)) E.titles.add(newI); } },
 		EFC(){
 			public String save(StdMOB E){ return CMLib.coffeeMaker().getVectorStr(E.affects); }

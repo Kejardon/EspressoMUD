@@ -4,7 +4,6 @@ import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -53,26 +52,21 @@ public class Shutdown extends StdCommand
 			if(s.equalsIgnoreCase("NOPROMPT"))
 			{ noPrompt=true; commands.removeElementAt(i); }
 		}
-		if((!keepItDown)&&(commands.size()>1))
-			externalCommand=CMParms.combine(commands,1);
 
 		if((!noPrompt)
 		&&(!mob.session().confirm("Are you fully aware of the consequences of this act (y/N)?","N")))
 			return false;
 		
 		for(int s=0;s<CMLib.sessions().size();s++)
-			CMLib.sessions().elementAt(s).colorOnlyPrintln("\n\r\n\r^x"+CMProps.getVar(CMProps.SYSTEM_MUDNAME)+" is now shutting down!^.^?\n\r");
+			CMLib.sessions().elementAt(s).colorOnlyPrintln("\n\r\n\r^x"+CMProps.Strings.MUDNAME.property()+" is now shutting down!^.^?\n\r");
 
 		if(keepItDown)
-			Log.errOut("CommandProcessor",mob.Name()+" starts system shutdown...");
+			Log.errOut("CommandProcessor",mob.name()+" starts system shutdown...");
 		else
-		if(externalCommand!=null)
-			Log.errOut("CommandProcessor",mob.Name()+" starts system restarting '"+externalCommand+"'...");
-		else
-			Log.errOut("CommandProcessor",mob.Name()+" starts system restart...");
+			Log.errOut("CommandProcessor",mob.name()+" starts system restart...");
 		mob.tell("Starting shutdown...");
 
-		com.planet_ink.coffee_mud.application.MUD.globalShutdown(mob.session(),keepItDown,externalCommand);
+		com.planet_ink.coffee_mud.application.MUD.globalShutdown(mob.session(),keepItDown);
 		return false;
 	}
 	

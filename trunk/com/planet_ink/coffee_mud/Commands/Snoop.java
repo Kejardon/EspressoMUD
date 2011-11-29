@@ -4,7 +4,6 @@ import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -47,7 +46,6 @@ public class Snoop extends StdCommand
 		return V;
 	}
 	
-	
 	public boolean execute(MOB mob, Vector commands, int metaFlags)
 		throws java.io.IOException
 	{
@@ -80,7 +78,7 @@ public class Snoop extends StdCommand
 			Session S=CMLib.sessions().elementAt(s);
 			if((S.mob()!=null)
 		    &&((CMLib.english().containsString(S.mob().name(),whom))
-				   ||(CMLib.english().containsString(S.mob().Name(),whom))))
+				   ||(CMLib.english().containsString(S.mob().name(),whom))))
 			{
 				if(S==mob.session())
 				{
@@ -96,7 +94,7 @@ public class Snoop extends StdCommand
 			mob.tell("You can't find anyone to snoop on by that name.");
 		else
         if(!CMLib.flags().isInTheGame(SnoopOn.mob(),true))
-            mob.tell(SnoopOn.mob().Name()+" is not yet fully in the game.");
+            mob.tell(SnoopOn.mob().name()+" is not yet fully in the game.");
         else
 		if(CMSecurity.isASysOp(SnoopOn.mob())&&(!CMSecurity.isASysOp(mob)))
 		    mob.tell("Only another Archon can snoop on "+SnoopOn.mob().name()+".");

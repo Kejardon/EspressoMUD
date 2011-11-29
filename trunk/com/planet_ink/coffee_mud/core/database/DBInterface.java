@@ -58,7 +58,7 @@ public class DBInterface implements DatabaseEngine
 	public void propertiesLoaded(){}
 	public ThreadEngine.SupportThread getSupportThread() { return null;}
 	
-	public List<String> getUserList()
+	public Vector<String> getUserList()
 	{return MOBloader.getUserList();}
 
 	public boolean isConnected(){return DB.amIOk();}

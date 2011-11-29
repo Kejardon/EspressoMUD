@@ -130,7 +130,7 @@ public class Fill extends StdCommand
 		}
 
 		if(allFlag)
-			for(Item fillThisThing : (Item[])V.toArray())
+			for(Item fillThisThing : (Item[])V.toArray(new Item[0]))
 				if(!mob.location().doMessage(CMClass.getMsg(mob,fillThisThing,fillFromThis,EnumSet.of(CMMsg.MsgCode.FILL),"<S-NAME> pour(s) <O-NAME> into <T-NAME>.")))
 					break;
 		else

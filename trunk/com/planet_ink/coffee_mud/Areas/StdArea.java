@@ -36,7 +36,7 @@ public class StdArea implements Area
 {
 	public String ID(){return "StdArea";}
 	protected String name="the area";
-	protected SortedVector<SortedList.SortableObject<Room>> properRooms=new SortedVector<SortedList.SortableObject<Room>>();
+	protected SortedVector<Room> properRooms=new SortedVector<Room>();
 	protected Tickable.TickStat tickStatus=Tickable.TickStat.Not;
 	protected long lastPlayerTime=System.currentTimeMillis();
 	protected Vector affects=new Vector(1);
@@ -120,9 +120,10 @@ public class StdArea implements Area
 	 */
 	public String getNewRoomID()
 	{
-		SortedList.SortableObject<Room> lastRoomObj=properRooms.lastElement();
-		if(lastRoomObj==null) return name+"#1";
-		return name+"#"+(1+lastRoomObj.myInt);
+		Room lastRoom=properRooms.lastElement();
+		if(lastRoom==null) return name+"#1";
+		String S=lastRoom.roomID();
+		return name+"#"+(1+CMath.s_int(S.substring(S.indexOf("#")+1)));
 	}
 	public long lastAct(){return 0;}	//No Action ticks
 	public long lastTick(){return lastTick;}
@@ -309,7 +310,6 @@ public class StdArea implements Area
 		{
 			if(roomID.startsWith(name+"#"))
 			{
-				contR=new SortedList.SortableObject<Room>(R, Integer.parseInt(roomID.substring(roomID.indexOf("#")+1)));
 				if(properRooms.contains(contR))	//This might rename the room later, but for now just stop.
 					return;
 			}
@@ -317,9 +317,8 @@ public class StdArea implements Area
 			{
 				R.setArea(null);
 				R.setRoomID(getNewRoomID());
-				contR=new SortedList.SortableObject<Room>(R, Integer.parseInt(roomID.substring(roomID.indexOf("#")+1)));
 			}
-			properRooms.add(contR);
+			properRooms.add(R);
 		}
 		R.setAreaRaw(this);
 		clearMetroMap();
@@ -337,22 +336,19 @@ public class StdArea implements Area
 	public boolean isRoom(Room R)
 	{
 		if(R==null) return false;
-		String roomID=R.roomID();
 		synchronized(properRooms)
 		{
-			return ((roomID.startsWith(name+"#"))&&
-			  (properRooms.contains(new SortedList.SortableObject<Room>(R, Integer.parseInt(roomID.substring(roomID.indexOf("#")+1))))));
+			return properRooms.contains(R);
 		}
 	}
 	public void delProperRoom(Room R)
 	{
 		if(R==null) return;
 		String roomID=R.roomID();
-		SortedList.SortableObject<Room> contR=null;
 		if(roomID.startsWith(name+"#"))
 		synchronized(properRooms)
 		{
-			if(properRooms.remove(new SortedList.SortableObject<Room>(R, Integer.parseInt(roomID.substring(roomID.indexOf("#")+1)))))
+			if(properRooms.remove(R))
 				clearMetroMap();
 		}
 	}
@@ -360,10 +356,14 @@ public class StdArea implements Area
 	public Room getRoom(String roomID)
 	{
 		if(roomID.startsWith(name+"#"))
-		synchronized(properRooms)
 		{
-			int foundIndex=properRooms.indexOf(new SortedList.SortableObject<Room>(null, Integer.parseInt(roomID.substring(roomID.indexOf("#")+1))));
-			if(foundIndex>=0) return properRooms.get(foundIndex).myObj;
+			Room R=(Room)CMClass.Objects.LOCALE.getNew("StdRoom");
+			R.setRoomID(roomID);
+			synchronized(properRooms)
+			{
+				int foundIndex=properRooms.indexOf(R);
+				if(foundIndex>=0) return properRooms.get(foundIndex);
+			}
 		}
 		return null;
 	}
@@ -378,7 +378,7 @@ public class StdArea implements Area
 	public Room getRandomProperRoom()
 	{
 		if(properRooms.size()==0) return null;
-		return properRooms.get(CMath.random(properRooms.size())).myObj;
+		return properRooms.get(CMath.random(properRooms.size()));
 	}
 	public Room getRandomMetroRoom()
 	{
@@ -413,15 +413,18 @@ public class StdArea implements Area
 		totalMetroRooms = new Vector(1);
 		Vector<Room> tempList=totalMetroRooms;
 		Vector<Room>[] toAdd=new Vector[children.size()];
-		int totalSize=properRooms.size();
+		int totalSize=0;
 		for(int i=0;i<children.size();i++)
 		{
 			toAdd[i]=children.get(i).getMetroCollection();
 			totalSize+=toAdd[i].size();
 		}
-		tempList.ensureCapacity(totalSize);
-		for(SortedList.SortableObject<Room> roomC : (SortedList.SortableObject<Room>[])properRooms.toArray())
-			tempList.add(roomC.myObj);
+		synchronized(properRooms)
+		{
+			totalSize+=properRooms.size();
+			tempList.ensureCapacity(totalSize);
+			tempList.addAll(properRooms);
+		}
 		for(int i=0;i<toAdd.length;i++)
 			tempList.addAll(toAdd[i]);
 		return tempList;

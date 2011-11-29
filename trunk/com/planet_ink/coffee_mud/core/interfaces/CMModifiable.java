@@ -43,7 +43,7 @@ public interface CMModifiable extends CMObject
 	//Typical extended class
 	private static ModEnum[] totalEnumM=null;
 	private static Enum[] headerEnumM=null;
-	public SaveEnum[] totalEnumM()
+	public ModEnum[] totalEnumM()
 	{
 		if(totalEnumM==null)
 			totalEnumM=(ModEnum[])CMath.combineArrays(MCode.values(), super.totalEnumM());
@@ -52,7 +52,7 @@ public interface CMModifiable extends CMObject
 	public Enum[] headerEnumM()
 	{
 		if(headerEnumM==null)
-			headerEnumM=CMath.combineArrays(new Enum[] {MCode.values()[0]}, super.headerEnumM());
+			headerEnumM=(Enum[])CMath.combineArrays(new Enum[] {MCode.values()[0]}, super.headerEnumM());
 		return headerEnumM;
 	}
 	//The actual enum/code/parser

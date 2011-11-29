@@ -140,7 +140,7 @@ public class DefaultMessage implements CMMsg
 	}
 	public void setSourceMessage(String str){sourceMsg=str;}
 	public String sourceMessage() { return sourceMsg;}
-	public Interactable[] sourceArr() { return (Interactable[])sources.toArray(); }
+	public Interactable[] sourceArr() { return (Interactable[])sources.toArray(new Interactable[0]); }
 
 	public EnumSet<MsgCode> othersCode() { return othersCode; }
 	public void setOthersCode(EnumSet<MsgCode> codes){othersCode=codes;}
@@ -239,7 +239,7 @@ public class DefaultMessage implements CMMsg
 		return tools.add(O);
 	}
 	public boolean removeTool(CMObject O){return tools.remove(O);}
-	public CMObject[] toolArr() { return (CMObject[])tools.toArray(); }
+	public CMObject[] toolArr() { return (CMObject[])tools.toArray(new CMObject[0]); }
 
 	public boolean isTool(CMObject E)
 	{

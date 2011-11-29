@@ -22,7 +22,7 @@ import java.util.*;
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+	   http://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -38,51 +38,45 @@ public class Quit extends StdCommand
 	private String[] access={"QUIT","QUI","Q"};
 	public String[] getAccessWords(){return access;}
 
-	public static void dispossess(MOB mob)
-	{
-		if(mob.soulMate()==null)
-		{
-			mob.tell("Huh?");
-			return;
-		}
-        mob.dispossess(true);
-	}
-
 	public boolean execute(MOB mob, Vector commands, int metaFlags)
 		throws java.io.IOException
 	{
+/*
 		if(mob.soulMate()!=null)
 			dispossess(mob);
 		else
+*/
 		if(!mob.isMonster())
 		{
 			Session session=mob.session();
-            if((session!=null)
-            &&(session.getLastPKFight()>0)
-            &&((System.currentTimeMillis()-session.getLastPKFight())<(5*60*1000)))
-            {
-                mob.tell("You must wait a few more minutes before you are allowed to quit.");
-                return false;
-            }
-            if((session!=null)&&(mob.getAgeHours()<=0)&&(!CMSecurity.isDisabled("QUITREASON")))
-            {
-        		String reason=session.prompt("Since your character is brand new, please leave a short"
-        				 						  +" message as to why you are leaving so soon."
+/*
+			if((session!=null)
+			&&(session.getLastPKFight()>0)
+			&&((System.currentTimeMillis()-session.getLastPKFight())<(5*60*1000)))
+			{
+				mob.tell("You must wait a few more minutes before you are allowed to quit.");
+				return false;
+			}
+			if((session!=null)&&(mob.getAgeHours()<=0)&&(!CMSecurity.isDisabled("QUITREASON")))
+			{
+				String reason=session.prompt("Since your character is brand new, please leave a short"
+						 						  +" message as to why you are leaving so soon."
 												  +" Your answers will be kept confidential,"
 												  +" and are for administrative purposes only.\n\r: ","",120000);
-        		Log.sysOut("Quit",mob.Name()+" L.W.O.: "+reason);
-            }
+				Log.sysOut("Quit",mob.Name()+" L.W.O.: "+reason);
+			}
+*/
 			try
 			{
 				if ((session!=null)&&(session.confirm("\n\rQuit -- are you sure (y/N)?","N")))
 				{
-		            CMMsg msg=CMClass.getMsg(mob,null,CMMsg.MSG_QUIT,null);
-		            Room R=mob.location();
-	                if((R!=null)&&(R.okMessage(mob,msg))) 
-	                {
-	                    CMLib.map().sendGlobalMessage(mob,CMMsg.TYP_QUIT, msg);
-	                    session.kill(false,false, false);
-	                }
+					CMMsg msg=CMClass.getMsg(mob,null,null,EnumSet.of(CMMsg.MsgCode.QUIT),null);
+					Room R=mob.location();
+					if((R!=null)&&(R.okMessage(mob,msg))) 
+					{
+						CMLib.map().sendGlobalMessage(mob,EnumSet.of(CMMsg.MsgCode.QUIT), msg);
+						session.kill(false,false, false);
+					}
 				}
 			}
 			catch(Exception e)

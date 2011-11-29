@@ -346,8 +346,6 @@ public class ServiceEngine implements ThreadEngine
 		if(which.toLowerCase().startsWith("tickername"))
 		{
 			Tickable E=C.clientObject;
-			if((E instanceof Effect)&&(E.ID().equals("ItemRejuv")))
-				E=((Effect)E).affecting();
 			if(E instanceof Room)
 				return ((Room)E).roomID();
 			if(E!=null) return E.ID();
@@ -356,9 +354,6 @@ public class ServiceEngine implements ThreadEngine
 		else
 		if(which.toLowerCase().startsWith("tickerstatus"))
 			return ((C.clientObject==null)?"":(""+C.clientObject.getTickStatus()));
-		else
-		if(which.toLowerCase().startsWith("tickercodeword"))
-			return getTickStatusSummary(C.clientObject);
 		return "";
 	}
 

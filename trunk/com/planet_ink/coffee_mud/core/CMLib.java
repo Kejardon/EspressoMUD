@@ -49,12 +49,13 @@ public class CMLib
 	public static CMLib instance(){return libs;}
 	public enum Library
 	{
-		DATABASE, THREADS, HTTP, LISTER, MONEY, SHOPS,
+		//SHOPS, SLAVERY, SOCIALS, ENCODER, TITLES, ABLEPARMS
+		DATABASE, THREADS, HTTP, LISTER, MONEY,
 		COMBAT, HELP, TRACKING, MASKING, CHANNELS,
-		COMMANDS, ENGLISH, SLAVERY, FLAGS, OBJBUILDERS,
-		SESSIONS, TELNET, XML, SOCIALS, UTENSILS, MAP,
-		ENCODER, DICE, TIME, COLOR, LOGIN, MATERIALS,
-		LANGUAGE, PLAYERS, TITLES, ABLEPARMS, GENEDITOR;
+		COMMANDS, ENGLISH, FLAGS, OBJBUILDERS,
+		SESSIONS, TELNET, XML, UTENSILS, MAP,
+		DICE, TIME, COLOR, LOGIN, MATERIALS,
+		LANGUAGE, PLAYERS, GENEDITOR;
 	}
 	private static final EnumSet<Library> LibrarySet=EnumSet.allOf(Library.class);
 	private final CMLibrary[] libraries=new CMLibrary[LibrarySet.size()];
@@ -115,14 +116,14 @@ public class CMLib
 //	public static SocialsList socials(){return (SocialsList)libs.libraries[Library.SOCIALS.ordinal()];}
 	public static CMMiscUtils utensils(){return (CMMiscUtils)libs.libraries[Library.UTENSILS.ordinal()];}
 	public static WorldMap map(){return (WorldMap)libs.libraries[Library.MAP.ordinal()];}
-	public static TextEncoders encoder(){return (TextEncoders)libs.libraries[Library.ENCODER.ordinal()];}
+//	public static TextEncoders encoder(){return (TextEncoders)libs.libraries[Library.ENCODER.ordinal()];}
 	public static LanguageLibrary lang(){return (LanguageLibrary)libs.libraries[Library.LANGUAGE.ordinal()];}
 	public static DiceLibrary dice(){return (DiceLibrary)libs.libraries[Library.DICE.ordinal()];}
 	public static TimeManager time(){return (TimeManager)libs.libraries[Library.TIME.ordinal()];}
 	public static ColorLibrary color(){return (ColorLibrary)libs.libraries[Library.COLOR.ordinal()];}
 	public static CharCreationLibrary login(){return (CharCreationLibrary)libs.libraries[Library.LOGIN.ordinal()];}
 	public static PlayerLibrary players(){return (PlayerLibrary)libs.libraries[Library.PLAYERS.ordinal()];}
-	public static AutoTitlesLibrary titles(){return (AutoTitlesLibrary)libs.libraries[Library.TITLES.ordinal()];}
+//	public static AutoTitlesLibrary titles(){return (AutoTitlesLibrary)libs.libraries[Library.TITLES.ordinal()];}
 //	public static AbilityParameters ableParms(){return (AbilityParameters)libs.libraries[Library.ABLEPARMS.ordinal()];}
 	public static GenericEditor genEd(){return (GenericEditor)libs.libraries[Library.GENEDITOR.ordinal()];}
 
@@ -151,14 +152,14 @@ public class CMLib
 //		if(O instanceof SocialsList) return Library.SOCIALS;
 		if(O instanceof CMMiscUtils) return Library.UTENSILS;
 		if(O instanceof WorldMap) return Library.MAP;
-		if(O instanceof TextEncoders) return Library.ENCODER;
+//		if(O instanceof TextEncoders) return Library.ENCODER;
 		if(O instanceof DiceLibrary) return Library.DICE;
 		if(O instanceof TimeManager) return Library.TIME;
 		if(O instanceof ColorLibrary) return Library.COLOR;
 		if(O instanceof CharCreationLibrary) return Library.LOGIN;
 		if(O instanceof MaterialLibrary) return Library.MATERIALS;
 		if(O instanceof PlayerLibrary) return Library.PLAYERS;
-		if(O instanceof AutoTitlesLibrary) return Library.TITLES;
+//		if(O instanceof AutoTitlesLibrary) return Library.TITLES;
 //		if(O instanceof AbilityParameters) return Library.ABLEPARMS;
 		if(O instanceof GenericEditor) return Library.GENEDITOR;
 		return null;

@@ -68,7 +68,7 @@ public interface DatabaseEngine extends CMLibrary
 	public void DBReadPlayer(MOB mob);
 //	public void DBUpdatePassword(String name, String password);
 	public boolean isConnected();
-	public List<String> getUserList();
+	public Vector<String> getUserList();
 	public void DBDeleteMOB(MOB mob);
 	public void DBCreateCharacter(MOB mob);
 	public void DBCreateArea(Area A);

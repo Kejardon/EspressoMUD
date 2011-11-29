@@ -45,20 +45,13 @@ public class Pour extends StdCommand
 			return false;
 		}
 		commands.removeElementAt(0);
-		int partition=commands.size()-1;
-		for(int i=1; i<commands.size()-1; i++)
-			if("into".equalsIgnoreCase((String)commands.get(i)))
-			{
-				commands.remove(i);
-				partition=i;
-				break;
-			}
+		int partition=CMLib.english().getPartitionIndex(commands, "into", commands.size()-1);
 
 		Interactable fillFromThis=null;
 		Vector<Item> V=null;	//fillFromThese
 		String thingToFillFrom=CMParms.combine(commands,0,partition);
 		String thingToFill=CMParms.combine(commands,partition);
-		int maxToFill=CMLib.english().calculateMaxToGive(mob,thingToFillFrom,true,mob,false);
+		int maxToFill=CMLib.english().calculateMaxToGive(mob,commands,true,mob,false);
 		if(maxToFill<0) return false;
 		boolean allFlag=(commands.size()>0)?((String)commands.elementAt(0)).equalsIgnoreCase("all"):false;
 		if(thingToFillFrom.toUpperCase().startsWith("ALL.")){ allFlag=true; thingToFillFrom="ALL "+thingToFillFrom.substring(4);}
@@ -107,13 +100,14 @@ public class Pour extends StdCommand
 		}
 
 		Drink fillThis=null;
+		found:
 		if(!thingToFill.equalsIgnoreCase("out"))
 		{
 			Interactable option=CMLib.english().fetchInteractable(thingToFill,false,1,mob.getItemCollection(),mob.location());
 			if(option instanceof Drink)
 			{
 				fillThis=(Drink)option;
-				break;
+				break found;
 			}
 			else if(option!=null)
 			{
@@ -127,7 +121,7 @@ public class Pour extends StdCommand
 			}
 		}
 		if(allFlag)
-			for(Item fillFromThisThing : (Item[])V.toArray())
+			for(Item fillFromThisThing : (Item[])V.toArray(new Item[0]))
 				if(!mob.location().doMessage(CMClass.getMsg(mob,fillThis,fillFromThisThing,EnumSet.of(CMMsg.MsgCode.FILL),(fillThis!=null)?"<S-NAME> pour(s) <O-NAME> into <T-NAME>.":"<S-NAME> pour(s) <O-NAME> out.")))
 					break;
 		else

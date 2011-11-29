@@ -65,9 +65,9 @@ public class Get extends StdCommand
 		{
 			String containerName=CMParms.combine(commands,partition);
 			String upper=containerName.toUpperCase();
-			containerAll=containerName.startsWith("ALL ");
-			if(containerName.startsWith("ALL.")){ containerAll=true; containerName="ALL "+containerName.substring(4);}
-			if(containerName.endsWith(".ALL")){ containerAll=true; containerName="ALL "+containerName.substring(0,containerName.length()-4);}
+			containerAll=upper.startsWith("ALL ");
+			if(upper.startsWith("ALL.")){ containerAll=true; containerName="ALL "+containerName.substring(4);}
+			if(upper.endsWith(".ALL")){ containerAll=true; containerName="ALL "+containerName.substring(0,containerName.length()-4);}
 			if(containerAll)
 			{
 				Vector<Interactable> V=CMLib.english().fetchInteractables(containerName,false,1,Integer.MAX_VALUE,mob.getItemCollection(),R.getItemCollection());
@@ -128,7 +128,7 @@ public class Get extends StdCommand
 					mob.tell("You don't see '"+unmodifiedWhatToGet+"' here.");
 					return false;
 				}
-				for(Item I : (Item[])getThese.toArray())
+				for(Item I : (Item[])getThese.toArray(new Item[0]))
 					if(!R.doMessage(CMClass.getMsg(mob,I,null,EnumSet.of(CMMsg.MsgCode.GET),"<S-NAME> get(s) <T-NAME>.")))
 						break;
 			}
@@ -136,7 +136,7 @@ public class Get extends StdCommand
 			{
 				getThese=new Vector();
 				//NOTE: Loops like these won't entirely work how I like with stuff like '6.potion'
-				for(Container C : (Container[])containers.toArray())
+				for(Container C : (Container[])containers.toArray(new Container[0]))
 				{
 					Vector<Interactable> subGetThese=CMLib.english().fetchInteractables(whatToGet,false,1,maxToGet,C.getItemCollection());
 //					for(int i=subGetThese.size()-1;i>=0;i--)
@@ -146,7 +146,7 @@ public class Get extends StdCommand
 					maxToGet-=subGetThese.size();
 					if(maxToGet==0) break;
 				}
-				for(Item I : (Item[])getThese.toArray())
+				for(Item I : (Item[])getThese.toArray(new Item[0]))
 					if(!R.doMessage(CMClass.getMsg(mob,I,I.container(),EnumSet.of(CMMsg.MsgCode.GET),"<S-NAME> get(s) <T-NAME> from <O-NAME>.")))
 						break;
 			}
@@ -166,7 +166,7 @@ public class Get extends StdCommand
 			}
 			else
 			{
-				for(Container C : (Container[])containers.toArray())
+				for(Container C : (Container[])containers.toArray(new Container[0]))
 				{
 					getThis=CMLib.english().fetchInteractable(whatToGet,false,1,C.getItemCollection());
 					if(getThis!=null)

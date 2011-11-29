@@ -176,6 +176,7 @@ public class MUD extends Thread implements MudHost
 			System.exit(-1);
 		}
 
+	/*
 		String webServersList=page.getPrivateStr("RUNWEBSERVERS");
 		if(webServersList.equalsIgnoreCase("true"))
 			webServersList="pub,admin";
@@ -198,6 +199,7 @@ public class MUD extends Thread implements MudHost
 			}
 			CMLib.registerLibrary(new ProcessHTTPrequest(null,(webServers.size()>0)?(HTTPserver)webServers.firstElement():null,null,true));
 		}
+	*/
 
 		CMProps.Strings.MUDSTATUS.setProperty("Booting: loading base classes");
 		if(!CMClass.loadClasses())
@@ -231,6 +233,7 @@ public class MUD extends Thread implements MudHost
 			String id="START";
 			Area newArea=(Area)CMClass.Objects.AREA.getNew("StdArea");
 			newArea.setName("New Area");
+			newArea.initChildren();
 			CMLib.map().addArea(newArea);
 			CMLib.database().DBCreateArea(newArea);
 			Room room=(Room)CMClass.Objects.LOCALE.getNew("StdRoom");
@@ -244,15 +247,6 @@ public class MUD extends Thread implements MudHost
 		CMLib.login().initStartRooms(page);
 		CMLib.login().initDeathRooms(page);
 		CMLib.login().initBodyRooms(page);
-		CMProps.Strings.MUDSTATUS.setProperty("Booting: Waiting for HOST0");
-		while((!MUD.bringDown)
-		&&(!CMProps.Bools.MUDSTARTED.property())
-		&&(!CMProps.Bools.MUDSHUTTINGDOWN.property()))
-			try{Thread.sleep(500);}catch(Exception e){ break;}
-		if((MUD.bringDown)
-		||(!CMProps.Bools.MUDSTARTED.property())
-		||(CMProps.Bools.MUDSHUTTINGDOWN.property()))
-			return false;
 		CMProps.Strings.MUDSTATUS.setProperty("Booting: readying for connections.");
 		try
 		{
@@ -369,7 +363,7 @@ public class MUD extends Thread implements MudHost
 			}
 		}
 		else
-		if((CMLib.database()!=null)&&(CMLib.database().isConnected())&&(CMLib.encoder()!=null))
+		if((CMLib.database()!=null)&&(CMLib.database().isConnected()))
 		{
 			StringBuffer rejectText;
 
@@ -612,7 +606,7 @@ public class MUD extends Thread implements MudHost
 		Log.sysOut(Thread.currentThread().getName(),"Resources Cleared.");
 		if(S!=null)S.println("All resources unloaded");
 
-
+/*
 		for(int i=0;i<webServers.size();i++)
 		{
 			HTTPserver webServerThread=(HTTPserver)webServers.elementAt(i);
@@ -622,6 +616,7 @@ public class MUD extends Thread implements MudHost
 			if(S!=null)S.println("Web server "+webServerThread.getName()+" stopped");
 		}
 		webServers.clear();
+*/
 
 		CMProps.Strings.MUDSTATUS.setProperty("Shutting down...unloading macros");
 		CMLib.lang().clear();
@@ -795,6 +790,7 @@ public class MUD extends Thread implements MudHost
 			// an arbitrary dividing line. After threadCode 0
 			CMLib.registerLibrary(new ServiceEngine());
 			CMProps.Strings.INIPATH.setProperty(iniFile);
+			CMProps.Strings.MUDNAME.setProperty(name.replace('\'','`'));
 //			CMProps.setUpLowVar(CMProps.SYSTEM_MUDNAME,name.replace('\'','`'));
 			try
 			{
@@ -865,8 +861,8 @@ public class MUD extends Thread implements MudHost
 	public Vector getOverdueThreads()
 	{
 		Vector V=new Vector();
-		for(int w=0;w<webServers.size();w++)
-			V.addAll(((HTTPserver)webServers.elementAt(w)).getOverdueThreads());
+//		for(int w=0;w<webServers.size();w++)
+//			V.addAll(((HTTPserver)webServers.elementAt(w)).getOverdueThreads());
 		return V;
 	}
 

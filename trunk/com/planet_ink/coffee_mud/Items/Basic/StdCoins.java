@@ -11,6 +11,7 @@ import com.planet_ink.coffee_mud.Items.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.MoneyLibrary;
 
 
 import java.util.*;
@@ -34,15 +35,14 @@ public class StdCoins extends StdItem implements Coins
 {
 	public String ID(){	return "StdCoins";}
 //	public int value(){	return envStats().ability();}
-	protected double denomination=1.0;
+	protected long denomination=1;
 	protected long amount=0;
 	protected String currency="";
+	protected MoneyLibrary.MoneyDenomination denom=null; 
 
 	public StdCoins()
 	{
 		super();
-		saveObj=new CoinsSave(this);
-		modObj=new CoinsMod(this);
 		damagable=false;
 //		baseEnvStats.setWeight(0);
 //		recoverEnvStats();
@@ -50,11 +50,18 @@ public class StdCoins extends StdItem implements Coins
 
 	public String Name()
 	{
-		return CMLib.beanCounter().getDenominationName(currency,denomination,amount);
+		if(denom==null)
+		{
+			MoneyLibrary.CMCurrency set=CMLib.beanCounter().getCurrencySet(currency);
+			if(set==null) return "";
+			denom=set.get(denomination);
+		}
+		if(denom==null) return "";
+		return ""+amount+" "+denom.name();
 	}
 	public String displayText()
 	{
-		return CMLib.beanCounter().getDenominationName(currency,denomination,amount)+((amount==1)?" lies here.":" lie here.");
+		return Name()+((amount==1)?" lies here.":" lie here.");
 	}
 	public long getNumberOfCoins(){return amount;}
 	public void setNumberOfCoins(long number)
@@ -63,9 +70,9 @@ public class StdCoins extends StdItem implements Coins
 			number=Long.MAX_VALUE/2-1;
 		amount=number;
 	}
-	public double getDenomination(){return denomination;}
-	public void setDenomination(double valuePerCoin) { denomination=valuePerCoin; }
-	public double getTotalValue(){return denomination*amount;}
+	public long getDenomination(){return denomination;}
+	public void setDenomination(long valuePerCoin) { denomination=valuePerCoin; }
+	public long getTotalValue(){return denomination*amount;}
 	public String getCurrency(){ return currency;}
 	public void setCurrency(String named) { currency=named; }
 
@@ -92,201 +99,70 @@ public class StdCoins extends StdItem implements Coins
 		}
 		return false;
 	}
+
+	//CMModifiable and CMSavable
+	private static ModEnum[] totalEnumM=null;
+	private static Enum[] headerEnumM=null;
+	public ModEnum[] totalEnumM()
+	{
+		if(totalEnumM==null)
+			totalEnumM=(ModEnum[])CMath.combineArrays(MCode.values(), super.totalEnumM());
+		return totalEnumM;
+	}
+	public Enum[] headerEnumM()
+	{
+		if(headerEnumM==null)
+			headerEnumM=(Enum[])CMath.combineArrays(new Enum[] {MCode.values()[0]}, super.headerEnumM());
+		return headerEnumM;
+	}
+	private static SaveEnum[] totalEnumS=null;
+	private static Enum[] headerEnumS=null;
+	public SaveEnum[] totalEnumS()
+	{
+		if(totalEnumS==null)
+			totalEnumS=(SaveEnum[])CMath.combineArrays(SCode.values(), super.totalEnumS());
+		return totalEnumS;
+	}
+	public Enum[] headerEnumS()
+	{
+		if(headerEnumS==null)
+			headerEnumS=(Enum[])CMath.combineArrays(new Enum[] {SCode.values()[0]}, super.headerEnumS());
+		return headerEnumS;
+	}
+
 	private enum SCode implements CMSavable.SaveEnum{
-		CUR(CMSavable.savType.STRING), AMT(CMSavable.savType.LONG), DEN(CMSavable.savType.DOUBLE)
+		CUR(){
+			public String save(StdCoins E){ return E.currency; }
+			public void load(StdCoins E, String S){ E.currency=S.intern(); } },
+		AMT(){
+			public String save(StdCoins E){ return ""+E.amount; }
+			public void load(StdCoins E, String S){ E.amount=Long.parseLong(S); } },
+		DEN(){
+			public String save(StdCoins E){ return ""+E.denomination; }
+			public void load(StdCoins E, String S){ E.denomination=Long.parseLong(S); } },
 		;
-		@Override public String toString()
-		{
-			String s = super.toString();
-			return s.substring(0, 1) + s.substring(1).toLowerCase();
-		}
-		private CMSavable.savType type;
-		private SCode(CMSavable.savType myType) {type=myType;}
-		public CMSavable.savType type(){return type;}
-	}
+		public abstract String save(StdCoins E);
+		public abstract void load(StdCoins E, String S);
+		public String save(CMSavable E){return save((StdCoins)E);}
+		public void load(CMSavable E, String S){load((StdCoins)E, S);} }
 	private enum MCode implements CMModifiable.ModEnum{
-		CURRENCY(CMModifiable.modType.STRING), AMOUNT(CMModifiable.modType.LONG), DENOMINATION(CMModifiable.modType.DOUBLE)
+		CURRENCY(){
+			public String brief(StdCoins E){return E.currency;}
+			public String prompt(StdCoins E){return E.currency;}
+			public void mod(StdCoins E, MOB M){E.currency=CMLib.genEd().stringPrompt(M, E.currency, false);} },
+		AMOUNT(){
+			public String brief(StdCoins E){return ""+E.amount;}
+			public String prompt(StdCoins E){return ""+E.amount;}
+			public void mod(StdCoins E, MOB M){E.amount=CMLib.genEd().longPrompt(M, ""+E.amount);} },
+		DENOMINATION(){
+			public String brief(StdCoins E){return ""+E.denomination;}
+			public String prompt(StdCoins E){return ""+E.denomination;}
+			public void mod(StdCoins E, MOB M){E.denomination=CMLib.genEd().longPrompt(M, ""+E.denomination);} },
 		;
-		@Override public String toString()
-		{
-			String s = super.toString();
-			return s.substring(0, 1) + s.substring(1).toLowerCase();
-		}
-		private CMModifiable.modType type;
-		private MCode(CMModifiable.modType myType) {type=myType;}
-		public CMModifiable.modType type(){return type;}
-	}
-	protected class CoinsSave extends StdItem.ItemSave
-	{
-		public String ID(){return "CoinsSave";}
-		public CoinsSave(CMObject O){super(O);}
-		public SaveEnum[] totalEnum(boolean first)
-		{
-			if((first)&&(savCodes(ID())!=null))
-				return null;
-			SaveEnum[] newE = (SaveEnum[])EnumSet.allOf(SCode.class).toArray();
-			SaveEnum[] old = super.totalEnum(false);
-			indexFix = old.length;
-			SaveEnum[] total=new SaveEnum[indexFix+newE.length];
-			System.arraycopy(old, 0, total, 0, indexFix);
-			System.arraycopy(newE, 0, total, indexFix, newE.length);
-			if(savCodes(ID())==null)
-				parseSaves(ID(), total);
-			return total;
-		}
-
-		private int indexFix=0;
-
-		public String savString(int code, String val)
-		{
-			if((code<indexFix)&&(-code-1<indexFix))
-				return super.savString(code, val);
-			if(code>=0)
-			{
-				switch(SCode.values()[code-indexFix])
-				{
-					case CUR: currency=val; break;
-				}
-			}
-			else
-			{
-				code=(-code)-1;
-				switch(SCode.values()[code-indexFix])
-				{
-					case CUR: return currency;
-				}
-			}
-			return "";
-		}
-		public long savLong(int code, long val)
-		{
-			if((code<indexFix)&&(-code-1<indexFix))
-				return super.savLong(code, val);
-			if(code>=0)
-			{
-				switch(SCode.values()[code-indexFix])
-				{
-					case CUR: amount=val; break;
-				}
-			}
-			else
-			{
-				code=(-code)-1;
-				switch(SCode.values()[code-indexFix])
-				{
-					case CUR: return amount;
-				}
-			}
-			return 0;
-		}
-		public double savDouble(int code, double val)
-		{
-			if((code<indexFix)&&(-code-1<indexFix))
-				return super.savDouble(code, val);
-			if(code>=0)
-			{
-				switch(SCode.values()[code-indexFix])
-				{
-					case DEN: denomination=val; break;
-				}
-			}
-			else
-			{
-				code=(-code)-1;
-				switch(SCode.values()[code-indexFix])
-				{
-					case DEN: return denomination;
-				}
-			}
-			return 0;
-		}
-	}
-	protected class CoinsMod extends StdItem.ItemMod
-	{
-		public String ID(){return "CoinsMod";}
-		public CoinsMod(CMObject O){super(O);}
-		public ModEnum[] totalEnum(boolean first)
-		{
-			if((first)&&(modCodes(ID())!=null))
-				return null;
-			ModEnum[] newE = (ModEnum[])EnumSet.allOf(MCode.class).toArray();
-			ModEnum[] old = super.totalEnum(false);
-			indexFix = old.length;
-			ModEnum[] total=new ModEnum[indexFix+newE.length];
-			System.arraycopy(old, 0, total, 0, indexFix);
-			System.arraycopy(newE, 0, total, indexFix, newE.length);
-			if(modCodes(ID())==null)
-				parseMods(ID(), total);
-			return total;
-		}
-		private int indexFix=0;
-		public String modBrief(int code)
-		{
-			if(code<indexFix)
-				return super.modBrief(code);
-			code-=indexFix;
-			switch(MCode.values()[code])
-			{
-				case CURRENCY: return currency;
-				case AMOUNT: return ""+amount;
-				case DENOMINATION: return ""+denomination;
-			}
-			return "";
-		}
-		public String modDefault(int code)
-		{
-			if(code<indexFix)
-				return super.modDefault(code);
-			code-=indexFix;
-			switch(MCode.values()[code])
-			{
-				case CURRENCY: return currency;
-				case AMOUNT: return ""+amount;
-				case DENOMINATION: return ""+denomination;
-			}
-			return "";
-		}
-		public void modString(int code, String val)
-		{
-			if(code<indexFix)
-			{
-				super.modString(code, val);
-				return;
-			}
-			code-=indexFix;
-			switch(MCode.values()[code])
-			{
-				case CURRENCY: currency=val; return;
-			}
-			return;
-		}
-		public void modLong(int code, long val)
-		{
-			if(code<indexFix)
-			{
-				super.modLong(code, val);
-				return;
-			}
-			code-=indexFix;
-			switch(MCode.values()[code])
-			{
-				case AMOUNT: amount=val; return;
-			}
-			return;
-		}
-		public void modDouble(int code, double val)
-		{
-			if(code<indexFix)
-			{
-				super.modDouble(code, val);
-				return;
-			}
-			code-=indexFix;
-			switch(MCode.values()[code])
-			{
-				case DENOMINATION: denomination=val; return;
-			}
-			return;
-		}
-	}
+		public abstract String brief(StdCoins fromThis);
+		public abstract String prompt(StdCoins fromThis);
+		public abstract void mod(StdCoins toThis, MOB M);
+		public String brief(CMModifiable fromThis){return brief((StdCoins)fromThis);}
+		public String prompt(CMModifiable fromThis){return prompt((StdCoins)fromThis);}
+		public void mod(CMModifiable toThis, MOB M){mod((StdCoins)toThis, M);} }
 }

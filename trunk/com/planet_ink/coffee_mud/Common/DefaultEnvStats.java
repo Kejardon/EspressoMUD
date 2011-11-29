@@ -61,7 +61,7 @@ public class DefaultEnvStats implements EnvStats
 	public double speed(){return Speed;}
 //	public int attackAdjustment(){return stats[STAT_ATTACK];}
 //	public String newName(){ return replacementName;}
-	public String[] ambiances(){ return (String[])ambiances.toArray();}
+	public String[] ambiances(){ return (String[])ambiances.toArray(new String[0]);}
 
 //	public void setRejuv(int newRejuv){stats[STAT_REJUV]=newRejuv;}
 //	public void setLevel(int newLevel){stats[STAT_LEVEL]=newLevel;}
@@ -139,7 +139,7 @@ public class DefaultEnvStats implements EnvStats
 				int[] ints=CMLib.coffeeMaker().loadAInt(S);
 				E.width=ints[0]; E.length=ints[1]; E.height=ints[2]; E.weight=ints[3]; E.magic=ints[4]; } },
 		AMB(){
-			public String save(DefaultEnvStats E){ return CMLib.coffeeMaker().savAString((String[])E.ambiances.toArray()); }
+			public String save(DefaultEnvStats E){ return CMLib.coffeeMaker().savAString((String[])E.ambiances.toArray(new String[0])); }
 			public void load(DefaultEnvStats E, String S){ for(String newF : CMLib.coffeeMaker().loadAString(S)) E.ambiances.add(newF); } },
 		;
 		public abstract String save(DefaultEnvStats E);

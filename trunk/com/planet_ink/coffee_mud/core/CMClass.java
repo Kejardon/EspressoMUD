@@ -63,17 +63,19 @@ public class CMClass extends ClassLoader
 			private SortedVector<String> commandWordsList=new SortedVector<String>();
 			public synchronized void add(CMObject O){
 				super.add(O);
+				if(((Command)O).getAccessWords()==null) Log.errOut("C.O.COMMAND","Null accesswords: "+O.ID());
+				else
 				for(String S : ((Command)O).getAccessWords()){
 					//S=S.trim().toUpperCase();	//No, ideally this should not be needed. Just make sure the input to this is always good.
 					commandWordsMap.put(S,(Command)O);
 					commandWordsList.addRandom(S); }
 				}
-			public synchronized void remove(CMObject O){
-				super.remove(O);
+			public synchronized boolean remove(CMObject O){
+				if(!super.remove(O)) return false;
 				for(String S : ((Command)O).getAccessWords()){
 					commandWordsMap.remove(S);
 					commandWordsList.remove(S); }
-				}
+				return true; }
 			public Command getCommand(String word, boolean exactOnly){
 				word=word.trim().toUpperCase();
 				Command C=commandWordsMap.get(word);
@@ -109,10 +111,10 @@ public class CMClass extends ClassLoader
 			if(O!=null) return O.newInstance();
 			return null; }
 		public void add(CMObject O){options.put(O.ID(), O);}
-		public void remove(CMObject O){options.remove(O.ID());}
+		public boolean remove(CMObject O){return (options.remove(O.ID())!=null);}
 		public void initialize()
 		{
-			for(CMObject O : (CMObject[])options.values().toArray())
+			for(CMObject O : (CMObject[])options.values().toArray(new CMObject[0]))
 				O.initializeClass();
 		}
 		public int size(){return options.size();}

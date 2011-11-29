@@ -124,7 +124,7 @@ public class WVector<E> implements Cloneable
 			gcd=CMath.gcd(objects.get(i).weight(),gcd);
 			if(gcd==1) return;
 		}
-		for(WeightedObject<E> O : (WeightedObject<E>[])()object.toArray())
+		for(WeightedObject<E> O : (WeightedObject<E>[])objects.toArray(new WeightedObject[0]))
 			O.setWeight(O.weight()/gcd);
 		totalWeight/=gcd;
 	}

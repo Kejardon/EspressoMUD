@@ -4,7 +4,6 @@ import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -46,20 +45,14 @@ public class Unlock extends StdCommand
 			mob.tell("Unlock what?");
 			return false;
 		}
-		Environmental unlockThis=null;
-		int dirCode=Directions.getGoodDirectionCode(whatTounlock);
-		if(dirCode>=0)
-			unlockThis=mob.location().getExitInDir(dirCode);
+		Interactable unlockThis=CMLib.english().fetchInteractable(whatTounlock, false, 1, mob, mob.location());
 		if(unlockThis==null)
-			unlockThis=mob.location().fetchFromMOBRoomItemExit(mob,null,whatTounlock,Wearable.FILTER_ANY);
-
-		if((unlockThis==null)||(!CMLib.flags().canBeSeenBy(unlockThis,mob)))
 		{
 			mob.tell("You don't see '"+whatTounlock+"' here.");
 			return false;
 		}
-		CMMsg msg=CMClass.getMsg(mob,unlockThis,null,CMMsg.MSG_UNLOCK,"<S-NAME> unlock(s) <T-NAMESELF>."+CMProps.msp("doorunlock.wav",10));
-		if(unlockThis instanceof Exit)
+		CMMsg msg=CMClass.getMsg(mob,unlockThis,null,EnumSet.of(CMMsg.MsgCode.UNLOCK),"<S-NAME> unlock(s) <T-NAMESELF>."+CMProps.msp("doorunlock.wav",10));
+/*		if(unlockThis instanceof Exit)
 		{
 			boolean locked=((Exit)unlockThis).isLocked();
 			if((mob.location().okMessage(msg.source(),msg))
@@ -89,13 +82,10 @@ public class Unlock extends StdCommand
 			}
 		}
 		else
-		if(mob.location().okMessage(mob,msg))
-			mob.location().send(mob,msg);
+*/
+		mob.location().doMessage(msg);
 		return false;
 	}
-    public double combatActionsCost(MOB mob, Vector cmds){return CMath.div(CMProps.getIntVar(CMProps.SYSTEMI_DEFCOMCMDTIME),100.0);}
-    public double actionsCost(MOB mob, Vector cmds){return CMath.div(CMProps.getIntVar(CMProps.SYSTEMI_DEFCMDTIME),100.0);}
+	public double actionsCost(MOB mob, Vector cmds){return DEFAULT_NONCOMBATACTION;}
 	public boolean canBeOrdered(){return true;}
-
-	
 }
