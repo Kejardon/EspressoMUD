@@ -274,7 +274,7 @@ public class Modify extends StdCommand
 					mob.tell("You don't see '"+inWhat+"' here.");
 					return false;
 				}
-				ItemCollection col=ItemCollection.DefaultItemCol.getFrom(container);
+				ItemCollection col=ItemCollection.O.getFrom(container);
 				if(col==null)
 				{
 					mob.tell("That does not hold anything.");

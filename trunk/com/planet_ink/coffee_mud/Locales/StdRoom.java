@@ -53,17 +53,22 @@ public class StdRoom implements Room
 	protected EnumSet<ListenHolder.Flags> lFlags=EnumSet.of(ListenHolder.Flags.OK, ListenHolder.Flags.EXC, ListenHolder.Flags.TICK);
 	protected long lastTick=0;
 	//TODO: This needs a custom item collection!
-	protected ItemCollection inventory=new ItemCollection.DefaultItemCol(this);
+	protected ItemCollection inventory=(ItemCollection)CMClass.Objects.COMMON.getNew("DefaultItemCol");
 	protected Domain myDom=Domain.PLAINS;
 	protected Enclosure myEnc=Enclosure.OPEN;
 	protected boolean amDestroyed=false;
 	protected Tickable.TickStat tickStatus=Tickable.TickStat.Not;
-	protected Environmental.DefaultEnv myEnvironmental=new Environmental.DefaultEnv(this);
+	protected Environmental myEnvironmental=(Environmental)CMClass.Objects.COMMON.getNew("DefaultEnvironmental");
+
+	public StdRoom()
+	{
+		((Ownable)myEnvironmental).setOwner(this);
+		((Ownable)inventory).setOwner(this);
+	}
 
 	public int priority(ListenHolder L){return Integer.MAX_VALUE;}
 	public void registerListeners(ListenHolder forThis){}
 
-	public StdRoom(){}
 	public void initializeClass(){}
 	public CMObject newInstance()
 	{
@@ -271,6 +276,7 @@ public class StdRoom implements Room
 	{
 		if(!getArea().okMessage(this,msg))
 			return false;
+		if(okCheckers!=null)
 		for(int i=okCheckers.size();i>0;i--)
 			if(!okCheckers.get(i-1).okMessage(myHost,msg))
 				return false;
@@ -285,6 +291,7 @@ public class StdRoom implements Room
 	public void executeMsg(ExcChecker myHost, CMMsg msg)
 	{
 		getArea().executeMsg(this,msg);
+		if(excCheckers!=null)
 		for(int i=excCheckers.size();i>0;i--)
 			excCheckers.get(i-1).executeMsg(myHost,msg);
 // TODO
@@ -295,6 +302,7 @@ public class StdRoom implements Room
 	{
 		if(tickID==Tickable.TickID.Action) return false;
 		tickStatus=Tickable.TickStat.Listener;
+		if(tickActers!=null)
 		for(int i=tickActers.size()-1;i>=0;i--)
 		{
 			TickActer T=tickActers.get(i);
@@ -475,7 +483,8 @@ public class StdRoom implements Room
 		}
 		else
 		{
-			Vector<Item> items=(Vector<Item>)CMLib.english().fetchInteractable(inventory.allItems(),inhabitantID,true);
+			Vector<Item> items=(Vector)CMLib.english().fetchInteractables(inhabitantID,false,1,Integer.MAX_VALUE,inventory);
+//			Vector<Item> items=(Vector<Item>)CMLib.english().fetchInteractables(inventory.allItems(),inhabitantID,true);
 			for(int i=0;i<items.size();i++)
 				if((items.get(i) instanceof Body)&&((M=((Body)items.get(i)).mob())!=null))
 					return M;
@@ -667,12 +676,8 @@ public class StdRoom implements Room
 //			public String save(StdRoom E){ return E.myID; }
 //			public void load(StdRoom E, String S){ E.setRoomID(S.intern()); } },
 		ENV(){
-			public String save(StdRoom E){ return CMLib.coffeeMaker().getPropertiesStr(E.myEnvironmental); }
-			public void load(StdRoom E, String S){
-				Environmental.DefaultEnv newEnv=new Environmental.DefaultEnv(E);
-				CMLib.coffeeMaker().setPropertiesStr(newEnv, S);
-				E.myEnvironmental.destroy();
-				E.myEnvironmental=newEnv; } },
+			public String save(StdRoom E){ return CMLib.coffeeMaker().getSubStr(E.myEnvironmental); }
+			public void load(StdRoom E, String S){ E.myEnvironmental=(Environmental)CMLib.coffeeMaker().loadSub(S); } },
 		DOM(){
 			public String save(StdRoom E){ return E.myDom.toString() ; }
 			public void load(StdRoom E, String S){ E.myDom=(Domain)CMClass.valueOf(Domain.class, S); } },
@@ -689,15 +694,11 @@ public class StdRoom implements Room
 			public String save(StdRoom E){ return E.exitsToString(); }
 			public void load(StdRoom E, String S){ E.exitsToLoad=S.intern(); } },
 		ARE(){
-			public String save(StdRoom E){ return E.myArea.name(); }
+			public String save(StdRoom E){ if(E.myArea==null) return ""; return E.myArea.name(); }
 			public void load(StdRoom E, String S){ E.setArea(CMLib.map().getArea(S)); } },
 		INV(){
-			public String save(StdRoom E){ return CMLib.coffeeMaker().getPropertiesStr(E.inventory); }
-			public void load(StdRoom E, String S){
-				ItemCollection.DefaultItemCol newInv=new ItemCollection.DefaultItemCol(E);
-				CMLib.coffeeMaker().setPropertiesStr(newInv, S);
-//				E.inventory.destroy();
-				E.inventory=newInv; } },
+			public String save(StdRoom E){ return CMLib.coffeeMaker().getSubStr(E.inventory); }
+			public void load(StdRoom E, String S){ E.inventory=(ItemCollection)CMLib.coffeeMaker().loadSub(S); } },
 		EFC(){
 			public String save(StdRoom E){ return CMLib.coffeeMaker().getVectorStr(E.affects); }
 			public void load(StdRoom E, String S){

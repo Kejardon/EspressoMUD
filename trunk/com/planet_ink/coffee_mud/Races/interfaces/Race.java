@@ -44,6 +44,7 @@ public interface Race extends StatsAffecting, ListenHolder.MsgListener, CMObject
 	//Degree will be an int for programming convenience, but converted to a double by dividing by 100. So a
 	//degree of 100 will call curvedRandom for 1.
 
+	public Gender[] possibleGenders();
 	//Typical height for the given gender
 //	public int[] height(Gender g, int age);
 //	public int[] weight(Gender g, int age);
@@ -54,47 +55,7 @@ public interface Race extends StatsAffecting, ListenHolder.MsgListener, CMObject
 	public HashMap<String, Body.BodyPart> bodyMap();
 	// Chance of impregnation(0-100) when having sex with the given race. Can be negative- 0 means 'impossible naturally but possible with magic/science aid', -100 means 'completely impossible'
 //	public int fertile(String race);
-/*
-	public String healthText(MOB viewer, MOB mob);
-
-	public Weapon myNaturalWeapon();
-
-	public Vector myResources();
-
-	public DeadBody getCorpseContainer(MOB mob, Room room);
-	public String arriveStr();
-	public String leaveStr();
-	public Vector racialEffects(MOB mob);
-	public void agingAffects(MOB mob, CharStats baseStats, CharStats charStats);
-*/
-	/**
-	 * Returns a list of the stat adjustments made by this race
-	 * @return a list of the stat adjustments made by this race
-	 */
 	public String getStatAdjDesc();
-	/**
-	 * Returns the list of modifications to senses done by this race
-	 * or nothing.
-	 * @return the list of modifications to senses done by this race
-	 */
-//	public String getSensesChgDesc();
-	/**
-	 * Returns the list of modifications to disposition done by this race
-	 * or nothing.
-	 * @return the list of modifications to disposition done by this race
-	 */
-//	public String getDispositionChgDesc();
-	/**
-	 * Returns the list of racial abilities granted to those of this race
-	 * or nothing.
-	 * @return the list of racial abilities granted to those of this race
-	 */
-//	public String getAbilitiesDesc();
-	/**
-	 * Returns the list of racial languages granted to those of this race
-	 * or nothing.
-	 * @return the list of racial languages granted to those of this race
-	 */
 	public String getLanguagesDesc();
 /*
 	public final static int BODY_ANTENEA=0;

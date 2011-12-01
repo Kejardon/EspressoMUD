@@ -452,7 +452,7 @@ public class CharCreation extends StdLibrary implements CharCreationLibrary
 				session.println(null,null,null,introText.toString());
 			}
 
-			Body newBody=new Body.DefaultBody();
+			Body newBody=(Body)CMClass.Objects.ITEM.getNew("StdBody");
 			StringBuffer listOfRaces=new StringBuffer("[");
 			boolean tmpFirst = true;
 			Vector qualRaces = raceQualifies();
@@ -516,6 +516,7 @@ public class CharCreation extends StdLibrary implements CharCreationLibrary
 					}
 				}
 			}
+			newBody.setRace(newRace);
 //			mob.baseCharStats().setMyRace(newRace);
 /*
 			mob.charStats().setMaxPoints(CharStats.STAT_HITPOINTS, CMProps.getIntVar(CMProps.SYSTEMI_STARTHP));
@@ -525,13 +526,42 @@ public class CharCreation extends StdLibrary implements CharCreationLibrary
 			mob.charStats().setMaxPoints(CharStats.STAT_MANA, CMProps.getIntVar(CMProps.SYSTEMI_STARTMANA));
 			mob.charStats().setPoints(CharStats.STAT_MANA, CMProps.getIntVar(CMProps.SYSTEMI_STARTMANA));
 */
-			String Gender="";
-			while(Gender.length()==0)
-				Gender=session.choose("\n\r^!What is your gender (M/F/N)?^N","MFN","");
-	
-//			mob.baseCharStats().setGender(Gender.toUpperCase().charAt(0));
-//			mob.baseCharStats().getMyRace().startRacing(mob,false);
-	
+			Gender gender=null;
+			{
+				Gender[] options=newRace.possibleGenders();
+				if(options.length==1)
+					gender=options[0];
+				else
+				{
+					StringBuilder gPrompt=new StringBuilder("\n\r^!What is your gender (");
+					for(Gender g : options)
+						gPrompt.append(g.name()+", ");
+					gPrompt.setLength(gPrompt.length()-2);
+					gPrompt.append(")?^N");
+					String gPromptDone=gPrompt.toString();
+					found:
+					while(gender==null)
+					{
+						String S=session.prompt(gPromptDone);
+						for(Gender g : options)
+							if(g.name().equals(S))
+							{
+								gender=g;
+								break found;
+							}
+						for(Gender g : options)
+							if(g.name().startsWith(S))
+							{
+								gender=g;
+								break found;
+							}
+					}
+				}
+			}
+
+			newBody.setGender(gender);
+			mob.setBody(newBody);
+
 			introText=new CMFile(Resources.buildResourcePath("text")+"stats.txt",null,true).text();
 			try { introText = CMLib.httpUtils().doVirtualPage(introText);}catch(Exception ex){}
 			session.println(null,null,null,"\n\r\n\r"+introText.toString());

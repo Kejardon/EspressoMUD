@@ -224,27 +224,26 @@ public class CMGenEditor extends StdLibrary implements GenericEditor
 			Object O=V.get(i);
 			boolean str=(O instanceof String);
 			boolean inter=(O instanceof Interactable);
-			mob.session().rawPrintln((1+i)+". "+(str?(((CMObject)O).ID()+(inter?" "+((Interactable)O).name():"")):(String)O));
+			mob.session().rawPrintln((1+i)+". "+(str?(String)O:(((CMObject)O).ID()+(inter?" "+((Interactable)O).name():""))));
 		}
 		if(newOption)
 			mob.session().rawPrintln((1+i)+". New Element");
 		return CMath.s_int(mob.session().prompt("Edit which? ",""));
 	}
-/*
-	public void genVector(MOB mob, CMModifiable E, int parentOption)
+	public int promptWVector(MOB mob, WVector V, boolean newOption)
 	{
-			int i=CMLib.genEd().promptVector(M, E.stuff, bool);
-			if(--i<0) done=true;
-			else if(i==V.size())
-				//add object
-			else if(i<V.size())
-			{
-				char action=mob.session().prompt("(D)elete or (M)odify(default)? ","M").trim().toUpperCase().charAt(0);
-				if(action=='D') //remove object
-				else if(action=='M') //modify object
-			}
+		int i=0;
+		for(;i<V.size();i++)
+		{
+			Object O=V.get(i);
+			boolean str=(O instanceof String);
+			boolean inter=(O instanceof Interactable);
+			mob.session().rawPrintln((1+i)+". ("+V.weight(i)+") "+(str?(((CMObject)O).ID()+(inter?" "+((Interactable)O).name():"")):(String)O));
+		}
+		if(newOption)
+			mob.session().rawPrintln((1+i)+". New Element");
+		return CMath.s_int(mob.session().prompt("Edit which? ",""));
 	}
-*/
 	public Effect newAnyEffect(MOB mob){return newAnyEffect(mob, new Vector());}
 	public Effect newAnyEffect(MOB mob, Vector notThese)
 	{
@@ -564,6 +563,29 @@ public class CMGenEditor extends StdLibrary implements GenericEditor
 				if(!M.session().prompt("Do you mean "+A.name()+"? (Y/n): ","Y").toUpperCase().startsWith("Y")) continue;
 			}
 			return A;
+		}
+		return null;
+	}
+	public Race racePrompt(MOB M)
+	{
+		while((M.session()!=null)&&(!M.session().killFlag()))
+		{
+			String raceName=M.session().prompt("Enter a race name: ","");
+			if(raceName.equals("")) return null;
+			if(raceName.equals("?"))
+			{
+				for(Iterator<Race> e=(Iterator)CMClass.Objects.RACE.all();e.hasNext();)
+					M.session().rawPrintln(e.next().ID());
+				
+				continue;
+			}
+			Race R=(Race)CMClass.Objects.RACE.get(raceName);
+			if(R==null)
+			{
+				M.session().rawPrintln("No race with that name found.");
+				continue;
+			}
+			return R;
 		}
 		return null;
 	}

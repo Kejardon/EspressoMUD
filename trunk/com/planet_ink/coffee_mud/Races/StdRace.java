@@ -34,6 +34,7 @@ import java.util.*;
 public class StdRace implements Race
 {
 	public static final EnumSet<ListenHolder.Flags> lFlags=EnumSet.noneOf(ListenHolder.Flags.class);
+	public Gender[] myGenders;
 
 	public String ID(){	return "StdRace"; }
 	public String name(){ return "StdRace"; }
@@ -56,7 +57,18 @@ public class StdRace implements Race
 //	protected String abilitiesDesc = null;
 	protected String languagesDesc = "";
 
+	public StdRace()
+	{
+		if(ID().equals("StdRace"))
+		{
+			myGenders=new Gender[1];
+			myGenders[0]=(Gender)CMClass.Objects.GENDER.get("Neuter");
+		}
+	}
+
 	public int availabilityCode(){return -1;}
+
+	public Gender[] possibleGenders(){return myGenders;}
 
 	public int fertile(String S){return -100;}
 
@@ -79,12 +91,14 @@ public class StdRace implements Race
 	public void affectCharStats(MOB affectedMob, CharStats charStats)
 	{
 	}
-	public boolean okMessage(ListenHolder.OkChecker myHost, CMMsg msg)
+	public boolean okMessage(ListenHolder.OkChecker myBody, CMMsg msg)
 	{
 		return true;
 	}
+	//This really isn't supported! Don't call this respondTo
 	public boolean respondTo(CMMsg msg){return true;}
-	public void executeMsg(ListenHolder.ExcChecker myHost, CMMsg msg)
+	public boolean respondTo(Body myBody, CMMsg msg){return true;}
+	public void executeMsg(ListenHolder.ExcChecker myBody, CMMsg msg)
 	{
 	}
 
@@ -94,29 +108,9 @@ public class StdRace implements Race
 	{
 		return baseStatChgDesc;
 	}
-/*
-	public String getSensesChgDesc()
-	{
-		makeStatChgDesc();
-		return sensesChgDesc;
-	}
-	public String getDispositionChgDesc()
-	{
-		makeStatChgDesc();
-		return dispChgDesc;
-	}
-	public String getAbilitiesDesc()
-	{
-		makeStatChgDesc();
-		return abilitiesDesc;
-	}
-*/
 	public String getLanguagesDesc()
 	{
 		return languagesDesc;
-	}
-	protected void makeStatChgDesc()
-	{
 	}
 
 	public boolean sameAs(Race E)

@@ -46,13 +46,27 @@ public interface CMModifiable extends CMObject
 	public ModEnum[] totalEnumM()
 	{
 		if(totalEnumM==null)
-			totalEnumM=(ModEnum[])CMath.combineArrays(MCode.values(), super.totalEnumM());
+		{
+			ModEnum[] arrA=MCode.values();
+			ModEnum[] arrB=super.totalEnumM();
+			ModEnum[] total=new ModEnum[arrA.length+arrB.length];
+			System.arraycopy(arrA, 0, total, 0, arrA.length);
+			System.arraycopy(arrB, 0, total, arrA.length, arrB.length);
+			totalEnumM=total;
+		}
 		return totalEnumM;
 	}
 	public Enum[] headerEnumM()
 	{
 		if(headerEnumM==null)
-			headerEnumM=(Enum[])CMath.combineArrays(new Enum[] {MCode.values()[0]}, super.headerEnumM());
+		{
+			Enum[] arrA=new Enum[] {MCode.values()[0]};
+			Enum[] arrB=super.headerEnumM();
+			Enum[] total=new Enum[arrA.length+arrB.length];
+			System.arraycopy(arrA, 0, total, 0, arrA.length);
+			System.arraycopy(arrB, 0, total, arrA.length, arrB.length);
+			headerEnumM=total;
+		}
 		return headerEnumM;
 	}
 	//The actual enum/code/parser

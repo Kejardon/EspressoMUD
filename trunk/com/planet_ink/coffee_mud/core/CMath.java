@@ -34,13 +34,15 @@ public class CMath
 	private static final java.text.DecimalFormat twoPlaces = new java.text.DecimalFormat("0.#####%");
 	private static Random rand = new Random(System.currentTimeMillis());
 
-	public static Object[] combineArrays(Object[] arrA, Object[] arrB)
+/*
+	public static Object[] combineArrays(Object[] arrA, Object[] arrB, Object[] total)
 	{
 		Object[] total=new Object[arrA.length+arrB.length];
 		System.arraycopy(arrA, 0, total, 0, arrA.length);
 		System.arraycopy(arrB, 0, total, arrA.length, arrB.length);
 		return total;
 	}
+*/
 
 	// Get a random number from a weighted curve. Returns a number between -1 and 1.
 	//0 will always give -1 or 1, 1 will give an almost straight line, infinite will always give 0.

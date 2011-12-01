@@ -48,13 +48,27 @@ public interface CMSavable extends CMObject
 	public SaveEnum[] totalEnumS()
 	{
 		if(totalEnumS==null)
-			totalEnumS=(SaveEnum[])CMath.combineArrays(SCode.values(), super.totalEnumS());
+		{
+			SaveEnum[] arrA=SCode.values();
+			SaveEnum[] arrB=super.totalEnumS();
+			SaveEnum[] total=new SaveEnum[arrA.length+arrB.length];
+			System.arraycopy(arrA, 0, total, 0, arrA.length);
+			System.arraycopy(arrB, 0, total, arrA.length, arrB.length);
+			totalEnumS=total;
+		}
 		return totalEnumS;
 	}
 	public Enum[] headerEnumS()
 	{
 		if(headerEnumS==null)
-			headerEnumS=(Enum[])CMath.combineArrays(new Enum[] {SCode.values()[0]}, super.headerEnumS());
+		{
+			Enum[] arrA=new Enum[] {SCode.values()[0]};
+			Enum[] arrB=super.headerEnumS();
+			Enum[] total=new Enum[arrA.length+arrB.length];
+			System.arraycopy(arrA, 0, total, 0, arrA.length);
+			System.arraycopy(arrB, 0, total, arrA.length, arrB.length);
+			headerEnumS=total;
+		}
 		return headerEnumS;
 	}
 

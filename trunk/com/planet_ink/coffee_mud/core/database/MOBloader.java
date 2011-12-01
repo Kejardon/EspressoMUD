@@ -127,8 +127,11 @@ public class MOBloader
 	{
 		if(mob.name().length()==0) return;
 //		if(emptyRoom==null) emptyRoom=CMClass.getLocale("StdRoom");
-		CMLib.players().addPlayer(mob);
 		DBReadUserOnly(mob);
+		if((mob.playerStats())!=null)
+			CMLib.players().addPlayer(mob);
+		else
+			Log.errOut("MOBLoader","No player stats for "+mob.name());
 		/*
 		int oldDisposition=mob.baseEnvStats().disposition();
 		mob.baseEnvStats().setDisposition(EnvStats.IS_NOT_SEEN|EnvStats.IS_SNEAKING);

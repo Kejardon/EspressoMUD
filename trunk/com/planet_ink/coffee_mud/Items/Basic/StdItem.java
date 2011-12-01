@@ -56,7 +56,7 @@ public class StdItem implements Item
 //	protected int material=RawMaterial.RESOURCE_COTTON;
 	protected Tickable.TickStat tickStatus=Tickable.TickStat.Not;
 	protected boolean destroyed=false;
-	protected Environmental myEnvironmental=new Environmental.DefaultEnv(this);
+	protected Environmental myEnvironmental=(Environmental)CMClass.Objects.COMMON.getNew("DefaultEnvironmental");
 
 	public Environmental getEnvObject() {return myEnvironmental;}
 
@@ -76,6 +76,7 @@ public class StdItem implements Item
 	{
 //		baseEnvStats().setWeight(1);
 //		baseEnvStats().setArmor(0);
+		((Ownable)myEnvironmental).setOwner(this);
 	}
 	public void initializeClass(){}
 //	public String Name(){ return myEnvironmental.Name();}
@@ -193,6 +194,7 @@ public class StdItem implements Item
 	{
 		if(tickID==Tickable.TickID.Action) return false;
 		tickStatus=Tickable.TickStat.Listener;
+		if(tickActers!=null)
 		for(int i=tickActers.size()-1;i>=0;i--)
 		{
 			TickActer T=tickActers.get(i);
@@ -277,6 +279,7 @@ public class StdItem implements Item
 	{
 		if(!myEnvironmental.okMessage(myHost, msg))
 			return false;
+		if(okCheckers!=null)
 		for(int i=okCheckers.size();i>0;i--)
 			if(!okCheckers.get(i-1).okMessage(myHost,msg))
 				return false;
@@ -286,6 +289,7 @@ public class StdItem implements Item
 	public void executeMsg(ListenHolder.ExcChecker myHost, CMMsg msg)
 	{
 		myEnvironmental.executeMsg(myHost, msg);
+		if(excCheckers!=null)
 		for(int i=excCheckers.size();i>0;i--)
 			excCheckers.get(i-1).executeMsg(myHost,msg);
 	}
@@ -293,7 +297,7 @@ public class StdItem implements Item
 	public int recursiveWeight()
 	{
 		int weight=myEnvironmental.envStats().weight();
-		ItemCollection subItems=ItemCollection.DefaultItemCol.getFrom(this);
+		ItemCollection subItems=ItemCollection.O.getFrom(this);
 		if(subItems!=null)
 		{
 			for(int i=0;i<subItems.numItems();i++)
@@ -313,11 +317,11 @@ public class StdItem implements Item
 
 		destroyed=true;
 
-		ItemCollection owner=ItemCollection.DefaultItemCol.getFrom(container);
+		ItemCollection owner=ItemCollection.O.getFrom(container);
 		if(owner!=null)
 			owner.removeItem(this);
 		
-		ItemCollection inv=ItemCollection.DefaultItemCol.getFrom(this);
+		ItemCollection inv=ItemCollection.O.getFrom(this);
 		if(inv!=null)
 		{
 			if(owner==null)
@@ -341,12 +345,8 @@ public class StdItem implements Item
 			public String save(StdItem E){ return ""+E.baseGoldValue; }
 			public void load(StdItem E, String S){ E.baseGoldValue=Integer.parseInt(S); } },
 		ENV(){
-			public String save(StdItem E){ return CMLib.coffeeMaker().getPropertiesStr(E.myEnvironmental); }
-			public void load(StdItem E, String S){
-				Environmental.DefaultEnv newEnv=new Environmental.DefaultEnv(E);
-				CMLib.coffeeMaker().setPropertiesStr(newEnv, S);
-				E.myEnvironmental.destroy();
-				E.myEnvironmental=newEnv; } },
+			public String save(StdItem E){ return CMLib.coffeeMaker().getSubStr(E.myEnvironmental); }
+			public void load(StdItem E, String S){ E.myEnvironmental=(Environmental)CMLib.coffeeMaker().loadSub(S); } },
 		WRN(){
 			public String save(StdItem E){ return ""+E.wornOut; }
 			public void load(StdItem E, String S){ E.wornOut=Integer.parseInt(S); } },

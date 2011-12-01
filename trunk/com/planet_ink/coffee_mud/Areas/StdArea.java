@@ -48,10 +48,10 @@ public class StdArea implements Area
 	protected long lastTick=0;
 
 	protected Vector<Area> children=null;
-	protected Vector<Area> parents=null;
+	protected Vector<Area> parents=new Vector(1);
 	protected Vector<String> childrenToLoad=new Vector(1);
 //	protected Vector<String> parentsToLoad=new Vector(1);
-	protected Environmental myEnvironmental=new Environmental.DefaultEnv(this);
+	protected Environmental myEnvironmental=(Environmental)CMClass.Objects.COMMON.getNew("DefaultEnvironmental");
 	protected EnumSet<ListenHolder.Flags> lFlags=EnumSet.noneOf(ListenHolder.Flags.class);
 
 	protected String author="";
@@ -82,6 +82,7 @@ public class StdArea implements Area
 	public StdArea()
 	{
 		super();
+		((Ownable)myEnvironmental).setOwner(this);
 	}
 	protected void finalize(){}
 	protected boolean amDestroyed=false;
@@ -608,18 +609,14 @@ public class StdArea implements Area
 //			public String save(StdArea E){ return E.name; }
 //			public void load(StdArea E, String S){ E.name=S.intern(); } },
 		CHL(){
-			public String save(StdArea E){ return E.getChildrenList(); }
+			public String save(StdArea E){ if(E.children==null) return ""; return E.getChildrenList(); }
 			public void load(StdArea E, String S){
 				while(S.length()>0) {
 					E.addChildToLoad(S.substring(0,S.indexOf(';')));
 					S=S.substring(S.indexOf(';')+1); } } },
 		ENV(){
-			public String save(StdArea E){ return CMLib.coffeeMaker().getPropertiesStr(E.myEnvironmental); }
-			public void load(StdArea E, String S){
-				Environmental.DefaultEnv newEnv=new Environmental.DefaultEnv(E);
-				CMLib.coffeeMaker().setPropertiesStr(newEnv, S);
-				E.myEnvironmental.destroy();
-				E.myEnvironmental=newEnv; } },
+			public String save(StdArea E){ return CMLib.coffeeMaker().getSubStr(E.myEnvironmental); }
+			public void load(StdArea E, String S){ E.myEnvironmental=(Environmental)CMLib.coffeeMaker().loadSub(S); } },
 		EFC(){
 			public String save(StdArea E){ return CMLib.coffeeMaker().getVectorStr(E.affects); }
 			public void load(StdArea E, String S){

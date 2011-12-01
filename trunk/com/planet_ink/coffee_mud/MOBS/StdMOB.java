@@ -66,7 +66,7 @@ public class StdMOB implements MOB
 	protected Vector<ExcChecker> excCheckers=new Vector<ExcChecker>();
 	protected Vector<TickActer> tickActers=new Vector<TickActer>();
 
-	protected ItemCollection inventory=new ItemCollection.DefaultItemCol(this);
+	protected ItemCollection inventory=(ItemCollection)CMClass.Objects.COMMON.getNew("DefaultItemCol");
 	protected Vector affects=new Vector(1);
 	protected Vector behaviors=new Vector(1);
 
@@ -90,6 +90,11 @@ public class StdMOB implements MOB
 
 	protected Vector titles=new Vector();
 	protected Body myBody=null;
+
+	public StdMOB()
+	{
+		((Ownable)inventory).setOwner(this);
+	}
 
 	public void initializeClass(){}
 	public CMObject newInstance()
@@ -151,7 +156,6 @@ public class StdMOB implements MOB
 	public void registerAllListeners() {}
 	public void clearAllListeners() {}
 
-	public StdMOB() { }
 	public boolean amDestroyed(){return amDestroyed;}
 	protected void cloneFix(MOB E)
 	{
@@ -530,7 +534,7 @@ public class StdMOB implements MOB
 
 	public void tell(String msg)
 	{
-		tell(this,this,null,msg);
+		tell(this,this,new Vector(),msg);
 	}
 	public boolean respondTo(CMMsg msg){return true;}
 	public void executeMsg(ListenHolder.ExcChecker myHost, CMMsg msg)
@@ -696,7 +700,7 @@ public class StdMOB implements MOB
 	public void giveItem(Item item)
 	{
 		if(item.container()!=null)
-			ItemCollection.DefaultItemCol.getFrom(item.container()).removeItem(item);
+			ItemCollection.O.getFrom(item.container()).removeItem(item);
 		inventory.addItem(item);
 	}
 

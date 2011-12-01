@@ -192,6 +192,7 @@ public class DefaultMessage implements CMMsg
 	public boolean handleResponses()
 	{
 		ListenHolder.MsgListener next=null;
+		if(responders!=null)
 		for(ListIterator<SortedList.SortableObject<ListenHolder.MsgListener>> L=responders.listIterator();L.hasNext();next=L.next().myObj)
 			if(!(next.respondTo(this)))
 				return false;

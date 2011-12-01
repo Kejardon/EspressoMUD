@@ -70,6 +70,7 @@ public class RoomLoader
 					Log.errOut("Could not create area type "+areaType+" for "+areaName);
 					continue;
 				}
+				A.setName(areaName.intern());
 				CMLib.coffeeMaker().setPropertiesStr(A, DBConnections.getRes(R,"CMDATA"));
 				if(((currentRecordPos%updateBreak)==0)&&(reportStatus))
 					CMProps.Strings.MUDSTATUS.setProperty("Booting: Loading Areas ("+currentRecordPos+" of "+recordCount+")");
@@ -261,7 +262,7 @@ public class RoomLoader
 	public void DBCreate(Room room)
 	{
 		if(room.amDestroyed()) return;
-		if(Log.debugChannelOn()&&(CMSecurity.isDebugging("CMROOM")||CMSecurity.isDebugging("DBROOMS")))
+//		if(Log.debugChannelOn()&&(CMSecurity.isDebugging("CMROOM")||CMSecurity.isDebugging("DBROOMS")))
 			Log.debugOut("RoomLoader","Creating new room "+room.roomID());
 		DB.update(
 		"INSERT INTO CMROOM ("
@@ -271,7 +272,7 @@ public class RoomLoader
 		+") values ("
 		+"'"+room.roomID()+"',"
 		+"'"+room.ID()+"',"
-		+"'"+CMLib.coffeeMaker().getPropertiesStr(room)+" ')");
+		+"'"+CMLib.coffeeMaker().getPropertiesStr(room)+"')");
 		if(Log.debugChannelOn()&&(CMSecurity.isDebugging("CMROOM")||CMSecurity.isDebugging("DBROOMS")))
 			Log.debugOut("RoomLoader","Done creating new room "+room.roomID());
 	}

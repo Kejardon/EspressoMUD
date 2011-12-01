@@ -1,5 +1,5 @@
 package com.planet_ink.coffee_mud.Areas.interfaces;
-
+import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.Room;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 /* 

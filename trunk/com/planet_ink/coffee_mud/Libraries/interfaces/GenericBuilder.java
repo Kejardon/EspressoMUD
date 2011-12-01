@@ -56,5 +56,6 @@ public interface GenericBuilder extends CMLibrary
 	public String[][] loadStringsInterlaced(String A, int dim);
 	public String getVectorStr(Vector V);
 	public Vector setVectorStr(String S);
-
+	public String getWVectorStr(WVector V);
+	public WVector setWVectorStr(String S);
 }

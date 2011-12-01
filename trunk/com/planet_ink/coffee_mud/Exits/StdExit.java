@@ -51,8 +51,13 @@ public class StdExit implements Exit
 	protected boolean amDestroyed=false;
 	protected boolean needSave=false;
 
-	protected Environmental myEnvironmental=new Environmental.DefaultEnv(this);
+	protected Environmental myEnvironmental=(Environmental)CMClass.Objects.COMMON.getNew("DefaultEnvironmental");
 	protected Closeable myDoor=null;
+
+	public StdExit()
+	{
+		((Ownable)myEnvironmental).setOwner(this);
+	}
 
 	public Environmental getEnvObject() {return myEnvironmental;}
 	public Closeable getLidObject() {return myDoor;}
@@ -186,6 +191,7 @@ public class StdExit implements Exit
 	{
 		if(!myEnvironmental.okMessage(myHost, msg))
 			return false;
+		if(okCheckers!=null)
 		for(int i=okCheckers.size();i>0;i--)
 			if(!okCheckers.get(i-1).okMessage(myHost,msg))
 				return false;
@@ -195,6 +201,7 @@ public class StdExit implements Exit
 	public void executeMsg(ListenHolder.ExcChecker myHost, CMMsg msg)
 	{
 		myEnvironmental.executeMsg(myHost, msg);
+		if(excCheckers!=null)
 		for(int i=excCheckers.size();i>0;i--)
 			excCheckers.get(i-1).executeMsg(myHost,msg);
 	}
@@ -300,6 +307,7 @@ public class StdExit implements Exit
 	{
 		if(tickID==Tickable.TickID.Action) return false;
 		tickStatus=Tickable.TickStat.Listener;
+		if(tickActers!=null)
 		for(int i=tickActers.size()-1;i>=0;i--)
 		{
 			TickActer T=tickActers.get(i);
@@ -320,12 +328,8 @@ public class StdExit implements Exit
 
 	private enum SCode implements CMSavable.SaveEnum{
 		ENV(){
-			public String save(StdExit E){ return CMLib.coffeeMaker().getPropertiesStr(E.myEnvironmental); }
-			public void load(StdExit E, String S){
-				Environmental.DefaultEnv newEnv=new Environmental.DefaultEnv(E);
-				CMLib.coffeeMaker().setPropertiesStr(newEnv, S);
-				E.myEnvironmental.destroy();
-				E.myEnvironmental=newEnv; } },
+			public String save(StdExit E){ return CMLib.coffeeMaker().getSubStr(E.myEnvironmental); }
+			public void load(StdExit E, String S){ E.myEnvironmental=(Environmental)CMLib.coffeeMaker().loadSub(S); } },
 /*		EID(){
 			public String save(StdExit E){ return E.exitID; }
 			public void load(StdExit E, String S){ E.exitID=S.intern(); } }, */

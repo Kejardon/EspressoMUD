@@ -495,7 +495,7 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 				return true;
 		if(maxDepth>0)
 		{
-			ItemCollection col=ItemCollection.DefaultItemCol.getFrom(thisThang);
+			ItemCollection col=ItemCollection.O.getFrom(thisThang);
 			if(col!=null)
 				if(thingArrayCheck(V, (Item[])col.allItems().toArray(new Item[0]), srchStr, allFlag, exact, maxDepth-1, numLeft))
 					return true;
@@ -598,7 +598,7 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 		if(maxDepth>0)
 		{
 			Interactable found=null;
-			ItemCollection col=ItemCollection.DefaultItemCol.getFrom(thisThang);
+			ItemCollection col=ItemCollection.O.getFrom(thisThang);
 			if(col!=null)
 			{
 				found=thingArrayCheck((Item[])col.allItems().toArray(new Item[0]), srchStr, allFlag, exact, myOccurrance, maxDepth-1);
@@ -902,7 +902,7 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 		{
 			doBugFix=false;
 			Interactable thisThang=mob.location().fetchItem(possibleContainerID+addendumStr);
-			ItemCollection o=ItemCollection.DefaultItemCol.getFrom(thisThang);
+			ItemCollection o=ItemCollection.O.getFrom(thisThang);
 			if((o!=null)
 			&&((!withContentOnly)||(o.numItems()>0)))
 //			&&(CMLib.flags().canBeSeenBy(thisThang.getEnvObject(),mob)||mob.isMine(thisThang))
@@ -937,7 +937,7 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 		String possibleContainerID=CMParms.combine(commands,containerDex);
 
 		Interactable thisThang=mob.location().fetchItem(possibleContainerID);
-		ItemCollection o=ItemCollection.DefaultItemCol.getFrom(thisThang);
+		ItemCollection o=ItemCollection.O.getFrom(thisThang);
 		if((o!=null)
 		&&((!withStuff)||(o.numItems()>0)))
 		{

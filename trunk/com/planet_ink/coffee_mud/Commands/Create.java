@@ -105,7 +105,7 @@ public class Create extends StdCommand
 				Vector<MOB> V=mob.location().fetchInhabitants(rest);
 				if(V.size()==0)
 				{
-					dest = ItemCollection.DefaultItemCol.getFrom(mob.location().fetchItem(rest));
+					dest = ItemCollection.O.getFrom(mob.location().fetchItem(rest));
 					if(dest==null)
 					{
 						mob.tell("MOB or Container '"+rest+"' not found.");
@@ -183,7 +183,7 @@ public class Create extends StdCommand
 		}
 
 		newMOB.setLocation(mob.location());
-		newMOB.setBody(new Body.DefaultBody());
+		newMOB.setBody((Body)CMClass.Objects.ITEM.getNew("StdBody"));
 		CMLib.genEd().genMiscSet(mob,newMOB.body());
 		newMOB.body().bringToLife(mob.location(),true);
 		mob.location().showHappens(EnumSet.of(CMMsg.MsgCode.VISUAL),null,"Suddenly, "+newMOB.name()+" instantiates from the Java plain.");

@@ -54,7 +54,9 @@ public interface GenericEditor extends CMLibrary
 	public void modAffectable(Affectable E, MOB M);
 	public void modExits(Vector<Room.REMap> exits, MOB M);
 	public int promptVector(MOB mob, Vector V, boolean newOption);
+	public int promptWVector(MOB mob, WVector V, boolean newOption);
 	public Area areaPrompt(MOB M);
+	public Race racePrompt(MOB M);
 	public Effect newAnyEffect(MOB mob);
 	public Effect newAnyEffect(MOB mob, Vector<Effect> notThese);
 	public Behavior newAnyBehavior(MOB mob);

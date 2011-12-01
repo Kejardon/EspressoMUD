@@ -116,13 +116,13 @@ public class Empty extends Drop
 		else
 		{
 			Room R=mob.location();
-			ItemCollection col=ItemCollection.DefaultItemCol.getFrom(target);
+			ItemCollection col=ItemCollection.O.getFrom(target);
 			if(col!=null)
 			for(int v=0;v<V.size();v++)
 			{
 				Container C=(Container)V.elementAt(v);
 				if(C==target) continue;
-				col=ItemCollection.DefaultItemCol.getFrom(C);
+				col=ItemCollection.O.getFrom(C);
 				if(col==null) continue;
 				Vector<Item> stuff=col.allItems();
 				

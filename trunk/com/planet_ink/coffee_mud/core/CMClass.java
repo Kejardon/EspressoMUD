@@ -47,6 +47,7 @@ public class CMClass extends ClassLoader
 	public enum Objects
 	{
 		RACE("com.planet_ink.coffee_mud.Races.interfaces.Race"),
+		GENDER("com.planet_ink.coffee_mud.Races.interfaces.Gender"),
 		MOB("com.planet_ink.coffee_mud.MOBS.interfaces.MOB"),
 		COMMON("com.planet_ink.coffee_mud.Common.interfaces.CMCommon"),
 		LOCALE("com.planet_ink.coffee_mud.Locales.interfaces.Room"),
@@ -109,6 +110,7 @@ public class CMClass extends ClassLoader
 		public CMObject getNew(String ID) {
 			CMObject O=options.get(ID);
 			if(O!=null) return O.newInstance();
+			Log.errOut(name(),"Failed request: "+ID);
 			return null; }
 		public void add(CMObject O){options.put(O.ID(), O);}
 		public boolean remove(CMObject O){return (options.remove(O.ID())!=null);}
@@ -123,6 +125,7 @@ public class CMClass extends ClassLoader
 
 	public static Objects getType(Object O)
 	{
+		if(O instanceof Gender) return Objects.GENDER;
 		if(O instanceof Race) return Objects.RACE;
 		if(O instanceof Effect) return Objects.EFFECT;
 		if(O instanceof Room) return Objects.LOCALE;
@@ -338,7 +341,7 @@ public class CMClass extends ClassLoader
 		return M;
 	}
 
-	public static void intializeClasses()
+	public static void initializeClasses()
 	{
 		for(Objects e : Objects.values())
 			e.initialize();
@@ -653,6 +656,11 @@ public class CMClass extends ClassLoader
 			loadListToObj(O, prefix+"Common/", O.ancestor(), false);
 			if(O.size()==0) return false;
 
+			O=Objects.GENDER;
+			loadListToObj(O, prefix+"Races/Genders/", O.ancestor(), false);
+			Log.sysOut(Thread.currentThread().getName(),"Genders loaded    : "+O.size());
+			if(O.size()==0) return false;
+
 			O=Objects.RACE;
 			loadListToObj(O, prefix+"Races/", O.ancestor(), false);
 			Log.sysOut(Thread.currentThread().getName(),"Races loaded      : "+O.size());
@@ -681,7 +689,7 @@ public class CMClass extends ClassLoader
 			O=Objects.EFFECT;
 			loadListToObj(O, prefix+"Effects/", O.ancestor(), false);
 			loadListToObj(O, prefix+"Effects/Languages/", O.ancestor(), false);
-			loadListToObj(O, prefix+"Effects/Archon/", O.ancestor(), false);
+//			loadListToObj(O, prefix+"Effects/Archon/", O.ancestor(), false);
 			Log.sysOut(Thread.currentThread().getName(),"Effects loaded    : "+O.size());
 			if(O.size()==0) return false;
 
@@ -725,18 +733,22 @@ public class CMClass extends ClassLoader
 */
 
 		CMProps.Strings.MUDSTATUS.setProperty("Booting: initializing classes");
-		intializeClasses();
+		initializeClasses();
 		return true;
 	}
 	public static Enum valueOf(Enum E, String S)
 	{
 		try{return E.valueOf(E.getClass(), S);}
+		catch(IllegalArgumentException e){if(e.getMessage().startsWith("No")) return null;}
+		try{return E.valueOf((Class)E.getClass().getSuperclass(), S);}
 		catch(IllegalArgumentException e){}
 		return null;
 	}
 	public static Enum valueOf(Class E, String S)
 	{
 		try{return Enum.valueOf(E, S);}
+		catch(IllegalArgumentException e){if(e.getMessage().startsWith("No")) return null;}
+		try{return Enum.valueOf((Class)E.getSuperclass(), S);}
 		catch(IllegalArgumentException e){}
 		return null;
 	}

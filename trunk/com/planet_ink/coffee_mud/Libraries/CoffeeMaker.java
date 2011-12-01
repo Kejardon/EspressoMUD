@@ -37,10 +37,11 @@ public class CoffeeMaker extends StdLibrary implements GenericBuilder
 	{
 		String[] baseStrings=basePropertiesStr.get(E.ID());
 		if(baseStrings!=null) return baseStrings;
+		CMSavable baseObject=(CMSavable)E.newInstance();
 		baseStrings=new String[options.length];
 		for(int i=0;i<options.length;i++)
-			baseStrings[i]=options[i].save(E);
-		basePropertiesStr.put(E.ID(), baseStrings);
+			baseStrings[i]=options[i].save(baseObject);
+		basePropertiesStr.put(baseObject.ID(), baseStrings);
 		return baseStrings;
 	}
 
@@ -68,6 +69,8 @@ public class CoffeeMaker extends StdLibrary implements GenericBuilder
 
 	private CMSavable.SaveEnum getParser(Enum E, String S)
 	{
+		try{return (CMSavable.SaveEnum)E.valueOf((Class)E.getClass().getSuperclass(), S);}
+		catch(IllegalArgumentException e){if(e.getMessage().startsWith("No")) return null;}
 		try{return (CMSavable.SaveEnum)E.valueOf(E.getClass(), S);}
 		catch(IllegalArgumentException e){}
 		return null;
@@ -76,6 +79,7 @@ public class CoffeeMaker extends StdLibrary implements GenericBuilder
 	//IMPORTANT! Make sure any Strings saved to the object are NEW STRINGS WITH THEIR OWN MEMORY and not SUBSTRINGS OF OLD STRINGS' MEMORY
 	public void setPropertiesStr(CMSavable E, String S)
 	{
+		try{
 		if(E==null)
 		{
 			Log.errOut("CoffeeMaker","setPropertiesStr: null 'E'");
@@ -101,6 +105,7 @@ public class CoffeeMaker extends StdLibrary implements GenericBuilder
 				continue;
 			parser.load(E, A);
 		}
+		}catch(RuntimeException e){Log.errOut("CoffeeMaker","Error in S: "+S); throw e;}
 	}
 
 	//The rest of this file is public functions for common load/save code SaveEnums may want to use.
@@ -108,28 +113,30 @@ public class CoffeeMaker extends StdLibrary implements GenericBuilder
 	{
 		if(A.equals("null")) return null;
 		int x=A.indexOf(" ");
-		String ID=A.substring(0,x);
-		CMSavable sub=null;
-		if(ID.equals("COMMON"))	//Could add this for all, would save speed loading, but raise DB size a little. Also it would take effort :V
-		{
-			A=A.substring(x+1);
-			x=A.indexOf(" ");
-			ID=A.substring(0,x);
-			sub=(CMSavable)CMClass.Objects.COMMON.getNew(ID);
-		}
-		else
-			sub=(CMSavable)CMClass.getUnknown(ID);
 		
-		setPropertiesStr(sub, A.substring(x+1));
-		return sub;
+		CMClass.Objects type=(CMClass.Objects)CMClass.valueOf(CMClass.Objects.class, A.substring(0,x));
+		if(type==null)
+		{
+			Log.errOut("CoffeeMaker","loadSub: bad String input for type: "+A.substring(0,x).intern());
+			return null;
+		}
+		A=A.substring(x+1);
+		x=A.indexOf(" ");
+		CMSavable E=(CMSavable)type.getNew(A.substring(0,x));
+		if(E==null)
+		{
+			Log.errOut("CoffeeMaker","loadSub: bad String input for object: "+A.substring(0,x).intern());
+			return null;
+		}
+		setPropertiesStr((CMSavable)E, A.substring(x+1));
+		return E;
 	}
 	public String getSubStr(CMSavable sub)
 	{
 		if(sub==null) return "null";
 		StringBuilder A=new StringBuilder("");
-		if(sub instanceof CMCommon)
-			A.append("COMMON ");
-		A.append(sub.ID()+" "+getPropertiesStr(sub));
+		CMClass.Objects type=CMClass.getType(sub);
+		A.append(type.name()+" "+sub.ID()+" "+getPropertiesStr(sub));
 		return A.toString();
 	}
 	public String savAShort(short[] val)
@@ -300,6 +307,7 @@ public class CoffeeMaker extends StdLibrary implements GenericBuilder
 			}
 		return val;
 	}
+	//Note: Does not support most core/interface files!
 	public String getVectorStr(Vector V)
 	{
 		if(V==null) return "null";
@@ -308,7 +316,7 @@ public class CoffeeMaker extends StdLibrary implements GenericBuilder
 		{
 			Object O=V.get(i);
 			if(O == null)
-				S.append("null");
+				S.append("nul");
 			else if(O instanceof String)
 			{
 				String str=(String)O;
@@ -316,30 +324,33 @@ public class CoffeeMaker extends StdLibrary implements GenericBuilder
 			}
 			else
 			{
-				CMSavable obj=(CMSavable)O;
-				String str=getPropertiesStr(obj);
-				S.append(obj.ID()+" "+str.length()+" "+str);
+				CMObject obj=(CMObject)O;
+				CMClass.Objects type=CMClass.getType(obj);
+				if(obj instanceof CMSavable)
+				{
+					String str=getPropertiesStr((CMSavable)obj);
+					S.append(type.name()+" "+obj.ID()+" "+str.length()+" "+str);
+				}
+				else
+					S.append(type.name()+" "+obj.ID()+" ");
 			}
 		}
 		return S.toString();
 	}
+	//Note: Does not support most core/interface files!
 	public Vector setVectorStr(String S)
 	{
 		if(S.equals("null")) return null;
 		Vector V=new Vector();
 		while(!(S.equals("")))
 		{
-			if(S.startsWith("null"))
+			if(S.startsWith("nul"))
 			{
-				S=S.substring(4);
+				S=S.substring(3);
 				V.add(null);
 			}
 			else if(S.startsWith("STRING"))
 			{
-				//STRING 4 TEST
-				//0123456789012
-				//y=8
-				//x=4+8+1=13
 				int y=(S.substring(7).indexOf(" "))+7;
 				int x=Integer.parseInt(S.substring(7,y))+y+1;	//The actual size will never be used so just +y here now
 				V.add(S.substring(y+1,x).intern());	//Gotta make sure that S is cleaned up later!
@@ -348,18 +359,117 @@ public class CoffeeMaker extends StdLibrary implements GenericBuilder
 			else
 			{
 				int x=S.indexOf(" ");
-				CMSavable E=(CMSavable)CMClass.getUnknown(S.substring(0,x));
-				if(E==null)
+				CMClass.Objects type=(CMClass.Objects)CMClass.valueOf(CMClass.Objects.class, S.substring(0,x));
+				if(type==null)
 				{
-					Log.errOut("CoffeeMaker","setVectorStr: bad String input: "+S.substring(0,x).intern());
+					Log.errOut("CoffeeMaker","setVectorStr: bad String input for type: "+S.substring(0,x).intern());
 					return null;
 				}
-				int y=S.substring(x+1).indexOf(" ")+x+1;
-				x=Integer.parseInt(S.substring(x+1,y))+y+1;
-				setPropertiesStr(E, S.substring(y+1,x));
-				S=S.substring(x);
+				S=S.substring(x+1);
+				x=S.indexOf(" ");
+				CMObject E=(CMObject)type.getNew(S.substring(0,x));
+				if(E==null)
+				{
+					Log.errOut("CoffeeMaker","setVectorStr: bad String input for object: "+S.substring(0,x).intern());
+					return null;
+				}
+				if(E instanceof CMSavable)
+				{
+					int y=S.substring(x+1).indexOf(" ")+x+1;
+					x=Integer.parseInt(S.substring(x+1,y))+y+1;
+					setPropertiesStr((CMSavable)E, S.substring(y+1,x));
+					S=S.substring(x);
+				}
+				else
+					S=S.substring(x+1);
 				V.add(E);
 			}
+		}
+		return V;
+	}
+	//Note: Does not support most core/interface files!
+	public String getWVectorStr(WVector V)
+	{
+		if(V==null) return "null";
+		StringBuilder S=new StringBuilder("");
+		for(int i=0;i<V.size();i++)
+		{
+			S.append(V.weight(i)+" ");
+			Object O=V.get(i);
+			if(O == null)
+				S.append("nul");
+			else if(O instanceof String)
+			{
+				String str=(String)O;
+				S.append("STRING "+str.length()+" "+str);
+			}
+			else
+			{
+				CMObject obj=(CMObject)O;
+				CMClass.Objects type=CMClass.getType(obj);
+				if(O instanceof CMSavable)
+				{
+					String str=getPropertiesStr((CMSavable)obj);
+					S.append(type.name()+" "+obj.ID()+" "+str.length()+" "+str);
+				}
+				else
+					S.append(type.name()+" "+obj.ID()+" ");
+			}
+		}
+		return S.toString();
+	}
+	//Note: Does not support most core/interface files!
+	public WVector setWVectorStr(String S)
+	{
+		if(S.equals("null")) return null;
+		WVector V=new WVector();
+		while(!(S.equals("")))
+		{
+			Object O=null;
+			int i=S.indexOf(" ");
+			int weight=Integer.parseInt(S.substring(0,i));
+			S=S.substring(i+1);
+			if(S.startsWith("nul"))
+			{
+				S=S.substring(3);
+			}
+			else if(S.startsWith("STRING"))
+			{
+				int y=(S.substring(7).indexOf(" "))+7;
+				int x=Integer.parseInt(S.substring(7,y))+y+1;
+				O=S.substring(y+1,x).intern();
+				S=S.substring(x);
+			}
+			else
+			{
+				int x=S.indexOf(" ");
+				CMClass.Objects type=(CMClass.Objects)CMClass.valueOf(CMClass.Objects.class, S.substring(0,x));
+				if(type==null)
+				{
+					Log.errOut("CoffeeMaker","setVectorStr: bad String input for type: "+S.substring(0,x).intern());
+					return null;
+				}
+				S=S.substring(x+1);
+				x=S.indexOf(" ");
+				CMObject E=(CMObject)type.getNew(S.substring(0,x));
+				if(E==null)
+				{
+					Log.errOut("CoffeeMaker","setVectorStr: bad String input for object: "+S.substring(0,x).intern());
+					return null;
+				}
+				if(E instanceof CMSavable)
+				{
+					int y=S.substring(x+1).indexOf(" ")+x+1;
+					x=Integer.parseInt(S.substring(x+1,y))+y+1;
+					setPropertiesStr((CMSavable)E, S.substring(y+1,x));
+					S=S.substring(x);
+				}
+				else
+					S=S.substring(x+1);
+				O=E;
+			}
+			
+			V.add(O, weight);
 		}
 		return V;
 	}

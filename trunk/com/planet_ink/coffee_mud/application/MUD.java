@@ -207,7 +207,7 @@ public class MUD extends Thread implements MudHost
 			fatalStartupError(t,0);
 			return false;
 		}
-		CMLib.lang().setLocale(CMLib.props().getStr("LANGUAGE"),CMLib.props().getStr("COUNTRY"));
+//		CMLib.lang().setLocale(CMLib.props().getStr("LANGUAGE"),CMLib.props().getStr("COUNTRY"));
 		CMLib.time().globalClock().initializeINIClock(page);
 		CMSecurity.setSysOp(page.getStr("SYSOPMASK")); // requires all classes be loaded
 		CMSecurity.parseGroups(page);
@@ -219,12 +219,13 @@ public class MUD extends Thread implements MudHost
 		Log.sysOut(Thread.currentThread().getName(),"Loading map...");
 		CMProps.Strings.MUDSTATUS.setProperty("Booting: loading rooms....");
 		CMLib.database().DBReadAllRooms();
-		for(Enumeration a=CMLib.map().areas();a.hasMoreElements();)
+/*		for(Enumeration a=CMLib.map().areas();a.hasMoreElements();)
 		{
 			Area A=(Area)a.nextElement();
 			CMProps.Strings.MUDSTATUS.setProperty("Booting: filling map ("+A.name()+")");
-//			A.fillInAreaRooms();
+			A.fillInAreaRooms();
 		}
+*/
 		Log.sysOut(Thread.currentThread().getName(),"Mapped rooms      : "+CMLib.map().numRooms()+" in "+CMLib.map().numAreas()+" areas");
 
 		if(CMLib.map().numAreas()==0)
@@ -618,8 +619,8 @@ public class MUD extends Thread implements MudHost
 		webServers.clear();
 */
 
-		CMProps.Strings.MUDSTATUS.setProperty("Shutting down...unloading macros");
-		CMLib.lang().clear();
+//		CMProps.Strings.MUDSTATUS.setProperty("Shutting down...unloading macros");
+//		CMLib.lang().clear();
 		CMProps.Strings.MUDSTATUS.setProperty("Shutting down" + (keepItDown? "..." : " and restarting..."));
 
 		try{Thread.sleep(500);}catch(Exception i){}

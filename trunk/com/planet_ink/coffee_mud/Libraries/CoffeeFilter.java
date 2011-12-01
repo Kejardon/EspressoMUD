@@ -431,8 +431,8 @@ public class CoffeeFilter extends StdLibrary implements TelnetFilter
 		if(msg==null) return null;
 
 		if(msg.length()==0) return msg;
-		String newMsg=(S==null)?null:CMLib.lang().sessionTranslation(msg);
-		if(newMsg!=null) msg=newMsg;
+//		String newMsg=(S==null)?null:CMLib.lang().sessionTranslation(msg);
+//		if(newMsg!=null) msg=newMsg;
 		
 		boolean doSagain=false;
 		boolean firstSdone=false;
@@ -868,8 +868,8 @@ public class CoffeeFilter extends StdLibrary implements TelnetFilter
 							}
 							if(replacement!=null)
 							{
-								String newReplacement=CMLib.lang().filterTranslation(replacement);
-								if(newReplacement!=null) replacement=newReplacement;
+//								String newReplacement=CMLib.lang().filterTranslation(replacement);
+//								if(newReplacement!=null) replacement=newReplacement;
 								buf.delete(loop,ldex+1);
 								buf.insert(loop,replacement.toCharArray());
 								loop--;

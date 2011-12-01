@@ -356,8 +356,8 @@ public class CMProps extends Properties
 
 	public void resetSystemVars()
 	{
-		if(CMLib.lang()!=null)
-			CMLib.lang().setLocale(getStr("LANGUAGE"),getStr("COUNTRY"));
+//		if(CMLib.lang()!=null)
+//			CMLib.lang().setLocale(getStr("LANGUAGE"),getStr("COUNTRY"));
 		for(Strings e : EnumSet.range(Strings.PLAYERKILL, Strings.CHARSETOUTPUT))
 			e.setProperty(getStr(e.toString()));
 

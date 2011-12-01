@@ -126,6 +126,7 @@ public class StdEffect implements Effect
 
 	public boolean okMessage(ListenHolder.OkChecker myHost, CMMsg msg)
 	{
+		if(okCheckers!=null)
 		for(int i=okCheckers.size();i>0;i--)
 			if(!okCheckers.get(i-1).okMessage(myHost,msg))
 				return false;
@@ -134,6 +135,7 @@ public class StdEffect implements Effect
 	public boolean respondTo(CMMsg msg){return true;}
 	public void executeMsg(ListenHolder.ExcChecker myHost, CMMsg msg)
 	{
+		if(excCheckers!=null)
 		for(int i=excCheckers.size();i>0;i--)
 			excCheckers.get(i-1).executeMsg(myHost,msg);
 	}
@@ -144,6 +146,7 @@ public class StdEffect implements Effect
 	{
 		if(tickID==Tickable.TickID.Action) return false;
 		tickStatus=Tickable.TickStat.Listener;
+		if(tickActers!=null)
 		for(int i=tickActers.size()-1;i>=0;i--)
 		{
 			TickActer T=tickActers.get(i);

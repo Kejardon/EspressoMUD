@@ -79,7 +79,7 @@ public class StdCoins extends StdItem implements Coins
 	public boolean putCoinsBack()
 	{
 		Coins alternative=null;
-		ItemCollection O=ItemCollection.DefaultItemCol.getFrom(container);
+		ItemCollection O=ItemCollection.O.getFrom(container);
 		if(O!=null)
 		{
 			for(int i=0;i<O.numItems();i++)
@@ -106,13 +106,27 @@ public class StdCoins extends StdItem implements Coins
 	public ModEnum[] totalEnumM()
 	{
 		if(totalEnumM==null)
-			totalEnumM=(ModEnum[])CMath.combineArrays(MCode.values(), super.totalEnumM());
+		{
+			ModEnum[] arrA=MCode.values();
+			ModEnum[] arrB=super.totalEnumM();
+			ModEnum[] total=new ModEnum[arrA.length+arrB.length];
+			System.arraycopy(arrA, 0, total, 0, arrA.length);
+			System.arraycopy(arrB, 0, total, arrA.length, arrB.length);
+			totalEnumM=total;
+		}
 		return totalEnumM;
 	}
 	public Enum[] headerEnumM()
 	{
 		if(headerEnumM==null)
-			headerEnumM=(Enum[])CMath.combineArrays(new Enum[] {MCode.values()[0]}, super.headerEnumM());
+		{
+			Enum[] arrA=new Enum[] {MCode.values()[0]};
+			Enum[] arrB=super.headerEnumM();
+			Enum[] total=new Enum[arrA.length+arrB.length];
+			System.arraycopy(arrA, 0, total, 0, arrA.length);
+			System.arraycopy(arrB, 0, total, arrA.length, arrB.length);
+			headerEnumM=total;
+		}
 		return headerEnumM;
 	}
 	private static SaveEnum[] totalEnumS=null;
@@ -120,13 +134,27 @@ public class StdCoins extends StdItem implements Coins
 	public SaveEnum[] totalEnumS()
 	{
 		if(totalEnumS==null)
-			totalEnumS=(SaveEnum[])CMath.combineArrays(SCode.values(), super.totalEnumS());
+		{
+			SaveEnum[] arrA=SCode.values();
+			SaveEnum[] arrB=super.totalEnumS();
+			SaveEnum[] total=new SaveEnum[arrA.length+arrB.length];
+			System.arraycopy(arrA, 0, total, 0, arrA.length);
+			System.arraycopy(arrB, 0, total, arrA.length, arrB.length);
+			totalEnumS=total;
+		}
 		return totalEnumS;
 	}
 	public Enum[] headerEnumS()
 	{
 		if(headerEnumS==null)
-			headerEnumS=(Enum[])CMath.combineArrays(new Enum[] {SCode.values()[0]}, super.headerEnumS());
+		{
+			Enum[] arrA=new Enum[] {SCode.values()[0]};
+			Enum[] arrB=super.headerEnumS();
+			Enum[] total=new Enum[arrA.length+arrB.length];
+			System.arraycopy(arrA, 0, total, 0, arrA.length);
+			System.arraycopy(arrB, 0, total, arrA.length, arrB.length);
+			headerEnumS=total;
+		}
 		return headerEnumS;
 	}
 

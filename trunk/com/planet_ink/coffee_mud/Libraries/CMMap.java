@@ -40,101 +40,11 @@ public class CMMap extends StdLibrary implements WorldMap
 	protected Hashtable<CMMsg.MsgCode,Vector<WeakReference<ListenHolder.MsgListener>>> globalHandlers=new Hashtable<CMMsg.MsgCode,Vector<WeakReference<ListenHolder.MsgListener>>>();
 	private ThreadEngine.SupportThread thread=null;
 	protected long lastVReset=0;
-	protected final OpenExit openExit=new OpenExit();
+	protected Exit openExit;
 	protected SortedVector<Exit> exits = new SortedVector();
 
-	private class OpenExit implements Exit
-	{
-		//NOTE: myEnvironmental needs to be protected somehow. It should be immutable.
-		protected Environmental.DefaultEnv myEnvironmental=new Environmental.DefaultEnv(this);
-		protected EnumSet<ListenHolder.Flags> lFlags=EnumSet.of(ListenHolder.Flags.OK,ListenHolder.Flags.EXC);
-
-		public String ID(){return "OpenExit";}
-		public String directLook(MOB mob, Room destination)
-		{
-			return displayText()+" It leads to "+destination.displayText();
-		}
-		public String exitListLook(MOB mob, Room destination) { return destination.displayText(); }
-		public boolean visibleExit(MOB mob, Room destination){return true;}
-		public void setVisible(boolean b){}
-		public String exitID(){return "0";}
-		public void setExitID(String s){}
-		public void initializeClass(){ CMLib.map().addExit(this); }
-		public String name(){ return "a wide open passage";}
-		public void setName(String newName){}
-		public String displayText(){return "a path to another place.";}
-		public void setDisplayText(String newDisplayText){}
-		public String description(){return "";}
-		public void setDescription(String newDescription){}
-		public void destroy(){}
-		public boolean amDestroyed(){return false;}
-
-		public Environmental getEnvObject() {return myEnvironmental;}
-		public Closeable getLidObject() {return null;}
-
-		public int priority(ListenHolder L){return Integer.MAX_VALUE;}
-		public void registerListeners(ListenHolder here) { here.addListener(this, lFlags); }
-		public void registerAllListeners() { }
-		public void clearAllListeners() { }
-
-		public CMObject newInstance() { return this; }
-		public CMObject copyOf() { return this; }
-		//NOTE: This needs typical Exit stuff when I get to it
-		public boolean okMessage(ListenHolder.OkChecker myHost, CMMsg msg)
-		{
-			return true;
-		}
-		public boolean respondTo(CMMsg msg){return true;}
-		public void executeMsg(ListenHolder.ExcChecker myHost, CMMsg msg)
-		{
-		}
-		public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
-	
-		//Affectable
-		public void addEffect(Effect to) { }
-		public void delEffect(Effect to) { }
-		public int numEffects(){return 0;}
-		public Effect fetchEffect(int index) { return null; }
-		public Vector<Effect> fetchEffect(String ID) { return new Vector<Effect>(); }
-		public Vector<Effect> allEffects() { return new Vector<Effect>(); }
-	
-		//Behavable
-		public void addBehavior(Behavior to) { }
-		public void delBehavior(Behavior to) { }
-		public int numBehaviors() { return 0; }
-		public Behavior fetchBehavior(int index) { return null; }
-		public Vector<Behavior> fetchBehavior(String ID) { return new Vector<Behavior>(); }
-		public Vector<Behavior> allBehaviors(){ return new Vector<Behavior>(); }
-	
-		//Affectable/Behavable shared
-		public Vector<CharAffecter> charAffecters(){return null;}
-		public Vector<EnvAffecter> envAffecters(){return null;}	//TODO: Should this give the environmental's instead?
-		public Vector<OkChecker> okCheckers(){return null;}
-		public Vector<ExcChecker> excCheckers(){return null;}
-		public Vector<TickActer> tickActers(){return null;}
-		public void removeListener(Listener oldAffect, EnumSet flags) { }
-		public void addListener(Listener newAffect, EnumSet flags) { }
-		public EnumSet<ListenHolder.Flags> listenFlags() {return lFlags;}
-		//Tickable
-		public Tickable.TickStat getTickStatus(){return Tickable.TickStat.Not;}
-		public boolean tick(Tickable ticking, Tickable.TickID tickID) { return false; }
-		public long lastAct(){return 0;}	//No Action ticks
-		public long lastTick(){return 0;}
-		public boolean sameAs(Interactable E) {
-			if(!(E instanceof OpenExit)) return false;
-			return true;
-		}
-		public void setSave(boolean b){}
-		public boolean needSave(){return false;}
-		
-		public SaveEnum[] totalEnumS(){return new SaveEnum[0];}
-		public Enum[] headerEnumS(){return new Enum[0];}
-		public ModEnum[] totalEnumM(){return new ModEnum[0];}
-		public Enum[] headerEnumM(){return new Enum[0];}
-	}
-
 	public ThreadEngine.SupportThread getSupportThread() { return thread;}
-	public void initializeClass(){CMClass.Objects.EXIT.add(openExit);}
+	public void initializeClass(){openExit=(Exit)CMClass.Objects.EXIT.get("OpenExit");}
 
 /*	protected int getGlobalIndex(Vector list, String name)
 	{
@@ -214,6 +124,7 @@ public class CMMap extends StdLibrary implements WorldMap
 	public void delArea(Area oneToDel) { synchronized(areasList){areasList.remove(oneToDel); }}
 	public Area getArea(String calledThis)
 	{
+//		dummyArea.setName(calledThis);
 		synchronized(areasList)
 		{
 			int start=0;
@@ -222,8 +133,8 @@ public class CMMap extends StdLibrary implements WorldMap
 			while(start<=end)
 			{
 				mid=(end+start)/2;
-				int comp=calledThis.compareToIgnoreCase(areasList.elementAt(mid).name());
-				if(comp==0) return areasList.elementAt(mid);
+				int comp=calledThis.compareToIgnoreCase(areasList.get(mid).name());
+				if(comp==0) return areasList.get(mid);
 				else if(comp<=0) end=mid-1;
 				else start=mid+1;
 			}
@@ -241,8 +152,8 @@ public class CMMap extends StdLibrary implements WorldMap
 			while(start<=end)
 			{
 				mid=(end+start)/2;
-				int comp=areasList.elementAt(mid).name().compareTo(calledThis);
-				if(areasList.elementAt(mid).name().toUpperCase().startsWith(calledThis)) return areasList.elementAt(mid);
+				int comp=areasList.get(mid).name().compareTo(calledThis);
+				if(areasList.get(mid).name().toUpperCase().startsWith(calledThis)) return areasList.get(mid);
 				else if(comp<=0) end=mid-1;
 				else start=mid+1;
 			}
@@ -574,7 +485,7 @@ public class CMMap extends StdLibrary implements WorldMap
 		for(;rooms.hasMoreElements();)
 		{
 			Room room=rooms.nextElement();
-			ItemCollection coll=ItemCollection.DefaultItemCol.getFrom(room);
+			ItemCollection coll=ItemCollection.O.getFrom(room);
 			if(coll != null)
 			{
 				for(int m=0;m<coll.numItems();m++)
@@ -893,7 +804,7 @@ public class CMMap extends StdLibrary implements WorldMap
 		
 		Vector contents = new Vector();
 		
-		ItemCollection coll=ItemCollection.DefaultItemCol.getFrom(room);
+		ItemCollection coll=ItemCollection.O.getFrom(room);
 		for(int i=0;i<coll.numItems();i++)
 		{
 			I=coll.getItem(i);

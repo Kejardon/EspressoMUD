@@ -9,12 +9,11 @@ public class WVector<E> implements Cloneable
 
 	private class WeightedObject<E>
 	{
-		private E O;
-		private int weight=0;
+		public final E obj;
+		private int weight=1;
 		public WeightedObject(E O, int weight)
-		{ this.O=O; this.weight=weight; return; }
-		public WeightedObject(E O) {this.O=O; return;}
-		public E obj(){return O;}
+		{ this.obj=O; this.weight=weight; return; }
+		public WeightedObject(E O) {this.obj=O; return;}
 		public int weight(){return weight;}
 		public void setWeight(int weight){this.weight=weight;}
 	}
@@ -25,17 +24,17 @@ public class WVector<E> implements Cloneable
 	public int index(E O)
 	{
 		for(int i=0; i<objects.size(); i++)
-			if(O.equals(objects.get(i).obj()))
+			if(O.equals(objects.get(i).obj))
 				return i;
 
 		return -1;
 	}
-	public E get(int i) {return objects.get(i).obj();}
+	public E get(int i) {return objects.get(i).obj;}
 
 	public int weight(E O)
 	{
 		for(int i=0; i<objects.size(); i++)
-			if(O.equals(objects.get(i).obj()))
+			if(O.equals(objects.get(i).obj))
 				return objects.get(i).weight();
 
 		return -1;
@@ -44,7 +43,7 @@ public class WVector<E> implements Cloneable
 	public double pct(E O)
 	{
 		for(int i=0; i<objects.size(); i++)
-			if(O.equals(objects.get(i).obj()))
+			if(O.equals(objects.get(i).obj))
 				return ((double)objects.get(i).weight())/((double)totalWeight);
 
 		return -1;
@@ -58,11 +57,20 @@ public class WVector<E> implements Cloneable
 	public void add(E O)
 	{
 		objects.add(new WeightedObject(O));
+		totalWeight++;
+	}
+	public boolean contains(E O)
+	{
+		for(int i=0; i<objects.size(); i++)
+			if(O.equals(objects.get(i).obj))
+				return true;
+
+		return false;
 	}
 	public boolean remove(E O)
 	{
 		for(int i=0; i<objects.size(); i++)
-			if(O.equals(objects.get(i).obj()))
+			if(O.equals(objects.get(i).obj))
 			{
 				totalWeight-=objects.get(i).weight();
 				objects.remove(i);
@@ -73,12 +81,12 @@ public class WVector<E> implements Cloneable
 	public E remove(int i)
 	{
 		totalWeight-=objects.get(i).weight;
-		return objects.remove(i).obj();
+		return objects.remove(i).obj;
 	}
 	public int setWeight(E O, int weight)
 	{
 		for(int i=0; i<objects.size(); i++)
-			if(O.equals(objects.get(i).obj()))
+			if(O.equals(objects.get(i).obj))
 			{
 				int old=objects.get(i).weight();
 				totalWeight+=(weight-old);
@@ -101,9 +109,9 @@ public class WVector<E> implements Cloneable
 		for(;i<objects.size();i++)
 		{
 			if((weight-=objects.get(i).weight())<=0)
-				return objects.get(i).obj();
+				return objects.get(i).obj;
 		}
-		return objects.get(i-1).obj();
+		return objects.get(i-1).obj;
 	}
 	public WVector<E> clone()
 	{
@@ -111,7 +119,7 @@ public class WVector<E> implements Cloneable
 		for(int i=0;i<objects.size();i++)
 		{
 			WeightedObject<E> O=objects.get(i);
-			newThis.add(O.obj(), O.weight());
+			newThis.add(O.obj, O.weight());
 		}
 		return newThis;
 	}

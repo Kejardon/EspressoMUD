@@ -462,8 +462,8 @@ public class DefaultSession extends Thread implements Session
 				}
 			}catch(IndexOutOfBoundsException x){}
 
-			String newMsg=CMLib.lang().finalTranslation(msg);
-			if(newMsg!=null) msg=newMsg;
+//			String newMsg=CMLib.lang().finalTranslation(msg);
+//			if(newMsg!=null) msg=newMsg;
 
 			if(msg.endsWith("\n\r")
 			&&(msg.equals(lastStr))

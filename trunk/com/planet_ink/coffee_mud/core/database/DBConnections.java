@@ -326,7 +326,7 @@ public class DBConnections
 			String TVal=Results.getString(Field);
 			if(TVal==null)
 				return "";
-			return TVal.trim();
+			return TVal;//.trim();
 		}
 		catch(SQLException sqle)
 		{

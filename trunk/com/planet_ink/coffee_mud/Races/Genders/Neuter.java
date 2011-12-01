@@ -1,4 +1,5 @@
-package com.planet_ink.coffee_mud.Races;
+package com.planet_ink.coffee_mud.Races.Genders;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
@@ -14,7 +15,7 @@ import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
 
-/* 
+/*
    Copyright 2000-2010 Bo Zimmerman
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,16 +31,15 @@ import java.util.*;
    limitations under the License.
 */
 @SuppressWarnings("unchecked")
-public class Human extends StdRace
+public class Neuter extends StdGender
 {
-	public String ID(){	return "Human"; }
-	public String name(){ return "Human"; }
-	public String racialCategory(){return "Human";}
-	public int availabilityCode(){return 1;}
-	public Human()
-	{
-		myGenders=new Gender[2];
-		myGenders[0]=(Gender)CMClass.Objects.GENDER.get("Male");
-		myGenders[1]=(Gender)CMClass.Objects.GENDER.get("Female");
-	}
+	public String ID(){return "Neuter";}
+
+	public String name(){return "neuter";}
+//	public char letter();
+	public String subject(){return "it";}
+	public String object(){return "it";}
+	public String possessive(){return "its";}
+//	public String HeShe();
+	public String sirmadam(){return "sir";}
 }
