@@ -4,7 +4,6 @@ import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -15,20 +14,12 @@ import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
 
-/* 
-   Copyright 2000-2010 Bo Zimmerman
+/*
+CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
+EspressoMUD copyright 2011 Kejardon
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-	   http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
+	http://www.apache.org/licenses/LICENSE-2.0
 */
 @SuppressWarnings("unchecked")
 public class Title extends StdCommand
@@ -51,7 +42,6 @@ public class Title extends StdCommand
 		}
 		PlayerStats ps=mob.playerStats();
 		StringBuffer menu=new StringBuffer("^xTitles:^.^?\n\r");
-//		CMLib.titles().evaluateAutoTitles(mob);
 		if(!mob.getTitles().contains("*")) mob.getTitles().addElement("*");
 		for(int i=0;i<mob.getTitles().size();i++)
 		{
@@ -89,7 +79,5 @@ public class Title extends StdCommand
 	}
 	
 	public boolean canBeOrdered(){return true;}
-
-	
 }
 

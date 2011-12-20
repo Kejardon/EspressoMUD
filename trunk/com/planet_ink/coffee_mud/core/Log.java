@@ -17,19 +17,11 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 /*
-   Copyright 2000-2010 Bo Zimmerman
+CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
+EspressoMUD copyright 2011 Kejardon
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-	   http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
+	http://www.apache.org/licenses/LICENSE-2.0
 */
 @SuppressWarnings("unchecked")
 public class Log
@@ -69,7 +61,7 @@ public class Log
 	/**
 	 * Optional method to determine if message is a masked
 	 * out throwable message type.
- 	 *
+	 *
 	 * <br><br><b>Usage:</b> if(isMaskedErrMsg(errException.getMessage()))
 	 * @param str the message
 	 * @return boolean TRUE if masked out.
@@ -105,7 +97,7 @@ public class Log
 	
 	/**
 	 * Returns an appropriate writer for the given ON, OFF, FILE, or OWNFILE
- 	 *
+	 *
 	 * <br><br><b>Usage:</b> PrintWriter W=getWriter("BOTH");
 	 * @param name code string
 	 * @return PrintWriter the writer
@@ -169,7 +161,7 @@ public class Log
 
 	/**
 	 * Returns an appropriate writer for the given ON, OFF, FILE, or OWNFILE
- 	 *
+	 *
 	 * <br><br><b>Usage:</b> PrintWriter W=getWriter("BOTH");
 	 * @param name code string
 	 * @return PrintWriter the writer
@@ -419,7 +411,7 @@ public class Log
 
 	/**
 	* Will be used to create a standardized log header for file logs
- 	*
+	*
 	* <br><br><b>Usage:</b> SysOutWriter.println(getLogHeader(S,"Info",Module, Message));
 	* @param Obj Session object
 	* @param Type Type of information
@@ -481,7 +473,7 @@ public class Log
 	/**
 	* Handles long exception logging entries.  Sends them to System.out,
 	* the log file, or nowhere.
- 	*
+	*
 	* <br><br><b>Usage:</b> standardExOut("UNKN",Out);
 	* @param Type The channel to print to
 	* @param Module The module to print
@@ -521,7 +513,7 @@ public class Log
 	/**
 	* Handles error logging entries.  Sends them to System.out,
 	* the log file, or nowhere.
- 	*
+	*
 	* <br><br><b>Usage:</b> shortExOut("Info","UNKN",Out);
 	* @param Type The type of channel
 	* @param Module The message to print
@@ -551,7 +543,7 @@ public class Log
 	/**
 	* Handles raw info logging entries.  Sends them to System.out,
 	* the log file, or nowhere.
- 	*
+	*
 	* <br><br><b>Usage:</b> rawStandardOut("Info","REQ-OUT:"+REQ);
 	* @param Type The type of message
 	* @param Message The message to print
@@ -576,7 +568,7 @@ public class Log
 	/**
 	* Handles debug logging entries.  Sends them to System.out,
 	* the log file, or nowhere.
- 	*
+	*
 	* <br><br><b>Usage:</b> standardOut("Info","UNKN",Out);
 	* @param Type The type of writer
 	* @param Module The file name
@@ -602,7 +594,7 @@ public class Log
 	/**
 	* Handles debug timing entries.  Sends them to System.out,
 	* the log file, or nowhere.
- 	*
+	*
 	* <br><br><b>Usage:</b> timeOut("Info","UNKN",Out);
 	* @param Type Channel name
 	* @param Module The file name
@@ -677,5 +669,4 @@ public class Log
 		"no route to host",
 		"protocol not available"
 	};
-
 }

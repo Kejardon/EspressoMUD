@@ -14,20 +14,12 @@ import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
 
-/* 
-   Copyright 2000-2010 Bo Zimmerman
+/*
+CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
+EspressoMUD copyright 2011 Kejardon
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-	   http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
+	http://www.apache.org/licenses/LICENSE-2.0
 */
 @SuppressWarnings("unchecked")
 public interface Rideable extends CMObject, CMModifiable, CMSavable, CMCommon //on second thought not Environmental. Let's have this mimic ItemCollection.
@@ -46,9 +38,6 @@ public interface Rideable extends CMObject, CMModifiable, CMSavable, CMCommon //
 	public Item getRider(int which);
 	public Vector<Item> allRiders();
 	public int numRiders();
-	public int rideNumber();
-	public void setRideNumber(int i);
-	public int saveNumber();
 	/* Returns a string grammatically correct for the given rider when
 	 * they are mounted on this Rideable */
 	public String stateString(Item R);
@@ -72,24 +61,51 @@ public interface Rideable extends CMObject, CMModifiable, CMSavable, CMCommon //
 
 	public static class RideThing
 	{
-		private static int rideNumber=1;
+		private static int saveNumber=1;
 		private static boolean started=false;
+		private static HashMap<Integer, Rideable> assignedNumbers=new HashMap<Integer, Rideable>();
 		public synchronized static int getNumber()
 		{
-			//TODO: Finish this up once DB interface is better set up! Load from Misc, "Rideable", get an int.
 			if(!started)
 			{
+				String S=CMLib.database().DBReadData("RideSNum");
+				if(S==null)
+				{
+					saveNumber=1;
+					CMLib.database().DBCreateData("RideSNum","1");
+				}
+				else
+					saveNumber=CMath.s_int(S);
+				assignedNumber.put(0,null);
 				started=true;
-				rideNumber=1;
 			}
-			return rideNumber++;
+			if(assignedNumbers.containsKey(saveNumber))
+			{
+				int inc=1;
+				while(assignedNumbers.containsKey(saveNumber+inc))
+				{
+					inc=inc*2;
+					if(inc==1) saveNumber+=1580030169; //(2^32)/e ; optimal interval for poking around randomly
+				}
+				saveNumber+=inc;
+			}
+			return saveNumber++;
 		}
-//		public static void setNumber(int i){rideNumber=i;}
-		public static void shutdown()
+		public static void save()
 		{
-			//TODO: Finish this up once DB interface is better set up! Write to Misc, "Rideable", set an int.
-			//Also set up a library to call this on shutdown!
-			
+			CMLib.database().DBUpdateData("RideSNum",""+saveNumber);
+		}
+		public static void assignNumber(int i, Rideable A)
+		{
+			assignedNumbers.put(i, A);
+		}
+		public static void removeNumber(int i, Rideable A)
+		{
+			assignedNumbers.remove(i);
+		}
+		public static Rideable get(Integer i)
+		{
+			return assignedNumbers.get(i);
 		}
 		public static Rideable getFrom(CMObject O)
 		{

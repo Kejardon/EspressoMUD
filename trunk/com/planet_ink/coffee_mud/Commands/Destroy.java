@@ -16,20 +16,12 @@ import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import java.util.*;
 import java.io.IOException;
 
-/* 
-   Copyright 2000-2010 Bo Zimmerman
+/*
+CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
+EspressoMUD copyright 2011 Kejardon
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-	   http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
+	http://www.apache.org/licenses/LICENSE-2.0
 */
 @SuppressWarnings("unchecked")
 public class Destroy extends StdCommand
@@ -71,8 +63,6 @@ public class Destroy extends StdCommand
 			mob.location().showHappens(EnumSet.of(CMMsg.MsgCode.VISUAL),null,deadMOB.name()+" vanishes in a puff of smoke.");
 			Log.sysOut("Mobs",mob.name()+" destroyed mob "+deadMOB.name()+".");
 			deadMOB.destroy();
-//			mob.location().delInhabitant(deadMOB);
-//			deadMOB=mob.location().fetchInhabitant(mobID);
 			if(!allFlag) break;
 		}
 		if(!doneSomething)
@@ -346,7 +336,6 @@ public class Destroy extends StdCommand
 		if(mob.session().confirm("Area: \""+areaName+"\", OBLITERATE IT???","N"))
 		{
 			CMLib.map().obliterateArea(areaName);
-//			mob.location().showHappens(CMMsg.MSG_OK_ACTION,"A thunderous boom of destruction is heard in the distance.");
 			Log.sysOut("Rooms",mob.name()+" destroyed area "+areaName+".");
 		}
 	}
@@ -393,34 +382,6 @@ public class Destroy extends StdCommand
 			if(!CMSecurity.isAllowed(mob,mob.location(),"CMDPLAYERS")) return errorOut(mob);
 			accounts(mob,commands);
 		}
-/*
-		else
-		if(commandType.equals("TICKS"))
-		{
-			if(!CMSecurity.isASysOp(mob)) return errorOut(mob);
-			String which=CMParms.combine(commands,2);
-			Vector V=null;
-			if(which.length()>0)
-			{
-				V=CMLib.threads().getNamedTickingObjects(which);
-				if(V.size()==0) V=null;
-			}
-			if(V==null)
-				mob.tell("Please enter a valid ticking object name to destroy.  Use List ticks for a list of groups and objects.");
-			else
-			{
-				StringBuffer list=new StringBuffer("");
-				for(int v=0;v<V.size();v++)
-					list.append(((Tickable)V.elementAt(v)).name()+", ");
-				if((mob.session()!=null)&&(mob.session().confirm("Destroy the following ticking objects: "+list.substring(0,list.length()-2)+"  (y/N)? ","N")))
-				{
-					for(int v=0;v<V.size();v++)
-						CMLib.threads().deleteTick((Tickable)V.elementAt(v),-1);
-					Log.sysOut("CreateEdit",mob.Name()+" destroyed ticks named '"+which+"'.");
-				}
-			}
-		}
-*/
 		else
 		if(commandType.equals("BAN"))
 		{
@@ -487,6 +448,4 @@ public class Destroy extends StdCommand
 	}
 	public boolean canBeOrdered(){return false;}
 	public boolean securityCheck(MOB mob){return CMSecurity.isAllowedStartsWith(mob,mob.location(),"CMD");}
-
-	
 }

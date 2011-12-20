@@ -13,6 +13,13 @@ import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import java.util.*;
 
 /*
+CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
+EspressoMUD copyright 2011 Kejardon
+
+Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
+	http://www.apache.org/licenses/LICENSE-2.0
+*/
+/*
 Ok. Planning time. Bodies will have a weighted list of races and derive their actual characteristics from that list and saved scale modifiers.
 Bodymap. There will be a set of limbs with some standardized naming scheme.
 	Lowercase start (tail1) means not mirrored.

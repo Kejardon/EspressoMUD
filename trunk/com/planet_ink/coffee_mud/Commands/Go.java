@@ -13,23 +13,14 @@ import com.planet_ink.coffee_mud.Locales.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
-
 import java.util.*;
 
-/* 
-   Copyright 2000-2010 Bo Zimmerman
+/*
+CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
+EspressoMUD copyright 2011 Kejardon
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-	   http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
+	http://www.apache.org/licenses/LICENSE-2.0
 */
 @SuppressWarnings("unchecked")
 public class Go extends StdCommand
@@ -55,10 +46,6 @@ public class Go extends StdCommand
 		if(mob==null) return false;
 		Room thisRoom=mob.location();
 
-//		Exit opExit=thisRoom.getReverseExit(directionCode);
-//		String directionName=(directionCode==Directions.GATE)&&(exit!=null)?"through "+exit.name():Directions.getDirectionName(directionCode);
-//		String otherDirectionName=(Directions.getOpDirectionCode(directionCode)==Directions.GATE)&&(exit!=null)?exit.name():Directions.getFromDirectionName(Directions.getOpDirectionCode(directionCode));
-
 		EnumSet enterCode=EnumSet.of(CMMsg.MsgCode.ENTER);
 		EnumSet leaveCode=EnumSet.of(CMMsg.MsgCode.LEAVE);
 		if(always)
@@ -66,7 +53,7 @@ public class Go extends StdCommand
 			enterCode.add(CMMsg.MsgCode.ALWAYS);
 			leaveCode.add(CMMsg.MsgCode.ALWAYS);
 		}
-		//TODO: Include specific Exit description
+		//TODO: Include specific Exit description. Also enterMsg should be a response to leaveMsg.
 		CMMsg enterMsg=CMClass.getMsg(mob,destRoom,exit,enterCode,null,enterCode,null,enterCode,"<S-NAME> enter(s).");
 		CMMsg leaveMsg=CMClass.getMsg(mob,thisRoom,exit,leaveCode,null,leaveCode,null,leaveCode,"<S-NAME> leave(s).");
 		boolean gotoAllowed=CMSecurity.isAllowed(mob,destRoom,"GOTO");
@@ -78,9 +65,6 @@ public class Go extends StdCommand
 		else
 		if(!destRoom.okMessage(destRoom,enterMsg)&&(!gotoAllowed))
 			return false;
-//		else
-//		if(!mob.okMessage(mob,enterMsg)&&(!gotoAllowed))
-//			return false;
 
 		leaveMsg.handleResponses();
 		enterMsg.handleResponses();
@@ -94,27 +78,10 @@ public class Go extends StdCommand
 
 		return true;
 	}
-/*
-	protected Command stander=null;
-	protected Vector ifneccvec=null;
-	public void standIfNecessary(MOB mob, int metaFlags)
-		throws java.io.IOException
-	{
-		if((ifneccvec==null)||(ifneccvec.size()!=2))
-		{
-			ifneccvec=new Vector();
-			ifneccvec.addElement("STAND");
-			ifneccvec.addElement("IFNECESSARY");
-		}
-		if(stander==null) stander=CMClass.getCommand("Stand");
-		if((stander!=null)&&(ifneccvec!=null))
-			stander.execute(mob,ifneccvec,metaFlags);
-	}
-*/
+
 	public boolean execute(MOB mob, Vector commands, int metaFlags)
 		throws java.io.IOException
 	{
-//		standIfNecessary(mob,metaFlags);
 		if((commands.size()>3)
 		&&(commands.firstElement() instanceof Exit))
 		{

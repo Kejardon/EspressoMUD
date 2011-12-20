@@ -15,6 +15,13 @@ import com.planet_ink.coffee_mud.Races.interfaces.*;
 import java.util.*;
 import java.io.IOException;
 
+/*
+CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
+EspressoMUD copyright 2011 Kejardon
+
+Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
+	http://www.apache.org/licenses/LICENSE-2.0
+*/
 public class DefaultLid implements Closeable, Ownable
 {
 	protected String key="skeleton";
@@ -24,6 +31,7 @@ public class DefaultLid implements Closeable, Ownable
 	protected boolean closeable=true;
 	protected boolean obvious=true;
 	protected CMObject parent;
+	protected int saveNum=0;
 
 
 	//Ownable
@@ -42,6 +50,26 @@ public class DefaultLid implements Closeable, Ownable
 	public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]} ;}
 	public ModEnum[] totalEnumM(){return MCode.values();}
 	public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
+	public int saveNum()
+	{
+		if(saveNum==0)
+		synchronized(saveNum)
+		{
+			if(saveNum==0)
+				saveNum=Closeable.O.getNumber();
+		}
+		return saveNum;
+	}
+	public void setSaveNum(int num)
+	{
+		synchronized(saveNum)
+		{
+			if(saveNum!=0)
+				Closeable.O.removeNumber(saveNum, this);
+			saveNum=num;
+			Closeable.O.assignNumber(num, this);
+		}
+	}
 
 	//Closeable
 	public String keyName(){return key;}

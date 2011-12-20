@@ -5,6 +5,17 @@ import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 
 import java.util.*;
 
+/*
+CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
+EspressoMUD copyright 2011 Kejardon
+
+Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
+	http://www.apache.org/licenses/LICENSE-2.0
+*/
+/*
+A ListenHolder has objects it reports to when certain things happen.
+A Listener is one of those objects reported to.
+*/
 @SuppressWarnings("unchecked")
 public interface ListenHolder extends Tickable {
 	public void addListener(Listener newAffect, EnumSet<Flags> flags);

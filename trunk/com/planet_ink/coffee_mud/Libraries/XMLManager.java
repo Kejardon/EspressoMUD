@@ -4,7 +4,6 @@ import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -18,25 +17,17 @@ import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.Libraries.interfaces.XMLLibrary.XMLpiece;
 
 /*
-   Copyright 2000-2010 Bo Zimmerman
+CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
+EspressoMUD copyright 2011 Kejardon
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
+	http://www.apache.org/licenses/LICENSE-2.0
 */
 @SuppressWarnings("unchecked")
 public class XMLManager extends StdLibrary implements XMLLibrary
 {
-    public String ID(){return "XMLManager";}
-    
+	public String ID(){return "XMLManager";}
+	
 	public String parseOutAngleBrackets(String s)
 	{
 		int x=s.indexOf("<");
@@ -94,7 +85,7 @@ public class XMLManager extends StdLibrary implements XMLLibrary
 
 	/**
 	 * Returns the double value of a string without crashing
- 	 *
+	 *
 	 * <br><br><b>Usage:</b> dSize = WebIQBase.s_double(WebIQBase.getRes(AttStatsRes,"BlobSize"));
 	 * @param DOUBLE String to convert
 	 * @return double Double value of the string
@@ -109,7 +100,7 @@ public class XMLManager extends StdLibrary implements XMLLibrary
 
 	/**
 	 * Returns the integer value of a string without crashing
- 	 *
+	 *
 	 * <br><br><b>Usage:</b> int num=s_int(CMD.substring(14));
 	 * @param INT Integer value of string
 	 * @return int Integer value of the string
@@ -124,7 +115,7 @@ public class XMLManager extends StdLibrary implements XMLLibrary
 
 	/**
 	 * Returns the short value of a string without crashing
- 	 *
+	 *
 	 * <br><br><b>Usage:</b> int num=s_short(CMD.substring(14));
 	 * @param SHORT Short value of string
 	 * @return short Short value of the string
@@ -139,7 +130,7 @@ public class XMLManager extends StdLibrary implements XMLLibrary
 
 	/**
 	 * Returns the long value of a string without crashing
- 	 *
+	 *
 	 * <br><br><b>Usage:</b> int num=s_long(CMD.substring(14));
 	 * @param LONG Long value of string
 	 * @return long Long value of the string
@@ -155,14 +146,14 @@ public class XMLManager extends StdLibrary implements XMLLibrary
 	/**
 	 * Return the outer wrapper and contents of an XML tag <TNAME>Data</TNAME>
 	 *
-  	 * <br><br><b>Usage:</b> Data+=XMLoTag("MODELOBJECTONE",VA.ModelObjectOne);
+	 * <br><br><b>Usage:</b> Data+=XMLoTag("MODELOBJECTONE",VA.ModelObjectOne);
 	 * @param TName Tag name to use
 	 * @param Data the data to embed
 	 * @return String Information corresponding to the tname
 	 */
 	public String convertXMLtoTag(String TName, String Data)
 	{
-	    if(Data.length()==0)
+		if(Data.length()==0)
 			return "<"+TName+" />";
 		return "<"+TName+">"+Data+"</"+TName+">";
 	}
@@ -170,7 +161,7 @@ public class XMLManager extends StdLibrary implements XMLLibrary
 	/**
 	 * Return the outer wrapper and contents of an XML tag <TNAME>Data</TNAME>
 	 *
-  	 * <br><br><b>Usage:</b> Data+=XMLoTag("MODELOBJECTONE",VA.ModelObjectOne);
+	 * <br><br><b>Usage:</b> Data+=XMLoTag("MODELOBJECTONE",VA.ModelObjectOne);
 	 * @param TName Tag name to use
 	 * @param Data the data to embed
 	 * @return String Information corresponding to the tname
@@ -183,7 +174,7 @@ public class XMLManager extends StdLibrary implements XMLLibrary
 	/**
 	 * Return the outer wrapper and contents of an XML tag <TNAME>Data</TNAME>
 	 *
-  	 * <br><br><b>Usage:</b> Data+=XMLoTag("MODELOBJECTONE",VA.ModelObjectOne);
+	 * <br><br><b>Usage:</b> Data+=XMLoTag("MODELOBJECTONE",VA.ModelObjectOne);
 	 * @param TName Tag name to use
 	 * @param Data the data to embed
 	 * @return String Information corresponding to the tname
@@ -196,7 +187,7 @@ public class XMLManager extends StdLibrary implements XMLLibrary
 	/**
 	 * Return the outer wrapper and contents of an XML tag <TNAME>Data</TNAME>
 	 *
-  	 * <br><br><b>Usage:</b> Data+=XMLoTag("MODELOBJECTONE",VA.ModelObjectOne);
+	 * <br><br><b>Usage:</b> Data+=XMLoTag("MODELOBJECTONE",VA.ModelObjectOne);
 	 * @param TName Tag name to use
 	 * @param Data the data to embed
 	 * @return String Information corresponding to the tname
@@ -209,7 +200,7 @@ public class XMLManager extends StdLibrary implements XMLLibrary
 	/**
 	 * Return the outer wrapper and contents of an XML tag <TNAME>Data</TNAME>
 	 *
-  	 * <br><br><b>Usage:</b> Data+=XMLoTag("MODELOBJECTONE",VA.ModelObjectOne);
+	 * <br><br><b>Usage:</b> Data+=XMLoTag("MODELOBJECTONE",VA.ModelObjectOne);
 	 * @param TName Tag name to use
 	 * @param Data the data to embed
 	 * @return String Information corresponding to the tname
@@ -222,7 +213,7 @@ public class XMLManager extends StdLibrary implements XMLLibrary
 	/**
 	 * Return the contents of an XML tag, given the tag to search for
 	 *
-  	 * <br><br><b>Usage:</b> String XML=returnXMLBlock(Response,"PDIModelErrors");
+	 * <br><br><b>Usage:</b> String XML=returnXMLBlock(Response,"PDIModelErrors");
 	 * @param Blob String to searh
 	 * @param Tag Tag name to search for
 	 * @return String Information corresponding to the tname
@@ -253,14 +244,14 @@ public class XMLManager extends StdLibrary implements XMLLibrary
 		for(int x=0;x<blk.length();x++)
 			if(Character.isWhitespace(blk.charAt(x)))
 			{
-			    if(!blk.substring(x).trim().startsWith("/"))
-			    {
-                    parmList.putAll(parseParms(blk.substring(x).trim()));
-			    	if(blk.endsWith("/"))
-				    	return blk.substring(0,x).trim()+" /";
-			    	return blk.substring(0,x).trim();
-			    }
-		        break;
+				if(!blk.substring(x).trim().startsWith("/"))
+				{
+					parmList.putAll(parseParms(blk.substring(x).trim()));
+					if(blk.endsWith("/"))
+						return blk.substring(0,x).trim()+" /";
+					return blk.substring(0,x).trim();
+				}
+				break;
 			}
 		return blk;
 	}
@@ -398,32 +389,32 @@ public class XMLManager extends StdLibrary implements XMLLibrary
 		return s_double(getValFromPieces(V,tag));
 	}
 
-    protected boolean acceptableTag(StringBuffer str, int start, int end)
-    {
-        while(Character.isWhitespace(str.charAt(start)))
-            start++;
-        while(Character.isWhitespace(str.charAt(end)))
-            end--;
-        if((start>=end)
-        ||(end>(start+250))
-        ||((str.charAt(start)!='/')&&(!Character.isLetter(str.charAt(start)))))
-            return false;
-        if(start+1==end) return true;
-        if(CMLib.coffeeFilter().getTagTable().containsKey(str.substring(start,end).toUpperCase()))
-            return false;
-        return true;
-    }
+	protected boolean acceptableTag(StringBuffer str, int start, int end)
+	{
+		while(Character.isWhitespace(str.charAt(start)))
+			start++;
+		while(Character.isWhitespace(str.charAt(end)))
+			end--;
+		if((start>=end)
+		||(end>(start+250))
+		||((str.charAt(start)!='/')&&(!Character.isLetter(str.charAt(start)))))
+			return false;
+		if(start+1==end) return true;
+		if(CMLib.coffeeFilter().getTagTable().containsKey(str.substring(start,end).toUpperCase()))
+			return false;
+		return true;
+	}
 
-    protected XMLpiece nextXML(StringBuffer buf, XMLpiece parent, int start)
-    {
-        int end=-1;
-        start--;
-        while((end<(start+1))||(!acceptableTag(buf,start+1,end)))
-        {
-            start=buf.indexOf("<",start+1);
-            if(start<0) return null;
-            end=buf.indexOf(">",start);
-            if(end<=start) return null;
+	protected XMLpiece nextXML(StringBuffer buf, XMLpiece parent, int start)
+	{
+		int end=-1;
+		start--;
+		while((end<(start+1))||(!acceptableTag(buf,start+1,end)))
+		{
+			start=buf.indexOf("<",start+1);
+			if(start<0) return null;
+			end=buf.indexOf(">",start);
+			if(end<=start) return null;
 			if((buf.charAt(start+1)=='!')&&(buf.substring(start,start+4).equals("<!--")))
 			{
 				int commentEnd=buf.indexOf("-->",start+1);
@@ -432,14 +423,14 @@ public class XMLManager extends StdLibrary implements XMLLibrary
 				start=commentEnd;
 				continue;
 			}
-            int nextStart=buf.indexOf("<",start+1);
-            while((nextStart>=0)&&(nextStart<end))
-            {
-                start=nextStart;
-                nextStart=buf.indexOf("<",start+1);
-            }
-        }
-        Hashtable parmList = new Hashtable();
+			int nextStart=buf.indexOf("<",start+1);
+			while((nextStart>=0)&&(nextStart<end))
+			{
+				start=nextStart;
+				nextStart=buf.indexOf("<",start+1);
+			}
+		}
+		Hashtable parmList = new Hashtable();
 		String tag=parseOutParms(buf.substring(start+1,end).trim(),parmList).toUpperCase().trim();
 
 		if(!tag.startsWith("/"))
@@ -490,8 +481,8 @@ public class XMLManager extends StdLibrary implements XMLLibrary
 
 	public Vector<XMLpiece> parseAllXML(String buf)
 	{  
-        return parseAllXML(new StringBuffer(buf));
-    }
+		return parseAllXML(new StringBuffer(buf));
+	}
 
 	public Vector<XMLpiece> parseAllXML(StringBuffer buf)
 	{
@@ -544,34 +535,32 @@ public class XMLManager extends StdLibrary implements XMLLibrary
 
 	public String getParmValue(Hashtable<String,String> parmSet, String Tag)
 	{
-        if((parmSet != null)&&(Tag != null))
-            return (String)parmSet.get(Tag.toUpperCase().trim());
-        return null;
+		if((parmSet != null)&&(Tag != null))
+			return (String)parmSet.get(Tag.toUpperCase().trim());
+		return null;
 	}
 
 	public String getXMLList(Vector<?> V)
-    {
-        StringBuffer str=new StringBuffer("");
-        String s=null;
-        for(int v=0;v<V.size();v++)
-        {
-            s=V.elementAt(v).toString();
-            if(s.trim().length()==0)
-                str.append("<X />");
-            else
-                str.append("<X>"+parseOutAngleBrackets(s)+"</X>");
-        }
-        return str.toString();
-    }
-    
-    public Vector<String> parseXMLList(String numberedList)
-    {
-        Vector<XMLpiece> xml=parseAllXML(numberedList);
-        Vector<String> V=new Vector<String>();
-        for(int v=0;v<xml.size();v++)
-            V.addElement(this.restoreAngleBrackets(((XMLLibrary.XMLpiece)xml.elementAt(v)).value));
-        return V;
-    }
-    
-
+	{
+		StringBuffer str=new StringBuffer("");
+		String s=null;
+		for(int v=0;v<V.size();v++)
+		{
+			s=V.elementAt(v).toString();
+			if(s.trim().length()==0)
+				str.append("<X />");
+			else
+				str.append("<X>"+parseOutAngleBrackets(s)+"</X>");
+		}
+		return str.toString();
+	}
+	
+	public Vector<String> parseXMLList(String numberedList)
+	{
+		Vector<XMLpiece> xml=parseAllXML(numberedList);
+		Vector<String> V=new Vector<String>();
+		for(int v=0;v<xml.size();v++)
+			V.addElement(this.restoreAngleBrackets(((XMLLibrary.XMLpiece)xml.elementAt(v)).value));
+		return V;
+	}
 }

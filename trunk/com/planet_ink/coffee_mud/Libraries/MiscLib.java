@@ -22,48 +22,15 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-public class Dice extends StdLibrary implements DiceLibrary
+public class MiscLib extends StdLibrary implements MiscLibrary
 {
-	public String ID(){return "Dice";}
-	private Random randomizer = null;
+	public String ID(){return "MiscLib";}
 
-	public synchronized Random getRandomizer() {
-		if(randomizer == null)
-			randomizer = new Random(System.currentTimeMillis());
-		return randomizer;
-	}
-	public Dice()
+	public boolean shutdown()
 	{
-		super();
-		randomizer = new Random(System.currentTimeMillis());
-	}
-	
-	public boolean normalizeAndRollLess(int score)
-	{
-		return (rollPercentage()<normalizeBy5(score));
-	}
-	public int normalizeBy5(int score)
-	{
-		if(score>95)
-			return 95;
-		else
-		if(score<5)
-			return 5;
-		return score;
-	}
-
-	public int roll(int number, int die, int modifier)
-	{
-		if(die<=0) 
-			return modifier;
-		int total=0;
-		for(int i=0;i<number;i++)
-			total+=randomizer.nextInt(die)+1;
-		return total + modifier;
-	}
-
-	public int rollPercentage()
-	{
-		return (Math.abs(randomizer.nextInt() % 100)) + 1;
+		Rideable.RideThing.save();
+		Area.O.save();
+		Behavior.O.save();
+		return true;
 	}
 }

@@ -4,7 +4,6 @@ import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -14,28 +13,14 @@ import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 import java.util.*;
 
-/* 
-   Copyright 2000-2010 Bo Zimmerman
+/*
+CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
+EspressoMUD copyright 2011 Kejardon
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-	   http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
+	http://www.apache.org/licenses/LICENSE-2.0
 */
-/**
- * Accessible from any PC mob object, PlayerStats are
- * the repository for all manner of player specific
- * mob values.
- * 
- * @see com.planet_ink.coffee_mud.MOBS.interfaces.MOB#playerStats()
- */
+// Variables important for Player Characters, not applicable to NPCs
 @SuppressWarnings("unchecked")
 public interface PlayerStats extends CMCommon, CMModifiable, CMSavable, AccountStats
 {
@@ -114,5 +99,4 @@ public interface PlayerStats extends CMCommon, CMModifiable, CMSavable, AccountS
 	public static final int ATT_SOUND=ATT_ANSI*2;
 	public static final int ATT_MXP=ATT_SOUND*2;
 	public static final int ATT_SYSOPMSGS=ATT_MXP*2;
-
 }

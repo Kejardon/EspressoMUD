@@ -8,7 +8,6 @@ import com.planet_ink.coffee_mud.core.threads.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -24,35 +23,24 @@ import java.net.*;
 import java.util.*;
 import java.sql.*;
 
-
 /*
-   Copyright 2000-2010 Bo Zimmerman
+CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
+EspressoMUD copyright 2011 Kejardon
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-	   http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
+	http://www.apache.org/licenses/LICENSE-2.0
 */
-
 @SuppressWarnings("unchecked")
 public class MUD extends Thread implements MudHost
 {
-	private static final float HOST_VERSION_MAJOR=(float)5.6;
-	private static final long  HOST_VERSION_MINOR=2;
+	private static final float HOST_VERSION_MAJOR=(float)1.0;
+	private static final long  HOST_VERSION_MINOR=0;
 
 	protected static boolean bringDown=false;
-	private static String execExternalCommand=null;
 	private static Vector webServers=new Vector();
 	private static DVector accessed=new DVector(2);
 	private static Vector autoblocked=new Vector();
-	private static Vector databases=new Vector();
+//	private static Vector databases=new Vector();
 
 	private static boolean serverIsRunning = false;
 
@@ -126,7 +114,7 @@ public class MUD extends Thread implements MudHost
 			fatalStartupError(t,5);
 			return false;
 		}
-
+/*
 		DBConnector currentDBconnector=null;
 		String dbClass=page.getStr("DBCLASS");
 		if(dbClass.length()>0)
@@ -158,6 +146,7 @@ public class MUD extends Thread implements MudHost
 			}
 		}
 		else
+*/
 		if(CMLib.database()==null)
 		{
 			Log.errOut(Thread.currentThread().getName(),"No registered database!");
@@ -364,7 +353,7 @@ public class MUD extends Thread implements MudHost
 			}
 		}
 		else
-		if((CMLib.database()!=null)&&(CMLib.database().isConnected()))
+//		if((CMLib.database()!=null)&&(CMLib.database().isConnected()))
 		{
 			StringBuffer rejectText;
 
@@ -380,12 +369,12 @@ public class MUD extends Thread implements MudHost
 			out.close();
 			sock = null;
 		}
-		else
+/*		else
 		{
 			sock.close();
 			sock = null;
 		}
-	}
+*/	}
 
 	public String getLanguage()
 	{
@@ -586,11 +575,11 @@ public class MUD extends Thread implements MudHost
 		if(S!=null)S.println("done");
 		Log.sysOut(Thread.currentThread().getName(),"Map Threads Stopped.");
 
-		CMProps.Strings.MUDSTATUS.setProperty("Shutting down...closing db connections");
-		for(int d=0;d<databases.size();d++)
-			((DBConnector)databases.elementAt(d)).killConnections();
-		if(S!=null)S.println("Database connections closed");
-		Log.sysOut(Thread.currentThread().getName(),"Database connections closed.");
+//		CMProps.Strings.MUDSTATUS.setProperty("Shutting down...closing db connections");
+//		for(int d=0;d<databases.size();d++)
+//			((DBConnector)databases.elementAt(d)).killConnections();
+//		if(S!=null)S.println("Database connections closed");
+//		Log.sysOut(Thread.currentThread().getName(),"Database connections closed.");
 
 		CMProps.Strings.MUDSTATUS.setProperty("Shutting down...Clearing channels, help");
 
@@ -949,14 +938,4 @@ public class MUD extends Thread implements MudHost
 	public void setAcceptConnections(boolean truefalse){ acceptConnections=truefalse;}
 	public boolean isAcceptingConnections(){ return acceptConnections;}
 	public long getUptimeSecs() { return (System.currentTimeMillis()-startupTime)/1000;}
-
-	public String executeCommand(String cmd)
-		throws Exception
-	{
-		Vector V=CMParms.parse(cmd);
-		if(V.size()==0) throw new CMException("Unknown command!");
-		String word=(String)V.firstElement();
-		throw new CMException("Unknown command: "+word);
-		//return "OK";
-	}
 }

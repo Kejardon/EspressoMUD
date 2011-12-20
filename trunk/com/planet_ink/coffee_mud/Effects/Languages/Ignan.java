@@ -14,6 +14,13 @@ import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
 
+/*
+CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
+EspressoMUD copyright 2011 Kejardon
+
+Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
+	http://www.apache.org/licenses/LICENSE-2.0
+*/
 @SuppressWarnings("unchecked")
 public class Ignan extends StdLanguage
 {
@@ -25,9 +32,9 @@ public class Ignan extends StdLanguage
 		super();
 	}
 	public CMObject newInstance()
-    {	
-        return new Ignan();
-    }
+	{
+		return new Ignan();
+	}
 	public Vector translationVector(String language)
 	{
 		if(wordLists==null)
@@ -283,8 +290,5 @@ public class Ignan extends StdLanguage
 		hashwords.put("WORSHIP","yajna");
 		hashwords.put("WORSHIPPING","arcana");
 		return hashwords;
-		}
 	}
-
-
-
+}

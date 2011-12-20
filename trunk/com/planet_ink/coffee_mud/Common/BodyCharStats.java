@@ -18,20 +18,12 @@ import java.io.IOException;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.ScriptableObject;
 
-/* 
-   Copyright 2000-2010 Bo Zimmerman
+/*
+CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
+EspressoMUD copyright 2011 Kejardon
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-	   http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
+	http://www.apache.org/licenses/LICENSE-2.0
 */
 @SuppressWarnings("unchecked")
 public class BodyCharStats implements CharStats
@@ -218,6 +210,7 @@ public class BodyCharStats implements CharStats
 	}
 	public void recoverTick(Body body)
 	{
+		//On second thought, this sort of logic should be in race data! Or at least accessible/overwritable by it.
 		BodyCharStats sourceStats=this;
 		if((body!=null)&&(body.charStats() instanceof BodyCharStats)) sourceStats=(BodyCharStats)body.charStats();
 
@@ -278,12 +271,15 @@ public class BodyCharStats implements CharStats
 	private enum SCode implements CMSavable.SaveEnum{
 		STT(){
 			public String save(BodyCharStats E){ return CMLib.coffeeMaker().savAShort(E.stat); }
+			public int size(){return 2*E.stat.length;}
 			public void load(BodyCharStats E, String S){ E.stat=CMLib.coffeeMaker().loadAShort(S); } },
 		PNT(){
 			public String save(BodyCharStats E){ return CMLib.coffeeMaker().savAInt(E.points); }
+			public int size(){return 4*E.points.length;}
 			public void load(BodyCharStats E, String S){ E.points=CMLib.coffeeMaker().loadAInt(S); } },
 		MPT(){
 			public String save(BodyCharStats E){ return CMLib.coffeeMaker().savAInt(E.pointsMax); }
+			public int size(){return 4*E.pointsMax.length;}
 			public void load(BodyCharStats E, String S){ E.pointsMax=CMLib.coffeeMaker().loadAInt(S); } },
 		;
 		public abstract String save(BodyCharStats E);

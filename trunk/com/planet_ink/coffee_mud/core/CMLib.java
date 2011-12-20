@@ -21,19 +21,11 @@ import java.lang.reflect.Modifier;
 
 
 /*
-   Copyright 2000-2010 Bo Zimmerman
+CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
+EspressoMUD copyright 2011 Kejardon
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-	   http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
+	http://www.apache.org/licenses/LICENSE-2.0
 */
 @SuppressWarnings("unchecked")
 public class CMLib
@@ -55,7 +47,7 @@ public class CMLib
 		COMMANDS, ENGLISH, FLAGS, OBJBUILDERS,
 		SESSIONS, TELNET, XML, UTENSILS, MAP,
 		DICE, TIME, COLOR, LOGIN, MATERIALS,
-		LANGUAGE, PLAYERS, GENEDITOR;
+		LANGUAGE, PLAYERS, GENEDITOR, MISC;
 	}
 	private static final EnumSet<Library> LibrarySet=EnumSet.allOf(Library.class);
 	private final CMLibrary[] libraries=new CMLibrary[LibrarySet.size()];
@@ -126,6 +118,7 @@ public class CMLib
 //	public static AutoTitlesLibrary titles(){return (AutoTitlesLibrary)libs.libraries[Library.TITLES.ordinal()];}
 //	public static AbilityParameters ableParms(){return (AbilityParameters)libs.libraries[Library.ABLEPARMS.ordinal()];}
 	public static GenericEditor genEd(){return (GenericEditor)libs.libraries[Library.GENEDITOR.ordinal()];}
+	public static MiscLibrary misc(){return (MiscLibrary)libs.libraries[Library.MISC.ordinal()];}
 
 	public static Library convertToLibraryCode(Object O)
 	{
@@ -162,6 +155,7 @@ public class CMLib
 //		if(O instanceof AutoTitlesLibrary) return Library.TITLES;
 //		if(O instanceof AbilityParameters) return Library.ABLEPARMS;
 		if(O instanceof GenericEditor) return Library.GENEDITOR;
+		if(O instanceof MiscLibrary) return Library.MISC;
 		return null;
 	}
 

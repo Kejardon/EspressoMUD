@@ -15,6 +15,13 @@ import com.planet_ink.coffee_mud.Races.interfaces.*;
 import java.util.*;
 import java.io.IOException;
 
+/*
+CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
+EspressoMUD copyright 2011 Kejardon
+
+Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
+	http://www.apache.org/licenses/LICENSE-2.0
+*/
 public class DefaultEnvironmental implements Environmental, Ownable
 {
 	protected CMObject parent;
@@ -26,11 +33,8 @@ public class DefaultEnvironmental implements Environmental, Ownable
 	protected Vector<ExcChecker> excCheckers=null;
 	protected Vector<TickActer> tickActers=null;
 	protected Vector affects=new Vector(1);
-//	protected Vector behaviors=new Vector(1);
 	protected long lastTick=0;
-//	protected int actTimer=0;
 	protected EnumSet<ListenHolder.Flags> lFlags=EnumSet.noneOf(ListenHolder.Flags.class);
-
 
 	//Ownable
 	public CMObject owner(){return parent;}
@@ -197,6 +201,8 @@ public class DefaultEnvironmental implements Environmental, Ownable
 	private enum SCode implements CMSavable.SaveEnum{
 		ENV(){
 			public String save(DefaultEnvironmental E){ return CMLib.coffeeMaker().getPropertiesStr(E.baseEnvStats); }
+			public int size(){return -1;}
+			public CMSavable.CMSubSavable subObject(CMSavable fromThis){return ((DefaultEnvironmental)E).baseEnvStats;}
 			public void load(DefaultEnvironmental E, String S){
 				EnvStats newEnv=(EnvStats)CMClass.Objects.COMMON.get("DefaultEnvStats");
 				CMLib.coffeeMaker().setPropertiesStr(newEnv, S);
@@ -213,6 +219,7 @@ public class DefaultEnvironmental implements Environmental, Ownable
 		public abstract String save(DefaultEnvironmental E);
 		public abstract void load(DefaultEnvironmental E, String S);
 		public String save(CMSavable E){return save((DefaultEnvironmental)E);}
+		public CMSavable.CMSubSavable subObject(CMSavable fromThis){return null;}
 		public void load(CMSavable E, String S){load((DefaultEnvironmental)E, S);} }
 	private enum MCode implements CMModifiable.ModEnum{
 		ENVSTATS(){

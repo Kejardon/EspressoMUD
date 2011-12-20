@@ -13,33 +13,13 @@ import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 import java.util.Vector;
 
-
 /*
-   Copyright 2000-2010 Bo Zimmerman
+CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
+EspressoMUD copyright 2011 Kejardon
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
- * something that is affected by, or affects
- * the environment around them.
- */
-/**
- * A Behavior is a pro-active modifier of Environmental objects.  Behaviors
- * are expected to do their work in a Tickable.tick(Tickable,int) method which
- * is called periodically by either the host object, or the serviceengine.
- * Behaviors are also message listeners however, and can overlap Ability/properties
- * in that way.
- * @see com.planet_ink.coffee_mud.core.interfaces.Environmental
- * @see com.planet_ink.coffee_mud.core.interfaces.Tickable
- */
+Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
+	http://www.apache.org/licenses/LICENSE-2.0
+*/
 @SuppressWarnings("unchecked")
 public interface Behavior extends ListenHolder.AllListener, CMModifiable, CMSavable
 {
@@ -48,5 +28,49 @@ public interface Behavior extends ListenHolder.AllListener, CMModifiable, CMSava
 
 	public String getParms();
 	public void setParms(String parameters);
+	public static class O
+	{
+		private static int saveNumber=1;
+		private static boolean started=false;
+		private static HashMap<Integer, Behavior> assignedNumbers=new HashMap<Integer, Behavior>();
+		public synchronized static int getNumber()
+		{
+			if(!started)
+			{
+				String S=CMLib.database().DBReadData("BehavSNum");
+				if(S==null)
+				{
+					saveNumber=1;
+					CMLib.database().DBCreateData("BehavSNum","1");
+				}
+				else
+					saveNumber=CMath.s_int(S);
+				started=true;
+			}
+			if(assignedNumbers.containsKey(saveNumber))
+			{
+				int inc=1;
+				while(assignedNumbers.containsKey(saveNumber+inc))
+				{
+					inc=inc*2;
+					if(inc==1) saveNumber+=1580030169; //(2^32)/e ; optimal interval for poking around randomly
+				}
+				saveNumber+=inc;
+			}
+			return saveNumber++;
+		}
+		public static void save()
+		{
+			CMLib.database().DBUpdateData("BehavSNum",""+saveNumber);
+		}
+		public static void assignNumber(int i, Behavior A)
+		{
+			assignedNumbers.put(i, A);
+		}
+		public static void removeNumber(int i, Behavior A)
+		{
+			assignedNumbers.remove(i, A);
+		}
+	}
 
 }

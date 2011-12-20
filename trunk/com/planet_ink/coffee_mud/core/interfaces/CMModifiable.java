@@ -13,10 +13,14 @@ import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
-/**
- * Interface for objects editable with CMGenEditor. This is basically everything.
- *
- */
+/*
+CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
+EspressoMUD copyright 2011 Kejardon
+
+Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
+	http://www.apache.org/licenses/LICENSE-2.0
+*/
+// Interface for objects editable with CMGenEditor. This is basically everything.
 @SuppressWarnings("unchecked")
 public interface CMModifiable extends CMObject
 {
@@ -36,11 +40,11 @@ public interface CMModifiable extends CMObject
 	public ModEnum[] totalEnumM(){return new ModEnum[0];}
 	public Enum[] headerEnumM(){return new Enum[0];}
 
-	//Typical non-extended class
+	//Typical non-extended CMModifiable class
 	public ModEnum[] totalEnumM(){return MCode.values();}
 	public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
 
-	//Typical extended class
+	//Typical extended CMModifiable class
 	private static ModEnum[] totalEnumM=null;
 	private static Enum[] headerEnumM=null;
 	public ModEnum[] totalEnumM()

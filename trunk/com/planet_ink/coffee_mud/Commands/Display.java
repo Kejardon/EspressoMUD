@@ -12,23 +12,14 @@ import com.planet_ink.coffee_mud.Locales.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
-
 import java.util.*;
 
-/* 
-   Copyright 2000-2010 Bo Zimmerman
+/*
+CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
+EspressoMUD copyright 2011 Kejardon
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-	   http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
+	http://www.apache.org/licenses/LICENSE-2.0
 */
 @SuppressWarnings("unchecked")
 public class Display extends StdCommand
@@ -47,7 +38,6 @@ public class Display extends StdCommand
 			return false;
 		}
 
-		
 		MOB recipient=null;
 		{
 			Vector<MOB> V=mob.location().fetchInhabitants((String)commands.get(0));
@@ -65,29 +55,19 @@ public class Display extends StdCommand
 //		if(maxToGive<0) return false;
 
 		String thingToGive=CMParms.combine(commands,0);
-//		int addendum=1;
-//		String addendumStr="";
 //		Vector V=new Vector();
 //		boolean allFlag=(commands.size()>0)?((String)commands.elementAt(0)).equalsIgnoreCase("all"):false;
 //		if(thingToGive.toUpperCase().startsWith("ALL.")){ allFlag=true; thingToGive="ALL "+thingToGive.substring(4);}
 //		if(thingToGive.toUpperCase().endsWith(".ALL")){ allFlag=true; thingToGive="ALL "+thingToGive.substring(0,thingToGive.length()-4);}
-//		while(((allFlag)&&(addendum<=maxToGive)))
-			Item giveThis=mob.fetchInventory(thingToGive); //+addendumStr
-//			if(giveThis==null) break;
-//			V.addElement(giveThis);
-//			addendumStr="."+(++addendum);
+		Item giveThis=mob.fetchInventory(thingToGive);
 
-//		if(V.size()==0)
 		if(giveThis==null)
-			mob.tell("You don't seem to be carrying that.");
-		else
-//		for(int i=0;i<V.size();i++)
 		{
-//			Environmental giveThis=(Environmental)V.elementAt(i);
-			CMMsg newMsg=CMClass.getMsg(recipient,giveThis,mob,EnumSet.of(CMMsg.MsgCode.LOOK),"<O-NAME> show(s) <T-NAME> to <S-NAMESELF>.");
-			mob.location().doMessage(newMsg);
-//				recipient.tell(recipient,giveThis,mob,"<O-NAME> show(s) <T-NAME> to <S-NAMESELF>.");
+			mob.tell("You don't seem to be carrying that.");
+			return false;
 		}
+		CMMsg newMsg=CMClass.getMsg(recipient,giveThis,mob,EnumSet.of(CMMsg.MsgCode.LOOK),"<O-NAME> show(s) <T-NAME> to <S-NAMESELF>.");
+		mob.location().doMessage(newMsg);
 		return false;
 	}
 	public boolean canBeOrdered(){return true;}

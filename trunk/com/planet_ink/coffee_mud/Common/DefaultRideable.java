@@ -15,12 +15,18 @@ import com.planet_ink.coffee_mud.Races.interfaces.*;
 import java.util.*;
 import java.io.IOException;
 
+/*
+CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
+EspressoMUD copyright 2011 Kejardon
+
+Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
+	http://www.apache.org/licenses/LICENSE-2.0
+*/
 public class DefaultRideable implements Rideable, Ownable
 {
 	protected Vector<Item> riders=new Vector<Item>(1);
 	protected CMObject parent=null;
-	protected int rideNumber=0;
-	protected int saveNumber=0;
+	protected int saveNum=0;
 	protected boolean mobile=false;
 	protected String putString="on";
 	protected String stateString="sitting on";
@@ -45,6 +51,26 @@ public class DefaultRideable implements Rideable, Ownable
 	public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]} ;}
 	public ModEnum[] totalEnumM(){return MCode.values();}
 	public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
+	public int saveNum()
+	{
+		if(saveNum==0)
+		synchronized(saveNum)
+		{
+			if(saveNum==0)
+				saveNum=Rideable.RideThing.getNumber();
+		}
+		return saveNum;
+	}
+	public void setSaveNum(int num)
+	{
+		synchronized(saveNum)
+		{
+			if(saveNum!=0)
+				Rideable.RideThing.removeNumber(saveNum, this);
+			saveNum=num;
+			Rideable.RideThing.assignNumber(num, this);
+		}
+	}
 
 	//Rideable
 	public boolean isMobileRide(){return mobile;}
@@ -78,31 +104,6 @@ public class DefaultRideable implements Rideable, Ownable
 	}
 	public Vector<Item> allRiders(){return (Vector<Item>)riders.clone();}
 	public int numRiders() { return riders.size(); }
-	public int rideNumber() { return rideNumber;}
-	public void setRideNumber(int newNum)
-	{
-		rideNumber=newNum;
-		if(this instanceof Item)
-		{
-			Item E=(Item)this;
-			if(E.container() instanceof ItemCollection)
-			{
-				ItemCollection sur=(ItemCollection)E.container();
-				for(int i=0;i<sur.numItems();i++)
-				{
-					Item I=sur.getItem(i);
-					if(I.ridesNumber()==rideNumber)
-						addRider(I);
-				}
-			}
-		}
-	}
-	public int saveNumber()
-	{
-		if((numRiders()>0)&&(saveNumber==0))
-			saveNumber=Rideable.RideThing.getNumber();
-		return saveNumber;
-	}
 	public String putString(Item R) { return putString; }
 	public String stateString(Item R) { return stateString; }
 	public String mountString(Item R) { return mountString; }
@@ -114,12 +115,13 @@ public class DefaultRideable implements Rideable, Ownable
 	public void setDismountString(String S) {dismountString=S; }
 	public void setStateStringSubject(String S) {stateStringSubject=S; }
 	private enum SCode implements CMSavable.SaveEnum{
-		RID(){
+/*		RID(){
 			public String save(DefaultRideable E){
-				if(CMProps.Strings.MUDSTATUS.property().startsWith("Shutting"))	//A little hackish but probably the best option
+//				if(CMProps.Strings.MUDSTATUS.property().startsWith("Shutting"))	//A little hackish but probably the best option
 					return ""+E.saveNumber();
-				return "0";}
+//				return "0";}
 			public void load(DefaultRideable E, String S){E.setRideNumber(Integer.parseInt(S));} },
+*/
 		MBL(){
 			public String save(DefaultRideable E){return ""+E.isMobileRide(); }
 			public void load(DefaultRideable E, String S){E.setMobileRide(Boolean.getBoolean(S));} },

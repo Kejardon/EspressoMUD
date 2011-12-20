@@ -14,6 +14,14 @@ import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
 import java.io.IOException;
+
+/*
+CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
+EspressoMUD copyright 2011 Kejardon
+
+Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
+	http://www.apache.org/licenses/LICENSE-2.0
+*/
 public class DefaultItemCol implements ItemCollection, Ownable
 {
 	protected Vector<Item> inventory=new Vector<Item>(1);
@@ -77,7 +85,6 @@ public class DefaultItemCol implements ItemCollection, Ownable
 				item.registerListeners((ListenHolder)parent);
 			item.setContainer(parent);
 			inventory.addElement(item);
-//				item.getEnvObject().recoverEnvStats();
 		}
 	}
 	public void removeItem(Item item)
@@ -85,7 +92,6 @@ public class DefaultItemCol implements ItemCollection, Ownable
 		synchronized(inventory)
 		{
 			inventory.removeElement(item);
-//				item.getEnvObject().recoverEnvStats();
 		}
 	}
 	public Item removeItem(int i)
@@ -93,7 +99,6 @@ public class DefaultItemCol implements ItemCollection, Ownable
 		synchronized(inventory)
 		{
 			Item item=inventory.remove(i);
-//				item.getEnvObject().recoverEnvStats();
 			return item;
 		}
 	}
@@ -108,8 +113,11 @@ public class DefaultItemCol implements ItemCollection, Ownable
 
 	private enum SCode implements CMSavable.SaveEnum{
 		INV(){
-			public String save(DefaultItemCol E){ return CMLib.coffeeMaker().getVectorStr(E.inventory); }
-			public void load(DefaultItemCol E, String S){ E.inventory=CMLib.coffeeMaker().setVectorStr(S); } },
+			public String save(DefaultItemCol E){ return CMLib.coffeeMaker().getSaveNumStr(E.inventory.elements()); }
+			public void load(DefaultItemCol E, String S){
+				for(String num : (String[])CMParms.parseSemicolons(S,true).toArray(new String[]))
+					E.addItem(Item.O.get(CMath.s_int(num)));
+				} },
 		WMX(){
 			public String save(DefaultItemCol E){ return ""+E.maxweight; }
 			public void load(DefaultItemCol E, String S){ E.maxweight=Integer.parseInt(S); } },

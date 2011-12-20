@@ -14,70 +14,41 @@ import com.planet_ink.coffee_mud.Races.interfaces.*;
 import java.util.Vector;
 
 /*
-   Copyright 2000-2010 Bo Zimmerman
+CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
+EspressoMUD copyright 2011 Kejardon
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-	   http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
+	http://www.apache.org/licenses/LICENSE-2.0
 */
 @SuppressWarnings("unchecked")
 public class DefaultEnvStats implements EnvStats
 {
 	public String ID(){return "DefaultEnvStats";}
-//	protected int[] stats={0,0,100,0,0,0,0,0,0,0};
 	protected double Speed=1.0;			// should be positive
-//	protected String replacementName=null;
 	protected Vector<String> ambiances=new Vector();
-//	private final static String[] empty=new String[0];
 	protected int width;
 	protected int length;
 	protected int height;
 	protected int weight;
 	protected int magic;
-//	protected int disposition;
 	//TODO: Material should probably be stored here? Still need to decide how
 
 	public DefaultEnvStats(){}
 
-//	public int sensesMask(){return stats[STAT_SENSES];}
-//	public int disposition(){return disposition;}
-//	public int level(){return stats[STAT_LEVEL];}
 	public int ability(){return magic;}
-//	public int rejuv(){return stats[STAT_REJUV];}
 	public int weight(){return weight;}
 	public int height(){return height;}
 	public int length(){return length;}
 	public int width(){return width;}
-//	public int armor(){return stats[STAT_ARMOR];}
-//	public int damage(){return stats[STAT_DAMAGE];}
 	public double speed(){return Speed;}
-//	public int attackAdjustment(){return stats[STAT_ATTACK];}
-//	public String newName(){ return replacementName;}
 	public String[] ambiances(){ return (String[])ambiances.toArray(new String[0]);}
 
-//	public void setRejuv(int newRejuv){stats[STAT_REJUV]=newRejuv;}
-//	public void setLevel(int newLevel){stats[STAT_LEVEL]=newLevel;}
-//	public void setArmor(int newArmor){stats[STAT_ARMOR]=newArmor;}
-//	public void setDamage(int newDamage){stats[STAT_DAMAGE]=newDamage;}
 	public void setWeight(int newWeight){weight=newWeight;}
 	public void setSpeed(double newSpeed){Speed=newSpeed;}
-//	public void setAttackAdjustment(int newAdjustment){stats[STAT_ATTACK]=newAdjustment;}
 	public void setAbility(int newAdjustment){magic=newAdjustment;}
-//	public void setDisposition(int newDisposition){disposition=newDisposition;}
-//	public void setSensesMask(int newMask){stats[STAT_SENSES]=newMask;}
 	public void setHeight(int newHeight){height=newHeight;}
 	public void setLength(int newLength){length=newLength;}
 	public void setWidth(int newWidth){weight=newWidth;}
-//	public void setName(String newName){ replacementName=newName;}
-//	public String getCombatStats(){return "L"+stats[STAT_LEVEL]+":A"+stats[STAT_ARMOR]+":K"+stats[STAT_ATTACK]+":D"+stats[STAT_DAMAGE];}
 	public void addAmbiance(String ambiance)
 	{
 		for(int i=0;i<ambiances.size();i++)
@@ -131,21 +102,24 @@ public class DefaultEnvStats implements EnvStats
 
 	private enum SCode implements CMSavable.SaveEnum{
 		SPD(){
-			public String save(DefaultEnvStats E){ return ""+Double.doubleToLongBits(E.Speed); }
-			public void load(DefaultEnvStats E, String S){ E.Speed=Double.longBitsToDouble(Long.parseLong(S)); } },
+			public ByteBuffer save(DefaultEnvStats E){ return ""+Double.doubleToLongBits(E.Speed); }
+			public int size(){return 8;}
+			public void load(DefaultEnvStats E, ByteBuffer S){ E.Speed=Double.longBitsToDouble(Long.parseLong(S)); } },
 		INT(){
-			public String save(DefaultEnvStats E){ return CMLib.coffeeMaker().savAInt(new int[] {E.width, E.length, E.height, E.weight, E.magic}); }
-			public void load(DefaultEnvStats E, String S){
+			public ByteBuffer save(DefaultEnvStats E){ return CMLib.coffeeMaker().savAInt(new int[] {E.width, E.length, E.height, E.weight, E.magic}); }
+			public int size(){return 20;}
+			public void load(DefaultEnvStats E, ByteBuffer S){
 				int[] ints=CMLib.coffeeMaker().loadAInt(S);
 				E.width=ints[0]; E.length=ints[1]; E.height=ints[2]; E.weight=ints[3]; E.magic=ints[4]; } },
 		AMB(){
-			public String save(DefaultEnvStats E){ return CMLib.coffeeMaker().savAString((String[])E.ambiances.toArray(new String[0])); }
-			public void load(DefaultEnvStats E, String S){ for(String newF : CMLib.coffeeMaker().loadAString(S)) E.ambiances.add(newF); } },
+			public ByteBuffer save(DefaultEnvStats E){ return CMLib.coffeeMaker().savAString((String[])E.ambiances.toArray(new String[0])); }
+			public int size(){return 0;}
+			public void load(DefaultEnvStats E, ByteBuffer S){ for(String newF : CMLib.coffeeMaker().loadAString(S)) E.ambiances.add(newF); } },
 		;
 		public abstract String save(DefaultEnvStats E);
-		public abstract void load(DefaultEnvStats E, String S);
-		public String save(CMSavable E){return save((DefaultEnvStats)E);}
-		public void load(CMSavable E, String S){load((DefaultEnvStats)E, S);} }
+		public abstract void load(DefaultEnvStats E, ByteBuffer S);
+		public ByteBuffer save(CMSavable E){return save((DefaultEnvStats)E);}
+		public void load(CMSavable E, ByteBuffer S){load((DefaultEnvStats)E, S);} }
 	private enum MCode implements CMModifiable.ModEnum{
 		AMBIENCES(){
 			public String brief(DefaultEnvStats E){ return ""+E.ambiances.size();}

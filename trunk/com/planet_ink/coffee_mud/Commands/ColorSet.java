@@ -5,7 +5,6 @@ import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-
 import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
@@ -16,20 +15,12 @@ import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
 
-/* 
-   Copyright 2000-2010 Bo Zimmerman
+/*
+CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
+EspressoMUD copyright 2011 Kejardon
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
+	http://www.apache.org/licenses/LICENSE-2.0
 */
 @SuppressWarnings("unchecked")
 public class ColorSet extends StdCommand
@@ -41,7 +32,7 @@ public class ColorSet extends StdCommand
 	
 	public String colorDescription(String code)
 	{
-	    StringBuffer buf=new StringBuffer("");
+		StringBuffer buf=new StringBuffer("");
 		String what=CMLib.color().translateANSItoCMCode(code);
 		while((what!=null)&&(what.length()>1))
 		{
@@ -51,13 +42,13 @@ public class ColorSet extends StdCommand
 					buf.append("^"+ColorLibrary.COLOR_ALLEXTENDEDCOLORCODELETTERS[ii]+CMStrings.capitalizeAndLower(ColorLibrary.COLOR_ALLCOLORNAMES[ii]));
 					break;
 				}
-		    if(what.indexOf("|")>0)
-		    {
-		        what=what.substring(what.indexOf("|")+1);
-		        buf.append("^N=background, foreground=");
-		    }
-		    else
-		        what=null;
+			if(what.indexOf("|")>0)
+			{
+				what=what.substring(what.indexOf("|")+1);
+				buf.append("^N=background, foreground=");
+			}
+			else
+				what=null;
 		}
 		return buf.toString();
 	}
@@ -97,8 +88,8 @@ public class ColorSet extends StdCommand
 		if(clookup==null) return false;
 		String[][] theSet={{"Normal Text","N"},
 						   {"Highlighted Text","H"},
-                           {"Your Fight Text","f"},
-                           {"Fighting You Text","e"},
+						   {"Your Fight Text","f"},
+						   {"Fighting You Text","e"},
 						   {"Other Fight Text","F"},
 						   {"Spells","S"},
 						   {"Emotes","E"},
@@ -106,7 +97,7 @@ public class ColorSet extends StdCommand
 						   {"Tells","t"},
 						   {"Room Titles","O"},
 						   {"Room Descriptions","L"},
-                           {"Weather","J"},
+						   {"Weather","J"},
 						   {"Doors","d"},
 						   {"Items","I"},
 						   {"MOBs","M"},
@@ -140,7 +131,7 @@ public class ColorSet extends StdCommand
 					buf.append("^N\n\rAvailable Colors: ");
 					for(int ii=0;ii<ColorLibrary.COLOR_ALLNORMALCOLORCODELETTERS.length;ii++)
 					{
-					    if(ii>0) buf.append(", ");
+						if(ii>0) buf.append(", ");
 						buf.append("^"+ColorLibrary.COLOR_ALLNORMALCOLORCODELETTERS[ii]+CMStrings.capitalizeAndLower(ColorLibrary.COLOR_ALLCOLORNAMES[ii]));
 					}
 					mob.session().println(buf.toString()+"^N");
@@ -158,20 +149,20 @@ public class ColorSet extends StdCommand
 					buf.append("^N\n\r\n\rAvailable Background Colors: ");
 					boolean first=true;
 					for(int ii=0;ii<ColorLibrary.COLOR_ALLEXTENDEDCOLORCODELETTERS.length;ii++)
-					    if(Character.isUpperCase(ColorLibrary.COLOR_ALLEXTENDEDCOLORCODELETTERS[ii].charAt(0)))
+						if(Character.isUpperCase(ColorLibrary.COLOR_ALLEXTENDEDCOLORCODELETTERS[ii].charAt(0)))
 						{
-						    if(first)first=false; else buf.append(", ");
-						    if(ColorLibrary.COLOR_ALLEXTENDEDCOLORCODELETTERS[ii]==ColorLibrary.COLOR_BLACK)
+							if(first)first=false; else buf.append(", ");
+							if(ColorLibrary.COLOR_ALLEXTENDEDCOLORCODELETTERS[ii]==ColorLibrary.COLOR_BLACK)
 								buf.append("^"+ColorLibrary.COLOR_WHITE+CMStrings.capitalizeAndLower(ColorLibrary.COLOR_ALLCOLORNAMES[ii]));
-						    else
+							else
 								buf.append("^"+ColorLibrary.COLOR_ALLEXTENDEDCOLORCODELETTERS[ii]+CMStrings.capitalizeAndLower(ColorLibrary.COLOR_ALLCOLORNAMES[ii]));
 						}
 					buf.append("^N\n\rAvailable Foreground Colors: ");
 					first=true;
 					for(int ii=0;ii<ColorLibrary.COLOR_ALLNORMALCOLORCODELETTERS.length;ii++)
-					    if(Character.isLowerCase(ColorLibrary.COLOR_ALLNORMALCOLORCODELETTERS[ii].charAt(0)))
+						if(Character.isLowerCase(ColorLibrary.COLOR_ALLNORMALCOLORCODELETTERS[ii].charAt(0)))
 						{
-						    if(first)first=false; else buf.append(", ");
+							if(first)first=false; else buf.append(", ");
 							buf.append("^"+ColorLibrary.COLOR_ALLNORMALCOLORCODELETTERS[ii]+CMStrings.capitalizeAndLower(ColorLibrary.COLOR_ALLCOLORNAMES[ii]));
 						}
 					mob.session().println(buf.toString()+"^N");
@@ -185,8 +176,8 @@ public class ColorSet extends StdCommand
 							mob.tell("That is not a valid Foreground color!");
 						else
 						{
-						    changes=true;
-						    clookup[theSet[num][1].charAt(0)]=CMLib.color().translateCMCodeToANSI("^"+ColorLibrary.COLOR_ALLEXTENDEDCOLORCODELETTERS[colorNum1]+"|^"+ColorLibrary.COLOR_ALLNORMALCOLORCODELETTERS[colorNum2]);
+							changes=true;
+							clookup[theSet[num][1].charAt(0)]=CMLib.color().translateCMCodeToANSI("^"+ColorLibrary.COLOR_ALLEXTENDEDCOLORCODELETTERS[colorNum1]+"|^"+ColorLibrary.COLOR_ALLNORMALCOLORCODELETTERS[colorNum2]);
 						}
 					}
 				}
@@ -209,6 +200,4 @@ public class ColorSet extends StdCommand
 	}
 	
 	public boolean canBeOrdered(){return true;}
-
-	
 }

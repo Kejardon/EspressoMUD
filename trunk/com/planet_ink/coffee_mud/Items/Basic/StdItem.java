@@ -14,20 +14,12 @@ import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
 
-/* 
-   Copyright 2000-2010 Bo Zimmerman
+/*
+CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
+EspressoMUD copyright 2011 Kejardon
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-	   http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
+	http://www.apache.org/licenses/LICENSE-2.0
 */
 @SuppressWarnings("unchecked")
 public class StdItem implements Item
@@ -74,12 +66,9 @@ public class StdItem implements Item
 	}
 	public StdItem()
 	{
-//		baseEnvStats().setWeight(1);
-//		baseEnvStats().setArmor(0);
 		((Ownable)myEnvironmental).setOwner(this);
 	}
 	public void initializeClass(){}
-//	public String Name(){ return myEnvironmental.Name();}
 	public void setName(String newName){name=newName;}
 	public String name(){ return name;}
 	public String displayText(){return display;}
@@ -364,7 +353,7 @@ public class StdItem implements Item
 			public void load(StdItem E, String S){ E.miscText=S.intern(); } },
 		RNM(){
 			public String save(StdItem E){
-				if((CMProps.Strings.MUDSTATUS.property().startsWith("Shutting"))&&(E.ride!=null))
+				if(E.ride!=null)
 					return ""+E.ride.saveNumber();
 				return "0"; }
 			public void load(StdItem E, String S){

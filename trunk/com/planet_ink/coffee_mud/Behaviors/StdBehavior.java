@@ -15,19 +15,11 @@ import com.planet_ink.coffee_mud.Races.interfaces.*;
 import java.util.*;
 
 /*
-   Copyright 2000-2010 Bo Zimmerman
+CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
+EspressoMUD copyright 2011 Kejardon
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-	   http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
+	http://www.apache.org/licenses/LICENSE-2.0
 */
 @SuppressWarnings("unchecked")
 public class StdBehavior implements Behavior
@@ -41,9 +33,6 @@ public class StdBehavior implements Behavior
 
 	public String ID(){return "StdBehavior";}
 	public String name(){return ID();}
-//	protected int canImproveCode(){return Behavior.CAN_MOBS;}
-//	public long flags(){return 0;}
-//	public boolean grantsAggressivenessTo(MOB M){return false;}
 	public Tickable.TickStat getTickStatus(){return tickStatus;}
 	public void initializeClass(){}
 	public int priority(ListenHolder L){return Integer.MAX_VALUE;}
@@ -57,7 +46,6 @@ public class StdBehavior implements Behavior
 	{}
 	public void affectCharStats(CMObject affected, CharStats affectableStats)
 	{}
-//	protected boolean isSavableBehavior=true;
 
 	public StdBehavior()
 	{
@@ -121,10 +109,31 @@ public class StdBehavior implements Behavior
 	public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]} ;}
 	public ModEnum[] totalEnumM(){return MCode.values();}
 	public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
+	public int saveNum()
+	{
+		if(saveNum==0)
+		synchronized(saveNum)
+		{
+			if(saveNum==0)
+				saveNum=Behavior.O.getNumber();
+		}
+		return saveNum;
+	}
+	public void setSaveNum(int num)
+	{
+		synchronized(saveNum)
+		{
+			if(saveNum!=0)
+				Behavior.O.removeNumber(saveNum, this);
+			saveNum=num;
+			Behavior.O.assignNumber(num, this);
+		}
+	}
 
 	private enum SCode implements CMSavable.SaveEnum{
 		PRM(){
 			public String save(StdBehavior E){ return E.parms; }
+			public int size(){return 0;}
 			public void load(StdBehavior E, String S){ E.setParms(S.intern()); } },
 		;
 		public abstract String save(StdBehavior E);

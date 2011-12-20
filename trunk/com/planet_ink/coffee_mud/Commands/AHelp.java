@@ -15,19 +15,11 @@ import com.planet_ink.coffee_mud.Races.interfaces.*;
 import java.util.*;
 
 /*
-   Copyright 2000-2010 Bo Zimmerman
+CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
+EspressoMUD copyright 2011 Kejardon
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
+	http://www.apache.org/licenses/LICENSE-2.0
 */
 @SuppressWarnings("unchecked")
 public class AHelp extends StdCommand
@@ -62,7 +54,7 @@ public class AHelp extends StdCommand
 						V.addElement(a.next().ID());
 					if(V.size()>0)
 					{
-					    theRest.append("\n\rEffects:\n\r");
+						theRest.append("\n\rEffects:\n\r");
 						theRest.append(CMLib.lister().fourColumns(V));
 					}
 
@@ -71,7 +63,7 @@ public class AHelp extends StdCommand
 						V.addElement(b.next().ID());
 					if(V.size()>0)
 					{
-					    theRest.append("\n\r\n\rBehaviors:\n\r");
+						theRest.append("\n\r\n\rBehaviors:\n\r");
 						theRest.append(CMLib.lister().fourColumns(V));
 					}
 					Resources.submitResource("arc_help.therest",theRest);
@@ -95,6 +87,4 @@ public class AHelp extends StdCommand
 	
 	public boolean canBeOrdered(){return true;}
 	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,mob.location(),"AHELP");}
-
-	
 }

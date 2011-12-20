@@ -18,6 +18,13 @@ import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.Libraries.interfaces.XMLLibrary.XMLpiece;
 
 /*
+CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
+EspressoMUD copyright 2011 Kejardon
+
+Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
+	http://www.apache.org/licenses/LICENSE-2.0
+*/
+/*
 When passed an object, converts it to a string. Accomplish this by getting the object's CMSavable, then the CMSavable's
 list of enums (Enum.values()), then running each enum's save(). Default values will be skipped to save room and time
 loading, only real cost is one time prep when saving
@@ -32,7 +39,7 @@ public class CoffeeMaker extends StdLibrary implements GenericBuilder
 	public String ID(){return "CoffeeMaker";}
 
 	private Hashtable<String, String[]> basePropertiesStr=new Hashtable<String, String[]>();
-
+/*
 	private String[] getBaseString(CMSavable E, CMSavable.SaveEnum[] options)
 	{
 		String[] baseStrings=basePropertiesStr.get(E.ID());
@@ -44,15 +51,15 @@ public class CoffeeMaker extends StdLibrary implements GenericBuilder
 		basePropertiesStr.put(baseObject.ID(), baseStrings);
 		return baseStrings;
 	}
-
+*/
 	//General format is (saveCodeName+" "+saveSize+" "+saveData) for each entry, repeated until done.
 	//Vectors or other things may have an ID at the start. If so it'll just be a (ID+" ") before the entries. CMClass.getUnknown will get the object, or STRING will mean a java String
-	public String getPropertiesStr(CMSavable E)
+	public ByteBuffer[] getPropertiesStr(CMSavable E)
 	{
 		if(E==null)
 			return "null";
 		CMSavable.SaveEnum[] options=E.totalEnumS();
-		String[] baseStrings=getBaseString(E, options);
+		ByteBuffer[] values=new ByteBuffer[options.length];
 		Vector<String> saveStrings=new Vector();
 		for(int i=0;i<options.length;i++)
 		{
@@ -306,6 +313,17 @@ public class CoffeeMaker extends StdLibrary implements GenericBuilder
 				A=A.substring(y);
 			}
 		return val;
+	}
+	public String getSaveNumStr(Enumeration<CMSavable> e)
+	{
+		StringBuilder str=new StringBuilder("");
+		for(;e.hasMoreElements();)
+		{
+			CMSavable A=e.nextElement();
+			if(str.length()>0) str.append(";");
+			str.append(A.saveNum());
+		}
+		return str.toString();
 	}
 	//Note: Does not support most core/interface files!
 	public String getVectorStr(Vector V)

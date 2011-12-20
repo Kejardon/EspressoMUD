@@ -18,20 +18,12 @@ import java.io.IOException;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.ScriptableObject;
 
-/* 
-   Copyright 2000-2010 Bo Zimmerman
+/*
+CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
+EspressoMUD copyright 2011 Kejardon
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-	   http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
+	http://www.apache.org/licenses/LICENSE-2.0
 */
 @SuppressWarnings("unchecked")
 public class LimbCharStats implements CharStats
@@ -210,114 +202,7 @@ public class LimbCharStats implements CharStats
 	}
 	public void recoverTick(Body body)
 	{
-/*
-	Hunger and Thirst will affect Hit Point and Fatigue regain, Thirst will affect Focus if Thirst is critical.
-	Constitution is main drive of hp regen, hp regen will be proportional to con.
-	Strength and Con will drive fatigue regain.
-	Hit points will affect Fatigue regain
-	Mana regain will be pretty much always constant regardless of anything. It will pretty much only be used for spells and natural magic resistance
-	Willpower will slightly influence mana regain, mp regain will basically be a percent of max.
-	Fatigue will affect Focus regain. It will not have a significant effect until Fatigue is huge, then it will quickly ramp up to drastic impairement.
-	Focus will regen relatively fast in most cases. Something like 25% to target plus a small number?
-
-	Body Code
-		BodyCharStats sourceStats=this;
-		if((body!=null)&&(body.charStats() instanceof BodyCharStats)) sourceStats=body.charStats();
-
-		double hunger=sourceStats.getPointsPercent(Points.HUNGER);
-		if(hunger>1) hunger=1; else if(hunger<0) hunger=0;
-		double thirst=sourceStats.getPointsPercent(Points.THIRST);
-		if(thirst>1) thirst=1; else if(thirst<0) thirst=0;
-		double fatigue=getPointsPercent(Points.FATIGUE);
-		if(fatigue>1) fatigue=1; else if(fatigue<0) fatigue=0;
-		double damage=1-getPointsPercent(Points.HIT);
-		if(damage>1) damage=1; else if(damage<0) damage=0;
-		int con=getStat(Stat.CONSTITUTION);
-		if(con<0) con=0;
-		int wil=0;
-		if(body.getMob()!=null)
-		{
-			wil=body.getMob().charStats().getStat(Stat.WILLPOWER);
-			if(wil<0) wil=0;
-		}
-		int str=getStat(Stat.STRENGTH);
-		if(str<0) str=0;
-
-		int thirstCost=1+(thirst>hunger?10*damage:5*damage)+4*(1-fatigue);
-		int hungerCost=1+(hunger>thirst?10*damage:5*damage)+4*(1-fatigue);
-		int hpRegen=5+(5*con*damage);
-		hpRegen*=hunger;
-		hpRegen*=thirst;
-		int mpRegen=1+2*wil;
-		int fatigueRegen=5+((con+str)*(1-damage)*(2-fatigue));
-		if(fatigue+0.2<sourceStats.getPointsPercent(Points.FATIGUE))	//only possible if one body is leaching off of another~
-		{
-			int temp=getMaxPoints(Points.FATIGUE)/200;
-			fatigueRegen+=temp;
-			sourceStats.adjPoints(Points.FATIGUE, -temp);
-		}
-		sourceStats.adjPoints(Points.THIRST, -thirstCost);
-		sourceStats.adjPoints(Points.HUNGER, -hungerCost);
-		adjPoints(Points.HIT, hpRegen);
-		adjPoints(Points.MANA, mpRegen);
-		adjPoints(Points.FATIGUE, fatigueRegen);
-
-
-	Limb Code
-		BodyCharStats sourceStats=null;
-		if((body!=null)&&(body.charStats() instanceof BodyCharStats)) sourceStats=body.charStats();
-		else return;
-
-		double hunger=sourceStats.getPointsPercent(Points.HUNGER);
-		if(hunger>1) hunger=1; else if(hunger<0) hunger=0;
-		double thirst=sourceStats.getPointsPercent(Points.THIRST);
-		if(thirst>1) thirst=1; else if(thirst<0) thirst=0;
-		double fatigue=getPointsPercent(Points.FATIGUE);
-		if(fatigue>1) fatigue=1; else if(fatigue<0) fatigue=0;
-		int con=getStat(Stat.CONSTITUTION);
-		if(con<0) con=0;
-		int str=getStat(Stat.STRENGTH);
-		if(str<0) str=0;
-
-		int thirstCost=2.5*(1-fatigue);
-		int hungerCost=2.5*(1-fatigue);
-		int fatigueRegen=5+((con+str)*(2-fatigue));
-		if(fatigue+0.2<sourceStats.getPointsPercent(Points.FATIGUE))
-		{
-			int temp=getMaxPoints(Points.FATIGUE)/200;
-			fatigueRegen+=temp;
-			sourceStats.adjPoints(Points.FATIGUE, -temp);
-		}
-		sourceStats.adjPoints(Points.THIRST, -thirstCost);
-		sourceStats.adjPoints(Points.HUNGER, -hungerCost);
-		adjPoints(Points.FATIGUE, fatigueRegen);
-
-	MOB Code
-		BodyCharStats sourceStats=null;
-		if((body!=null)&&(body.charStats() instanceof BodyCharStats)) sourceStats=body.charStats();
-		else return;
-
-		double thirst=sourceStats.getPointsPercent(Points.THIRST)*4;	//Multiplying by 4 to make thirst only matter when dire.
-		if(thirst>1) thirst=1; else if(thirst<0) thirst=0;
-		double fatigue=sourceStats.getPointsPercent(Points.FATIGUE);
-		if(fatigue>1) fatigue=1; else if(fatigue<0) fatigue=0;
-		int current=getPoints(Points.FOCUS);
-		int target=getMaxPoints(Points.FOCUS);
-
-		current-=(1-thirst*fatigue)*200+(target-current)/4;
-		if(current<target)
-		{
-			current+=5;
-			if(current>target) current=target;
-		}
-		else if(current>target)
-		{
-			current-=5;
-			if(current<target) current=target;
-		}
-
-		setPoints(Points.FOCUS, current+change);
-*/
+		//On second thought, this sort of logic should be in race data! Or at least accessible/overwritable by it.
 		BodyCharStats sourceStats=null;
 		if((body!=null)&&(body.charStats() instanceof BodyCharStats)) sourceStats=(BodyCharStats)body.charStats();
 		else return;

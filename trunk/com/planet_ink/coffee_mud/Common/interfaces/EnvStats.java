@@ -12,67 +12,34 @@ import com.planet_ink.coffee_mud.Locales.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
-/* 
-   Copyright 2000-2010 Bo Zimmerman
+/*
+CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
+EspressoMUD copyright 2011 Kejardon
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-	   http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
+	http://www.apache.org/licenses/LICENSE-2.0
 */
-/**
- * The EnvStats interface is a state object that holds some basic information about
- * just about every Environmental object in the game.  Not all stats are relevant for
- * ALL Environmentals, but most, especially the big ones.
- * 
- * Environmentals always keep two instances of this object, a base one, representing
- * his base unmodified state, and current one, representing his state after spells
- * and other affects have had their say.
- * @see com.planet_ink.coffee_mud.core.interfaces.CMModifiable
- * @see com.planet_ink.coffee_mud.core.interfaces.Environmental#baseEnvStats()
- * @see com.planet_ink.coffee_mud.core.interfaces.Environmental#envStats()
- */
+/*
+Usually a subcontainer object to hold/handle physical stats, may be instantiated directly
+in an object if desired.
+*/
 public interface EnvStats extends CMCommon, CMModifiable, CMSavable
 {
-//	public int sensesMask(); // mobs, run-time items
-//	public void setSensesMask(int newMask);
-//	public int disposition(); // items, mobs
-//	public void setDisposition(int newDisposition); // magic/bonus/whatever, see below?
-//	public int level(); // items, exits, mobs
-//	public void setLevel(int newLevel);
-	public int ability(); // items, mobs
+	public int ability();
 	public void setAbility(int newAdjustment);
-//	public int rejuv(); // items, mobs
-//	public void setRejuv(int newRejuv); // respawn time. usually
-	public int weight(); // items, mobs
+	public int weight();
 	public void setWeight(int newWeight);
-	public int height(); // items, mobs
+	public int height();
 	public void setHeight(int newHeight);
-	public int length(); // items, mobs
+	public int length();
 	public void setLength(int newHeight);
-	public int width(); // items, mobs
+	public int width();
 	public void setWidth(int newHeight);
-//	public int armor(); // armor items, mobs
-//	public void setArmor(int newArmor);
-//	public int damage(); // weapon items, mobs
-//	public void setDamage(int newDamage);
-	public double speed(); // mobs
+	public double speed();
 	public void setSpeed(double newSpeed);
-//	public int attackAdjustment(); // weapon items, mobs
-//	public void setAttackAdjustment(int newAdjustment);
-//	public String newName(); // items, mobs
-//	public void setName(String newName);
 	public String[] ambiances(); // everything
 	public void addAmbiance(String ambiance); // extra display things
 	public void delAmbiance(String ambiance);
-//	public String getCombatStats();
 //	public boolean sameAs(EnvStats E);
 	public void copyInto(EnvStats intoStats);
 

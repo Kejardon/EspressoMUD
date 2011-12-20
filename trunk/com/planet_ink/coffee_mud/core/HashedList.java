@@ -15,7 +15,7 @@ public class HashedList<E>
 	
 	private ListNode<E> first=null;
 	
-	public E first(){return first.O;}
+	public E first(){return (first==null)?null:first.O;}
 	public void add(E object)
 	{
 		synchronized(set)

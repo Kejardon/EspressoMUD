@@ -7,29 +7,28 @@ import com.planet_ink.coffee_mud.Libraries.interfaces.PlayerLibrary;
 import com.planet_ink.coffee_mud.MOBS.interfaces.MOB;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 
+/*
+CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
+EspressoMUD copyright 2011 Kejardon
+
+Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
+	http://www.apache.org/licenses/LICENSE-2.0
+*/
 /**
  * An interface for a base player account.  If this system is enabled, this
  * represents essentially a "container" for various characters, who
- * share a login and potentially an expiration date.
+ * share a login.
+ * See also AccountStats
  */
 public interface PlayerAccount extends CMCommon, AccountStats, CMModifiable, CMSavable
 {
 	public Enumeration<MOB> getLoadPlayers();
 	public int numPlayers();
-//	public Enumeration<String> getPlayers();
 	public void addNewPlayer(MOB mob);
 	public void delPlayer(MOB mob);
-//	public MOB getAccountMob();
-	
-	/**
-	 * Returns whether the name is a player on this account 
-	 * @param name the name to check
-	 * @return true if it exists and false otherwise
-	 */
 	public boolean isPlayer(String name);
 	public String accountName();
 	public void setAccountName(String name);
-//	public void setPlayerNames(Vector<String> names);
 	
 	/**
 	 * Checks whether the given string flag is set for this account.
@@ -47,13 +46,9 @@ public interface PlayerAccount extends CMCommon, AccountStats, CMModifiable, CMS
 	 */
 	public void setFlag(String flagName, boolean setOrUnset);
 	
-	/** Constant for account flags that overrides number of characters limitation */
 	public final static String FLAG_NUMCHARSOVERRIDE="NUMCHARSOVERRIDE";
-	/** Constant for account flags that overrides account expiration */
 	public final static String FLAG_MAXCONNSOVERRIDE="MAXCONNSOVERRIDE";
-	/** Constant for account flags that overrides account expiration */
 	public final static String FLAG_ANSI="ANSI";
-	/** Constant for account flags that overrides account expiration */
 	public final static String FLAG_ACCOUNTMENUSOFF="ACCOUNTMENUSOFF";
 
 	/** list of account flags */
