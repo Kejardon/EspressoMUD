@@ -254,7 +254,7 @@ public class CMLister extends StdLibrary implements ListingLibrary
 				list=CMClass.classID(thisThang);
 			if((likeRoom!=null)&&(thisThang instanceof Room))
 			{
-				if((((Room)thisThang).roomID().length()>0)&&(!((Room)thisThang).getArea().name().equals(likeRoom.getArea().name())))
+				if((((Room)thisThang).saveNum()!=0)&&(!((Room)thisThang).getArea().name().equals(likeRoom.getArea().name())))
 				   list=null;
 			}
 			if(list!=null)
@@ -293,7 +293,7 @@ public class CMLister extends StdLibrary implements ListingLibrary
 				list=CMClass.classID(thisThang);
 			if((likeRoom!=null)&&(thisThang instanceof Room))
 			{
-				if((((Room)thisThang).roomID().length()>0)&&(!((Room)thisThang).getArea().name().equals(likeRoom.getArea().name())))
+				if((((Room)thisThang).saveNum()!=0)&&(!((Room)thisThang).getArea().name().equals(likeRoom.getArea().name())))
 				   list=null;
 			}
 			if(list!=null)
@@ -356,7 +356,7 @@ public class CMLister extends StdLibrary implements ListingLibrary
 				list=CMClass.classID(thisThang);
 			if((likeRoom!=null)&&(thisThang instanceof Room))
 			{
-				if((((Room)thisThang).roomID().length()>0)&&(!((Room)thisThang).getArea().name().equals(likeRoom.getArea().name())))
+				if((((Room)thisThang).saveNum()!=0)&&(!((Room)thisThang).getArea().name().equals(likeRoom.getArea().name())))
 				   list=null;
 			}
 			if(list!=null)

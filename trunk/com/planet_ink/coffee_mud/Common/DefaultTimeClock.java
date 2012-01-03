@@ -15,6 +15,7 @@ import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
+import java.nio.ByteBuffer;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -23,23 +24,31 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
+//TODO: Make this class store a real-time time, derive actual time as needed
 @SuppressWarnings("unchecked")
-public class DefaultTimeClock implements TimeClock
+public class DefaultTimeClock implements TimeClock, Ownable
 {
+	protected CMSavable parent;
+
 	public String ID(){return "DefaultTimeClock";}
 	public String name(){return "Time Object";}
 	public CMObject newInstance(){try{return (CMObject)getClass().newInstance();}catch(Exception e){return new DefaultTimeClock();}}
 	public void initializeClass(){}
-	
+	public long lastTick=0;
+
+	//Ownable
+	public CMSavable owner(){return parent;}
+	public Ownable setOwner(CMSavable owner){parent=owner; return this;}
+
 	protected Tickable.TickStat tickStatus=Tickable.TickStat.Not;
 	public Tickable.TickStat getTickStatus(){return tickStatus;}
 	protected boolean loaded=false;
-	protected String loadName=null;
-	public void setLoadName(String name){loadName=name;}
 	protected int year=1;
+	protected int baseYear=0;
 	protected int month=1;
 	protected int day=1;
 	protected int time=0;
+	protected long baseTime=System.currentTimeMillis();
 	protected int hoursInDay=6;
 	protected String[] monthsInYear={
 			 "the 1st month","the 2nd month","the 3rd month","the 4th month",
@@ -50,26 +59,55 @@ public class DefaultTimeClock implements TimeClock
 	protected String[] weekNames={};
 	protected String[] yearNames={"year #"};
 	
+	protected void recalcTime()	//Assume current time is accurate, get new baseTime
+	{
+		long revertThisFar=0;
+		long multiplier=Tickable.TIME_MILIS_PER_MUDHOUR;
+		revertThisFar+=time*multiplier;
+		multiplier*=hoursInDay;
+		revertThisFar+=day*multiplier;
+		multiplier*=daysInMonth;
+		revertThisFar+=month*multiplier;
+		multiplier*=monthsInYear.length;
+		baseYear=year;
+		baseTime=lastTick-revertThisFar;
+		CMLib.database().saveObject(this);
+	}
+	protected void setBaseTime(long newTime, int newBaseYear)	//Absolute base values
+	{
+		baseYear=newBaseYear;
+		baseTime=newTime;
+		lastTick=System.currentTimeMillis();
+		long tempTime=(lastTick-newTime)/Tickable.TIME_MILIS_PER_MUDHOUR;
+		long tempDay=tempTime/hoursInDay;
+		time=(int)(tempTime%hoursInDay);
+		long tempMonth=tempDay/daysInMonth;
+		day=(int)(tempDay%daysInMonth);
+		year=(int)(tempMonth/monthsInYear.length);
+		month=(int)(tempMonth%monthsInYear.length);
+	}
+	
 	public int getHoursInDay(){return hoursInDay;}
-	public void setHoursInDay(int h){hoursInDay=h;}
+	public void setHoursInDay(int h){hoursInDay=h; recalcTime();}
 	public int getDaysInMonth(){return daysInMonth;}
-	public void setDaysInMonth(int d){daysInMonth=d;}
+	public void setDaysInMonth(int d){daysInMonth=d; recalcTime();}
 	public int getMonthsInYear(){return monthsInYear.length;}
 	public String[] getMonthNames(){return monthsInYear;}
-	public void setMonthsInYear(String[] months){monthsInYear=months;}
+	public void setMonthsInYear(String[] months){monthsInYear=months; recalcTime();}
 	public int[] getDawnToDusk(){return dawnToDusk;}
 	public String[] getYearNames(){return yearNames;}
-	public void setYearNames(String[] years){yearNames=years;}
+	public void setYearNames(String[] years){yearNames=years; CMLib.database().saveObject(this);}
 	public void setDawnToDusk(int dawn, int day, int dusk, int night)
 	{ 
 		dawnToDusk[TIME_DAWN]=dawn;
 		dawnToDusk[TIME_DAY]=day;
 		dawnToDusk[TIME_DUSK]=dusk;
 		dawnToDusk[TIME_NIGHT]=night;
+		recalcTime();
 	}
 	public String[] getWeekNames(){return weekNames;}
 	public int getDaysInWeek(){return weekNames.length;}
-	public void setDaysInWeek(String[] days){weekNames=days;}
+	public void setDaysInWeek(String[] days){weekNames=days; CMLib.database().saveObject(this);}
 	
 	public String getShortestTimeDescription()
 	{
@@ -151,7 +189,7 @@ public class DefaultTimeClock implements TimeClock
 	}
 
 	public int getYear(){return year;}
-	public void setYear(int y){year=y;}
+	public void setYear(int y){year=y; CMLib.database().saveObject(this);}
 
 	public int getSeasonCode(){
 		int div=getMonthsInYear()/4;
@@ -161,10 +199,10 @@ public class DefaultTimeClock implements TimeClock
 		return TimeClock.SEASON_FALL;
 	}
 	public int getMonth(){return month;}
-	public void setMonth(int m){month=m;}
+	public void setMonth(int m){month=m; CMLib.database().saveObject(this);}
 
 	public int getDayOfMonth(){return day;}
-	public void setDayOfMonth(int d){day=d;}
+	public void setDayOfMonth(int d){day=d; CMLib.database().saveObject(this);}
 	public int getTimeOfDay(){return time;}
 	public int getTODCode()
 	{
@@ -185,6 +223,7 @@ public class DefaultTimeClock implements TimeClock
 	{
 		int oldCode=getTODCode();
 		time=t;
+		CMLib.database().saveObject(this);
 		return getTODCode()!=oldCode;
 	}
 	
@@ -199,21 +238,6 @@ public class DefaultTimeClock implements TimeClock
 		{
 			return new DefaultTimeClock();
 		}
-	}
-	public TimeClock deriveClock(long millis)
-	{
-		try
-		{
-			TimeClock C=(TimeClock)this.clone();
-			long diff=(System.currentTimeMillis()-millis)/Tickable.TIME_MILIS_PER_MUDHOUR;
-			C.tickTock((int)diff);
-			return C;
-		}
-		catch(CloneNotSupportedException e)
-		{
-			
-		}
-		return CMLib.time().globalClock();
 	}
 
 	public String deriveEllapsedTimeString(long millis)
@@ -256,26 +280,6 @@ public class DefaultTimeClock implements TimeClock
 		}
 		if(buf.length()==0) return "any second now";
 		return buf.toString();
-	}
-	
-	public long deriveMillisAfter(TimeClock C)
-	{
-		long numMudHours=0;
-		if(C.getYear()>getYear()) return -1;
-		else 
-		if(C.getYear()==getYear())
-			if(C.getMonth()>getMonth()) return -1;
-			else 
-			if(C.getMonth()==getMonth())
-				if(C.getDayOfMonth()>getDayOfMonth()) return -1;
-				else 
-				if(C.getDayOfMonth()==getDayOfMonth())
-					if(C.getTimeOfDay()>getTimeOfDay()) return -1;
-		numMudHours+=(getYear()-C.getYear())*(getHoursInDay()*getDaysInMonth()*getMonthsInYear());
-		numMudHours+=(getMonth()-C.getMonth())*(getHoursInDay()*getDaysInMonth());
-		numMudHours+=(getDayOfMonth()-C.getDayOfMonth())*getHoursInDay();
-		numMudHours+=(getTimeOfDay()-C.getTimeOfDay());
-		return numMudHours*Tickable.TIME_MILIS_PER_MUDHOUR;
 	}
 	
 	public void raiseLowerTheSunEverywhere()
@@ -323,120 +327,69 @@ public class DefaultTimeClock implements TimeClock
 	public void tickTock(int howManyHours)
 	{
 		int todCode=getTODCode();
-		if(howManyHours!=0)
+		time+=howManyHours;
+		lastTick=System.currentTimeMillis();
+		if(howManyHours>0)
 		{
-			setTimeOfDay(getTimeOfDay()+howManyHours);
-			lastTick=System.currentTimeMillis();
-			while(getTimeOfDay()>=getHoursInDay())
+			if(time>hoursInDay)
 			{
-				setTimeOfDay(getTimeOfDay()-getHoursInDay());
-				setDayOfMonth(getDayOfMonth()+1);
-				if(getDayOfMonth()>getDaysInMonth())
+				day+=time/hoursInDay;
+				time=time%hoursInDay;
+				if(day>daysInMonth)
 				{
-					setDayOfMonth(1);
-					setMonth(getMonth()+1);
-					if(getMonth()>getMonthsInYear())
+					month+=day/daysInMonth;
+					day=day%daysInMonth;
+					if(month>monthsInYear.length)
 					{
-						setMonth(1);
-						setYear(getYear()+1);
+						year+=month/monthsInYear.length;
+						month=month%monthsInYear.length;
 					}
 				}
 			}
-			while(getTimeOfDay()<0)
+		}
+		else if(howManyHours<0)
+		{
+			if(time<0)
 			{
-				setTimeOfDay(getHoursInDay()+getTimeOfDay());
-				setDayOfMonth(getDayOfMonth()-1);
-				if(getDayOfMonth()<1)
+				day+=time/hoursInDay-1;
+				time=time%hoursInDay+hoursInDay;
+				if(day<0)
 				{
-					setDayOfMonth(getDaysInMonth());
-					setMonth(getMonth()-1);
-					if(getMonth()<1)
+					month+=day/daysInMonth-1;
+					day=day%daysInMonth+daysInMonth;
+					if(month<0)
 					{
-						setMonth(getMonthsInYear());
-						setYear(getYear()-1);
+						year+=month/monthsInYear.length-1;
+						month=month%monthsInYear.length+monthsInYear.length;
 					}
 				}
 			}
 		}
 		if(getTODCode()!=todCode) raiseLowerTheSunEverywhere();
 	}
-/*	public void save()
-	{
-		if((loaded)&&(loadName!=null))
-		{
-			CMLib.database().DBReCreateData(loadName,"TIMECLOCK","TIMECLOCK/"+loadName,
-			"<DAY>"+getDayOfMonth()+"</DAY><MONTH>"+getMonth()+"</MONTH><YEAR>"+getYear()+"</YEAR>"
-			+"<HOURS>"+getHoursInDay()+"</HOURS><DAYS>"+getDaysInMonth()+"</DAYS>"
-			+"<MONTHS>"+CMParms.toStringList(getMonthNames())+"</MONTHS>"
-			+"<DAWNHR>"+getDawnToDusk()[TIME_DAWN]+"</DAWNHR>"
-			+"<DAYHR>"+getDawnToDusk()[TIME_DAY]+"</DAYHR>"
-			+"<DUSKHR>"+getDawnToDusk()[TIME_DUSK]+"</DUSKHR>"
-			+"<NIGHTHR>"+getDawnToDusk()[TIME_NIGHT]+"</NIGHTHR>"
-			+"<WEEK>"+CMParms.toStringList(getWeekNames())+"</WEEK>"
-			+"<YEARS>"+CMParms.toStringList(getYearNames())+"</YEARS>"
-			);
-		}
-	}
-*/
-	public long lastTick=0;
 	public boolean tick(Tickable ticking, Tickable.TickID tickID)
 	{
 //		tickStatus=Tickable.TickStat.Not;
-		if(((loadName==null)||(loaded))
-		&&(((System.currentTimeMillis()-lastTick)<=Tickable.TIME_MILIS_PER_MUDHOUR)))
+		if((System.currentTimeMillis()-lastTick)<=Tickable.TIME_MILIS_PER_MUDHOUR)
 			return true;
 		synchronized(this)
 		{
 			boolean timeToTick = ((System.currentTimeMillis()-lastTick)>Tickable.TIME_MILIS_PER_MUDHOUR);
 			lastTick=System.currentTimeMillis();
-			/* TODO
-			if((loadName!=null)&&(!loaded))
-			{
-				loaded=true;
-				Vector bitV=CMLib.database().DBReadData(loadName,"TIMECLOCK");
-				String timeRsc=null;
-				if((bitV==null)||(bitV.size()==0))
-					timeRsc="<TIME>-1</TIME><DAY>1</DAY><MONTH>1</MONTH><YEAR>1</YEAR>";
-				else
-					timeRsc=((DatabaseEngine.PlayerData)bitV.firstElement()).xml;
-				Vector V=CMLib.xml().parseAllXML(timeRsc);
-				setTimeOfDay(CMLib.xml().getIntFromPieces(V,"TIME"));
-				setDayOfMonth(CMLib.xml().getIntFromPieces(V,"DAY"));
-				setMonth(CMLib.xml().getIntFromPieces(V,"MONTH"));
-				setYear(CMLib.xml().getIntFromPieces(V,"YEAR"));
-				if(this!=CMLib.time().globalClock())
+			if(timeToTick)
+				if(++time>=hoursInDay)
 				{
-					if((CMLib.xml().getValFromPieces(V,"HOURS").length()==0)
-					||(CMLib.xml().getValFromPieces(V,"DAYS").length()==0)
-					||(CMLib.xml().getValFromPieces(V,"MONTHS").length()==0))
+					time=0;
+					if(++day>daysInMonth)
 					{
-						setHoursInDay(CMLib.time().globalClock().getHoursInDay());
-						setDaysInMonth(CMLib.time().globalClock().getDaysInMonth());
-						setMonthsInYear(CMLib.time().globalClock().getMonthNames());
-						setDawnToDusk(CMLib.time().globalClock().getDawnToDusk()[TIME_DAWN],
-									  CMLib.time().globalClock().getDawnToDusk()[TIME_DAY],
-									  CMLib.time().globalClock().getDawnToDusk()[TIME_DUSK],
-									  CMLib.time().globalClock().getDawnToDusk()[TIME_NIGHT]);
-						setDaysInWeek(CMLib.time().globalClock().getWeekNames());
-						setYearNames(CMLib.time().globalClock().getYearNames());
-					}
-					else
-					{
-						setHoursInDay(CMLib.xml().getIntFromPieces(V,"HOURS"));
-						setDaysInMonth(CMLib.xml().getIntFromPieces(V,"DAYS"));
-						setMonthsInYear(CMParms.toStringArray(CMParms.parseCommas(CMLib.xml().getValFromPieces(V,"MONTHS"),true)));
-						setDawnToDusk(CMLib.xml().getIntFromPieces(V,"DAWNHR"),
-									  CMLib.xml().getIntFromPieces(V,"DAYHR"),
-									  CMLib.xml().getIntFromPieces(V,"DUSKHR"),
-									  CMLib.xml().getIntFromPieces(V,"NIGHTHR"));
-						setDaysInWeek(CMParms.toStringArray(CMParms.parseCommas(CMLib.xml().getValFromPieces(V,"WEEK"),true)));
-						setYearNames(CMParms.toStringArray(CMParms.parseCommas(CMLib.xml().getValFromPieces(V,"YEARS"),true)));
+						day=1;
+						if(++month>monthsInYear.length)
+						{
+							month=1;
+							year++;
+						}
 					}
 				}
-			}
-			*/
-			if(timeToTick)
-				tickTock(1);
 		}
 		return true;
 	}
@@ -444,65 +397,83 @@ public class DefaultTimeClock implements TimeClock
 	public long lastAct(){return 0;}
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 
+	public void destroy()
+	{
+		//TODO
+		CMLib.database().deleteObject(this);
+	}
+
 	public SaveEnum[] totalEnumS(){return SCode.values();}
 	public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]} ;}
 	public ModEnum[] totalEnumM(){return MCode.values();}
 	public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
+	public int saveNum(){return 0;}
+	public void setSaveNum(int num){}
+	public boolean needLink(){return false;}
+	public void link(){}
+	public void saveThis(){parent.saveThis();}
 
 	private enum SCode implements CMSavable.SaveEnum{
 		TIM(){
-			public String save(DefaultTimeClock E){ return CMLib.coffeeMaker().savAInt(new int[]{E.time, E.day, E.month, E.year}); }
-			public void load(DefaultTimeClock E, String S){
-				int[] times=CMLib.coffeeMaker().loadAInt(S);
-				E.time=times[0]; E.day=times[1]; E.month=times[2]; E.year=times[3]; } },
+			public ByteBuffer save(DefaultTimeClock E){
+				return (ByteBuffer)ByteBuffer.wrap(new byte[12]).putLong(E.baseTime).putInt(E.baseYear).rewind(); }
+			public int size(){return 12;}
+			public void load(DefaultTimeClock E, ByteBuffer S){ E.setBaseTime(S.getLong(), S.getInt()); } },
 		DTD(){
-			public String save(DefaultTimeClock E){ return CMLib.coffeeMaker().savAInt(E.dawnToDusk); }
-			public void load(DefaultTimeClock E, String S){ E.dawnToDusk=CMLib.coffeeMaker().loadAInt(S); } },
+			public ByteBuffer save(DefaultTimeClock E){ return CMLib.coffeeMaker().savAInt(E.dawnToDusk); }
+			public int size(){return 16;}
+			public void load(DefaultTimeClock E, ByteBuffer S){ E.dawnToDusk=CMLib.coffeeMaker().loadAInt(S); } },
 		HRS(){
-			public String save(DefaultTimeClock E){ return ""+E.hoursInDay; }
-			public void load(DefaultTimeClock E, String S){ E.hoursInDay=Integer.parseInt(S); } },
+			public ByteBuffer save(DefaultTimeClock E){ return (ByteBuffer)ByteBuffer.wrap(new byte[4]).putInt(E.hoursInDay).rewind(); }
+			public int size(){return 4;}
+			public void load(DefaultTimeClock E, ByteBuffer S){ E.hoursInDay=S.getInt(); } },
 		DYS(){
-			public String save(DefaultTimeClock E){ return ""+E.daysInMonth; }
-			public void load(DefaultTimeClock E, String S){ E.daysInMonth=Integer.parseInt(S); } },
+			public ByteBuffer save(DefaultTimeClock E){ return (ByteBuffer)ByteBuffer.wrap(new byte[4]).putInt(E.daysInMonth).rewind(); }
+			public int size(){return 4;}
+			public void load(DefaultTimeClock E, ByteBuffer S){ E.daysInMonth=S.getInt(); } },
 		WKS(){
-			public String save(DefaultTimeClock E){ return CMLib.coffeeMaker().savAString(E.weekNames); }
-			public void load(DefaultTimeClock E, String S){ E.weekNames=CMLib.coffeeMaker().loadAString(S); } },
+			public ByteBuffer save(DefaultTimeClock E){ return CMLib.coffeeMaker().savAString(E.weekNames); }
+			public int size(){return 0;}
+			public void load(DefaultTimeClock E, ByteBuffer S){ E.weekNames=CMLib.coffeeMaker().loadAString(S); } },
 		MNS(){
-			public String save(DefaultTimeClock E){ return CMLib.coffeeMaker().savAString(E.monthsInYear); }
-			public void load(DefaultTimeClock E, String S){ E.monthsInYear=CMLib.coffeeMaker().loadAString(S); } },
+			public ByteBuffer save(DefaultTimeClock E){ return CMLib.coffeeMaker().savAString(E.monthsInYear); }
+			public int size(){return 0;}
+			public void load(DefaultTimeClock E, ByteBuffer S){ E.monthsInYear=CMLib.coffeeMaker().loadAString(S); } },
 		YRS(){
-			public String save(DefaultTimeClock E){ return CMLib.coffeeMaker().savAString(E.yearNames); }
-			public void load(DefaultTimeClock E, String S){ E.yearNames=CMLib.coffeeMaker().loadAString(S); } },
+			public ByteBuffer save(DefaultTimeClock E){ return CMLib.coffeeMaker().savAString(E.yearNames); }
+			public int size(){return 0;}
+			public void load(DefaultTimeClock E, ByteBuffer S){ E.yearNames=CMLib.coffeeMaker().loadAString(S); } },
 		;
-		public abstract String save(DefaultTimeClock E);
-		public abstract void load(DefaultTimeClock E, String S);
-		public String save(CMSavable E){return save((DefaultTimeClock)E);}
-		public void load(CMSavable E, String S){load((DefaultTimeClock)E, S);} }
+		public abstract ByteBuffer save(DefaultTimeClock E);
+		public abstract void load(DefaultTimeClock E, ByteBuffer S);
+		public ByteBuffer save(CMSavable E){return save((DefaultTimeClock)E);}
+		public CMSavable subObject(CMSavable fromThis){return null;}
+		public void load(CMSavable E, ByteBuffer S){load((DefaultTimeClock)E, S);} }
 	private enum MCode implements CMModifiable.ModEnum{
 		HOUR(){
 			public String brief(DefaultTimeClock E){return ""+E.time;}
 			public String prompt(DefaultTimeClock E){return ""+E.time;}
-			public void mod(DefaultTimeClock E, MOB M){E.time=CMLib.genEd().intPrompt(M, ""+E.time);} },
+			public void mod(DefaultTimeClock E, MOB M){E.time=CMLib.genEd().intPrompt(M, ""+E.time); E.recalcTime();} },
 		DAY(){
 			public String brief(DefaultTimeClock E){return ""+E.day;}
 			public String prompt(DefaultTimeClock E){return ""+E.day;}
-			public void mod(DefaultTimeClock E, MOB M){E.day=CMLib.genEd().intPrompt(M, ""+E.day);} },
+			public void mod(DefaultTimeClock E, MOB M){E.day=CMLib.genEd().intPrompt(M, ""+E.day); E.recalcTime();} },
 		MONTH(){
 			public String brief(DefaultTimeClock E){return ""+E.month;}
 			public String prompt(DefaultTimeClock E){return ""+E.month;}
-			public void mod(DefaultTimeClock E, MOB M){E.month=CMLib.genEd().intPrompt(M, ""+E.month);} },
+			public void mod(DefaultTimeClock E, MOB M){E.month=CMLib.genEd().intPrompt(M, ""+E.month); E.recalcTime();} },
 		YEAR(){
 			public String brief(DefaultTimeClock E){return ""+E.year;}
 			public String prompt(DefaultTimeClock E){return ""+E.year;}
-			public void mod(DefaultTimeClock E, MOB M){E.year=CMLib.genEd().intPrompt(M, ""+E.year);} },
+			public void mod(DefaultTimeClock E, MOB M){E.year=CMLib.genEd().intPrompt(M, ""+E.year); E.recalcTime();} },
 		WEEKNAMES(){
 			public String brief(DefaultTimeClock E){return ""+E.weekNames.length;}
 			public String prompt(DefaultTimeClock E){return ""+E.weekNames;}
-			public void mod(DefaultTimeClock E, MOB M){CMLib.genEd().astringPrompt(M, E.weekNames, false);} },
+			public void mod(DefaultTimeClock E, MOB M){CMLib.genEd().astringPrompt(M, E.weekNames, false); E.recalcTime();} },
 		MONTHNAMES(){
 			public String brief(DefaultTimeClock E){return ""+E.monthsInYear.length;}
 			public String prompt(DefaultTimeClock E){return ""+E.monthsInYear;}
-			public void mod(DefaultTimeClock E, MOB M){CMLib.genEd().astringPrompt(M, E.monthsInYear, false);} },
+			public void mod(DefaultTimeClock E, MOB M){CMLib.genEd().astringPrompt(M, E.monthsInYear, false); E.recalcTime();} },
 		YEARNAMES(){
 			public String brief(DefaultTimeClock E){return ""+E.yearNames.length;}
 			public String prompt(DefaultTimeClock E){return ""+E.yearNames;}
@@ -510,15 +481,15 @@ public class DefaultTimeClock implements TimeClock
 		HOURSOFDAY(){
 			public String brief(DefaultTimeClock E){return ""+E.dawnToDusk;}
 			public String prompt(DefaultTimeClock E){return ""+E.dawnToDusk;}
-			public void mod(DefaultTimeClock E, MOB M){CMLib.genEd().aintPrompt(M, E.dawnToDusk);} },
+			public void mod(DefaultTimeClock E, MOB M){CMLib.genEd().aintPrompt(M, E.dawnToDusk); E.recalcTime();} },
 		HOURSPERDAY(){
 			public String brief(DefaultTimeClock E){return ""+E.hoursInDay;}
 			public String prompt(DefaultTimeClock E){return ""+E.hoursInDay;}
-			public void mod(DefaultTimeClock E, MOB M){E.hoursInDay=CMLib.genEd().intPrompt(M, ""+E.hoursInDay);} },
+			public void mod(DefaultTimeClock E, MOB M){E.hoursInDay=CMLib.genEd().intPrompt(M, ""+E.hoursInDay); E.recalcTime();} },
 		DAYSPERMONTH(){
 			public String brief(DefaultTimeClock E){return ""+E.daysInMonth;}
 			public String prompt(DefaultTimeClock E){return ""+E.daysInMonth;}
-			public void mod(DefaultTimeClock E, MOB M){E.daysInMonth=CMLib.genEd().intPrompt(M, ""+E.daysInMonth);} },
+			public void mod(DefaultTimeClock E, MOB M){E.daysInMonth=CMLib.genEd().intPrompt(M, ""+E.daysInMonth); E.recalcTime();} },
 		;
 		public abstract String brief(DefaultTimeClock fromThis);
 		public abstract String prompt(DefaultTimeClock fromThis);

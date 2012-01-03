@@ -14,6 +14,7 @@ import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -25,16 +26,17 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 public class DefaultRideable implements Rideable, Ownable
 {
 	protected Vector<Item> riders=new Vector<Item>(1);
-	protected CMObject parent=null;
+	protected CMSavable parent=null;
 	protected int saveNum=0;
 	protected boolean mobile=false;
+/*
 	protected String putString="on";
 	protected String stateString="sitting on";
 	protected String mountString="sit(s) on";
 	protected String dismountString="stand(s) from";
 	protected String stateStringSubject="sat on by";
-	
-	
+*/
+
 	//CMObject
 	public String ID(){return "DefaultRideable";}
 	public CMObject newInstance(){return new DefaultRideable();}
@@ -43,8 +45,14 @@ public class DefaultRideable implements Rideable, Ownable
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 
 	//Ownable
-	public CMObject owner(){return parent;}
-	public void setOwner(CMObject owner){parent=owner;}
+	public CMSavable owner(){return parent;}
+	public Ownable setOwner(CMSavable owner){parent=owner; return this;}
+
+	public void destroy()
+	{
+		//TODO
+		CMLib.database().deleteObject(this);
+	}
 
 	//CMModifiable and CMSavable
 	public SaveEnum[] totalEnumS(){return SCode.values();}
@@ -54,46 +62,49 @@ public class DefaultRideable implements Rideable, Ownable
 	public int saveNum()
 	{
 		if(saveNum==0)
-		synchronized(saveNum)
+		synchronized(this)
 		{
 			if(saveNum==0)
-				saveNum=Rideable.RideThing.getNumber();
+				saveNum=SIDLib.Objects.RIDEABLE.getNumber(this);
 		}
 		return saveNum;
 	}
 	public void setSaveNum(int num)
 	{
-		synchronized(saveNum)
+		synchronized(this)
 		{
 			if(saveNum!=0)
-				Rideable.RideThing.removeNumber(saveNum, this);
+				SIDLib.Objects.RIDEABLE.removeNumber(saveNum);
 			saveNum=num;
-			Rideable.RideThing.assignNumber(num, this);
+			SIDLib.Objects.RIDEABLE.assignNumber(num, this);
 		}
 	}
+	public boolean needLink(){return false;}
+	public void link(){}
+	public void saveThis(){CMLib.database().saveObject(this);}
 
 	//Rideable
 	public boolean isMobileRide(){return mobile;}
-	public void setMobileRide(boolean mob){mobile=mob;}
+	public void setMobileRide(boolean mob){mobile=mob; CMLib.database().saveObject(this);}
 	public boolean canBeRidden(Item E) { return true; }
 	public boolean hasRider(Item E) { return riders.contains(E); }
 	public void addRider(Item E)
 	{
 		E.setRide(this);
 		riders.addElement(E);
-		E.getEnvObject().recoverEnvStats();
+//		E.getEnvObject().recoverEnvStats();
 	}
 	public void removeRider(Item E)
 	{
 		riders.removeElement(E);
 		E.setRide(null);
-		E.getEnvObject().recoverEnvStats();
+//		E.getEnvObject().recoverEnvStats();
 	}
 	public Item removeRider(int i)
 	{
 		Item E=riders.remove(i);
 		E.setRide(null);
-		E.getEnvObject().recoverEnvStats();
+//		E.getEnvObject().recoverEnvStats();
 		return E;
 	}
 	public Item getRider(int index)
@@ -104,47 +115,27 @@ public class DefaultRideable implements Rideable, Ownable
 	}
 	public Vector<Item> allRiders(){return (Vector<Item>)riders.clone();}
 	public int numRiders() { return riders.size(); }
-	public String putString(Item R) { return putString; }
-	public String stateString(Item R) { return stateString; }
-	public String mountString(Item R) { return mountString; }
-	public String dismountString(Item R) { return dismountString; }
-	public String stateStringSubject(Item R) { return stateStringSubject; }
-	public void setPutString(String S) {putString=S; }
-	public void setStateString(String S) {stateString=S; }
-	public void setMountString(String S) {mountString=S; }
-	public void setDismountString(String S) {dismountString=S; }
-	public void setStateStringSubject(String S) {stateStringSubject=S; }
+	public String putString(Item R) { return "on"; }
+	public String stateString(Item R) { return "sitting on"; }
+	public String mountString(Item R) { return "sit(s) on"; }
+	public String dismountString(Item R) { return "stand(s) from"; }
+	public String stateStringSubject(Item R) { return "sat on by"; }
+	public void setPutString(String S) {}
+	public void setStateString(String S) {}
+	public void setMountString(String S) {}
+	public void setDismountString(String S) {}
+	public void setStateStringSubject(String S) {}
 	private enum SCode implements CMSavable.SaveEnum{
-/*		RID(){
-			public String save(DefaultRideable E){
-//				if(CMProps.Strings.MUDSTATUS.property().startsWith("Shutting"))	//A little hackish but probably the best option
-					return ""+E.saveNumber();
-//				return "0";}
-			public void load(DefaultRideable E, String S){E.setRideNumber(Integer.parseInt(S));} },
-*/
 		MBL(){
-			public String save(DefaultRideable E){return ""+E.isMobileRide(); }
-			public void load(DefaultRideable E, String S){E.setMobileRide(Boolean.getBoolean(S));} },
-		PUT(){
-			public String save(DefaultRideable E){return E.putString(null);}
-			public void load(DefaultRideable E, String S){E.setPutString(S.intern());} },
-		STA(){
-			public String save(DefaultRideable E){return E.stateString(null);}
-			public void load(DefaultRideable E, String S){E.setStateString(S.intern());} },
-		MNT(){
-			public String save(DefaultRideable E){return E.mountString(null);}
-			public void load(DefaultRideable E, String S){E.setMountString(S.intern());} },
-		DIS(){
-			public String save(DefaultRideable E){return E.dismountString(null);}
-			public void load(DefaultRideable E, String S){E.setDismountString(S.intern());} },
-		SUB(){
-			public String save(DefaultRideable E){return E.stateStringSubject(null);}
-			public void load(DefaultRideable E, String S){E.setStateStringSubject(S.intern());} }
+			public ByteBuffer save(DefaultRideable E){return ByteBuffer.wrap(new byte[] {(E.mobile?(byte)1:(byte)0)}); }
+			public int size(){return 1;}
+			public void load(DefaultRideable E, ByteBuffer S){E.mobile=(S.get()!=0);} },
 		;
-		public abstract String save(DefaultRideable E);
-		public abstract void load(DefaultRideable E, String S);
-		public String save(CMSavable E){return save((DefaultRideable)E);}
-		public void load(CMSavable E, String S){load((DefaultRideable)E, S);} }
+		public abstract ByteBuffer save(DefaultRideable E);
+		public abstract void load(DefaultRideable E, ByteBuffer S);
+		public ByteBuffer save(CMSavable E){return save((DefaultRideable)E);}
+		public CMSavable subObject(CMSavable fromThis){return null;}
+		public void load(CMSavable E, ByteBuffer S){load((DefaultRideable)E, S);} }
 	private static enum MCode implements ModEnum{
 		RIDERS() {
 			public String brief(DefaultRideable E){return ""+E.numRiders();}
@@ -167,26 +158,6 @@ public class DefaultRideable implements Rideable, Ownable
 			public String brief(DefaultRideable E){return ""+E.isMobileRide();}
 			public String prompt(DefaultRideable E){return ""+E.isMobileRide();}
 			public void mod(DefaultRideable E, MOB M){E.setMobileRide(CMLib.genEd().booleanPrompt(M, ""+E.isMobileRide()));} },
-		PUT() {
-			public String brief(DefaultRideable E){return E.putString(null);}
-			public String prompt(DefaultRideable E){return E.putString(null);}
-			public void mod(DefaultRideable E, MOB M){E.setPutString(CMLib.genEd().stringPrompt(M, E.putString(null), false));} },
-		STATE() {
-			public String brief(DefaultRideable E){return E.stateString(null);}
-			public String prompt(DefaultRideable E){return E.stateString(null);}
-			public void mod(DefaultRideable E, MOB M){E.setStateString(CMLib.genEd().stringPrompt(M, E.stateString(null), false));} },
-		MOUNT() {
-			public String brief(DefaultRideable E){return E.mountString(null);}
-			public String prompt(DefaultRideable E){return E.mountString(null);}
-			public void mod(DefaultRideable E, MOB M){E.setMountString(CMLib.genEd().stringPrompt(M, E.mountString(null), false));} },
-		DISMOUNT() {
-			public String brief(DefaultRideable E){return E.dismountString(null);}
-			public String prompt(DefaultRideable E){return E.dismountString(null);}
-			public void mod(DefaultRideable E, MOB M){E.setDismountString(CMLib.genEd().stringPrompt(M, E.dismountString(null), false));} },
-		SUBJECT() {
-			public String brief(DefaultRideable E){return E.stateStringSubject(null);}
-			public String prompt(DefaultRideable E){return E.stateStringSubject(null);}
-			public void mod(DefaultRideable E, MOB M){E.setStateStringSubject(CMLib.genEd().stringPrompt(M, E.stateStringSubject(null), false));} },
 		;
 		public abstract String brief(DefaultRideable fromThis);
 		public abstract String prompt(DefaultRideable fromThis);

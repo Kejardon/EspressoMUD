@@ -13,6 +13,7 @@ import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
+import java.nio.ByteBuffer;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -24,33 +25,47 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public interface GenericBuilder extends CMLibrary
 {
+	//Use this instead of making useless buffers
+	public static final ByteBuffer emptyBuffer=ByteBuffer.wrap(new byte[0]);
+
 	//Main functions
-	public String getPropertiesStr(CMSavable E);
-	public void setPropertiesStr(CMSavable E, String buf);
+//	public ByteBuffer getPropertiesStr(CMSavable E);
+//	public void setPropertiesStr(CMSavable E, String buf);
 
 	//Public functions for common save/load code
-	public CMSavable loadSub(String A);
-	public String getSubStr(CMSavable Obj);
-	public String savAShort(short[] val);
-	public short[] loadAShort(String A);
-	public String savAInt(int[] val);
-	public int[] loadAInt(String A);
-	public String savALong(long[] val);
-	public long[] loadALong(String A);
-	public String savADouble(double[] val);
-	public double[] loadADouble(String A);
-	public String savABoolean(boolean[] val);
-	public boolean[] loadABoolean(String A);
-	public String savAChar(char[] val);
-	public char[] loadAChar(String A);
-	public String savAString(String[] val);
-	public String[] loadAString(String A);
-	public String savStringsInterlaced(String[] ... val);
-	public String[][] loadStringsInterlaced(String A, int dim);
-	public String getSaveNumStr(Enumeration<CMSavable> e);
-	
-	public String getVectorStr(Vector V);
-	public Vector setVectorStr(String S);
-	public String getWVectorStr(WVector V);
-	public WVector setWVectorStr(String S);
+//	public CMSavable loadSub(String A);
+//	public ByteBuffer getSubStr(CMSavable Obj);
+	public ByteBuffer savAShort(short[] val);
+	public short[] loadAShort(ByteBuffer A);
+	public ByteBuffer savAInt(int[] val);
+	public int[] loadAInt(ByteBuffer A);
+	public ByteBuffer savALong(long[] val);
+	public long[] loadALong(ByteBuffer A);
+	public ByteBuffer savADouble(double[] val);
+	public double[] loadADouble(ByteBuffer A);
+	public ByteBuffer savABoolean(boolean[] val);
+	public boolean[] loadABoolean(ByteBuffer A);
+	public ByteBuffer savAChar(char[] val);
+	public char[] loadAChar(ByteBuffer A);
+	public ByteBuffer savAString(String[] val);
+	public ByteBuffer savAAString(String[]... val);
+	public String[] loadAString(ByteBuffer A);
+	public ByteBuffer savString(String val);
+	public String loadString(ByteBuffer A);
+//	public ByteBuffer savSubFixed(CMSavable.CMSubSavable sub);
+//	public ByteBuffer savSubVar(CMSavable.CMSubSavable sub);
+	public ByteBuffer savSubFull(CMSavable sub);
+	public CMSavable loadSub(ByteBuffer buf, CMSavable sub);
+	public ByteBuffer savSaveNums(CMSavable[] e);
+	public ByteBuffer getRaceWVector(WVector<Race> V);
+	public WVector<Race> setRaceWVector(ByteBuffer S);
+	public ByteBuffer savExits(Room.REMap[] exits);
+	public int[][] loadExits(ByteBuffer buf);
+//	public String savStringsInterlaced(String[] ... val);
+//	public String[][] loadStringsInterlaced(String A, int dim);
+//	public String getSaveNumStr(Enumeration<CMSavable> e);
+//	public String getVectorStr(Vector V);
+//	public Vector setVectorStr(String S);
+//	public String getWVectorStr(WVector V);
+//	public WVector setWVectorStr(String S);
 }

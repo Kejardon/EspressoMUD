@@ -133,7 +133,7 @@ public class Sessions extends StdLibrary implements SessionsList
 
 					if(time>(check*10))
 					{
-						String roomID=(S.mob()!=null&&S.mob().location()!=null)?S.mob().location().roomID():"";
+						int roomID=(S.mob()!=null&&S.mob().location()!=null)?S.mob().location().saveNum():0;
 						if((S.previousCMD()==null)||(S.previousCMD().size()==0)||(S.getStatus()==Session.STATUS_LOGIN)||(S.getStatus()==Session.STATUS_ACCOUNTMENU))
 							Log.errOut(thread.getName(),"Kicking out: "+((S.mob()==null)?"Unknown":S.mob().name())+" who has spent "+time+" millis out-game.");
 						else
@@ -155,7 +155,7 @@ public class Sessions extends StdLibrary implements SessionsList
 						else
 						if((S.previousCMD()!=null)&&(S.previousCMD().size()>0))
 						{
-							String roomID=(S.mob()!=null&&S.mob().location()!=null)?S.mob().location().roomID():"";
+							int roomID=(S.mob()!=null&&S.mob().location()!=null)?S.mob().location().saveNum():0;
 							if((S.isLockedUpWriting())
 							&&(CMLib.flags().isInTheGame(S.mob(),true)))
 							{
@@ -174,7 +174,7 @@ public class Sessions extends StdLibrary implements SessionsList
 				else
 				if(time>(60000))
 				{
-					String roomID=(S.mob()!=null&&S.mob().location()!=null)?S.mob().location().roomID():"";
+					int roomID=(S.mob()!=null&&S.mob().location()!=null)?S.mob().location().saveNum():0;
 					if(S.getStatus()==Session.STATUS_LOGIN)
 						Log.errOut(thread.getName(),"Kicking out login session after "+time+" millis.");
 					else

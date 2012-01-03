@@ -32,7 +32,7 @@ Bodymap. There will be a set of limbs with some standardized naming scheme.
 public interface Body extends Item	//, Rideable
 {
 	public MOB mob();
-	public void setMob(MOB mob);
+	public Body setMob(MOB mob);
 
 //	public int initializeBirthday(int ageHours, Race R);
 	public int[] birthday();

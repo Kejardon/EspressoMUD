@@ -39,8 +39,6 @@ public interface TimeClock extends Tickable, CMCommon, CMSavable, CMModifiable
 	public int getTODCode();
 	public int getSeasonCode();
 	public void tickTock(int howManyHours);
-//	public void save();
-	public void setLoadName(String name);
 	public int getHoursInDay();
 	public void setHoursInDay(int h);
 	public int getDaysInMonth();
@@ -55,8 +53,6 @@ public interface TimeClock extends Tickable, CMCommon, CMSavable, CMModifiable
 	public void setDaysInWeek(String[] days);
 	public String[] getYearNames();
 	public void setYearNames(String[] years);
-	public TimeClock deriveClock(long millis);
-	public long deriveMillisAfter(TimeClock C);
 	public String deriveEllapsedTimeString(long millis);
 	public void initializeINIClock(CMProps page);
 

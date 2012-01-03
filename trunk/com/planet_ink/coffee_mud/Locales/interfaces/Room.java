@@ -40,14 +40,30 @@ public interface Room extends ItemCollection.ItemHolder, Interactable, CMSavable
 	{
 		UNDERWATER, AIR, WATERSURFACE,
 		WOODS, JUNGLE, SWAMP, PLAINS, DESERT, ROCKS, MOUNTAINS, CITY
+		;
+		protected static Domain[] options;
+		public static Domain getDomain(int i)
+		{
+			if(options==null)
+				options=values();
+			return options[i];
+		}
 	}
 	public enum Enclosure
 	{
 		OPEN, WALLS, ENCLOSED, AIRTIGHT
+		;
+		protected static Enclosure[] options;
+		public static Enclosure getEnclosure(int i)
+		{
+			if(options==null)
+				options=values();
+			return options[i];
+		}
 	}
 
-	public String roomID();
-	public void setRoomID(String newRoomID);
+//	public String roomID();
+//	public void setRoomID(String newRoomID);
 	public Domain domain();
 	public Enclosure enclosure();
 	public void recoverRoomStats();
@@ -71,7 +87,7 @@ public interface Room extends ItemCollection.ItemHolder, Interactable, CMSavable
 	public boolean changeExit(REMap M, REMap newM);
 //	public int getExitIndex(String target);
 //	public int getExitIndex(Exit E, Room R);
-	public void initExits();
+//	public void initExits();
 
 	public boolean doMessage(CMMsg msg);
 	public void send(CMMsg msg);

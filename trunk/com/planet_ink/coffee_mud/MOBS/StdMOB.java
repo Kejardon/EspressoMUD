@@ -16,6 +16,7 @@ import java.util.*;
 
 import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 
 /*
@@ -28,13 +29,13 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class StdMOB implements MOB
 {
-	private static final Vector empty=new Vector();
+//	private static final Vector empty=new Vector();
 
 	public String ID(){return "StdMOB";}
 	public String name="";
 
-	protected CharStats baseCharStats=(CharStats)CMClass.Objects.COMMON.getNew("MOBCharStats");
-	protected CharStats charStats=(CharStats)CMClass.Objects.COMMON.getNew("MOBCharStats");
+	protected CharStats baseCharStats=(CharStats)((Ownable)CMClass.Objects.COMMON.getNew("MOBCharStats")).setOwner(this);
+	protected CharStats charStats=(CharStats)((Ownable)CMClass.Objects.COMMON.getNew("MOBCharStats")).setOwner(this);
 
 	protected PlayerStats playerStats=null;
 
@@ -58,7 +59,7 @@ public class StdMOB implements MOB
 	protected Vector<ExcChecker> excCheckers=new Vector<ExcChecker>();
 	protected Vector<TickActer> tickActers=new Vector<TickActer>();
 
-	protected ItemCollection inventory=(ItemCollection)CMClass.Objects.COMMON.getNew("DefaultItemCol");
+	protected ItemCollection inventory=(ItemCollection)((Ownable)CMClass.Objects.COMMON.getNew("DefaultItemCol")).setOwner(this);
 	protected Vector affects=new Vector(1);
 	protected Vector behaviors=new Vector(1);
 
@@ -83,9 +84,16 @@ public class StdMOB implements MOB
 	protected Vector titles=new Vector();
 	protected Body myBody=null;
 
+	protected int saveNum=0;
+	protected int[] effectsToLoad=null;
+	protected int[] behavesToLoad=null;
+	protected int bodyToLink=0;
+	protected int itemCollectionToLoad=0;
+	protected int playerStatsToLink=0;
+
 	public StdMOB()
 	{
-		((Ownable)inventory).setOwner(this);
+//		((Ownable)inventory).setOwner(this);
 	}
 
 	public void initializeClass(){}
@@ -109,8 +117,10 @@ public class StdMOB implements MOB
 		startRoomPossibly=room;
 	} */
 
-	public void setName(String newName){
+	public void setName(String newName)
+	{
 		name=newName;
+		CMLib.database().saveObject(this);
 	}
 	public String name()
 	{
@@ -120,7 +130,13 @@ public class StdMOB implements MOB
 	{
 		return name;
 	}
-	public void setBody(Body newBody){myBody=newBody;}
+	public void setBody(Body newBody)
+	{
+		myBody=newBody.setMob(this);
+//		baseCharStats.setBody(newBody);
+//		charStats.setBody(newBody);
+		CMLib.database().saveObject(this);
+	}
 	public Body body(){return myBody;}
 	public void setDescription(String S){}
 	public String description(){return "";}
@@ -152,7 +168,8 @@ public class StdMOB implements MOB
 	protected void cloneFix(MOB E)
 	{
 		//TODO
-		if(E==null) return;
+		saveNum=0;
+//		if(E==null) return;
 	}
 
 	public CMObject copyOf()
@@ -176,13 +193,14 @@ public class StdMOB implements MOB
 		baseCharStats.copyStatic(charStats);
 		for(int a=charAffecters.size();a>0;a--)
 			charAffecters.get(a-1).affectCharStats(this,charStats);
+		CMLib.database().saveObject(this);
 	}
 //	public void resetToMaxState() { charStats.resetState(); }
 
 	public void setBaseCharStats(CharStats newBaseCharStats)
 	{
-		baseCharStats=(CharStats)newBaseCharStats.copyOf();
-		charStats=(CharStats)CMClass.Objects.COMMON.getNew(newBaseCharStats.ID());
+		baseCharStats=(CharStats)((Ownable)newBaseCharStats.copyOf()).setOwner(this);
+		charStats=(CharStats)((Ownable)CMClass.Objects.COMMON.getNew(newBaseCharStats.ID())).setOwner(this);
 		recoverCharStats();
 		charStats.resetState();
 	}
@@ -192,6 +210,7 @@ public class StdMOB implements MOB
 
 	public void destroy()
 	{
+		//TODO
 		if(session()!=null){ session().kill(false,false,false); try{Thread.sleep(1000);}catch(Exception e){}}
 		while(numBehaviors()>0)
 			delBehavior(fetchBehavior(0));
@@ -206,6 +225,7 @@ public class StdMOB implements MOB
 		victim=null;
 		amDestroyed=true;
 		myBody=null;
+		CMLib.database().deleteObject(this);
 	}
 
 	public Interactable getVictim()
@@ -265,7 +285,7 @@ public class StdMOB implements MOB
 		&&(playerStats()!=null)
 		&&(viewer!=null)
 		&&(viewer.playerStats()!=null)
-		&&(!viewer.playerStats().isIntroducedTo(name())))
+		&&(!viewer.playerStats().isIntroducedTo(this)))
 			return CMLib.english().startWithAorAn(genericName()).toLowerCase();
 		return name();
 	}
@@ -611,11 +631,15 @@ public class StdMOB implements MOB
 		if(to==null) return;
 		affects.addElement(to);
 		to.setAffectedOne(this);
+		CMLib.database().saveObject(this);
 	}
 	public void delEffect(Effect to)
 	{
 		if(affects.removeElement(to))
+		{
 			to.setAffectedOne(null);
+			CMLib.database().saveObject(this);
+		}
 	}
 	public int numEffects()
 	{
@@ -650,15 +674,20 @@ public class StdMOB implements MOB
 	public void addBehavior(Behavior to)
 	{
 		if(to==null) return;
-		if(behaviors==null) behaviors=new Vector(1);
+//		if(behaviors==null) behaviors=new Vector(1);
 		if(fetchBehavior(to.ID())!=null) return;
 		to.startBehavior(this);
 		behaviors.addElement(to);
+		CMLib.database().saveObject(this);
 	}
 	public void delBehavior(Behavior to)
 	{
-		if(behaviors==null) return;
-		behaviors.removeElement(to);
+//		if(behaviors==null) return;
+		if(behaviors.removeElement(to))
+		{
+			to.startBehavior(null);
+			CMLib.database().saveObject(this);
+		}
 	}
 	public int numBehaviors()
 	{
@@ -708,50 +737,121 @@ public class StdMOB implements MOB
 	public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]} ;}
 	public ModEnum[] totalEnumM(){return MCode.values();}
 	public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
+	public int saveNum()
+	{
+		if(saveNum==0)
+		synchronized(this)
+		{
+			if(saveNum==0)
+				saveNum=SIDLib.Objects.CREATURE.getNumber(this);
+		}
+		return saveNum;
+	}
+	public void setSaveNum(int num)
+	{
+		synchronized(this)
+		{
+			if(saveNum!=0)
+				SIDLib.Objects.CREATURE.removeNumber(saveNum);
+			saveNum=num;
+			SIDLib.Objects.CREATURE.assignNumber(num, this);
+		}
+	}
+	public boolean needLink(){return true;}
+	public void link()
+	{
+		if(effectsToLoad!=null)
+		{
+			for(int SID : effectsToLoad)
+			{
+				Effect to = (Effect)SIDLib.Objects.EFFECT.get(SID);
+				if(to==null) continue;
+				affects.addElement(to);
+				to.setAffectedOne(this);
+			}
+			effectsToLoad=null;
+		}
+		if(behavesToLoad!=null)
+		{
+			for(int SID : behavesToLoad)
+			{
+				Behavior to = (Behavior)SIDLib.Objects.BEHAVIOR.get(SID);
+				if(to==null) continue;
+				to.startBehavior(this);
+				behaviors.addElement(to);
+			}
+			behavesToLoad=null;
+		}
+		if(bodyToLink!=0)
+		{
+			setBody((Body)SIDLib.Objects.ITEM.get(bodyToLink));
+			bodyToLink=0;
+		}
+		if(itemCollectionToLoad!=0)
+		{
+			//TODO: Ideally original inventory is made only if needed...
+			inventory.destroy();
+			inventory = (ItemCollection)((Ownable)SIDLib.Objects.ITEMCOLLECTION.get(itemCollectionToLoad)).setOwner(this);
+			itemCollectionToLoad=0;
+		}
+		if(playerStatsToLink!=0)
+		{
+			playerStats=(PlayerStats)SIDLib.Objects.PLAYERDATA.get(playerStatsToLink);
+			if(playerStats!=null) CMLib.players().addPlayer(this);
+			playerStatsToLink=0;
+		}
+	}
+	public void saveThis(){CMLib.database().saveObject(this);}
 
 	private enum SCode implements CMSavable.SaveEnum{
 		NAM(){
-			public String save(StdMOB E){ return ""+E.name; }
-			public void load(StdMOB E, String S){ E.name=S.intern(); } },
+			public ByteBuffer save(StdMOB E){ return CMLib.coffeeMaker().savString(E.name); }
+			public int size(){return 0;}
+			public void load(StdMOB E, ByteBuffer S){ E.name=CMLib.coffeeMaker().loadString(S); } },
 		BCS(){
-			public String save(StdMOB E){ return CMLib.coffeeMaker().getSubStr(E.baseCharStats); }
-			public void load(StdMOB E, String S){ E.baseCharStats=(CharStats)CMLib.coffeeMaker().loadSub(S); } },
+			public ByteBuffer save(StdMOB E){ return CMLib.coffeeMaker().savSubFull(E.baseCharStats); }
+			public int size(){return -1;}
+			public CMSavable subObject(CMSavable fromThis){return ((StdMOB)fromThis).baseCharStats;}
+			public void load(StdMOB E, ByteBuffer S){ E.baseCharStats=(CharStats)((Ownable)CMLib.coffeeMaker().loadSub(S, E.baseCharStats)).setOwner(E); } },
 		CHS(){
-			public String save(StdMOB E){ return CMLib.coffeeMaker().getSubStr(E.charStats); }
-			public void load(StdMOB E, String S){ E.charStats=(CharStats)CMLib.coffeeMaker().loadSub(S); } },
+			public ByteBuffer save(StdMOB E){ return CMLib.coffeeMaker().savSubFull(E.charStats); }
+			public int size(){return -1;}
+			public CMSavable subObject(CMSavable fromThis){return ((StdMOB)fromThis).charStats;}
+			public void load(StdMOB E, ByteBuffer S){ E.charStats=(CharStats)((Ownable)CMLib.coffeeMaker().loadSub(S, E.charStats)).setOwner(E); } },
 		PLS(){
-			public String save(StdMOB E){ return CMLib.coffeeMaker().getSubStr(E.playerStats); }
-			public void load(StdMOB E, String S){ E.playerStats=(PlayerStats)CMLib.coffeeMaker().loadSub(S); } },
+			public ByteBuffer save(StdMOB E){ return (ByteBuffer)ByteBuffer.wrap(new byte[4]).putInt(E.playerStats==null?0:E.playerStats.saveNum()).rewind(); }
+			public int size(){return 4;}
+			public void load(StdMOB E, ByteBuffer S){ E.playerStatsToLink=S.getInt(); } },
 		INV(){
-			public String save(StdMOB E){ return CMLib.coffeeMaker().getSubStr(E.inventory); }
-			public void load(StdMOB E, String S){ E.inventory=(ItemCollection)CMLib.coffeeMaker().loadSub(S); } },
+			public ByteBuffer save(StdMOB E){ return (ByteBuffer)ByteBuffer.wrap(new byte[4]).putInt(E.inventory.saveNum()).rewind(); }
+			public int size(){return 4;}
+			public void load(StdMOB E, ByteBuffer S){ E.itemCollectionToLoad=S.getInt(); } },
 		TTL(){
-			public String save(StdMOB E){ return CMLib.coffeeMaker().savAString((String[])E.titles.toArray(new String[0])); }
-			public void load(StdMOB E, String S){ for(String newI : CMLib.coffeeMaker().loadAString(S)) E.titles.add(newI); } },
+			public ByteBuffer save(StdMOB E){ return CMLib.coffeeMaker().savAString((String[])E.titles.toArray(new String[E.titles.size()])); }
+			public int size(){return 0;}
+			public void load(StdMOB E, ByteBuffer S){ for(String newT : CMLib.coffeeMaker().loadAString(S)) E.titles.add(newT); } },
 		EFC(){
-			public String save(StdMOB E){ return CMLib.coffeeMaker().getVectorStr(E.affects); }
-			public void load(StdMOB E, String S){
-				Vector<Effect> V=CMLib.coffeeMaker().setVectorStr(S);
-				for(Effect A : V)
-					E.addEffect(A);
-				
-				} },
+			public ByteBuffer save(StdMOB E){
+				if(E.affects.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.affects.toArray(new CMSavable[E.affects.size()]));
+				return GenericBuilder.emptyBuffer; }
+			public int size(){return 0;}
+			public void load(StdMOB E, ByteBuffer S){ E.effectsToLoad=CMLib.coffeeMaker().loadAInt(S); } },
 		BHV(){
-			public String save(StdMOB E){ return CMLib.coffeeMaker().getVectorStr(E.behaviors); }
-			public void load(StdMOB E, String S){
-				Vector<Behavior> V=CMLib.coffeeMaker().setVectorStr(S);
-				for(Behavior A : V)
-					E.addBehavior(A);
-				
-				} },
+			public ByteBuffer save(StdMOB E){
+				if(E.behaviors.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.behaviors.toArray(new CMSavable[E.behaviors.size()]));
+				return GenericBuilder.emptyBuffer; }
+			public int size(){return 0;}
+			public void load(StdMOB E, ByteBuffer S){ E.behavesToLoad=CMLib.coffeeMaker().loadAInt(S); } },
 		BDY(){
-			public String save(StdMOB E){ if(E.isMonster()||E.myBody==null) return ""; return CMLib.coffeeMaker().getSubStr(E.myBody); }
-			public void load(StdMOB E, String S){ E.myBody=(Body)CMLib.coffeeMaker().loadSub(S); } },
+			public ByteBuffer save(StdMOB E){ return (ByteBuffer)ByteBuffer.wrap(new byte[4]).putInt(E.myBody.saveNum()).rewind(); }
+			public int size(){return 4;}
+			public void load(StdMOB E, ByteBuffer S){ E.bodyToLink=S.getInt(); } },
 		;
-		public abstract String save(StdMOB E);
-		public abstract void load(StdMOB E, String S);
-		public String save(CMSavable E){return save((StdMOB)E);}
-		public void load(CMSavable E, String S){load((StdMOB)E, S);} }
+		public abstract ByteBuffer save(StdMOB E);
+		public abstract void load(StdMOB E, ByteBuffer S);
+		public ByteBuffer save(CMSavable E){return save((StdMOB)E);}
+		public CMSavable subObject(CMSavable fromThis){return null;}
+		public void load(CMSavable E, ByteBuffer S){load((StdMOB)E, S);} }
 	private enum MCode implements CMModifiable.ModEnum{
 		NAME(){
 			public String brief(StdMOB E){return E.name;}

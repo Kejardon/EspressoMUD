@@ -33,7 +33,7 @@ public class Friends extends StdCommand
 	{
 		PlayerStats pstats=mob.playerStats();
 		if(pstats==null) return false;
-		HashSet h=pstats.getFriends();
+		HashSet<MOB> h=pstats.getFriends();
 
 		if((commands.size()<2)||(((String)commands.elementAt(1)).equalsIgnoreCase("list")))
 		{
@@ -42,8 +42,8 @@ public class Friends extends StdCommand
 			else
 			{
 				StringBuffer str=new StringBuffer("Your listed friends are: ");
-				for(Iterator e=h.iterator();e.hasNext();)
-					str.append(((String)e.next())+" ");
+				for(Iterator<MOB> e=h.iterator();e.hasNext();)
+					str.append((e.next().name())+" ");
 				mob.tell(str.toString());
 			}
 		}
@@ -57,20 +57,18 @@ public class Friends extends StdCommand
 				return false;
 			}
 			name=CMStrings.capitalizeAndLower(name);
-			if(name.equals("All"))
-			{}
-			else
-			if(!CMLib.players().playerExists(name))
+			MOB newFriend=CMLib.players().getPlayer(name);
+			if(newFriend==null)
 			{
 				mob.tell("No player by that name was found.");
 				return false;
 			}
-			if(h.contains(name))
+			if(h.contains(newFriend))
 			{
 				mob.tell("That name is already on your list.");
 				return false;
 			}
-			h.add(name);
+			h.add(newFriend);
 			mob.tell("The Player '"+name+"' has been added to your friends list.");
 		}
 		else
@@ -82,13 +80,18 @@ public class Friends extends StdCommand
 				mob.tell("Remove whom?");
 				return false;
 			}
-			if(!h.contains(name))
+			for (Iterator<MOB> iter=h.iterator(); iter.hasNext();)
 			{
-				mob.tell("That name '"+name+"' does not appear on your list.  Watch your casing!");
-				return false;
+				MOB newFriend=iter.next();
+				if(newFriend.name().equalsIgnoreCase(name))
+				{
+					h.remove(newFriend);
+					mob.tell("The Player '"+name+"' has been removed from your friends list.");
+					return false;
+				}
 			}
-			h.remove(name);
-			mob.tell("The Player '"+name+"' has been removed from your friends list.");
+			mob.tell("That name '"+name+"' does not appear on your list.  Watch your casing!");
+			return false;
 		}
 		else
 		{

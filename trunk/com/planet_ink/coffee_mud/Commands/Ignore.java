@@ -33,7 +33,7 @@ public class Ignore extends StdCommand
 	{
 		PlayerStats pstats=mob.playerStats();
 		if(pstats==null) return false;
-		HashSet h=pstats.getIgnored();
+		HashSet<MOB> h=pstats.getIgnored();
 		if((commands.size()<2)||(((String)commands.elementAt(1)).equalsIgnoreCase("list")))
 		{
 			if(h.size()==0)
@@ -41,8 +41,8 @@ public class Ignore extends StdCommand
 			else
 			{
 				StringBuffer str=new StringBuffer("You are ignoring: ");
-				for(Iterator e=h.iterator();e.hasNext();)
-					str.append(((String)e.next())+" ");
+				for(Iterator<MOB> e=h.iterator();e.hasNext();)
+					str.append((e.next().name())+" ");
 				mob.tell(str.toString());
 			}
 		}
@@ -56,17 +56,18 @@ public class Ignore extends StdCommand
 				return false;
 			}
 			name=CMStrings.capitalizeAndLower(name);
-			if(!CMLib.players().playerExists(name))
+			MOB newIgnore=CMLib.players().getPlayer(name);
+			if(newIgnore==null)
 			{
 				mob.tell("No player by that name was found.");
 				return false;
 			}
-			if(h.contains(name))
+			if(h.contains(newIgnore))
 			{
 				mob.tell("That name is already on your list.");
 				return false;
 			}
-			h.add(name);
+			h.add(newIgnore);
 			mob.tell("The Player '"+name+"' has been added to your ignore list.");
 		}
 		else
@@ -78,13 +79,18 @@ public class Ignore extends StdCommand
 				mob.tell("Remove whom?");
 				return false;
 			}
-			if(!h.contains(name))
+			for (Iterator<MOB> iter=h.iterator(); iter.hasNext();)
 			{
-				mob.tell("That name '"+name+"' does not appear on your list.  Watch your casing!");
-				return false;
+				MOB newIgnore=iter.next();
+				if(newIgnore.name().equalsIgnoreCase(name))
+				{
+					h.remove(newIgnore);
+					mob.tell("The Player '"+name+"' has been removed from your ignore list.");
+					return false;
+				}
 			}
-			h.remove(name);
-			mob.tell("The Player '"+name+"' has been removed from your ignore list.");
+			mob.tell("That name '"+name+"' does not appear on your list.");
+			return false;
 		}
 		else
 		{

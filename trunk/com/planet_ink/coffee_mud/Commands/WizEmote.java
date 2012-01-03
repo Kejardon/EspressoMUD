@@ -35,7 +35,7 @@ public class WizEmote extends StdCommand
 		{
 			String who=(String)commands.elementAt(1);
 			String msg=CMParms.combineWithQuotes(commands,2);
-			Room R=CMLib.map().getRoom(who);
+			Room R=(Room)SIDLib.Objects.ROOM.get(CMath.s_int(who));
 			if(who.toUpperCase().equals("HERE")) R=mob.location();
 			Area A=CMLib.map().findAreaStartsWith(who);
 			if(who.toUpperCase().equals("ALL"))

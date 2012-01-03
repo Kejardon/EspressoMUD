@@ -58,7 +58,7 @@ public class Create extends StdCommand
 		{
 			String roomID=mob.session().prompt("Connect this exit to what room? ","");
 			if(roomID.equals("")) break;
-			R=CMLib.map().getRoom(roomID);
+			R=(Room)SIDLib.Objects.ROOM.get(CMath.s_int(roomID));
 		}
 		if(R==null)
 		{
@@ -72,7 +72,7 @@ public class Create extends StdCommand
 		if(returnExit) R.addExit(thisExit, here);
 
 		here.showHappens(EnumSet.of(CMMsg.MsgCode.VISUAL),null,"Suddenly a passage opens up.\n\r");
-		Log.sysOut("Exits",mob.location().roomID()+" exits changed by "+mob.name()+".");
+		Log.sysOut("Exits",mob.location().saveNum()+" exits changed by "+mob.name()+".");
 	}
 
 	public void items(MOB mob, Vector commands)
@@ -149,10 +149,10 @@ public class Create extends StdCommand
 			return;
 		}
 		thisRoom.setArea(area);
-		thisRoom.setDisplayText(CMClass.classID(thisRoom)+"-"+thisRoom.roomID());
+		thisRoom.setDisplayText(CMClass.classID(thisRoom)+"-"+thisRoom.saveNum());
 		thisRoom.setDescription("");
 		thisRoom.recoverRoomStats();
-		Log.sysOut("Rooms",mob.name()+" created room "+thisRoom.roomID()+".");
+		Log.sysOut("Rooms",mob.name()+" created room "+thisRoom.saveNum()+".");
 		CMLib.genEd().genMiscSet(mob, thisRoom);
 	}
 
@@ -198,7 +198,7 @@ public class Create extends StdCommand
 			return;
 		}
 		
-		thisArea.initChildren();
+//		thisArea.initChildren();
 		String areaName="";
 		while(areaName.length()==0)
 		{

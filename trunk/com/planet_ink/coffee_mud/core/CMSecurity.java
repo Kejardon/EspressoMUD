@@ -118,14 +118,14 @@ public class CMSecurity
 		return true;
 	}
 	
-	public static Vector getAccessibleDirs(MOB mob, Room room)
+/*	public static Vector getAccessibleDirs(MOB mob, Room room)
 	{
 		Vector DIRSV=new Vector();
 		if(isASysOp(mob)){ DIRSV.addElement("/"); return DIRSV; }
 		if(mob==null) return DIRSV;
 		if(mob.playerStats()==null)
 			return DIRSV;
-		Vector V=(Vector)mob.playerStats().getSecurityGroups().clone();
+		Vector V=(HashSet)mob.playerStats().getSecurityGroups().clone();
 		if(V.size()==0) return DIRSV;
 		String set=null;
 		for(int v=0;v<V.size();v++)
@@ -195,7 +195,6 @@ public class CMSecurity
 		}
 		return DIRSV;
 	}
-	
 	public static boolean hasAccessibleDir(MOB mob, Room room)
 	{
 		if(isASysOp(mob)) return true;
@@ -227,14 +226,14 @@ public class CMSecurity
 		}
 		return false;
 	}
-	
+*/
 	public static boolean canTraverseDir(MOB mob, Room room, String path)
 	{
 		if(isASysOp(mob)) return true;
 		if(mob==null) return false;
 		if(mob.playerStats()==null)
 			return false;
-		Vector V=(Vector)mob.playerStats().getSecurityGroups().clone();
+		HashSet<String> V=(HashSet)mob.playerStats().getSecurityGroups().clone();
 		if(V.size()==0) return false;
 		path=CMFile.vfsifyFilename(path.trim()).toUpperCase();
 		if(path.equals("/")||path.equals(".")) path="";
@@ -242,9 +241,9 @@ public class CMSecurity
 		String pathSlash=path+"/";
 		String set=null;
 		String setSlash=null;
-		for(int v=0;v<V.size();v++)
+		for(Iterator<String> iter=V.iterator();iter.hasNext();)
 		{
-			set=((String)V.elementAt(v)).toUpperCase();
+			set=iter.next().toUpperCase();
 			if(set.startsWith("FS:"))
 				set=set.substring(3).trim();
 			else
@@ -277,22 +276,21 @@ public class CMSecurity
 		}
 		return false;
 	}
-	
 	public static boolean canAccessFile(MOB mob, Room room, String path, boolean isVFS)
 	{
 		if(mob==null) return false;
 		if(isASysOp(mob)) return true;
 		if(mob.playerStats()==null)
 			return false;
-		Vector V=(Vector)mob.playerStats().getSecurityGroups().clone();
+		HashSet<String> V=(HashSet)mob.playerStats().getSecurityGroups().clone();
 		if(V.size()==0) return false;
 		path=CMFile.vfsifyFilename(path.trim()).toUpperCase();
 		if(path.equals("/")||path.equals(".")) path="";
 		String set=null;
 		String setSlash=null;
-		for(int v=0;v<V.size();v++)
+		for(Iterator<String> iter=V.iterator();iter.hasNext();)
 		{
-			set=((String)V.elementAt(v)).toUpperCase();
+			set=iter.next().toUpperCase();
 			if(set.startsWith("FS:"))
 				set=set.substring(3).trim();
 			else
@@ -325,16 +323,17 @@ public class CMSecurity
 		}
 		return false;
 	}
-	
+
+/*
 	public static Vector getSecurityCodes(MOB mob, Room room)
 	{
 		if((mob==null)||(mob.playerStats()==null)) return new Vector();
-		Vector codes=(Vector)mob.playerStats().getSecurityGroups().clone();
+		HashSet<String> codes=(HashSet)mob.playerStats().getSecurityGroups().clone();
 		HashSet tried=new HashSet();
 		for(Enumeration e=instance().groups.keys();e.hasMoreElements();)
 		{
 			String key=(String)e.nextElement();
-			codes.addElement(key);
+			codes.addElement(key);	//Why this?
 			HashSet H=(HashSet)instance().groups.get(key);
 			for(Iterator i=H.iterator();i.hasNext();)
 			{
@@ -354,7 +353,7 @@ public class CMSecurity
 		}
 		return codes;
 	}
-	
+*/
 	
 	public static boolean isAllowedStartsWith(MOB mob, Room room, String code)
 	{
@@ -362,12 +361,12 @@ public class CMSecurity
 		if(isASysOp(mob)) return true;
 		if(mob.playerStats()==null)
 			return false;
-		Vector V=(Vector)mob.playerStats().getSecurityGroups().clone();
+		HashSet<String> V=(HashSet)mob.playerStats().getSecurityGroups().clone();
 		if(V.size()==0) return false;
 		
-		for(int v=0;v<V.size();v++)
+		for(Iterator<String> iter=V.iterator();iter.hasNext();)
 		{
-			String set=(String)V.elementAt(v);
+			String set=iter.next().toUpperCase();
 			if(set.startsWith(code))
 			   return true;
 			HashSet H=(HashSet)instance().groups.get(set);
@@ -390,12 +389,12 @@ public class CMSecurity
 		if(isASysOp(mob)) return true;
 		if(mob.playerStats()==null)
 			return false;
-		Vector V=(Vector)mob.playerStats().getSecurityGroups().clone();
+		HashSet<String> V=(HashSet)mob.playerStats().getSecurityGroups().clone();
 		if(V.size()==0) return false;
 		
-		for(int v=0;v<V.size();v++)
+		for(Iterator<String> iter=V.iterator();iter.hasNext();)
 		{
-			String set=(String)V.elementAt(v);
+			String set=iter.next().toUpperCase();
 			if(set.equals(code))
 			   return true;
 			HashSet H=(HashSet)instance().groups.get(set);
@@ -413,12 +412,12 @@ public class CMSecurity
 		if(isASysOp(mob)) return true;
 		if(mob.playerStats()==null)
 			return false;
-		Vector V=(Vector)mob.playerStats().getSecurityGroups().clone();
+		HashSet<String> V=(HashSet)mob.playerStats().getSecurityGroups().clone();
 		if(V.size()==0) return false;
 		
-		for(int v=0;v<V.size();v++)
+		for(Iterator<String> iter=V.iterator();iter.hasNext();)
 		{
-			String set=(String)V.elementAt(v);
+			String set=iter.next().toUpperCase();
 			if(set.startsWith(code))
 			   return true;
 			HashSet H=(HashSet)instance().groups.get(set);
@@ -440,12 +439,12 @@ public class CMSecurity
 		if(isASysOp(mob)) return true;
 		if(mob.playerStats()==null)
 			return false;
-		Vector V=(Vector)mob.playerStats().getSecurityGroups().clone();
+		HashSet<String> V=(HashSet)mob.playerStats().getSecurityGroups().clone();
 		if(V.size()==0) return false;
 		
-		for(int v=0;v<V.size();v++)
+		for(Iterator<String> iter=V.iterator();iter.hasNext();)
 		{
-			String set=(String)V.elementAt(v);
+			String set=iter.next().toUpperCase();
 			if(set.equals(code)) return true;
 			HashSet H=(HashSet)instance().groups.get(set);
 			if(H!=null)
@@ -462,12 +461,12 @@ public class CMSecurity
 		if(isASysOp(mob)) return true;
 		if(mob.playerStats()==null)
 			return false;
-		Vector V=(Vector)mob.playerStats().getSecurityGroups().clone();
+		HashSet<String> V=(HashSet)mob.playerStats().getSecurityGroups().clone();
 		if(V.size()==0) return false;
 		
-		for(int v=0;v<V.size();v++)
+		for(Iterator<String> iter=V.iterator();iter.hasNext();)
 		{
-			String set=(String)V.elementAt(v);
+			String set=iter.next().toUpperCase();
 			if(set.equals(code))
 			   return true;
 			HashSet H=(HashSet)instance().groups.get(set);

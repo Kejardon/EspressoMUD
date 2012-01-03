@@ -135,7 +135,7 @@ public class Unload extends StdCommand
 				}
 				if(saveFirst)
 				{
-					CMLib.database().DBUpdatePlayer(M);
+					CMLib.database().saveObject(M);
 				}
 			}
 			int done=0;

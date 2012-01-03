@@ -196,14 +196,14 @@ public class List extends StdCommand
 				StringBuilder S=new StringBuilder();
 				for(Enumeration<Room> rooms=mob.location().getArea().getProperMap();rooms.hasMoreElements();){
 					Room R=rooms.nextElement();
-					S.append(CMStrings.padRightPreserve("^<LSTROOMID^>"+R.roomID()+"^</LSTROOMID^>",30)+": "+CMStrings.limit(R.displayText(),43)+"\n\r"); }
+					S.append(CMStrings.padRightPreserve("^<LSTROOMID^>"+R.saveNum()+"^</LSTROOMID^>",30)+": "+CMStrings.limit(R.displayText(),43)+"\n\r"); }
 				mob.session().wraplessPrintln(S.toString()+"\n\r"); } },
 		AREA(new String[] {"CMDMOBS","CMDITEMS","CMDROOMS","CMDAREAS","CMDEXITS","CMDRACES"}){	//CMDCLASSES
 			public void list(MOB mob, String rest){
 				StringBuilder S=new StringBuilder();
 				for(Enumeration<Room> rooms=mob.location().getArea().getProperMap();rooms.hasMoreElements();){
 					Room R=rooms.nextElement();
-					S.append(CMStrings.padRightPreserve(R.roomID(),30)+": "+R.ID()+"\n\r"); }
+					S.append(CMStrings.padRightPreserve(""+R.saveNum(),30)+": "+R.ID()+"\n\r"); }
 				mob.session().wraplessPrintln(S.toString()+"\n\r"); } },
 		LOCALES(new String[] {"CMDROOMS"}){
 			public void list(MOB mob, String rest){
@@ -322,7 +322,7 @@ public class List extends StdCommand
 					head.append(CMStrings.padRight("",4)+" ");	//player.level() ?
 		//			long age=Math.round(CMath.div(CMath.s_long(""+player.playerStats()),60.0));
 		//			head.append(CMStrings.padRight(""+age,5)+" ");
-					head.append(CMStrings.padRight(player.playerStats().lastIP(),17)+" ");
+					head.append(CMStrings.padRight(Arrays.toString(player.playerStats().lastIP()),17)+" ");
 					head.append(CMStrings.padRight(CMLib.time().date2String(player.playerStats().lastDateTime()),18)+" ");
 					head.append("] "+CMStrings.padRight("^<LSTUSER^>"+player.name()+"^</LSTUSER^>",15));
 					head.append("\n\r"); }
@@ -516,9 +516,11 @@ public class List extends StdCommand
 				head.append(CMStrings.padRight("Last",18)+" ");
 				head.append(CMStrings.padRight("IP Address",23)+" ");
 				head.append("] Characters^.^N\n\r");
-				Vector<PlayerAccount> allAccounts=CMLib.database().DBListAccounts(null);
-				for(int u=0;u<allAccounts.size();u++) {
-					PlayerAccount U=allAccounts.elementAt(u);
+//				Vector<PlayerAccount> allAccounts=CMLib.database().DBListAccounts(null);
+//				for(int u=0;u<allAccounts.size();u++) {
+//					PlayerAccount U=allAccounts.elementAt(u);
+				for(Iterator<PlayerAccount> allAccounts=SIDLib.Objects.ACCOUNT.getAll();allAccounts.hasNext();) {
+					PlayerAccount U=allAccounts.next();
 					StringBuffer line=new StringBuffer("");
 					line.append("[");
 					line.append(CMStrings.padRight(U.accountName(),10)+" ");
@@ -526,7 +528,7 @@ public class List extends StdCommand
 					Enumeration<MOB> players = U.getLoadPlayers();
 					Vector<String> pListsV = new Vector<String>();
 					while(players.hasMoreElements()) pListsV.add(players.nextElement().name());
-					line.append(CMStrings.padRight(U.lastIP(),23)+" ");
+					line.append(CMStrings.padRight(Arrays.toString(U.lastIP()),23)+" ");
 					line.append("] ");
 					int len = line.length();
 					head.append(line.toString());

@@ -9,8 +9,8 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 //A subcontainer object that holds and handles a common type of information in place of its owner
 public interface Ownable extends CMObject
 {
-	public CMObject owner();
-	public void setOwner(CMObject newOwner);
+	public CMSavable owner();
+	public Ownable setOwner(CMSavable newOwner);
 	
 	public static class O
 	{

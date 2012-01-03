@@ -1,6 +1,7 @@
 package com.planet_ink.coffee_mud.Libraries;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
+import com.planet_ink.coffee_mud.core.database.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
@@ -13,6 +14,8 @@ import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 
 import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.Libraries.interfaces.XMLLibrary.XMLpiece;
@@ -38,8 +41,8 @@ public class CoffeeMaker extends StdLibrary implements GenericBuilder
 {
 	public String ID(){return "CoffeeMaker";}
 
-	private Hashtable<String, String[]> basePropertiesStr=new Hashtable<String, String[]>();
 /*
+	private Hashtable<String, String[]> basePropertiesStr=new Hashtable<String, String[]>();
 	private String[] getBaseString(CMSavable E, CMSavable.SaveEnum[] options)
 	{
 		String[] baseStrings=basePropertiesStr.get(E.ID());
@@ -51,7 +54,6 @@ public class CoffeeMaker extends StdLibrary implements GenericBuilder
 		basePropertiesStr.put(baseObject.ID(), baseStrings);
 		return baseStrings;
 	}
-*/
 	//General format is (saveCodeName+" "+saveSize+" "+saveData) for each entry, repeated until done.
 	//Vectors or other things may have an ID at the start. If so it'll just be a (ID+" ") before the entries. CMClass.getUnknown will get the object, or STRING will mean a java String
 	public ByteBuffer[] getPropertiesStr(CMSavable E)
@@ -73,7 +75,6 @@ public class CoffeeMaker extends StdLibrary implements GenericBuilder
 		for(int i=0;(i=Combined.indexOf("'",i))>=0;Combined.setCharAt(i++,'`')){}
 		return Combined.toString();
 	}
-
 	private CMSavable.SaveEnum getParser(Enum E, String S)
 	{
 		try{return (CMSavable.SaveEnum)E.valueOf((Class)E.getClass().getSuperclass(), S);}
@@ -82,7 +83,6 @@ public class CoffeeMaker extends StdLibrary implements GenericBuilder
 		catch(IllegalArgumentException e){}
 		return null;
 	}
-
 	//IMPORTANT! Make sure any Strings saved to the object are NEW STRINGS WITH THEIR OWN MEMORY and not SUBSTRINGS OF OLD STRINGS' MEMORY
 	public void setPropertiesStr(CMSavable E, String S)
 	{
@@ -107,182 +107,350 @@ public class CoffeeMaker extends StdLibrary implements GenericBuilder
 			CMSavable.SaveEnum parser=null;
 			for(int i=0;(i<options.length)&&(parser==null);i++)
 				parser=getParser(options[i], option);
-
 			if (parser==null)
 				continue;
 			parser.load(E, A);
 		}
 		}catch(RuntimeException e){Log.errOut("CoffeeMaker","Error in S: "+S); throw e;}
 	}
+*/
+	protected byte[] toBytes(int i)
+	{
+		byte[] result = new byte[4];
+		result[0] = (byte) (i >> 24);
+		result[1] = (byte) (i >> 16);
+		result[2] = (byte) (i >> 8);
+		result[3] = (byte) (i);
+		return result;
+	}
+	protected byte[] toBytes(int i, int index, byte[] toThis)
+	{
+		toThis[index] = (byte) (i >> 24);
+		toThis[index+1] = (byte) (i >> 16);
+		toThis[index+2] = (byte) (i >> 8);
+		toThis[index+3] = (byte) (i);
+		return toThis;
+	}
 
 	//The rest of this file is public functions for common load/save code SaveEnums may want to use.
-	public CMSavable loadSub(String A)
+	public ByteBuffer savAShort(short[] val)
 	{
-		if(A.equals("null")) return null;
-		int x=A.indexOf(" ");
-		
-		CMClass.Objects type=(CMClass.Objects)CMClass.valueOf(CMClass.Objects.class, A.substring(0,x));
-		if(type==null)
-		{
-			Log.errOut("CoffeeMaker","loadSub: bad String input for type: "+A.substring(0,x).intern());
-			return null;
-		}
-		A=A.substring(x+1);
-		x=A.indexOf(" ");
-		CMSavable E=(CMSavable)type.getNew(A.substring(0,x));
-		if(E==null)
-		{
-			Log.errOut("CoffeeMaker","loadSub: bad String input for object: "+A.substring(0,x).intern());
-			return null;
-		}
-		setPropertiesStr((CMSavable)E, A.substring(x+1));
-		return E;
-	}
-	public String getSubStr(CMSavable sub)
-	{
-		if(sub==null) return "null";
-		StringBuilder A=new StringBuilder("");
-		CMClass.Objects type=CMClass.getType(sub);
-		A.append(type.name()+" "+sub.ID()+" "+getPropertiesStr(sub));
-		return A.toString();
-	}
-	public String savAShort(short[] val)
-	{
-		StringBuilder A=new StringBuilder(""+val.length);
+		ByteBuffer buf=ByteBuffer.wrap(new byte[val.length*2]);
 		for(short s : val)
-			A.append(" "+s);
-		return A.toString();
+			buf.putShort(s);
+		buf.rewind();
+		return buf;
 	}
-	public short[] loadAShort(String A)
+	public short[] loadAShort(ByteBuffer A)
 	{
-		int x=A.indexOf(" ");
-		short[] val=new short[Integer.parseInt(A.substring(0,x))];
-		A=A.substring(x+1);
-		for(int i=1;i<val.length;i++)
-		{
-			x=A.indexOf(" ");
-			val[i-1]=Short.parseShort(A.substring(0,x));
-			A=A.substring(x+1);
-		}
-		val[val.length-1]=Short.parseShort(A);
-		return val;
+		short[] vals=new short[A.remaining()/2];
+		for(int i=0;i<vals.length;i++)
+			vals[i]=A.getShort();
+		return vals;
 	}
-	public String savAInt(int[] val)
+	public ByteBuffer savAInt(int[] val)
 	{
-		StringBuilder A=new StringBuilder(""+val.length);
-		for(int s : val)
-			A.append(" "+s);
-		return A.toString();
+		ByteBuffer buf=ByteBuffer.wrap(new byte[val.length*4]);
+		for(int i : val)
+			buf.putInt(i);
+		buf.rewind();
+		return buf;
 	}
-	public int[] loadAInt(String A)
+	public int[] loadAInt(ByteBuffer A)
 	{
-		int x=A.indexOf(" ");
-		int[] val=new int[Integer.parseInt(A.substring(0,x))];
-		A=A.substring(x+1);
-		for(int i=1;i<val.length;i++)
-		{
-			x=A.indexOf(" ");
-			val[i-1]=Integer.parseInt(A.substring(0,x));
-			A=A.substring(x+1);
-		}
-		val[val.length-1]=Integer.parseInt(A);
-		return val;
+		int[] vals=new int[A.remaining()/4];
+		for(int i=0;i<vals.length;i++)
+			vals[i]=A.getInt();
+		return vals;
 	}
-	public String savALong(long[] val)
+	public ByteBuffer savALong(long[] val)
 	{
-		StringBuilder A=new StringBuilder(""+val.length);
-		for(long s : val)
-			A.append(" "+s);
-		return A.toString();
+		ByteBuffer buf=ByteBuffer.wrap(new byte[val.length*8]);
+		for(long l : val)
+			buf.putLong(l);
+		buf.rewind();
+		return buf;
 	}
-	public long[] loadALong(String A)
+	public long[] loadALong(ByteBuffer A)
 	{
-		int x=A.indexOf(" ");
-		long[] val=new long[Integer.parseInt(A.substring(0,x))];
-		A=A.substring(x+1);
-		for(int i=1;i<val.length;i++)
-		{
-			x=A.indexOf(" ");
-			val[i-1]=Long.parseLong(A.substring(0,x));
-			A=A.substring(x+1);
-		}
-		val[val.length-1]=Long.parseLong(A);
-		return val;
+		long[] vals=new long[A.remaining()/8];
+		for(int i=0;i<vals.length;i++)
+			vals[i]=A.getLong();
+		return vals;
 	}
-	public String savADouble(double[] val)
+	public ByteBuffer savADouble(double[] val)
 	{
-		StringBuilder A=new StringBuilder(""+val.length);
-		for(double s : val)
-			A.append(" "+Double.doubleToLongBits(s));
-		return A.toString();
+		ByteBuffer buf=ByteBuffer.wrap(new byte[val.length*8]);
+		for(double d : val)
+			buf.putDouble(d);
+		buf.rewind();
+		return buf;
 	}
-	public double[] loadADouble(String A)
+	public double[] loadADouble(ByteBuffer A)
 	{
-		int x=A.indexOf(" ");
-		double[] val=new double[Integer.parseInt(A.substring(0,x))];
-		A=A.substring(x+1);
-		for(int i=1;i<val.length;i++)
-		{
-			x=A.indexOf(" ");
-			val[i-1]=Double.longBitsToDouble(Long.parseLong(A.substring(0,x)));
-			A=A.substring(x+1);
-		}
-		val[val.length-1]=Double.longBitsToDouble(Long.parseLong(A));
-		return val;
+		double[] vals=new double[A.remaining()/8];
+		for(int i=0;i<vals.length;i++)
+			vals[i]=A.getDouble();
+		return vals;
 	}
-	public String savABoolean(boolean[] val)
+	//This can be compressed better, but compression will take processing.
+	public ByteBuffer savABoolean(boolean[] val)
 	{
-		StringBuilder A=new StringBuilder(""+val.length+" ");
+		ByteBuffer buf=ByteBuffer.wrap(new byte[val.length]);
 		for(boolean s : val)
-			A.append((s?'T':'F'));
-		return A.toString();
+			buf.put(s?(byte)1:(byte)0);
+		buf.rewind();
+		return buf;
 	}
-	public boolean[] loadABoolean(String A)
+	public boolean[] loadABoolean(ByteBuffer A)
 	{
-		int x=A.indexOf(" ");
-		boolean[] val=new boolean[Integer.parseInt(A.substring(0,x))];
-		A=A.substring(x+1);
-		for(int i=0;i<val.length;i++)
-			val[i]=(A.charAt(i)=='T');
-		return val;
+		boolean[] bools=new boolean[A.remaining()];
+		for(boolean bool : bools)
+			bool=(A.get()==0)?false:true;
+		return bools;
 	}
-	public String savAChar(char[] val)
+	public ByteBuffer savAChar(char[] val)
 	{
-		StringBuilder A=new StringBuilder(""+val.length+" ");
-		A.append(val);
-		return A.toString();
+		return DBManager.charFormat.encode(CharBuffer.wrap(val));
 	}
-	public char[] loadAChar(String A)
+	public char[] loadAChar(ByteBuffer A)
 	{
-		int x=A.indexOf(" ");
-		char[] val=new char[Integer.parseInt(A.substring(0,x))];
-		A=A.substring(x+1);
-		for(int i=0;i<val.length;i++)
-			val[i]=A.charAt(i);
-		return val;
+		return DBManager.charFormat.decode(A).array();
 	}
-	public String savAString(String[] val)
+	public ByteBuffer savAString(String[] val)
 	{
-		StringBuilder A=new StringBuilder(""+val.length+" ");
-		for(String s : val)
-			A.append(s.length()+" "+s);
-		return A.toString();
-	}
-	public String[] loadAString(String A)
-	{
-		int x=A.indexOf(" ");
-		int y=0;
-		String[] val=new String[Integer.parseInt(A.substring(0,x))];
-		A=A.substring(x+1);
+		if(val.length==0) return emptyBuffer;
+		byte[][] entries=new byte[1+2*val.length][];
+		int size=0;
+		entries[0]=toBytes(val.length);
 		for(int i=0;i<val.length;i++)
 		{
-			x=A.indexOf(" ");
-			y=Integer.parseInt(A.substring(0,x))+x+1;
-			val[i]=A.substring(x+1,y).intern();	//Keeping the memory clean!
-			A=A.substring(y);
+			entries[2*i+2]=val[i].getBytes(DBManager.charFormat);
+			entries[2*i+1]=toBytes(entries[2*i+2].length);
+			size+=4+entries[2*i+2].length;
 		}
-		return val;
+		ByteBuffer values=ByteBuffer.wrap(new byte[size+4]);
+		for(byte[] entry : entries)
+			values.put(entry);
+		values.rewind();
+		return values;
 	}
+	public ByteBuffer savAAString(String[]... val)
+	{
+		if(val.length==0) return emptyBuffer;
+		int numStrings=0;
+		for(String[] set : val) numStrings+=set.length;
+		byte[][] entries=new byte[1+2*numStrings][];
+		int size=0;
+		entries[0]=toBytes(numStrings);
+		int i=0;
+		for(String[] set : val)
+		{
+			for(String str : set)
+			{
+				entries[2*i+2]=str.getBytes(DBManager.charFormat);
+				entries[2*i+1]=toBytes(entries[2*i+2].length);
+				size+=4+entries[2*i+2].length;
+				i++;
+			}
+		}
+		ByteBuffer values=ByteBuffer.wrap(new byte[size+4]);
+		for(byte[] entry : entries)
+			values.put(entry);
+		values.rewind();
+		return values;
+	}
+	public String[] loadAString(ByteBuffer A)
+	{
+		String[] strings=new String[A.getInt()];
+		for(int i=0;i<strings.length;i++)
+		{
+			byte[] buf=new byte[A.getInt()];
+			A.get(buf);
+			strings[i]=new String(buf, DBManager.charFormat);
+		}
+		return strings;
+	}
+	public ByteBuffer savString(String val)
+	{
+		if(val.length()==0) return emptyBuffer;
+		return ByteBuffer.wrap(val.getBytes(DBManager.charFormat));
+	}
+	public String loadString(ByteBuffer A)
+	{
+		byte[] buf=new byte[A.remaining()];
+		A.get(buf);
+		return new String(buf, DBManager.charFormat);
+	}
+/*	Not needed, this will be done within DBManager if possible.
+	public ByteBuffer savSubFixed(CMSavable.CMSubSavable sub)	//prepend with 00
+	{
+		int size=1;
+		ByteBuffer[] fixedVars=DBManager.getFormat(sub).getPartFixedVals(sub);
+		
+		return null;
+	}
+	public ByteBuffer savSubVar(CMSavable.CMSubSavable sub)	//prepend with 01
+	{
+		return null;
+	}
+*/
+	public ByteBuffer savSubFull(CMSavable sub)	//prepend with 02, ID Size, ID
+	{
+		//Total size: 1(header)+4(Type ID size)+?(Type ID)+4(ID Size)+?(ID)+?(Data)=9+typeSize+IDSize+DataSize
+		CMClass.Objects type=CMClass.getType(sub);
+		byte[] typeBytes=type.name().getBytes(DBManager.charFormat);
+		byte[] IDbytes=sub.ID().getBytes(DBManager.charFormat);
+		int totalSize=9+IDbytes.length+typeBytes.length;
+		Vector<ByteBuffer> allVals=new Vector();
+		for(CMSavable.SaveEnum thisEnum : sub.totalEnumS())
+		{
+			ByteBuffer buf=thisEnum.save(sub);
+			int size=buf.remaining();
+			if(size==0) continue;
+			allVals.add(DBManager.charFormat.encode(thisEnum.name()));
+			allVals.add((ByteBuffer)ByteBuffer.wrap(new byte[4]).putInt(size).rewind());
+			allVals.add(buf);
+			totalSize+=size+7;
+		}
+		ByteBuffer saveData=ByteBuffer.wrap(new byte[totalSize]);
+		saveData.put((byte)2).putInt(typeBytes.length).put(typeBytes).putInt(IDbytes.length).put(IDbytes);
+		for(Enumeration<ByteBuffer> e=allVals.elements();e.hasMoreElements();)
+			saveData.put(e.nextElement());
+		saveData.rewind();
+		return saveData;
+	}
+	public CMSavable loadSub(ByteBuffer buf, CMSavable sub)
+	{
+		switch(buf.get())
+		{
+			case 3:	//fixed data
+			{
+				DBManager.SaveFormat format=DBManager.getFormat(sub);
+				//TODO: These should be cached and loaded from format, not generated on the fly
+				CMSavable.SaveEnum[] parsers=new CMSavable.SaveEnum[format.enums.size()];
+				int[] weights=new int[parsers.length];
+				format.enums.toArrays(parsers, weights);
+				for(int parserNum=0;parserNum<parsers.length;parserNum++)
+				{
+					if(parsers[parserNum]==null)
+					{
+						buf.position(buf.position()+weights[parserNum]);
+						continue;
+					}
+					ByteBuffer saveBuffer=buf.slice();
+					buf.position(buf.position()+weights[parserNum]);
+					saveBuffer.limit(weights[parserNum]);
+					parsers[parserNum].load(sub, saveBuffer);
+				}
+				break;
+			}
+			case 2:	//all data
+			{
+				byte[] typeBytes=new byte[buf.getInt()];
+				buf.get(typeBytes);
+				byte[] IDbytes=new byte[buf.getInt()];
+				buf.get(IDbytes);
+				sub=(CMSavable)((CMClass.Objects)CMClass.valueOf(CMClass.Objects.class, new String(typeBytes, DBManager.charFormat))).getNew(new String(IDbytes, DBManager.charFormat));
+				//fall through to var data
+			}
+			case 1:	//var data
+			{
+				DBManager.SaveFormat format=DBManager.getFormat(sub);
+				byte[] enumName=new byte[3];
+				Enum[] options=format.myObject.headerEnumS();
+				while(buf.remaining()>0)
+				{
+					buf.get(enumName);
+					String option=new String(enumName, DBManager.charFormat);
+					CMSavable.SaveEnum thisEnum=null;
+					for(int j=0;(j<options.length)&&(thisEnum==null);j++)
+						thisEnum=DBManager.getParser(options[j], option);
+					int size=buf.getInt();
+					if(thisEnum==null)
+					{
+						buf.position(buf.position()+size);
+						continue;
+					}
+					ByteBuffer saveBuffer=buf.slice();
+					buf.position(buf.position()+size);
+					saveBuffer.limit(size);
+					thisEnum.load(sub, saveBuffer);
+				}
+				break;
+			}
+			case 0:	//Null flag
+				return null;
+			//Should there be a default flag that just returns sub as-is?
+		}
+		return sub;
+	}
+	//The reverse of these is just loadAInt
+/*	public ByteBuffer savSaveNums(Vector<CMSavable> e)
+	{
+		return savSaveNums((CMSavable[])e.toArray(new CMSavable[e.size()]));
+	} */
+	public ByteBuffer savSaveNums(CMSavable[] e)
+	{
+		ByteBuffer buf=ByteBuffer.wrap(new byte[e.length*4]);
+		for(CMSavable obj : e)
+			buf.putInt(obj==null?0:obj.saveNum());
+		buf.rewind();
+		return buf;
+	}
+	public ByteBuffer savExits(Room.REMap[] exits)
+	{
+		ByteBuffer buf=ByteBuffer.wrap(new byte[exits.length*8]);
+		for(Room.REMap exit : exits)
+			buf.putInt(exit.room.saveNum()).putInt(exit.exit.saveNum());
+		buf.rewind();
+		return buf;
+	}
+	public int[][] loadExits(ByteBuffer buf)
+	{
+		int[][] nums=new int[buf.remaining()/8][2];
+		for(int[] theseNums : nums)
+		{
+			theseNums[0]=buf.getInt();
+			theseNums[1]=buf.getInt();
+		}
+		return nums;
+	}
+	
+	//Save a list of races.
+	public ByteBuffer getRaceWVector(WVector<Race> V)
+	{
+		if(V==null) return emptyBuffer;
+		
+		int totalSize=0;
+		for(int i=0;i<V.size();i++)
+			totalSize+=8+V.get(i).ID().length();
+		
+		ByteBuffer buf=ByteBuffer.wrap(new byte[totalSize]);
+		for(int i=0;i<V.size();i++)
+		{
+			String ID=V.get(i).ID();
+			buf.putInt(V.weight(i)).putInt(ID.length()).put(ID.getBytes(DBManager.charFormat));
+		}
+		buf.rewind();
+		return buf;
+	}
+	public WVector<Race> setRaceWVector(ByteBuffer S)
+	{
+		if(S.remaining()==0) return null;
+		WVector V=new WVector();
+		while(S.remaining()>0)
+		{
+			int weight=S.getInt();
+			byte[] raceBytes=new byte[S.getInt()];
+			S.get(raceBytes);
+			Race R=(Race)CMClass.Objects.RACE.get(new String(raceBytes, DBManager.charFormat));
+			if(R!=null)
+				V.add(R, weight);
+		}
+		return V;
+	}
+/*
 	public String savStringsInterlaced(String[] ... val)
 	{
 		int numArrays=val.length;
@@ -406,10 +574,10 @@ public class CoffeeMaker extends StdLibrary implements GenericBuilder
 		return V;
 	}
 	//Note: Does not support most core/interface files!
-	public String getWVectorStr(WVector V)
+	public ByteBuffer getWVectorStr(WVector V)
 	{
-		if(V==null) return "null";
-		StringBuilder S=new StringBuilder("");
+		if(V==null) return ByteBuffer.wrap(new byte[0]);
+		
 		for(int i=0;i<V.size();i++)
 		{
 			S.append(V.weight(i)+" ");
@@ -437,7 +605,7 @@ public class CoffeeMaker extends StdLibrary implements GenericBuilder
 		return S.toString();
 	}
 	//Note: Does not support most core/interface files!
-	public WVector setWVectorStr(String S)
+	public WVector setWVectorStr(ByteBuffer S)
 	{
 		if(S.equals("null")) return null;
 		WVector V=new WVector();
@@ -491,4 +659,35 @@ public class CoffeeMaker extends StdLibrary implements GenericBuilder
 		}
 		return V;
 	}
+	public CMSavable loadSub(String A)
+	{
+		if(A.equals("null")) return null;
+		int x=A.indexOf(" ");
+		
+		CMClass.Objects type=(CMClass.Objects)CMClass.valueOf(CMClass.Objects.class, A.substring(0,x));
+		if(type==null)
+		{
+			Log.errOut("CoffeeMaker","loadSub: bad String input for type: "+A.substring(0,x).intern());
+			return null;
+		}
+		A=A.substring(x+1);
+		x=A.indexOf(" ");
+		CMSavable E=(CMSavable)type.getNew(A.substring(0,x));
+		if(E==null)
+		{
+			Log.errOut("CoffeeMaker","loadSub: bad String input for object: "+A.substring(0,x).intern());
+			return null;
+		}
+		setPropertiesStr((CMSavable)E, A.substring(x+1));
+		return E;
+	}
+	public String getSubStr(CMSavable sub)
+	{
+		if(sub==null) return "null";
+		StringBuilder A=new StringBuilder("");
+		CMClass.Objects type=CMClass.getType(sub);
+		A.append(type.name()+" "+sub.ID()+" "+getPropertiesStr(sub));
+		return A.toString();
+	}
+*/
 }

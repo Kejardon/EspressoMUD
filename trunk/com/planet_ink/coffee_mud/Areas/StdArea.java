@@ -15,6 +15,7 @@ import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
+import java.nio.ByteBuffer;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -40,13 +41,15 @@ public class StdArea implements Area
 	protected long lastTick=0;
 	protected int saveNum=0;
 
-	protected Vector<Area> children=null;
+	protected Vector<Area> children=new Vector(1);
 	protected Vector<Area> parents=new Vector(1);
-	protected Vector<Integer> childrenToLoad=new Vector(1);
 	protected Environmental myEnvironmental=(Environmental)CMClass.Objects.COMMON.getNew("DefaultEnvironmental");
 	protected EnumSet<ListenHolder.Flags> lFlags=EnumSet.noneOf(ListenHolder.Flags.class);
 
 	protected String author="";
+
+	protected int[] childrenToLoad=null;
+	protected int[] effectsToLoad=null;
 
 	public void setAuthorID(String authorID){author=authorID;}
 	public String getAuthorID(){return author;}
@@ -55,7 +58,7 @@ public class StdArea implements Area
 
 //	protected Vector subOps=new Vector(1);
 	protected TimeClock myClock=null;
-	public void setTimeObj(TimeClock obj){myClock=obj;}
+	public void setTimeObj(TimeClock obj){myClock=obj; CMLib.database().saveObject(this);}
 	public TimeClock getTimeObj()
 	{
 		if(myClock==null) myClock=CMLib.time().globalClock();
@@ -86,11 +89,13 @@ public class StdArea implements Area
 		children=null;
 		parents=null;
 		childrenToLoad=null;
+		effectsToLoad=null;
 //		blurbFlags=null;
 //		subOps=null;
 		properRooms=null;
 		totalMetroRooms=null;
 		myClock=null;
+		CMLib.database().deleteObject(this);
 	}
 	public boolean amDestroyed(){return amDestroyed;}
 
@@ -99,20 +104,22 @@ public class StdArea implements Area
 		return name;
 	}
 
-	public void setName(String newName){name=newName;}
+	public void setName(String newName){name=newName; CMLib.database().saveObject(this);}
 	public String Name(){return name;}
 
 	/*  A thought occurs to me. If this is relied on to make rooms, the method that calls it must either
 	 *  a) make and claim the number IMMEDIATELY after calling this and/or
 	 *  b) interpret a failure to make as the number it got being taken before it got to it (so call this again)
 	 */
-	public String getNewRoomID()
+	//OR I can make this unnecessary. Derp.
+/*	public String getNewRoomID()
 	{
 		Room lastRoom=properRooms.lastElement();
 		if(lastRoom==null) return name+"#1";
 		String S=lastRoom.roomID();
 		return name+"#"+(1+CMath.s_int(S.substring(S.indexOf("#")+1)));
 	}
+*/
 	public long lastAct(){return 0;}	//No Action ticks
 	public long lastTick(){return lastTick;}
 
@@ -131,6 +138,7 @@ public class StdArea implements Area
 	}
 	protected void cloneFix(StdArea E)
 	{	//TODO
+		saveNum=0;
 		parents=null;
 		if(E.parents!=null)
 			parents=(Vector)E.parents.clone();
@@ -249,11 +257,15 @@ public class StdArea implements Area
 		if(to==null) return;
 		affects.addElement(to);
 		to.setAffectedOne(this);
+		CMLib.database().saveObject(this);
 	}
 	public void delEffect(Effect to)
 	{
 		if(affects.removeElement(to))
+		{
 			to.setAffectedOne(null);
+			CMLib.database().saveObject(this);
+		}
 	}
 	public int numEffects(){return affects.size();}
 	public Effect fetchEffect(int index)
@@ -288,23 +300,23 @@ public class StdArea implements Area
 	public void addProperRoom(Room R)
 	{
 		if(R==null) return;
-		String roomID=R.roomID();
-		SortedList.SortableObject<Room> contR=null;
+//		String roomID=R.roomID();
+//		SortedList.SortableObject<Room> contR=null;
 		synchronized(properRooms)
 		{
-			if(roomID.startsWith(name+"#"))
-			{
-				if(properRooms.contains(contR))	//This might rename the room later, but for now just stop.
+//			if(roomID.startsWith(name+"#"))
+//			{
+				if(properRooms.contains(R))	//This might rename the room later, but for now just stop.
 					return;
-			}
-			else
-			{
-				R.setArea(null);
-				R.setRoomID(getNewRoomID());
-			}
+//			}
+//			else
+//			{
+//				R.setArea(null);
+//				R.setRoomID(getNewRoomID());
+//			}
 			properRooms.add(R);
 		}
-		R.setAreaRaw(this);
+//		R.setAreaRaw(this);
 		clearMetroMap();
 	}
 	public void addTickingRoom(Room R)
@@ -327,9 +339,9 @@ public class StdArea implements Area
 	}
 	public void delProperRoom(Room R)
 	{
-		if(R==null) return;
-		String roomID=R.roomID();
-		if(roomID.startsWith(name+"#"))
+//		if(R==null) return;
+//		String roomID=R.roomID();
+//		if(roomID.startsWith(name+"#"))
 		synchronized(properRooms)
 		{
 			if(properRooms.remove(R))
@@ -337,7 +349,7 @@ public class StdArea implements Area
 		}
 	}
 
-	public Room getRoom(String roomID)
+/*	public Room getRoom(String roomID)
 	{
 		if(roomID.startsWith(name+"#"))
 		{
@@ -350,7 +362,7 @@ public class StdArea implements Area
 			}
 		}
 		return null;
-	}
+	} */
 
 	public int metroSize()
 	{
@@ -409,26 +421,8 @@ public class StdArea implements Area
 
 	}
 	public Enumeration getMetroMap(){return getMetroCollection().elements();}
-	public void addChildToLoad(int num) { childrenToLoad.addElement(num);}
 
 	// Children
-	public void initChildren()
-	{
-		if(children==null)
-		synchronized(childrenToLoad)
-		{
-			children=new Vector(1);
-			for(int i=0;i<childrenToLoad.size();i++)
-			{
-				Area A=Area.O.get(childrenToLoad.elementAt(i));
-				if(A==null)
-					continue;
-				children.addElement(A);
-				A.addParent(this);
-			}
-			childrenToLoad=new Vector();
-		}
-	}
 	public Enumeration getChildren() { return children.elements(); }
 	public String getChildrenList()
 	{
@@ -478,9 +472,10 @@ public class StdArea implements Area
 			}
 		}
 		children.addElement(Adopted);
+		CMLib.database().saveObject(this);
 	}
-	public void removeChild(Area Disowned) { children.removeElement(Disowned); Disowned.removeParent(this);}
-	public void removeChild(int Disowned) { children.remove(Disowned).removeParent(this); }
+	public void removeChild(Area Disowned) { children.removeElement(Disowned); Disowned.removeParent(this); CMLib.database().saveObject(this);}
+	public void removeChild(int Disowned) { children.remove(Disowned).removeParent(this); CMLib.database().saveObject(this);}
 	// child based circular reference check
 	// Doesn't prevent having the same parent twice. NOTE: People making areas should take care about this!
 	public boolean canChild(Area newChild)
@@ -582,59 +577,84 @@ public class StdArea implements Area
 	public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
 	public int saveNum()
 	{
-		if(saveNum==0)
-		synchronized(saveNum)
+		if((saveNum==0)&&(!amDestroyed))
+		synchronized(this)
 		{
 			if(saveNum==0)
-				saveNum=Area.O.getNumber();
+				saveNum=SIDLib.Objects.AREA.getNumber(this);
 		}
 		return saveNum;
 	}
 	public void setSaveNum(int num)
 	{
-		synchronized(saveNum)
+		synchronized(this)
 		{
 			if(saveNum!=0)
-				Area.O.removeNumber(saveNum, this);
+				SIDLib.Objects.AREA.removeNumber(saveNum);
 			saveNum=num;
-			Area.O.assignNumber(num, this);
+			SIDLib.Objects.AREA.assignNumber(num, this);
 		}
 	}
+	public boolean needLink(){return true;}
+	public void link()
+	{
+		if(childrenToLoad!=null)
+		{
+			for(int SID : childrenToLoad)
+			{
+				Area Adopted = (Area)SIDLib.Objects.AREA.get(SID);
+				if(Adopted==null) continue;
+				Adopted.addParent(this);
+				children.addElement(Adopted);
+			}
+			childrenToLoad=null;
+		}
+		if(effectsToLoad!=null)
+		{
+			for(int SID : effectsToLoad)
+			{
+				Effect to = (Effect)SIDLib.Objects.EFFECT.get(SID);
+				if(to==null) continue;
+				affects.addElement(to);
+				to.setAffectedOne(this);
+			}
+			effectsToLoad=null;
+		}
+	}
+	public void saveThis(){CMLib.database().saveObject(this);}
 
 	private enum SCode implements CMSavable.SaveEnum{
 		NAM(){
-			public String save(StdArea E){ return E.name; }
+			public ByteBuffer save(StdArea E){ return CMLib.coffeeMaker().savString(E.name); }
 			public int size(){return 0;}
-			public void load(StdArea E, String S){ E.name=S.intern(); } },
+			public void load(StdArea E, ByteBuffer S){ E.name=CMLib.coffeeMaker().loadString(S); } },
 		CHL(){
-			public String save(StdArea E){
-				if(E.children!=null) return CMLib.coffeeMaker().getSaveNumStr(E.getChildren());
-				return ""; }
+			public ByteBuffer save(StdArea E){
+				if(E.children!=null) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.children.toArray(new CMSavable[E.children.size()]));
+				return GenericBuilder.emptyBuffer; }
 			public int size(){return 0;}
-			public void load(StdArea E, String S){
-				for(String num : (String[])CMParms.parseSemicolons(S,true).toArray(new String[])) E.addChildToLoad(CMath.s_int(num)); } },
+			public void load(StdArea E, ByteBuffer S){ E.childrenToLoad=CMLib.coffeeMaker().loadAInt(S); } },
 		ENV(){
-			public String save(StdArea E){ return CMLib.coffeeMaker().getSubStr(E.myEnvironmental); }
-			public int size(){return 0;}
-			public void load(StdArea E, String S){ E.myEnvironmental=(Environmental)CMLib.coffeeMaker().loadSub(S); } },
+			public ByteBuffer save(StdArea E){ return CMLib.coffeeMaker().savSubFull(E.myEnvironmental); }
+			public int size(){return -1;}
+			public CMSavable subObject(CMSavable fromThis){return ((StdArea)fromThis).myEnvironmental;}
+			public void load(StdArea E, ByteBuffer S){ E.myEnvironmental=(Environmental)((Ownable)CMLib.coffeeMaker().loadSub(S, E.myEnvironmental)).setOwner(E); } },
 		EFC(){
-			public String save(StdArea E){ return CMLib.coffeeMaker().getVectorStr(E.affects); }
+			public ByteBuffer save(StdArea E){
+				if(E.affects.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.affects.toArray(new CMSavable[E.affects.size()]));
+				return GenericBuilder.emptyBuffer; }
 			public int size(){return 0;}
-			public void load(StdArea E, String S){
-				Vector<Effect> V=CMLib.coffeeMaker().setVectorStr(S);
-				for(Effect A : V)
-					E.addEffect(A);
-				
-				} },
+			public void load(StdArea E, ByteBuffer S){ E.effectsToLoad=CMLib.coffeeMaker().loadAInt(S); } },
 		ATH(){
-			public String save(StdArea E){ return E.author; }
+			public ByteBuffer save(StdArea E){ return CMLib.coffeeMaker().savString(E.author); }
 			public int size(){return 0;}
-			public void load(StdArea E, String S){ E.author=S.intern(); } }
+			public void load(StdArea E, ByteBuffer S){ E.author=CMLib.coffeeMaker().loadString(S); } }
 		;	//blurbflags, properrooms
-		public abstract String save(StdArea E);
-		public abstract void load(StdArea E, String S);
-		public String save(CMSavable E){return save((StdArea)E);}
-		public void load(CMSavable E, String S){load((StdArea)E, S);} }
+		public abstract ByteBuffer save(StdArea E);
+		public abstract void load(StdArea E, ByteBuffer S);
+		public ByteBuffer save(CMSavable E){return save((StdArea)E);}
+		public CMSavable subObject(CMSavable fromThis){return null;}
+		public void load(CMSavable E, ByteBuffer S){load((StdArea)E, S);} }
 	private enum MCode implements CMModifiable.ModEnum{
 		NAME(){
 			public String brief(StdArea E){return E.name;}
@@ -647,7 +667,7 @@ public class StdArea implements Area
 					Room R=e.nextElement();
 					R.setName(newName+R.name().substring(R.name().indexOf('#')));
 				}
-				E.name=newName;} },
+				E.name=newName; } },
 		EFFECTS(){
 			public String brief(StdArea E){return ""+E.affects.size();}
 			public String prompt(StdArea E){return "";}

@@ -20,7 +20,8 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 public class CoffeeTime extends StdLibrary implements TimeManager
 {
 	public String ID(){return "CoffeeTime";}
-	protected TimeClock globalClock=null;
+	public static TimeClock globalClock=null;
+//	protected TimeClock globalClock=null;
 	/**
 	 * Returns the numeric representation of the month
 	 *
@@ -675,8 +676,8 @@ public class CoffeeTime extends StdLibrary implements TimeManager
 	{
 		if(globalClock==null)
 		{
-			globalClock=(TimeClock)CMClass.Objects.COMMON.getNew("DefaultTimeClock");
-			if(globalClock!=null) globalClock.setLoadName("GLOBAL");
+			globalClock=(TimeClock)((Ownable)CMClass.Objects.COMMON.getNew("DefaultTimeClock")).setOwner(CMLib.misc());
+//			if(globalClock!=null) globalClock.setLoadName("GLOBAL");
 		}
 		return globalClock;
 	}

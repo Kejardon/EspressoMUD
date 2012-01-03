@@ -14,9 +14,10 @@ import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
-import org.mozilla.javascript.Context;
-import org.mozilla.javascript.ScriptableObject;
+//import org.mozilla.javascript.Context;
+//import org.mozilla.javascript.ScriptableObject;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -32,11 +33,15 @@ public class MOBCharStats implements CharStats
 
 	public CMObject newInstance(){try{return (CMObject)getClass().newInstance();}catch(Exception e){return new MOBCharStats();}}
 	public void initializeClass(){}
+	protected CMSavable parent=null;
 	protected short[] stat={10, 10, 10, 10, 10, 10};
 	protected short[] save={};
 	protected int[] points={1000};
 	protected int[] pointsMax={1000};
 
+	//Ownable
+	public CMSavable owner(){return parent;}
+	public Ownable setOwner(CMSavable owner){parent=owner; return this;}
 //	protected Body myBody=null;
 
 	public int getStatIndex(Stat option)
@@ -67,7 +72,7 @@ public class MOBCharStats implements CharStats
 	}
 
 	public MOBCharStats() { }
-//	public setBody(Body newBody){myBody=newBody;}
+//	public CharStats setBody(Body newBody){myBody=newBody; return this;}
 
 	public void copyInto(CharStats intoStats)
 	{
@@ -77,6 +82,7 @@ public class MOBCharStats implements CharStats
 			copyStatic(newStats);
 			for(int i=0; i<points.length; i++)
 				newStats.points[i]=points[i];
+			CMLib.database().saveObject(newStats.parent);
 		}
 	}
 	public void copyStatic(CharStats intoStats)
@@ -90,12 +96,14 @@ public class MOBCharStats implements CharStats
 				newStats.pointsMax[i]=pointsMax[i];
 			for(int i=0; i<save.length; i++)
 				newStats.save[i]=save[i];
+			newStats.parent=parent;
 		}
 	}
 	public void resetState()
 	{
 		for(int i=0; i<points.length; i++)
 			points[i]=pointsMax[i];
+		CMLib.database().saveObject(parent);
 	}
 
 	public CMObject copyOf()
@@ -115,7 +123,7 @@ public class MOBCharStats implements CharStats
 	public void setSave(Save option, short value)
 	{
 		int i=getSaveIndex(option);
-		if(i>=0) save[i]=value;
+		if(i>=0) { save[i]=value; CMLib.database().saveObject(parent); }
 	}
 
 	public short getStat(Stat option)
@@ -128,7 +136,7 @@ public class MOBCharStats implements CharStats
 	public void setStat(Stat option, short value)
 	{
 		int i=getStatIndex(option);
-		if(i>=0) stat[i]=value;
+		if(i>=0) {stat[i]=value; CMLib.database().saveObject(parent);}
 	}
 
 	public int getPoints(Points option)
@@ -146,7 +154,7 @@ public class MOBCharStats implements CharStats
 	public boolean setPoints(Points option, int newVal)	//Return if it broke a min or max cap, do not cap yourself
 	{
 		int i=getPointsIndex(option);
-		if(i>=0) {points[i]=newVal; return newVal>pointsMax[i];}
+		if(i>=0) {points[i]=newVal; CMLib.database().saveObject(parent); return newVal>pointsMax[i];}
 		return false;
 	}
 	public boolean adjPoints(Points option, int byThisMuch)	//Cap, return if cap did something
@@ -158,13 +166,16 @@ public class MOBCharStats implements CharStats
 			if(points[i]>pointsMax[i])
 			{
 				points[i]=pointsMax[i];
+				CMLib.database().saveObject(parent);
 				return true;
 			}
 			else if(points[i]<0)
 			{
 				points[i]=0;
+				CMLib.database().saveObject(parent);
 				return true;
 			}
+			CMLib.database().saveObject(parent);
 		}
 		return false;
 	}
@@ -178,10 +189,10 @@ public class MOBCharStats implements CharStats
 	public boolean setMaxPoints(Points option, int newVal)	//Return if reduced below current, do not cap yourself
 	{
 		int i=getPointsIndex(option);
-		if(i>=0) pointsMax[i]=newVal;
-		if(newVal<points[i])
-			return true;
-		return false;
+		if(i<0) return false;
+		pointsMax[i]=newVal;
+		CMLib.database().saveObject(parent);
+		return newVal<points[i];
 	}
 	public boolean adjMaxPoints(Points option, int byThisMuch)	//Cap, return if cap did something
 	{
@@ -198,8 +209,10 @@ public class MOBCharStats implements CharStats
 			if(points[i]>pointsMax[i])
 			{
 				points[i]=pointsMax[i];
+				CMLib.database().saveObject(parent);
 				return true;
 			}
+			CMLib.database().saveObject(parent);
 			return change;
 		}
 		return false;
@@ -232,6 +245,8 @@ public class MOBCharStats implements CharStats
 
 		//TODO: Focus causing fatigue?
 		setPoints(Points.FOCUS, current);
+		CMLib.database().saveObject(parent);
+		sourceStats.saveThis();
 	}
 
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
@@ -242,27 +257,38 @@ public class MOBCharStats implements CharStats
 		return false;
 	}
 
+	public void destroy(){}	//TODO?
+
 	//CMModifiable and CMSavable
 	public SaveEnum[] totalEnumS(){return SCode.values();}
 	public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]};}
 	public ModEnum[] totalEnumM(){return MCode.values();}
 	public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
+	public int saveNum(){return 0;}
+	public void setSaveNum(int num){}
+	public boolean needLink(){return false;}
+	public void link(){}
+	public void saveThis(){CMLib.database().saveObject(parent);}
 
 	private enum SCode implements CMSavable.SaveEnum{
 		STT(){
-			public String save(MOBCharStats E){ return CMLib.coffeeMaker().savAShort(E.stat); }
-			public void load(MOBCharStats E, String S){ E.stat=CMLib.coffeeMaker().loadAShort(S); } },
+			public ByteBuffer save(MOBCharStats E){ return CMLib.coffeeMaker().savAShort(E.stat); }
+			public int size(){return 2*6;}
+			public void load(MOBCharStats E, ByteBuffer S){ E.stat=CMLib.coffeeMaker().loadAShort(S); } },
 		PNT(){
-			public String save(MOBCharStats E){ return CMLib.coffeeMaker().savAInt(E.points); }
-			public void load(MOBCharStats E, String S){ E.points=CMLib.coffeeMaker().loadAInt(S); } },
+			public ByteBuffer save(MOBCharStats E){ return CMLib.coffeeMaker().savAInt(E.points); }
+			public int size(){return 4*1;}
+			public void load(MOBCharStats E, ByteBuffer S){ E.points=CMLib.coffeeMaker().loadAInt(S); } },
 		MPT(){
-			public String save(MOBCharStats E){ return CMLib.coffeeMaker().savAInt(E.pointsMax); }
-			public void load(MOBCharStats E, String S){ E.pointsMax=CMLib.coffeeMaker().loadAInt(S); } },
-		;
-		public abstract String save(MOBCharStats E);
-		public abstract void load(MOBCharStats E, String S);
-		public String save(CMSavable E){return save((MOBCharStats)E);}
-		public void load(CMSavable E, String S){load((MOBCharStats)E, S);} }
+			public ByteBuffer save(MOBCharStats E){ return CMLib.coffeeMaker().savAInt(E.pointsMax); }
+			public int size(){return 4*1;}
+			public void load(MOBCharStats E, ByteBuffer S){ E.pointsMax=CMLib.coffeeMaker().loadAInt(S); } },
+			;
+		public abstract ByteBuffer save(MOBCharStats E);
+		public abstract void load(MOBCharStats E, ByteBuffer S);
+		public ByteBuffer save(CMSavable E){return save((MOBCharStats)E);}
+		public CMSavable subObject(CMSavable fromThis){return null;}
+		public void load(CMSavable E, ByteBuffer S){load((MOBCharStats)E, S);} }
 	private enum MCode implements CMModifiable.ModEnum{
 		REACTIONS(){
 			public String brief(MOBCharStats E){return ""+E.stat[0];}

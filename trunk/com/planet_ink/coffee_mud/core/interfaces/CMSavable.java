@@ -42,22 +42,30 @@ public interface CMSavable extends CMObject
 		public ByteBuffer save(CMSavable fromThis);
 		public void load(CMSavable toThis, ByteBuffer val);
 		public int size();
-		public CMSubSavable subObject(CMSavable fromThis);
+		public CMSavable subObject(CMSavable fromThis);
 //		public ByteBuffer namePrefix();
 		public String name();	//to autofind enum's name()
+		//public boolean isActive();
+		//Probably TODO. A useful routine to check if this object exists in a meaningful manner after being created.
+		//i.e. Effects having an affected, items having a container, MOBs having a body...
+		//OTOH unusual, interesting things may break such a routine...
 	}
-	public static interface CMSubSavable extends CMSavable, Ownable
+/*	public static interface CMSubSavable extends CMSavable, Ownable
 	{
-		public ByteBuffer fixedSave();	//This should start its data with a 0
+		public ByteBuffer fixedSave();	//This should start its data with a <s>0</s>3 ? 0==null, 1=var, 2=full, 3=fixed?
 		public ByteBuffer varSave();	//This should start its data with a 1
 //		public void loadVar(ByteBuffer val);
 //		public void loadFixed(ByteBuffer val);
 	}
-
+*/
 	public SaveEnum[] totalEnumS();
 	public Enum[] headerEnumS();
 	public int saveNum();
 	public void setSaveNum(int num);
+	public boolean needLink();	//True if this object saves references to other objects via SIDs
+	public void link();	//Parse saved SID references and find other objects
+	public void saveThis();
+	public void destroy();
 
 /*
 	//Non-saving class
@@ -100,16 +108,16 @@ public interface CMSavable extends CMObject
 
 	//The actual enum/code/parser
 	//IMPORTANT NOTES: ALL SAVEENUMS MUST HAVE 3-LETTER NAMES
-	//NO MORE THAN 32 INLINED SUBOBJECTS SUPPORTED (things with size==-1)
 	private static enum SCode implements SaveEnum{
 		DMY() {
-			public String save(CMParticular fromThis) {return fromThis.x;}
-			public void load(CMParticular toThis, String s) {toThis.x=s.intern();} }
-			public int size(){return 0;},
+			public ByteBuffer save(CMParticular fromThis) {return fromThis.x;}
+			public void load(CMParticular toThis, ByteBuffer s) {toThis.x=s.intern();}
+			public int size(){return 0;} },
 		;
-		public abstract String save(CMParticular fromThis);
-		public abstract void load(CMParticular toThis, String S);
-		public String save(CMSavable E){return save((CMParticular)E);}
-		public void load(CMSavable E, String S){load((CMParticular)E, S);} }
+		public abstract ByteBuffer save(CMParticular fromThis);
+		public abstract void load(CMParticular toThis, ByteBuffer S);
+		public ByteBuffer save(CMSavable E){return save((CMParticular)E);}
+		public CMSavable subObject(CMSavable fromThis){return null;}
+		public void load(CMSavable E, ByteBuffer S){load((CMParticular)E, S);} }
 */
 }

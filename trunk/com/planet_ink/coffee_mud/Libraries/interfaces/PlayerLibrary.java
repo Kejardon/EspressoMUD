@@ -27,8 +27,8 @@ public interface PlayerLibrary extends CMLibrary, Runnable
 	public void addPlayer(MOB newOne);
 	public void delPlayer(MOB oneToDel);
 	public MOB getPlayer(String calledThis);
-	public MOB getLoadPlayer(String last);
-	public PlayerAccount getLoadAccount(String calledThis);
+//	public MOB getLoadPlayer(String last);
+//	public PlayerAccount getLoadAccount(String calledThis);
 	public PlayerAccount getAccount(String calledThis);
 	public boolean accountExists(String name);
 	public Enumeration<MOB> players();
@@ -36,7 +36,7 @@ public interface PlayerLibrary extends CMLibrary, Runnable
 	public void obliterateAccountOnly(PlayerAccount deadAccount);
 	public boolean playerExists(String name);
 	public void forceTick();
-	public int savePlayers();
+//	public int savePlayers();
 //	public Enumeration thinPlayers(String sort, Hashtable cache);
 //	public int getCharThinSortCode(String codeName, boolean loose);
 //	public String getThinSortValue(ThinPlayer player, int code); 

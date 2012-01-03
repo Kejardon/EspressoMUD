@@ -25,7 +25,7 @@ public interface ItemCollection extends CMObject, CMModifiable, CMSavable, CMCom
 		public static ItemCollection getFrom(CMObject O)
 		{
 			if(O instanceof ItemCollection) return (ItemCollection)O;
-			while(O instanceof Ownable) O=((Ownable)O).owner();
+			while((O instanceof Ownable)&&((Ownable)O).owner()!=O) O=((Ownable)O).owner();
 			if(O instanceof ItemHolder) return ((ItemHolder)O).getItemCollection();
 			return null;
 		}

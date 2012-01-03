@@ -13,6 +13,7 @@ import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
+import java.nio.ByteBuffer;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -30,6 +31,8 @@ public class StdBehavior implements Behavior
 	protected long lastTick=0;
 	protected Tickable.TickStat tickStatus=Tickable.TickStat.Not;
 	protected EnumSet<ListenHolder.Flags> lFlags=EnumSet.noneOf(ListenHolder.Flags.class);
+	
+	protected int saveNum=0;
 
 	public String ID(){return "StdBehavior";}
 	public String name(){return ID();}
@@ -71,7 +74,8 @@ public class StdBehavior implements Behavior
 	{
 		try
 		{
-			Behavior B=(Behavior)this.clone();
+			StdBehavior B=(StdBehavior)this.clone();
+			B.saveNum=0;
 			B.setParms(getParms());
 			return B;
 		}
@@ -80,10 +84,10 @@ public class StdBehavior implements Behavior
 			return new StdBehavior();
 		}
 	}
-	public void startBehavior(Behavable forMe){behaver=forMe;}
+	public void startBehavior(Behavable forMe){behaver=forMe; if(behaver==null) CMLib.database().deleteObject(this);}
 	protected void finalize(){}
 	public String getParms(){return parms;}
-	public void setParms(String parameters){parms=parameters;}
+	public void setParms(String parameters){parms=parameters; CMLib.database().saveObject(this); }
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 
 	public void executeMsg(ListenHolder.ExcChecker myHost, CMMsg msg)
@@ -104,6 +108,12 @@ public class StdBehavior implements Behavior
 	public long lastAct(){return 0;}	//No Action ticks
 	public long lastTick(){return lastTick;}
 
+	public void destroy()
+	{
+		//TODO
+		CMLib.database().deleteObject(this);
+	}
+
 	//CMModifiable and CMSavable
 	public SaveEnum[] totalEnumS(){return SCode.values();}
 	public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]} ;}
@@ -111,35 +121,39 @@ public class StdBehavior implements Behavior
 	public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
 	public int saveNum()
 	{
-		if(saveNum==0)
-		synchronized(saveNum)
+		if((saveNum==0)&&(behaver!=null))
+		synchronized(this)
 		{
 			if(saveNum==0)
-				saveNum=Behavior.O.getNumber();
+				saveNum=SIDLib.Objects.BEHAVIOR.getNumber(this);
 		}
 		return saveNum;
 	}
 	public void setSaveNum(int num)
 	{
-		synchronized(saveNum)
+		synchronized(this)
 		{
 			if(saveNum!=0)
-				Behavior.O.removeNumber(saveNum, this);
+				SIDLib.Objects.BEHAVIOR.removeNumber(saveNum);
 			saveNum=num;
-			Behavior.O.assignNumber(num, this);
+			SIDLib.Objects.BEHAVIOR.assignNumber(num, this);
 		}
 	}
+	public boolean needLink(){return false;}
+	public void link(){}
+	public void saveThis(){CMLib.database().saveObject(this);}
 
 	private enum SCode implements CMSavable.SaveEnum{
 		PRM(){
-			public String save(StdBehavior E){ return E.parms; }
+			public ByteBuffer save(StdBehavior E){ return CMLib.coffeeMaker().savString(E.parms); }
 			public int size(){return 0;}
-			public void load(StdBehavior E, String S){ E.setParms(S.intern()); } },
+			public void load(StdBehavior E, ByteBuffer S){ E.parms=CMLib.coffeeMaker().loadString(S); } },
 		;
-		public abstract String save(StdBehavior E);
-		public abstract void load(StdBehavior E, String S);
-		public String save(CMSavable E){return save((StdBehavior)E);}
-		public void load(CMSavable E, String S){load((StdBehavior)E, S);} }
+		public abstract ByteBuffer save(StdBehavior E);
+		public abstract void load(StdBehavior E, ByteBuffer S);
+		public ByteBuffer save(CMSavable E){return save((StdBehavior)E);}
+		public CMSavable subObject(CMSavable fromThis){return null;}
+		public void load(CMSavable E, ByteBuffer S){load((StdBehavior)E, S);} }
 	private enum MCode implements CMModifiable.ModEnum{
 		PARMS(){
 			public String brief(StdBehavior E){return E.parms;}

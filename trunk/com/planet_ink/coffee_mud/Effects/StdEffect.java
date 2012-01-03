@@ -14,6 +14,8 @@ import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 import java.util.*;
 
+import java.nio.ByteBuffer;
+
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
 EspressoMUD copyright 2011 Kejardon
@@ -36,6 +38,9 @@ public class StdEffect implements Effect
 	protected Vector<ExcChecker> excCheckers=null;
 	protected Vector<TickActer> tickActers=null;
 	protected Tickable.TickStat tickStatus=Tickable.TickStat.Not;
+	
+	protected int saveNum=0;
+	protected int[] effectsToLoad=null;
 
 	public String ID() { return "StdEffect"; }
 	public int priority(ListenHolder L){return Integer.MAX_VALUE;}
@@ -71,13 +76,14 @@ public class StdEffect implements Effect
 		if(affected.fetchEffect(ID())==null)
 			affected.addEffect(this);
 		tickDown=tickTime;
+		CMLib.database().saveObject(this);
 	}
 
 	public int compareTo(CMObject o)
 	{
 		return ID().compareTo(o.ID());
 	}
-	protected void cloneFix(Effect E){}
+	protected void cloneFix(Effect E){saveNum=0;}
 	public CMObject copyOf()
 	{
 		try
@@ -104,8 +110,9 @@ public class StdEffect implements Effect
 	public void unInvoke()
 	{
 		unInvoked=true;
-		if(affected==null) return;
-		affected.delEffect(this);
+		if(affected!=null)
+			affected.delEffect(this);
+		CMLib.database().deleteObject(this);
 	}
 
 	public boolean invoke(Affectable target, int asLevel)
@@ -154,6 +161,7 @@ public class StdEffect implements Effect
 				unInvoke();
 				return false;
 			}
+			CMLib.database().saveObject(this);
 		}
 		return true;
 	}
@@ -165,11 +173,13 @@ public class StdEffect implements Effect
 		if(to==null) return;
 		affects.addElement(to);
 		to.setAffectedOne(this);
+		CMLib.database().saveObject(this);
 	}
 	public void delEffect(Effect to)
 	{
 		if(affects.removeElement(to))
 			to.setAffectedOne(null);
+		CMLib.database().saveObject(this);
 	}
 	public int numEffects(){return affects.size();}
 	public Effect fetchEffect(int index)
@@ -212,29 +222,71 @@ public class StdEffect implements Effect
 	}
 	public EnumSet<ListenHolder.Flags> listenFlags() {return lFlags;}
 
+	public void destroy()
+	{
+		//TODO:
+		CMLib.database().deleteObject(this);
+	}
+
 	//CMModifiable and CMSavable
 	public SaveEnum[] totalEnumS(){return SCode.values();}
 	public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]} ;}
 	public ModEnum[] totalEnumM(){return MCode.values();}
 	public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
+	public int saveNum()
+	{
+		if(saveNum==0)
+		synchronized(this)
+		{
+			if(saveNum==0)
+				saveNum=SIDLib.Objects.EFFECT.getNumber(this);
+		}
+		return saveNum;
+	}
+	public void setSaveNum(int num)
+	{
+		synchronized(this)
+		{
+			if(saveNum!=0)
+				SIDLib.Objects.EFFECT.removeNumber(saveNum);
+			saveNum=num;
+			SIDLib.Objects.EFFECT.assignNumber(num, this);
+		}
+	}
+	public boolean needLink(){return true;}
+	public void link()
+	{
+		if(effectsToLoad!=null)
+		{
+			for(int SID : effectsToLoad)
+			{
+				Effect to = (Effect)SIDLib.Objects.EFFECT.get(SID);
+				if(to==null) continue;
+				affects.addElement(to);
+				to.setAffectedOne(this);
+			}
+			effectsToLoad=null;
+		}
+	}
+	public void saveThis(){CMLib.database().saveObject(this);}
 
 	private enum SCode implements CMSavable.SaveEnum{
 		TIC(){
-			public String save(StdEffect E){ return ""+E.tickDown; }
-			public void load(StdEffect E, String S){ E.tickDown=Integer.parseInt(S); } },
+			public ByteBuffer save(StdEffect E){ return (ByteBuffer)ByteBuffer.wrap(new byte[4]).putInt(E.tickDown).rewind(); }
+			public int size(){return 4;}
+			public void load(StdEffect E, ByteBuffer S){ E.tickDown=S.getInt(); } },
 		EFC(){
-			public String save(StdEffect E){ return CMLib.coffeeMaker().getVectorStr(E.affects); }
-			public void load(StdEffect E, String S){
-				Vector<Effect> V=CMLib.coffeeMaker().setVectorStr(S);
-				for(Effect A : V)
-					E.addEffect(A);
-				
-				} },
+			public ByteBuffer save(StdEffect E){
+				if(E.affects.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.affects.toArray(new CMSavable[E.affects.size()]));
+				return GenericBuilder.emptyBuffer; }
+			public int size(){return 0;}
+			public void load(StdEffect E, ByteBuffer S){ E.effectsToLoad=CMLib.coffeeMaker().loadAInt(S); } },
 		;
-		public abstract String save(StdEffect E);
-		public abstract void load(StdEffect E, String S);
-		public String save(CMSavable E){return save((StdEffect)E);}
-		public void load(CMSavable E, String S){load((StdEffect)E, S);} }
+		public abstract ByteBuffer save(StdEffect E);
+		public abstract void load(StdEffect E, ByteBuffer S);
+		public ByteBuffer save(CMSavable E){return save((StdEffect)E);}
+		public CMSavable subObject(CMSavable fromThis){return null;}
+		public void load(CMSavable E, ByteBuffer S){load((StdEffect)E, S);} }
 	private enum MCode implements CMModifiable.ModEnum{
 		TICKDOWN(){
 			public String brief(StdEffect E){return ""+E.tickDown;}

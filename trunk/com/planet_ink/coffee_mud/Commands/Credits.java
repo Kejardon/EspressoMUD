@@ -38,7 +38,7 @@ public class Credits extends StdCommand
 		else
 		{
 			mob.tell("CoffeeMud 5.6.2 is (C)2000-2010 by Bo Zimmerman");
-			mob.tell("EspressoMUD is (C)2011 by Kejardon");
+			mob.tell("EspressoMUD is (C)2010-2012 by Kejardon");
 		}
 		return false;
 	}

@@ -1,5 +1,4 @@
 package com.planet_ink.coffee_mud.core;
-//import com.planet_ink.coffee_mud.WebMacros.interfaces.*;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
@@ -83,7 +82,6 @@ public class CMClass extends ClassLoader
 				CMLib.registerLibrary((CMLibrary)O); }
 			//public void remove(CMObject O){}	//This really is not supported by CMLib. No, just don't remove libraries.
 			},
-//		WEBMACRO("com.planet_ink.coffee_mud.WebMacros.interfaces.WebMacro"),
 		;
 		private String ancestor;
 		public HashMap<String, CMObject> options=new HashMap<String, CMObject>();
@@ -124,7 +122,6 @@ public class CMClass extends ClassLoader
 		if(O instanceof MOB) return Objects.MOB;
 		if(O instanceof Exit) return Objects.EXIT;
 		if(O instanceof Behavior) return Objects.BEHAVIOR;
-//		if(O instanceof WebMacro) return Objects.WEBMACRO;
 		if(O instanceof Area) return Objects.AREA;
 		if(O instanceof CMLibrary) return Objects.LIBRARY;
 		if(O instanceof CMCommon) return Objects.COMMON;

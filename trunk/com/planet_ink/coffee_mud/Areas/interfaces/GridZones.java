@@ -66,7 +66,7 @@ public interface GridZones extends Environmental
 	 * @param roomID the roomID of the room to get coordinates for
 	 * @return coordinates in int[]{x,y} format.
 	 */
-	public int[] getRoomXY(String roomID);
+	public int[] getRoomXY(int roomNum);	//was roomID
 	/**
 	 * Returns the total width of this grid.
 	 * @return the width

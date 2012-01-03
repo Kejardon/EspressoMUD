@@ -15,6 +15,7 @@ import com.planet_ink.coffee_mud.Libraries.interfaces.MoneyLibrary;
 
 
 import java.util.*;
+import java.nio.ByteBuffer;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -33,9 +34,11 @@ public class StdBody extends StdItem implements Body
 	protected Gender myGender=null;
 	protected boolean dead=false;
 	protected MOB myMob=null;
-	protected CharStats baseCharStats=(CharStats)CMClass.Objects.COMMON.getNew("BodyCharStats");
-	protected CharStats charStats=(CharStats)CMClass.Objects.COMMON.getNew("BodyCharStats");
+	protected CharStats baseCharStats=(CharStats)((Ownable)CMClass.Objects.COMMON.getNew("BodyCharStats")).setOwner(this);
+	protected CharStats charStats=(CharStats)((Ownable)CMClass.Objects.COMMON.getNew("BodyCharStats")).setOwner(this);
 	protected int[] birthday={-1, -1, -1};
+
+//	protected int mobToLink=0;
 
 	public StdBody()
 	{
@@ -43,13 +46,12 @@ public class StdBody extends StdItem implements Body
 		display="a nondescript person is here.";
 		lFlags.add(ListenHolder.Flags.TICK);
 //		desc="";
-		((Ownable)myEnvironmental).setOwner(this);
 	}
 
-	public Environmental getEnvObject() {return myEnvironmental;}
+//	public Environmental getEnvObject() {return myEnvironmental;}
 
 	public MOB mob(){return myMob;}
-	public void setMob(MOB mob){myMob=mob;}
+	public Body setMob(MOB mob){myMob=mob; return this;}
 
 	public int[] birthday(){return birthday;}
 //	public int initializeBirthday(int ageHours, Race R) { }
@@ -62,12 +64,13 @@ public class StdBody extends StdItem implements Body
 		if(charAffecters!=null)
 		for(int a=charAffecters.size();a>0;a--)
 			charAffecters.get(a-1).affectCharStats(this,charStats);
+		CMLib.database().saveObject(this);
 	}
 
 	public void setBaseCharStats(CharStats newBaseCharStats)
 	{
-		baseCharStats=(CharStats)newBaseCharStats.copyOf();
-		charStats=(CharStats)CMClass.Objects.COMMON.getNew(newBaseCharStats.ID());
+		baseCharStats=(CharStats)((Ownable)newBaseCharStats.copyOf()).setOwner(this);
+		charStats=(CharStats)((Ownable)CMClass.Objects.COMMON.getNew(newBaseCharStats.ID())).setOwner(this);
 		recoverCharStats();
 		charStats.resetState();
 	}
@@ -93,6 +96,7 @@ public class StdBody extends StdItem implements Body
 	{
 		dead=true;
 		charStats().setPoints(CharStats.Points.HIT, 0);
+		CMLib.database().saveObject(this);
 		return this;
 	}
 	public void bringToLife(Room newLocation, boolean resetStats)
@@ -115,6 +119,7 @@ public class StdBody extends StdItem implements Body
 		if(charStats().getPoints(CharStats.Points.HIT)<=0)
 			if(charStats().setPoints(CharStats.Points.HIT, 1))
 				charStats().setMaxPoints(CharStats.Points.HIT, 1);
+		CMLib.database().saveObject(this);
 	}
 	public boolean isRace(Race R){return myRaces.contains(R);}
 	public void setRace(Race[] R)
@@ -124,15 +129,17 @@ public class StdBody extends StdItem implements Body
 		{
 			int i=newRaces.index(r);
 			if(i>=0) newRaces.setWeight(i, newRaces.weight(i));
-			else newRaces.add(r);
+			else newRaces.add(r, 1);
 		}
 		myRaces=newRaces;
+		CMLib.database().saveObject(this);
 	}
 	public void addRace(Race R)
 	{
 		int i=myRaces.index(R);
-		if(i>=0) myRaces.setWeight(i, myRaces.weight(i));
-		else myRaces.add(R);
+		if(i>=0) myRaces.setWeight(i, myRaces.weight(i)+1);
+		else myRaces.add(R, 1);
+		CMLib.database().saveObject(this);
 	}
 	public String raceName()
 	{
@@ -144,7 +151,7 @@ public class StdBody extends StdItem implements Body
 		}
 		return name.toString();
 	}
-	public void setGender(Gender G){myGender=G;}
+	public void setGender(Gender G){myGender=G; CMLib.database().saveObject(this);}
 	public Gender gender(){return myGender;}
 
 	//Affectable/Behavable shared
@@ -208,8 +215,8 @@ public class StdBody extends StdItem implements Body
 
 	public void destroy()
 	{
-		super.destroy();
 		dead=true;
+		super.destroy();
 	}
 
 	//CMModifiable and CMSavable
@@ -269,31 +276,51 @@ public class StdBody extends StdItem implements Body
 		}
 		return headerEnumS;
 	}
-
+/*	public void link()
+	{
+		super.link();
+		if(mobToLink!=0)
+		{
+			myMob=(MOB)SIDLib.Objects.CREATURE.get(mobToLink);
+			mobToLink=0;
+		}
+	}
+*/
 	private enum SCode implements CMSavable.SaveEnum{
 		BCS(){
-			public String save(StdBody E){ return CMLib.coffeeMaker().getSubStr(E.baseCharStats); }
-			public void load(StdBody E, String S){ E.baseCharStats=(CharStats)CMLib.coffeeMaker().loadSub(S); } },
+			public ByteBuffer save(StdBody E){ return CMLib.coffeeMaker().savSubFull(E.baseCharStats); }
+			public int size(){return -1;}
+			public CMSavable subObject(CMSavable fromThis){return ((StdBody)fromThis).baseCharStats;}
+			public void load(StdBody E, ByteBuffer S){ E.baseCharStats=(CharStats)((Ownable)CMLib.coffeeMaker().loadSub(S, E.baseCharStats)).setOwner(E); } },
 		CHS(){
-			public String save(StdBody E){ return CMLib.coffeeMaker().getSubStr(E.charStats); }
-			public void load(StdBody E, String S){ E.charStats=(CharStats)CMLib.coffeeMaker().loadSub(S); } },
+			public ByteBuffer save(StdBody E){ return CMLib.coffeeMaker().savSubFull(E.charStats); }
+			public int size(){return -1;}
+			public CMSavable subObject(CMSavable fromThis){return ((StdBody)fromThis).charStats;}
+			public void load(StdBody E, ByteBuffer S){ E.charStats=(CharStats)((Ownable)CMLib.coffeeMaker().loadSub(S, E.charStats)).setOwner(E); } },
 		BDY(){
-			public String save(StdBody E){ return CMLib.coffeeMaker().savAInt(E.birthday); }
-			public void load(StdBody E, String S){ E.birthday=CMLib.coffeeMaker().loadAInt(S); } },
+			public ByteBuffer save(StdBody E){ return CMLib.coffeeMaker().savAInt(E.birthday); }
+			public int size(){return 12;}
+			public void load(StdBody E, ByteBuffer S){ E.birthday=CMLib.coffeeMaker().loadAInt(S); } },
 		DED(){
-			public String save(StdBody E){ return ""+E.dead; }
-			public void load(StdBody E, String S){ E.dead=Boolean.getBoolean(S); } },
+			public ByteBuffer save(StdBody E){ return (ByteBuffer)ByteBuffer.wrap(new byte[1]).put(E.dead?(byte)1:(byte)0).rewind(); }
+			public int size(){return 1;}
+			public void load(StdBody E, ByteBuffer S){ E.dead=(S.get()!=0); } },
+/*	Handled MOB side, not body side.
 		MOB(){
-			public String save(StdBody E){ if(E.myMob==null||!E.myMob.isMonster()) return ""; return CMLib.coffeeMaker().getSubStr(E.myMob); }
-			public void load(StdBody E, String S){ E.charStats=(CharStats)CMLib.coffeeMaker().loadSub(S); } },
+			public ByteBuffer save(StdBody E){ return (ByteBuffer)ByteBuffer.wrap(new byte[4]).putInt(E.myMob.saveNum()).rewind(); }
+			public int size(){return 4;}
+			public void load(StdBody E, ByteBuffer S){ E.mobToLink=S.getInt(); } },
+*/
 		RAC(){
-			public String save(StdBody E){ return CMLib.coffeeMaker().getWVectorStr(E.myRaces); }
-			public void load(StdBody E, String S){ E.myRaces=CMLib.coffeeMaker().setWVectorStr(S); } },
+			public ByteBuffer save(StdBody E){ return CMLib.coffeeMaker().getRaceWVector(E.myRaces); }
+			public int size(){return 0;}
+			public void load(StdBody E, ByteBuffer S){ E.myRaces=CMLib.coffeeMaker().setRaceWVector(S); } },
 		;
-		public abstract String save(StdBody E);
-		public abstract void load(StdBody E, String S);
-		public String save(CMSavable E){return save((StdBody)E);}
-		public void load(CMSavable E, String S){load((StdBody)E, S);} }
+		public abstract ByteBuffer save(StdBody E);
+		public abstract void load(StdBody E, ByteBuffer S);
+		public ByteBuffer save(CMSavable E){return save((StdBody)E);}
+		public CMSavable subObject(CMSavable fromThis){return null;}
+		public void load(CMSavable E, ByteBuffer S){load((StdBody)E, S);} }
 	private enum MCode implements CMModifiable.ModEnum{
 		DEAD(){
 			public String brief(StdBody E){return ""+E.dead;}

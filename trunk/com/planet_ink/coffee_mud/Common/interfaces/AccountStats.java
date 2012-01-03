@@ -33,8 +33,9 @@ public interface AccountStats extends CMCommon, CMSavable, CMModifiable
 	public void setLastUpdated(long time);
 	public String password();
 	public void setPassword(String newPassword);
-	public String lastIP();
-	public void setLastIP(String ip);
-	public HashSet<String> getFriends();
-	public HashSet<String> getIgnored();
+	public byte[] lastIP();
+	public void setLastIP(byte[] ip);
+	public HashSet<MOB> getFriends();
+	public HashSet<MOB> getIgnored();
+	public Vector<AccountStats> getIgnoredBy();
 }

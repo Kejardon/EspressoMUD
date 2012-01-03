@@ -850,7 +850,7 @@ public class DefaultSession extends Thread implements Session
 				else
 				if(tag.equals("SHUTDOWN"))
 				{
-					MOB M=CMLib.players().getLoadPlayer((String)parts.elementAt(1));
+					MOB M=CMLib.players().getPlayer((String)parts.elementAt(1));
 					if((M!=null)&&(BCrypt.checkpw((String)parts.elementAt(2),M.playerStats().password()))&&(CMSecurity.isASysOp(M)))
 					{
 						boolean keepDown=parts.size()>3?CMath.s_bool((String)parts.elementAt(3)):true;
@@ -1314,6 +1314,18 @@ public class DefaultSession extends Thread implements Session
 		}
 		catch(IOException e)
 		{
+		}
+	}
+
+	public byte[] getByteAddress()
+	{
+		try
+		{
+			return sock.getInetAddress().getAddress();
+		}
+		catch (Exception e)
+		{
+			return null;
 		}
 	}
 

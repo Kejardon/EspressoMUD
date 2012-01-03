@@ -40,7 +40,7 @@ public interface Area extends Environmental.EnvHolder, ListenHolder.MsgListener,
 	public void delProperRoom(Room R);
 	public void addTickingRoom(Room R);
 	public void removeTickingRoom(Room R);
-	public Room getRoom(String roomID);
+//	public Room getRoom(String roomID);
 	public boolean isRoom(Room R);
 	public Room getRandomProperRoom();
 	public Enumeration<Room> getProperMap();
@@ -50,10 +50,8 @@ public interface Area extends Environmental.EnvHolder, ListenHolder.MsgListener,
 	public boolean inMyMetroArea(Area A);
 	public Room getRandomMetroRoom();
 	public Vector<Room> getMetroCollection();
-	public String getNewRoomID();
+//	public String getNewRoomID();
 	public void clearMetroMap();
-	public void addChildToLoad(String str);
-	public void initChildren();
 	public Enumeration<Area> getChildren();
 	public String getChildrenList();
 	public int getNumChildren();
@@ -77,56 +75,6 @@ public interface Area extends Environmental.EnvHolder, ListenHolder.MsgListener,
 	public void removeParent(Area Disowned);
 	public void removeParent(int Disowned);
 	public boolean canParent(Area newParent);
-	
-	public static class O
-	{
-		private static int saveNumber=1;
-		private static boolean started=false;
-		private static HashMap<Integer, Area> assignedNumbers=new HashMap<Integer, Area>();
-		public synchronized static int getNumber()
-		{
-			if(!started)
-			{
-				String S=CMLib.database().DBReadData("AreaSNum");
-				if(S==null)
-				{
-					saveNumber=1;
-					CMLib.database().DBCreateData("AreaSNum","1");
-				}
-				else
-					saveNumber=CMath.s_int(S);
-				assignedNumber.put(0,null);
-				started=true;
-			}
-			if(assignedNumbers.containsKey(saveNumber))
-			{
-				int inc=1;
-				while(assignedNumbers.containsKey(saveNumber+inc))
-				{
-					inc=inc*2;
-					if(inc==1) saveNumber+=1580030169; //(2^32)/e ; optimal interval for poking around randomly
-				}
-				saveNumber+=inc;
-			}
-			return saveNumber++;
-		}
-		public static void save()
-		{
-			CMLib.database().DBUpdateData("AreaSNum",""+saveNumber);
-		}
-		public static void assignNumber(int i, Area A)
-		{
-			assignedNumbers.put(i, A);
-		}
-		public static void removeNumber(int i, Area A)
-		{
-			assignedNumbers.remove(i);
-		}
-		public static Area get(Integer i)
-		{
-			return assignedNumbers.get(i);
-		}
-	}
 	
 	/* A blurb flag is a run-time modifiable set of strings that can be added
 	 * to an area in order to display them in the HELP entry for an area.

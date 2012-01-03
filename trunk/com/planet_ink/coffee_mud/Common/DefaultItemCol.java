@@ -8,12 +8,14 @@ import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -25,10 +27,11 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 public class DefaultItemCol implements ItemCollection, Ownable
 {
 	protected Vector<Item> inventory=new Vector<Item>(1);
-	protected CMObject parent=null;
+	protected CMSavable parent=null;
 	protected int maxweight=0;
 	protected int maxsize=0;
-	
+	protected int[] itemsToLoad=null;
+	protected int saveNum=0;
 	
 	//CMObject
 	public String ID(){return "DefaultItemCol";}
@@ -38,14 +41,58 @@ public class DefaultItemCol implements ItemCollection, Ownable
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 
 	//Ownable
-	public CMObject owner(){return parent;}
-	public void setOwner(CMObject owner){parent=owner;}
+	public CMSavable owner(){return parent;}
+	public Ownable setOwner(CMSavable owner){parent=owner; return this;}
+
+	public void destroy()
+	{
+		//TODO
+		CMLib.database().deleteObject(this);
+	}
 
 	//CMModifiable and CMSavable
 	public SaveEnum[] totalEnumS(){return SCode.values();}
 	public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]} ;}
 	public ModEnum[] totalEnumM(){return MCode.values();}
 	public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
+	public int saveNum()
+	{
+		if(saveNum==0)
+		synchronized(this)
+		{
+			if(saveNum==0)
+				saveNum=SIDLib.Objects.ITEMCOLLECTION.getNumber(this);
+		}
+		return saveNum;
+	}
+	public void setSaveNum(int num)
+	{
+		synchronized(this)
+		{
+			if(saveNum!=0)
+				SIDLib.Objects.ITEMCOLLECTION.removeNumber(saveNum);
+			saveNum=num;
+			SIDLib.Objects.ITEMCOLLECTION.assignNumber(num, this);
+		}
+	}
+	public boolean needLink(){return true;}
+	public void link()
+	{
+		if(itemsToLoad!=null)
+		{
+			for(int SID : itemsToLoad)
+			{
+				Item item = (Item)SIDLib.Objects.ITEM.get(SID);
+				if(item==null) continue;
+				if(parent instanceof ListenHolder)
+					item.registerListeners((ListenHolder)parent);
+				item.setContainer(parent);
+				inventory.addElement(item);
+			}
+			itemsToLoad=null;
+		}
+	}
+	public void saveThis(){CMLib.database().saveObject(this);}
 
 	//ItemCollection
 	public boolean canHold(Item item)
@@ -86,6 +133,7 @@ public class DefaultItemCol implements ItemCollection, Ownable
 			item.setContainer(parent);
 			inventory.addElement(item);
 		}
+		CMLib.database().saveObject(this);
 	}
 	public void removeItem(Item item)
 	{
@@ -93,12 +141,14 @@ public class DefaultItemCol implements ItemCollection, Ownable
 		{
 			inventory.removeElement(item);
 		}
+		CMLib.database().saveObject(this);
 	}
 	public Item removeItem(int i)
 	{
 		synchronized(inventory)
 		{
 			Item item=inventory.remove(i);
+			CMLib.database().saveObject(this);
 			return item;
 		}
 	}
@@ -113,22 +163,25 @@ public class DefaultItemCol implements ItemCollection, Ownable
 
 	private enum SCode implements CMSavable.SaveEnum{
 		INV(){
-			public String save(DefaultItemCol E){ return CMLib.coffeeMaker().getSaveNumStr(E.inventory.elements()); }
-			public void load(DefaultItemCol E, String S){
-				for(String num : (String[])CMParms.parseSemicolons(S,true).toArray(new String[]))
-					E.addItem(Item.O.get(CMath.s_int(num)));
-				} },
+			public ByteBuffer save(DefaultItemCol E){
+				if(E.inventory.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.inventory.toArray(new CMSavable[E.inventory.size()]));
+				return GenericBuilder.emptyBuffer; }
+			public int size(){return 0;}
+			public void load(DefaultItemCol E, ByteBuffer S){ E.itemsToLoad=CMLib.coffeeMaker().loadAInt(S); } },
 		WMX(){
-			public String save(DefaultItemCol E){ return ""+E.maxweight; }
-			public void load(DefaultItemCol E, String S){ E.maxweight=Integer.parseInt(S); } },
+			public ByteBuffer save(DefaultItemCol E){ return (ByteBuffer)ByteBuffer.wrap(new byte[4]).putInt(E.maxweight).rewind(); }
+			public int size(){return 4;}
+			public void load(DefaultItemCol E, ByteBuffer S){ E.maxweight=S.getInt(); } },
 		SMX(){
-			public String save(DefaultItemCol E){ return ""+E.maxsize; }
-			public void load(DefaultItemCol E, String S){ E.maxsize=Integer.parseInt(S); } },
+			public ByteBuffer save(DefaultItemCol E){ return (ByteBuffer)ByteBuffer.wrap(new byte[4]).putInt(E.maxsize).rewind(); }
+			public int size(){return 4;}
+			public void load(DefaultItemCol E, ByteBuffer S){ E.maxsize=S.getInt(); } },
 		;
-		public abstract String save(DefaultItemCol E);
-		public abstract void load(DefaultItemCol E, String S);
-		public String save(CMSavable E){return save((DefaultItemCol)E);}
-		public void load(CMSavable E, String S){load((DefaultItemCol)E, S);} }
+		public abstract ByteBuffer save(DefaultItemCol E);
+		public abstract void load(DefaultItemCol E, ByteBuffer S);
+		public ByteBuffer save(CMSavable E){return save((DefaultItemCol)E);}
+		public CMSavable subObject(CMSavable fromThis){return null;}
+		public void load(CMSavable E, ByteBuffer S){load((DefaultItemCol)E, S);} }
 	private enum MCode implements CMModifiable.ModEnum{
 		INVENTORY() {
 			public String brief(DefaultItemCol E){return ""+E.inventory.size();}

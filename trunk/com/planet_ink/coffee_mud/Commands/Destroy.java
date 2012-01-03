@@ -82,7 +82,7 @@ public class Destroy extends StdCommand
 			return;
 		}
 		String accountName=CMStrings.capitalizeAndLower(CMParms.combine(commands, 2));
-		PlayerAccount theAccount = CMLib.players().getLoadAccount(accountName);
+		PlayerAccount theAccount = CMLib.players().getAccount(accountName);
 		if(theAccount==null)
 		{
 			mob.tell("There is no account called '"+accountName+"'!\n\r");
@@ -125,7 +125,7 @@ public class Destroy extends StdCommand
 
 		if(mob.session().confirm("This will complete OBLITERATE the user '"+name+"' forever.  Are you SURE?! (y/N)?","N"))
 		{
-			MOB deadMOB=CMLib.players().getLoadPlayer(name);
+			MOB deadMOB=CMLib.players().getPlayer(name);
 			CMLib.players().obliteratePlayer(deadMOB,false);
 			mob.tell("The user '"+CMParms.combine(commands,2)+"' is no more!\n\r");
 			Log.sysOut("Mobs",mob.name()+" destroyed user "+deadMOB.name()+".");
@@ -204,7 +204,7 @@ public class Destroy extends StdCommand
 		if(roomName.equalsIgnoreCase("HERE"))
 			deadRoom=mob.location();
 		else
-			deadRoom=CMLib.map().getRoom(roomName);
+			deadRoom=(Room)SIDLib.Objects.ROOM.get(CMath.s_int(roomName));
 		if(deadRoom==null)
 		{
 			mob.tell("You have failed to specify a room.  Try a VALID ROOM ID, or \"HERE\".\n\r");
@@ -216,11 +216,11 @@ public class Destroy extends StdCommand
 			return;
 		}
 
-		if(!mob.session().confirm("You are fixing to permanantly destroy Room \""+deadRoom.roomID()+"\".  Are you ABSOLUTELY SURE (y/N)","N"))
+		if(!mob.session().confirm("You are fixing to permanantly destroy Room \""+deadRoom.saveNum()+"\".  Are you ABSOLUTELY SURE (y/N)","N"))
 			return;
 		CMLib.map().obliterateRoom(deadRoom);
 		mob.tell("The room has been destroyed.");
-		Log.sysOut("Rooms",mob.name()+" destroyed room "+deadRoom.roomID()+".");
+		Log.sysOut("Rooms",mob.name()+" destroyed room "+deadRoom.saveNum()+".");
 	}
 
 	public void exits(MOB mob, Vector commands)
@@ -240,10 +240,10 @@ public class Destroy extends StdCommand
 		if(mob.session().confirm("Remove this exit from the opposite room too?",""))
 		{
 			target.room.removeExit(target.exit, mob.location());
-			Log.sysOut("Exits",mob.location().roomID()+" and "+target.room.roomID()+" exit, "+target.exit.exitID()+" destroyed by "+mob.name()+".");
+			Log.sysOut("Exits",mob.location().saveNum()+" and "+target.room.saveNum()+" exit, "+target.exit.saveNum()+" destroyed by "+mob.name()+".");
 		}
 		else
-			Log.sysOut("Exits",mob.location().roomID()+" exit "+target.exit.exitID()+" unlinked by "+mob.name()+".");
+			Log.sysOut("Exits",mob.location().saveNum()+" exit "+target.exit.saveNum()+" unlinked by "+mob.name()+".");
 		mob.location().removeExit(target);
 		mob.location().showHappens(EnumSet.of(CMMsg.MsgCode.VISUAL),null,"A wall of inhibition covers "+target.exit.directLook(mob, target.room)+".");
 		

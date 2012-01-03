@@ -75,7 +75,7 @@ public class Who extends StdCommand
 		throws java.io.IOException
 	{
 		String mobName=CMParms.combine(commands,1);
-		HashSet friends=null;
+		HashSet<MOB> friends=null;
 		if((mobName!=null)
 		&&(mob!=null)
 		&&(mobName.equalsIgnoreCase("friends"))
@@ -93,7 +93,7 @@ public class Who extends StdCommand
 
 			if((mob2!=null)
 			&&(!thisSession.killFlag())
-			&&((friends==null)||(friends.contains(mob2.name())))
+			&&((friends==null)||(friends.contains(mob2)))
 			&&(CMLib.flags().isInTheGame(mob2,true)))
 				msg.append(showWhoShort(mob2));
 		}

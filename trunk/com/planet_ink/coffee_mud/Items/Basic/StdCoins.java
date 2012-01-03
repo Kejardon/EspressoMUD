@@ -15,6 +15,7 @@ import com.planet_ink.coffee_mud.Libraries.interfaces.MoneyLibrary;
 
 
 import java.util.*;
+import java.nio.ByteBuffer;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -63,10 +64,10 @@ public class StdCoins extends StdItem implements Coins
 		amount=number;
 	}
 	public long getDenomination(){return denomination;}
-	public void setDenomination(long valuePerCoin) { denomination=valuePerCoin; }
+	public void setDenomination(long valuePerCoin) { denomination=valuePerCoin; CMLib.database().saveObject(this);}
 	public long getTotalValue(){return denomination*amount;}
 	public String getCurrency(){ return currency;}
-	public void setCurrency(String named) { currency=named; }
+	public void setCurrency(String named) { currency=named; CMLib.database().saveObject(this);}
 
 	public boolean putCoinsBack()
 	{
@@ -84,6 +85,7 @@ public class StdCoins extends StdItem implements Coins
 				&&(((Coins)I).getCurrency().equals(currency)))
 				{
 					((Coins)I).setNumberOfCoins(alternative.getNumberOfCoins()+amount);
+					CMLib.database().saveObject(I);
 					destroy();
 					return true;
 				}
@@ -152,19 +154,23 @@ public class StdCoins extends StdItem implements Coins
 
 	private enum SCode implements CMSavable.SaveEnum{
 		CUR(){
-			public String save(StdCoins E){ return E.currency; }
-			public void load(StdCoins E, String S){ E.currency=S.intern(); } },
+			public ByteBuffer save(StdCoins E){ return CMLib.coffeeMaker().savString(E.currency); }
+			public int size(){return 0;}
+			public void load(StdCoins E, ByteBuffer S){ E.currency=CMLib.coffeeMaker().loadString(S); } },
 		AMT(){
-			public String save(StdCoins E){ return ""+E.amount; }
-			public void load(StdCoins E, String S){ E.amount=Long.parseLong(S); } },
+			public ByteBuffer save(StdCoins E){ return (ByteBuffer)ByteBuffer.wrap(new byte[8]).putLong(E.amount).rewind(); }
+			public int size(){return 8;}
+			public void load(StdCoins E, ByteBuffer S){ E.amount=S.getLong(); } },
 		DEN(){
-			public String save(StdCoins E){ return ""+E.denomination; }
-			public void load(StdCoins E, String S){ E.denomination=Long.parseLong(S); } },
+			public ByteBuffer save(StdCoins E){ return (ByteBuffer)ByteBuffer.wrap(new byte[8]).putLong(E.denomination).rewind(); }
+			public int size(){return 8;}
+			public void load(StdCoins E, ByteBuffer S){ E.denomination=S.getLong(); } },
 		;
-		public abstract String save(StdCoins E);
-		public abstract void load(StdCoins E, String S);
-		public String save(CMSavable E){return save((StdCoins)E);}
-		public void load(CMSavable E, String S){load((StdCoins)E, S);} }
+		public abstract ByteBuffer save(StdCoins E);
+		public abstract void load(StdCoins E, ByteBuffer S);
+		public ByteBuffer save(CMSavable E){return save((StdCoins)E);}
+		public CMSavable subObject(CMSavable fromThis){return null;}
+		public void load(CMSavable E, ByteBuffer S){load((StdCoins)E, S);} }
 	private enum MCode implements CMModifiable.ModEnum{
 		CURRENCY(){
 			public String brief(StdCoins E){return E.currency;}

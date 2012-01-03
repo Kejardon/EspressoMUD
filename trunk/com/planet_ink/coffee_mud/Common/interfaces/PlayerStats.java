@@ -68,7 +68,7 @@ public interface PlayerStats extends CMCommon, CMModifiable, CMSavable, AccountS
 	// Returns the last time a player sent this player a message.
 	public long replyTime();
 
-	public Vector<String> getSecurityGroups();
+	public HashSet<String> getSecurityGroups();
 //	public boolean hasVisited(Room R);
 //	public boolean hasVisited(Area A);
 //	public int percentVisited(MOB mob, Area A);
@@ -79,8 +79,8 @@ public interface PlayerStats extends CMCommon, CMModifiable, CMSavable, AccountS
 	public void delAliasName(String named);
 	public void setAlias(String named, String value);
 
-	public boolean isIntroducedTo(String name);
-	public void introduceTo(String name);
+	public boolean isIntroducedTo(MOB someguy);
+	public void introduceTo(MOB someguy);
 	
 	public PlayerAccount getAccount();
 	public void setAccount(PlayerAccount account);

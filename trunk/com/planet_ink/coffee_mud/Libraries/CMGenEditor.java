@@ -50,6 +50,7 @@ public class CMGenEditor extends StdLibrary implements GenericEditor
 				options[pickOption].mod(E, mob);
 			}
 		}
+		if(E instanceof CMSavable) ((CMSavable)E).saveThis();
 		return E;
 	}
 	
@@ -414,7 +415,7 @@ public class CMGenEditor extends StdLibrary implements GenericEditor
 			for(;i<V.size();i++)
 			{
 				Exit e=V.get(i).exit;
-				M.session().rawPrintln((1+i)+". "+e.ID()+" "+e.exitID()+" to "+V.get(i).room.roomID());
+				M.session().rawPrintln((1+i)+". "+e.ID()+" "+e.saveNum()+" to "+V.get(i).room.saveNum());
 			}
 			M.session().rawPrintln((1+i)+". New Element");
 			i=CMath.s_int(M.session().prompt("Edit which? ",""));
@@ -430,7 +431,7 @@ public class CMGenEditor extends StdLibrary implements GenericEditor
 					{
 						String roomID=M.session().prompt("Connect this exit to what room? ","");
 						if(roomID.equals("")) break;
-						R=CMLib.map().getRoom(roomID);
+						R=(Room)SIDLib.Objects.ROOM.get(CMath.s_int(roomID));
 					}
 					if(R!=null)
 						exits.add(new Room.REMap(R, e));
@@ -448,7 +449,7 @@ public class CMGenEditor extends StdLibrary implements GenericEditor
 					{
 						String roomID=M.session().prompt("Connect this exit to what room? ","");
 						if(roomID.equals("")) break;
-						R=CMLib.map().getRoom(roomID);
+						R=(Room)SIDLib.Objects.ROOM.get(CMath.s_int(roomID));
 					}
 					if(R!=null) synchronized(exits)
 					{

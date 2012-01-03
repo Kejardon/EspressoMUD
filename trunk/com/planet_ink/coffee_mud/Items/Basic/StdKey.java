@@ -8,11 +8,13 @@ import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
+import java.nio.ByteBuffer;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -38,7 +40,7 @@ public class StdKey extends StdItem implements Key
 //		recoverEnvStats();
 	}
 
-	public void setKey(String keyName){key=keyName;}
+	public void setKey(String keyName){key=keyName; CMLib.database().saveObject(this);}
 	public String getKey(){return key;}
 
 	//CMModifiable and CMSavable
@@ -101,13 +103,17 @@ public class StdKey extends StdItem implements Key
 
 	private enum SCode implements CMSavable.SaveEnum{
 		KEY(){
-			public String save(StdKey E){ return E.key; }
-			public void load(StdKey E, String S){ E.key=S.intern(); } },
+			public ByteBuffer save(StdKey E){
+				if(E.key=="skeleton") return GenericBuilder.emptyBuffer;
+				return CMLib.coffeeMaker().savString(E.key); }
+			public int size(){return 0;}
+			public void load(StdKey E, ByteBuffer S){ E.key=CMLib.coffeeMaker().loadString(S); } },
 		;
-		public abstract String save(StdKey E);
-		public abstract void load(StdKey E, String S);
-		public String save(CMSavable E){return save((StdKey)E);}
-		public void load(CMSavable E, String S){load((StdKey)E, S);} }
+		public abstract ByteBuffer save(StdKey E);
+		public abstract void load(StdKey E, ByteBuffer S);
+		public ByteBuffer save(CMSavable E){return save((StdKey)E);}
+		public CMSavable subObject(CMSavable fromThis){return null;}
+		public void load(CMSavable E, ByteBuffer S){load((StdKey)E, S);} }
 	private enum MCode implements CMModifiable.ModEnum{
 		KEYNAME(){
 			public String brief(StdKey E){return E.key;}

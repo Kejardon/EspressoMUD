@@ -73,7 +73,7 @@ public class Stat  extends StdCommand
 		String MOBname=CMParms.combine(commands,0);
 		MOB target=mob.location().fetchInhabitant(MOBname);
 		if(target==null)
-			target=CMLib.players().getLoadPlayer(MOBname);
+			target=CMLib.players().getPlayer(MOBname);
 		if(target==null)
 		{
 			mob.tell("You can't stat '"+MOBname+"'  -- he doesn't exist.");

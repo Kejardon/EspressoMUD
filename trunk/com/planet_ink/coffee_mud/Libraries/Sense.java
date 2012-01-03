@@ -51,7 +51,7 @@ public class Sense extends StdLibrary implements CMFlagLibrary
 	public boolean isInTheGame(Interactable E, boolean reqInhabitation)
 	{
 		if(E instanceof Room)
-			return CMLib.map().getRoom(E.ID())==E;
+			return ((Room)E).saveNum()!=0;
 		else
 		if(E instanceof MOB)
 			return (((MOB)E).location()!=null)

@@ -39,7 +39,7 @@ public class Goto extends At
 		}
 		commands.removeElementAt(0);
 		StringBuffer cmd = new StringBuffer(CMParms.combine(commands,0));
-		Vector stack=(Vector)Resources.getResource("GOTOS_FOR_"+mob.name().toUpperCase());
+		Vector<Integer> stack=(Vector)Resources.getResource("GOTOS_FOR_"+mob.name().toUpperCase());
 		if(stack==null)
 		{
 			stack=new Vector();
@@ -55,7 +55,7 @@ public class Goto extends At
 				mob.tell("Your previous room stack is empty.");
 			else
 			{
-				room=CMLib.map().getRoom((String)stack.lastElement());
+				room=(Room)SIDLib.Objects.ROOM.get(stack.lastElement());
 				stack.removeElementAt(stack.size()-1);
 			}
 		}
@@ -79,8 +79,8 @@ public class Goto extends At
 		}
 		if(!"PREVIOUS".startsWith(cmd.toString().toUpperCase()))
 		{
-			if((stack.size()==0)||(stack.lastElement()!=mob.location()))
-				stack.addElement(mob.location().roomID());
+			if((stack.size()==0)||(stack.lastElement()!=mob.location().saveNum()))
+				stack.addElement(mob.location().saveNum());
 		}
 		room.bringHere(mob.body(),false);
 		CMLib.commands().postLook(mob);

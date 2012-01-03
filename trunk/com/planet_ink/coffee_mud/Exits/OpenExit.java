@@ -9,10 +9,12 @@ import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
+import java.nio.ByteBuffer;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -24,32 +26,25 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 public class OpenExit implements Exit
 {
 	//NOTE: myEnvironmental needs to be protected somehow. It should be immutable.
-	protected Environmental myEnvironmental=(Environmental)CMClass.Objects.COMMON.getNew("DefaultEnvironmental");
+	protected Environmental myEnvironmental=(Environmental)((Ownable)CMClass.Objects.COMMON.getNew("DefaultEnvironmental")).setOwner(this);
 	protected EnumSet<ListenHolder.Flags> lFlags=EnumSet.of(ListenHolder.Flags.OK,ListenHolder.Flags.EXC);
 
-	public OpenExit()
-	{
-		((Ownable)myEnvironmental).setOwner(this);
-	}
+	public OpenExit() {}
 	public String ID(){return "OpenExit";}
-	public String directLook(MOB mob, Room destination)
-	{
-		return displayText()+" It leads to "+destination.displayText();
-	}
+	public String directLook(MOB mob, Room destination) { return displayText()+" It leads to "+destination.displayText(); }
 	public String exitListLook(MOB mob, Room destination) { return destination.displayText(); }
-	public boolean visibleExit(MOB mob, Room destination){return true;}
-	public void setVisible(boolean b){}
-	public String exitID(){return "0";}
-	public void setExitID(String s){}
-	public void initializeClass(){ CMLib.map().addExit(this); }
+	public boolean visibleExit(MOB mob, Room destination){ return true; }
+	public int saveNum(){return 1;}
+	public void initializeClass(){ SIDLib.Objects.EXIT.assignNumber(saveNum(), this); }
 	public String name(){ return "a wide open passage";}
-	public void setName(String newName){}
 	public String displayText(){return "a path to another place.";}
-	public void setDisplayText(String newDisplayText){}
 	public String description(){return "";}
-	public void setDescription(String newDescription){}
 	public void destroy(){}
 	public boolean amDestroyed(){return false;}
+	public void setVisible(boolean b){}
+	public void setName(String newName){}
+	public void setDisplayText(String newDisplayText){}
+	public void setDescription(String newDescription){}
 
 	public Environmental getEnvObject() {return myEnvironmental;}
 	public Closeable getLidObject() {return null;}
@@ -106,11 +101,12 @@ public class OpenExit implements Exit
 		if(!(E instanceof OpenExit)) return false;
 		return true;
 	}
-	public void setSave(boolean b){}
-	public boolean needSave(){return false;}
-	
 	public SaveEnum[] totalEnumS(){return new SaveEnum[0];}
 	public Enum[] headerEnumS(){return new Enum[0];}
 	public ModEnum[] totalEnumM(){return new ModEnum[0];}
 	public Enum[] headerEnumM(){return new Enum[0];}
+	public void setSaveNum(int num){}
+	public boolean needLink(){return false;}
+	public void link(){}
+	public void saveThis(){}
 }

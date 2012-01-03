@@ -270,4 +270,14 @@ public class WVector<E> implements Cloneable
 			O.weight=O.weight/gcd;
 		totalWeight/=gcd;
 	}
+	public void toArrays(E[] objs, int[] weights)
+	{
+		WeightedObject<E>[] src=(WeightedObject<E>[])objects.toArray(new WeightedObject[objects.size()]);
+		for(int i=0;i<objs.length;i++)
+		{
+			objs[i]=src[i].obj;
+			weights[i]=src[i].weight;
+		}
+		return;
+	}
 }

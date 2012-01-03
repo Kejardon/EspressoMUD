@@ -9,10 +9,12 @@ import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
+import java.nio.ByteBuffer;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -29,7 +31,7 @@ public class StdExit implements Exit
 	protected String name="an ordinary pathway";
 	protected String display="an open passage to another place.";
 	protected String desc="";
-	protected String exitID="";
+//	protected String exitID="";
 	protected boolean visible=true;
 
 	protected EnumSet<ListenHolder.Flags> lFlags=EnumSet.of(ListenHolder.Flags.OK,ListenHolder.Flags.EXC);
@@ -41,21 +43,23 @@ public class StdExit implements Exit
 	protected long lastTick=0;
 	protected Tickable.TickStat tickStatus=Tickable.TickStat.Not;
 	protected boolean amDestroyed=false;
-	protected boolean needSave=false;
+//	protected boolean needSave=false;
 
-	protected Environmental myEnvironmental=(Environmental)CMClass.Objects.COMMON.getNew("DefaultEnvironmental");
+	protected Environmental myEnvironmental=(Environmental)((Ownable)CMClass.Objects.COMMON.getNew("DefaultEnvironmental")).setOwner(this);
 	protected Closeable myDoor=null;
 
-	public StdExit()
-	{
-		((Ownable)myEnvironmental).setOwner(this);
-	}
+	protected int saveNum=0;
+	protected int doorToLoad=0;
+	protected int[] effectsToLoad=null;
+	protected int[] behavesToLoad=null;
+
+	public StdExit(){}
 
 	public Environmental getEnvObject() {return myEnvironmental;}
 	public Closeable getLidObject() {return myDoor;}
 
-	public String exitID(){return exitID;}
-	public void setExitID(String s){exitID=s;}
+//	public String exitID(){return exitID;}
+//	public void setExitID(String s){exitID=s;}
 
 	public String directLook(MOB mob, Room destination)
 	{
@@ -76,9 +80,9 @@ public class StdExit implements Exit
 		return name;
 	}
 	public boolean visibleExit(MOB mob, Room destination) {return visible; }
-	public void setVisible(boolean b){visible = b;}
-	public boolean needSave(){return needSave;}
-	public void setSave(boolean b){needSave=b;}
+	public void setVisible(boolean b){visible = b; CMLib.database().saveObject(this);}
+//	public boolean needSave(){return needSave;}
+//	public void setSave(boolean b){needSave=b;}
 
 	public int priority(ListenHolder L){return Integer.MAX_VALUE;}
 	public void registerListeners(ListenHolder here) { here.addListener(this, lFlags); }
@@ -88,11 +92,11 @@ public class StdExit implements Exit
 //	protected void finalize(){}
 	public void initializeClass(){}
 	public String name(){ return name;}
-	public void setName(String newName){name=newName;}
+	public void setName(String newName){name=newName; CMLib.database().saveObject(this);}
 	public String displayText(){return display;}
-	public void setDisplayText(String newDisplayText){display=newDisplayText;}
+	public void setDisplayText(String newDisplayText){display=newDisplayText; CMLib.database().saveObject(this);}
 	public String description(){return desc;}
-	public void setDescription(String newDescription){desc=newDescription;}
+	public void setDescription(String newDescription){desc=newDescription; CMLib.database().saveObject(this);}
 
 	public void destroy()
 	{
@@ -101,6 +105,7 @@ public class StdExit implements Exit
 		affects=null;
 		behaviors=null;
 		amDestroyed=true;
+		CMLib.database().deleteObject(this);
 	}
 	public boolean amDestroyed(){return amDestroyed;}
 
@@ -108,7 +113,7 @@ public class StdExit implements Exit
 	{
 		try
 		{
-			return (Environmental)this.getClass().newInstance();
+			return (StdExit)this.getClass().newInstance();
 		}
 		catch(Exception e)
 		{
@@ -118,6 +123,7 @@ public class StdExit implements Exit
 	} 
 	protected void cloneFix(Exit E)
 	{
+		saveNum=0;
 		myEnvironmental=(Environmental)E.getEnvObject().copyOf();
 		myDoor=E.getLidObject();
 		if(myDoor!=null) myDoor=(Closeable)myDoor.copyOf();
@@ -199,8 +205,8 @@ public class StdExit implements Exit
 	}
 	public int compareTo(CMObject o)
 	{
-		if(o instanceof Exit)
-			return exitID.compareTo(((Exit)o).exitID());
+//		if(o instanceof Exit)
+//			return exitID.compareTo(((Exit)o).exitID());
 		return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));
 	}
 
@@ -210,11 +216,13 @@ public class StdExit implements Exit
 		if(to==null) return;
 		affects.addElement(to);
 		to.setAffectedOne(this);
+		CMLib.database().saveObject(this);
 	}
 	public void delEffect(Effect to)
 	{
 		if(affects.removeElement(to))
 			to.setAffectedOne(null);
+		CMLib.database().saveObject(this);
 	}
 	public int numEffects(){return affects.size();}
 	public Effect fetchEffect(int index)
@@ -243,10 +251,15 @@ public class StdExit implements Exit
 		if(fetchBehavior(to.ID())!=null) return;
 		to.startBehavior(this);
 		behaviors.addElement(to);
+		CMLib.database().saveObject(this);
 	}
 	public void delBehavior(Behavior to)
 	{
-		behaviors.removeElement(to);
+		if(behaviors.removeElement(to))
+		{
+			to.startBehavior(null);
+			CMLib.database().saveObject(this);
+		}
 	}
 	public int numBehaviors()
 	{
@@ -317,51 +330,93 @@ public class StdExit implements Exit
 	public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]} ;}
 	public ModEnum[] totalEnumM(){return MCode.values();}
 	public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
+	public int saveNum()
+	{
+		if(saveNum==0)
+		synchronized(this)
+		{
+			if(saveNum==0)
+				saveNum=SIDLib.Objects.EXIT.getNumber(this);
+		}
+		return saveNum;
+	}
+	public void setSaveNum(int num)
+	{
+		synchronized(this)
+		{
+			if(saveNum!=0)
+				SIDLib.Objects.EXIT.removeNumber(saveNum);
+			saveNum=num;
+			SIDLib.Objects.EXIT.assignNumber(num, this);
+		}
+	}
+	public boolean needLink(){return true;}
+	public void link()
+	{
+		if(effectsToLoad!=null)
+		{
+			for(int SID : effectsToLoad)
+			{
+				Effect to = (Effect)SIDLib.Objects.EFFECT.get(SID);
+				if(to==null) continue;
+				affects.addElement(to);
+				to.setAffectedOne(this);
+			}
+			effectsToLoad=null;
+		}
+	}
+	public void saveThis(){CMLib.database().saveObject(this);}
+
 
 	private enum SCode implements CMSavable.SaveEnum{
 		ENV(){
-			public String save(StdExit E){ return CMLib.coffeeMaker().getSubStr(E.myEnvironmental); }
-			public void load(StdExit E, String S){ E.myEnvironmental=(Environmental)CMLib.coffeeMaker().loadSub(S); } },
-/*		EID(){
-			public String save(StdExit E){ return E.exitID; }
-			public void load(StdExit E, String S){ E.exitID=S.intern(); } }, */
+			public ByteBuffer save(StdExit E){ return CMLib.coffeeMaker().savSubFull(E.myEnvironmental); }
+			public int size(){return -1;}
+			public CMSavable subObject(CMSavable fromThis){return ((StdExit)fromThis).myEnvironmental;}
+			public void load(StdExit E, ByteBuffer S){ E.myEnvironmental=(Environmental)((Ownable)CMLib.coffeeMaker().loadSub(S, E.myEnvironmental)).setOwner(E); } },
 		DSP(){
-			public String save(StdExit E){ return E.display; }
-			public void load(StdExit E, String S){ E.display=S.intern(); } },
+			public ByteBuffer save(StdExit E){
+				if(E.display=="an open passage to another place.") return GenericBuilder.emptyBuffer;
+				return CMLib.coffeeMaker().savString(E.display); }
+			public int size(){return 0;}
+			public void load(StdExit E, ByteBuffer S){ E.display=CMLib.coffeeMaker().loadString(S); } },
 		DSC(){
-			public String save(StdExit E){ return E.desc; }
-			public void load(StdExit E, String S){ E.desc=S.intern(); } },
+			public ByteBuffer save(StdExit E){ return CMLib.coffeeMaker().savString(E.desc); }
+			public int size(){return 0;}
+			public void load(StdExit E, ByteBuffer S){ E.desc=CMLib.coffeeMaker().loadString(S); } },
 		EFC(){
-			public String save(StdExit E){ return CMLib.coffeeMaker().getVectorStr(E.affects); }
-			public void load(StdExit E, String S){
-				Vector<Effect> V=CMLib.coffeeMaker().setVectorStr(S);
-				for(Effect A : V)
-					E.addEffect(A);
-				
-				} },
+			public ByteBuffer save(StdExit E){
+				if(E.affects.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.affects.toArray(new CMSavable[E.affects.size()]));
+				return GenericBuilder.emptyBuffer; }
+			public int size(){return 0;}
+			public void load(StdExit E, ByteBuffer S){ E.effectsToLoad=CMLib.coffeeMaker().loadAInt(S); } },
 		BHV(){
-			public String save(StdExit E){ return CMLib.coffeeMaker().getVectorStr(E.behaviors); }
-			public void load(StdExit E, String S){
-				Vector<Behavior> V=CMLib.coffeeMaker().setVectorStr(S);
-				for(Behavior A : V)
-					E.addBehavior(A);
-				
-				} },
+			public ByteBuffer save(StdExit E){
+				if(E.behaviors.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.behaviors.toArray(new CMSavable[E.behaviors.size()]));
+				return GenericBuilder.emptyBuffer; }
+			public int size(){return 0;}
+			public void load(StdExit E, ByteBuffer S){ E.behavesToLoad=CMLib.coffeeMaker().loadAInt(S); } },
 		VIS(){
-			public String save(StdExit E){ return ""+E.visible; }
-			public void load(StdExit E, String S){ E.visible=Boolean.getBoolean(S); } },
+			public ByteBuffer save(StdExit E){ return (ByteBuffer)ByteBuffer.wrap(new byte[1]).put(E.visible?(byte)1:(byte)0).rewind(); }
+			public int size(){return 1;}
+			public void load(StdExit E, ByteBuffer S){ E.visible=(S.get()!=0); } },
 		NAM(){
-			public String save(StdExit E){ return E.name; }
-			public void load(StdExit E, String S){ E.name=S.intern(); } },
+			public ByteBuffer save(StdExit E){
+				if(E.name=="an ordinary pathway") return GenericBuilder.emptyBuffer;
+				return CMLib.coffeeMaker().savString(E.name); }
+			public int size(){return 0;}
+			public void load(StdExit E, ByteBuffer S){ E.name=CMLib.coffeeMaker().loadString(S); } },
 		CLS(){
-			public String save(StdExit E){ return CMLib.coffeeMaker().getSubStr(E.myDoor); }
-			public void load(StdExit E, String S){ E.myDoor=(Closeable)CMLib.coffeeMaker().loadSub(S); } }
-
+			public ByteBuffer save(StdExit E){ return CMLib.coffeeMaker().savSubFull(E.myDoor); }
+			public int size(){return -1;}
+			public CMSavable subObject(CMSavable fromThis){return ((StdExit)fromThis).myDoor;}
+			public void load(StdExit E, ByteBuffer S){ E.myDoor=(Closeable)((Ownable)CMLib.coffeeMaker().loadSub(S, E.myDoor)).setOwner(E); } },
 		;
-		public abstract String save(StdExit E);
-		public abstract void load(StdExit E, String S);
-		public String save(CMSavable E){return save((StdExit)E);}
-		public void load(CMSavable E, String S){load((StdExit)E, S);} }
+		public abstract ByteBuffer save(StdExit E);
+		public abstract void load(StdExit E, ByteBuffer S);
+		public ByteBuffer save(CMSavable E){return save((StdExit)E);}
+		public CMSavable subObject(CMSavable fromThis){return null;}
+		public void load(CMSavable E, ByteBuffer S){load((StdExit)E, S);} }
 	private enum MCode implements CMModifiable.ModEnum{
 		ENVIRONMENTAL(){
 			public String brief(StdExit E){return E.myEnvironmental.ID();}

@@ -50,6 +50,7 @@ public class CMPlayers extends StdLibrary implements PlayerLibrary
 		}
 	}
 	public void delPlayer(MOB oneToDel) { synchronized(playersList){playersList.remove(oneToDel);} }
+/*
 	public PlayerAccount getLoadAccount(String calledThis)
 	{
 		if(calledThis=="") return null;
@@ -57,7 +58,7 @@ public class CMPlayers extends StdLibrary implements PlayerLibrary
 		if(A!=null) return A;
 		return CMLib.database().DBReadAccount(calledThis);
 	}
-	
+*/
 	public PlayerAccount getAccount(String calledThis)
 	{
 		synchronized(playersList)
@@ -94,7 +95,7 @@ public class CMPlayers extends StdLibrary implements PlayerLibrary
 		}
 		return null;
 	}
-
+/*
 	public MOB getLoadPlayer(String last)
 	{
 		if(!CMProps.Bools.MUDSTARTED.property())
@@ -124,12 +125,12 @@ public class CMPlayers extends StdLibrary implements PlayerLibrary
 		}
 		return M;
 	}
-
+*/
 	public boolean accountExists(String name)
 	{
 		if(name==null) return false;
 		name=CMStrings.capitalizeAndLower(name);
-		return getLoadAccount(name)!=null;
+		return getAccount(name)!=null;
 	}
 	
 	public boolean playerExists(String name)
@@ -179,7 +180,7 @@ public class CMPlayers extends StdLibrary implements PlayerLibrary
 			}
 		}catch(NoSuchElementException e){}
 
-		CMLib.database().DBDeleteMOB(deadMOB);
+		CMLib.database().deleteObject(deadMOB);
 		if(deadMOB.session()!=null)
 			deadMOB.session().kill(false,false,false);
 		Log.sysOut("Scoring",deadMOB.name()+" has been deleted.");
@@ -188,14 +189,14 @@ public class CMPlayers extends StdLibrary implements PlayerLibrary
 	
 	public void obliterateAccountOnly(PlayerAccount deadAccount)
 	{
-		deadAccount = getLoadAccount(deadAccount.accountName());
+		deadAccount = getAccount(deadAccount.accountName());
 		if(deadAccount==null) return;
 		accountsList.remove(deadAccount);
 
-		CMLib.database().DBDeleteAccount(deadAccount);
+		CMLib.database().deleteObject(deadAccount);
 		Log.sysOut("Scoring",deadAccount.accountName()+" has been deleted.");
 	}
-	
+/*
 	public int savePlayers()
 	{
 		int processed=0;
@@ -233,13 +234,14 @@ public class CMPlayers extends StdLibrary implements PlayerLibrary
 		}
 		return processed;
 	}
-
+*/
 	public boolean activate() {
 		if(thread==null)
 			thread=new ThreadEngine.SupportThread("THPlayers"+Thread.currentThread().getThreadGroup().getName().charAt(0), 
 					MudHost.TIME_SAVETHREAD_SLEEP, this, CMSecurity.isDebugging("SAVETHREAD"));
 		if(!thread.started)
 			thread.start();
+/*
 		Vector<String> knownPlayers=CMLib.database().getUserList();
 		for(String S : (String[])knownPlayers.toArray(new String[0]))
 		{
@@ -250,7 +252,7 @@ public class CMPlayers extends StdLibrary implements PlayerLibrary
 //				M.playerStats().setLastUpdated(M.playerStats().lastDateTime());
 //			M.recoverCharStats();
 		}
-		return true;
+*/		return true;
 	}
 	
 	public boolean shutdown() {
@@ -284,10 +286,10 @@ public class CMPlayers extends StdLibrary implements PlayerLibrary
 						CMLib.database().DBUpdatePlayerMOBOnly(M);
 				}
 			}
-*/
 			thread.status("saving players");
 			savePlayers();
 			thread.status("not saving players");
+*/
 		}
 	}
 /*

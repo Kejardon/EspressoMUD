@@ -22,7 +22,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 	http://www.apache.org/licenses/LICENSE-2.0
 */
 // A container for stats related to a variaety of animated objects.
-public interface CharStats extends CMCommon, CMModifiable, CMSavable
+public interface CharStats extends CMCommon, CMModifiable, CMSavable, Ownable
 {
 	/*
 	public static final int STAT_STRENGTH=0;
@@ -78,6 +78,7 @@ public interface CharStats extends CMCommon, CMModifiable, CMSavable
 	public static final int VALUE_ALLSTATS_DEFAULT=10;
 	public static final int VALUE_ALLSTATS_DEFAULTMAX=18;
 	
+//	public CharStats setBody(Body newBody);
 	/**
 	 * Copies the internal data of this object into another of kind.
 	 * @param intoStats another CharStats object.

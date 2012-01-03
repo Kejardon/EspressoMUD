@@ -37,7 +37,7 @@ public class Modify extends StdCommand
 		if(commands.size()>2)
 		{
 			String restStr=CMParms.combine(commands,2);
-			R=CMLib.map().getRoom(restStr);
+			R=(Room)SIDLib.Objects.ROOM.get(CMath.s_int(restStr));
 			if(R==null)
 			{
 				mob.tell("Room '"+restStr+"' not found.");
@@ -67,7 +67,7 @@ public class Modify extends StdCommand
 		else
 		{
 			String accountName=CMStrings.capitalizeAndLower(CMParms.combine(commands, 2));
-			theAccount = CMLib.players().getLoadAccount(accountName);
+			theAccount = CMLib.players().getAccount(accountName);
 			if(theAccount==null)
 			{
 				mob.tell("There is no account called '"+accountName+"'!\n\r");
@@ -119,17 +119,7 @@ public class Modify extends StdCommand
 
 		if(!myArea.name().equals(oldName))
 		{
-			if(mob.session().confirm("Is changing the name of this area really necessary (y/N)?","N"))
-			{
-				int oldLength=oldName.length()+1;
-				for(Enumeration<Room> r=myArea.getProperMap();r.hasMoreElements();)
-				{
-					Room R=r.nextElement();
-					R.setRoomID(myArea.name()+"#"+R.roomID().substring(oldLength));
-				}
-			}
-			else
-				myArea.setName(oldName);
+			myArea.setName(oldName);
 		}
 /*		if(!myArea.name().equals(oldName))
 			CMLib.map().renameRooms(myArea,oldName,allMyDamnRooms);
@@ -149,7 +139,7 @@ public class Modify extends StdCommand
 
 		Exit exit=mob.location().getExit(exitName);
 		if(exit==null)
-			exit=CMLib.map().getExit(exitName);
+			exit=(Exit)SIDLib.Objects.EXIT.get(CMath.s_int(exitName));
 		if(exit==null)
 		{
 			mob.tell("No exit called '"+exitName+"' was found.");
@@ -169,7 +159,7 @@ public class Modify extends StdCommand
 		}
 
 		String mobID=CMParms.combine(commands,2);
-		MOB M=CMLib.players().getLoadPlayer(mobID);
+		MOB M=CMLib.players().getPlayer(mobID);
 		if(M==null)
 		{
 			mob.tell("There is no such player as '"+mobID+"'!");

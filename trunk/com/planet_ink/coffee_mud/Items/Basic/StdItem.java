@@ -9,10 +9,12 @@ import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
+import java.nio.ByteBuffer;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -48,7 +50,11 @@ public class StdItem implements Item
 //	protected int material=RawMaterial.RESOURCE_COTTON;
 	protected Tickable.TickStat tickStatus=Tickable.TickStat.Not;
 	protected boolean destroyed=false;
-	protected Environmental myEnvironmental=(Environmental)CMClass.Objects.COMMON.getNew("DefaultEnvironmental");
+	protected Environmental myEnvironmental=(Environmental)((Ownable)CMClass.Objects.COMMON.getNew("DefaultEnvironmental")).setOwner(this);
+	protected int saveNum=0;
+	protected int[] effectsToLoad=null;
+	protected int[] behavesToLoad=null;
+	protected int rideToLoad=0;
 
 	public Environmental getEnvObject() {return myEnvironmental;}
 
@@ -64,22 +70,19 @@ public class StdItem implements Item
 		if(container instanceof ListenHolder)
 			((ListenHolder)container).removeListener(this, lFlags);
 	}
-	public StdItem()
-	{
-		((Ownable)myEnvironmental).setOwner(this);
-	}
+	public StdItem(){}
 	public void initializeClass(){}
-	public void setName(String newName){name=newName;}
+	public void setName(String newName){name=newName; CMLib.database().saveObject(this);}
 	public String name(){ return name;}
 	public String displayText(){return display;}
-	public void setDisplayText(String newDisplayText){display=newDisplayText;}
+	public void setDisplayText(String newDisplayText){display=newDisplayText; CMLib.database().saveObject(this);}
 	public String description(){return desc;}
-	public void setDescription(String newDescription){desc=newDescription;}
-	public void setMiscText(String newMiscText){miscText=newMiscText;}
+	public void setDescription(String newDescription){desc=newDescription; CMLib.database().saveObject(this);}
+	public void setMiscText(String newMiscText){miscText=newMiscText; CMLib.database().saveObject(this);}
 	public String text(){return miscText;}
 	public int ridesNumber(){return ridesNumber;}
 	public Rideable ride(){return ride;}
-	public void setRide(Rideable R){ride=R;}
+	public void setRide(Rideable R){ride=R; CMLib.database().saveObject(this);}
 	public CMObject container(){return container;}
 	public void setContainer(CMObject E)
 	{
@@ -87,6 +90,7 @@ public class StdItem implements Item
 		clearAllListeners();
 		container=E;
 		registerAllListeners();
+//		CMLib.database().saveObject(this);
 	}
 
 	//Affectable
@@ -95,11 +99,15 @@ public class StdItem implements Item
 		if(to==null) return;
 		affects.addElement(to);
 		to.setAffectedOne(this);
+		CMLib.database().saveObject(this);
 	}
 	public void delEffect(Effect to)
 	{
 		if(affects.removeElement(to))
+		{
 			to.setAffectedOne(null);
+			CMLib.database().saveObject(this);
+		}
 	}
 	public int numEffects(){return affects.size();}
 	public Effect fetchEffect(int index)
@@ -128,10 +136,15 @@ public class StdItem implements Item
 		if(fetchBehavior(to.ID())!=null) return;
 		to.startBehavior(this);
 		behaviors.addElement(to);
+		CMLib.database().saveObject(this);
 	}
 	public void delBehavior(Behavior to)
 	{
-		behaviors.removeElement(to);
+		if(behaviors.removeElement(to))
+		{
+			to.startBehavior(null);
+			CMLib.database().saveObject(this);
+		}
 	}
 	public int numBehaviors()
 	{
@@ -212,6 +225,7 @@ public class StdItem implements Item
 	protected void cloneFix(Item E)
 	{
 //		destroyed=false;
+		saveNum=0;
 		myEnvironmental=(Environmental)E.getEnvObject().copyOf();
 
 		affects=null;
@@ -249,16 +263,16 @@ public class StdItem implements Item
 		return baseGoldValue();
 	}
 	public int baseGoldValue(){return baseGoldValue;}
-	public void setBaseValue(int newValue) { baseGoldValue=newValue; }
+	public void setBaseValue(int newValue) { baseGoldValue=newValue; CMLib.database().saveObject(this);}
 	public int wornOut()
 	{
 		if(damagable)
 			return wornOut;
 		return 0;
 	}
-	public void setWornOut(int worn) { wornOut=worn; }
+	public void setWornOut(int worn) { wornOut=worn; CMLib.database().saveObject(this);}
 	public boolean damagable() {return damagable;}
-	public void setDamagable(boolean bool){damagable=bool;}
+	public void setDamagable(boolean bool){damagable=bool; CMLib.database().saveObject(this);}
 
 
 //TODO
@@ -320,6 +334,7 @@ public class StdItem implements Item
 				for(int i=owner.numItems()-1;i>=0;i--)
 					owner.addItem(inv.getItem(i));
 		}
+		CMLib.database().deleteObject(this);
 	}
 	public boolean amDestroyed(){return destroyed;}
 
@@ -328,72 +343,124 @@ public class StdItem implements Item
 	public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]} ;}
 	public ModEnum[] totalEnumM(){return MCode.values();}
 	public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
+	public int saveNum()
+	{
+		if((saveNum==0)&&(!destroyed))
+		synchronized(this)
+		{
+			if(saveNum==0)
+				saveNum=SIDLib.Objects.ITEM.getNumber(this);
+		}
+		return saveNum;
+	}
+	public void setSaveNum(int num)
+	{
+		synchronized(this)
+		{
+			if(saveNum!=0)
+				SIDLib.Objects.ITEM.removeNumber(saveNum);
+			saveNum=num;
+			SIDLib.Objects.ITEM.assignNumber(num, this);
+		}
+	}
+	public boolean needLink(){return true;}
+	public void link()
+	{
+		if(effectsToLoad!=null)
+		{
+			for(int SID : effectsToLoad)
+			{
+				Effect to = (Effect)SIDLib.Objects.EFFECT.get(SID);
+				if(to==null) continue;
+				affects.addElement(to);
+				to.setAffectedOne(this);
+			}
+			effectsToLoad=null;
+		}
+		if(behavesToLoad!=null)
+		{
+			for(int SID : behavesToLoad)
+			{
+				Behavior to = (Behavior)SIDLib.Objects.BEHAVIOR.get(SID);
+				if(to==null) continue;
+				to.startBehavior(this);
+				behaviors.addElement(to);
+			}
+			behavesToLoad=null;
+		}
+		if(rideToLoad!=0)
+		{
+			ride=(Rideable)SIDLib.Objects.RIDEABLE.get(rideToLoad);
+			if(ride!=null)
+				ride.addRider(this);
+		}
+	}
+	public void saveThis(){CMLib.database().saveObject(this);}
 
 	private enum SCode implements CMSavable.SaveEnum{
 		VAL(){
-			public String save(StdItem E){ return ""+E.baseGoldValue; }
-			public void load(StdItem E, String S){ E.baseGoldValue=Integer.parseInt(S); } },
+			public ByteBuffer save(StdItem E){ return (ByteBuffer)ByteBuffer.wrap(new byte[4]).putInt(E.baseGoldValue).rewind(); }
+			public int size(){return 4;}
+			public void load(StdItem E, ByteBuffer S){ E.baseGoldValue=S.getInt(); } },
 		ENV(){
-			public String save(StdItem E){ return CMLib.coffeeMaker().getSubStr(E.myEnvironmental); }
-			public void load(StdItem E, String S){ E.myEnvironmental=(Environmental)CMLib.coffeeMaker().loadSub(S); } },
+			public ByteBuffer save(StdItem E){ return CMLib.coffeeMaker().savSubFull(E.myEnvironmental); }
+			public int size(){return -1;}
+			public CMSavable subObject(CMSavable fromThis){return ((StdItem)fromThis).myEnvironmental;}
+			public void load(StdItem E, ByteBuffer S){ E.myEnvironmental=(Environmental)CMLib.coffeeMaker().loadSub(S, E.myEnvironmental); } },
 		WRN(){
-			public String save(StdItem E){ return ""+E.wornOut; }
-			public void load(StdItem E, String S){ E.wornOut=Integer.parseInt(S); } },
+			public ByteBuffer save(StdItem E){ return (ByteBuffer)ByteBuffer.wrap(new byte[4]).putInt(E.wornOut).rewind(); }
+			public int size(){return 4;}
+			public void load(StdItem E, ByteBuffer S){ E.wornOut=S.getInt(); } },
 		DMG(){
-			public String save(StdItem E){ return ""+E.damagable; }
-			public void load(StdItem E, String S){ E.damagable=Boolean.getBoolean(S); } },
+			public ByteBuffer save(StdItem E){ return (ByteBuffer)ByteBuffer.wrap(new byte[1]).put((byte)(E.damagable?1:0)).rewind(); }
+			public int size(){return 1;}
+			public void load(StdItem E, ByteBuffer S){ E.damagable=(S.get()==1); } },
 		DSP(){
-			public String save(StdItem E){ return E.display; }
-			public void load(StdItem E, String S){ E.display=S.intern(); } },
+			public ByteBuffer save(StdItem E){ return CMLib.coffeeMaker().savString(E.display); }
+			public int size(){return 0;}
+			public void load(StdItem E, ByteBuffer S){ E.display=CMLib.coffeeMaker().loadString(S); } },
 		DSC(){
-			public String save(StdItem E){ return E.desc; }
-			public void load(StdItem E, String S){ E.desc=S.intern(); } },
+			public ByteBuffer save(StdItem E){ return CMLib.coffeeMaker().savString(E.desc); }
+			public int size(){return 0;}
+			public void load(StdItem E, ByteBuffer S){ E.desc=CMLib.coffeeMaker().loadString(S); } },
 		TXT(){
-			public String save(StdItem E){ return E.miscText; }
-			public void load(StdItem E, String S){ E.miscText=S.intern(); } },
-		RNM(){
-			public String save(StdItem E){
+			public ByteBuffer save(StdItem E){ return CMLib.coffeeMaker().savString(E.miscText); }
+			public int size(){return 0;}
+			public void load(StdItem E, ByteBuffer S){ E.miscText=CMLib.coffeeMaker().loadString(S); } },
+		RNM(){	//NOTE: this may be more efficient as a var enum since it's not often used..
+			public ByteBuffer save(StdItem E){
 				if(E.ride!=null)
-					return ""+E.ride.saveNumber();
-				return "0"; }
-			public void load(StdItem E, String S){
-				E.ridesNumber=Integer.parseInt(S);
-				if(E.container instanceof ItemCollection) {
-					ItemCollection sur=(ItemCollection)E.container;
-					for(int i=0;i<sur.numItems();i++) if(sur.getItem(i) instanceof Rideable) {
-						Rideable ride=(Rideable)sur.getItem(i);
-						if(ride.rideNumber()==E.ridesNumber) {
-							ride.addRider(E);
-							break; } } } } },
+					return (ByteBuffer)ByteBuffer.wrap(new byte[4]).putInt(E.ride.saveNum()).rewind();
+				return (ByteBuffer)ByteBuffer.wrap(new byte[4]).putInt(0).rewind(); }
+			public int size(){return 4;}
+			public void load(StdItem E, ByteBuffer S){ E.rideToLoad=S.getInt(); } },
 		EFC(){
-			public String save(StdItem E){ return CMLib.coffeeMaker().getVectorStr(E.affects); }
-			public void load(StdItem E, String S){
-				Vector<Effect> V=CMLib.coffeeMaker().setVectorStr(S);
-				for(Effect A : V)
-					E.addEffect(A);
-				
-				} },
+			public ByteBuffer save(StdItem E){
+				if(E.affects.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.affects.toArray(new CMSavable[E.affects.size()]));
+				return GenericBuilder.emptyBuffer; }
+			public int size(){return 0;}
+			public void load(StdItem E, ByteBuffer S){ E.effectsToLoad=CMLib.coffeeMaker().loadAInt(S); } },
 		BHV(){
-			public String save(StdItem E){ return CMLib.coffeeMaker().getVectorStr(E.behaviors); }
-			public void load(StdItem E, String S){
-				Vector<Behavior> V=CMLib.coffeeMaker().setVectorStr(S);
-				for(Behavior A : V)
-					E.addBehavior(A);
-				
-				} },
+			public ByteBuffer save(StdItem E){
+				if(E.behaviors.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.behaviors.toArray(new CMSavable[E.behaviors.size()]));
+				return GenericBuilder.emptyBuffer; }
+			public int size(){return 0;}
+			public void load(StdItem E, ByteBuffer S){ E.behavesToLoad=CMLib.coffeeMaker().loadAInt(S); } },
 		NAM(){
-			public String save(StdItem E){ return ""+E.name; }
-			public void load(StdItem E, String S){ E.name=S.intern(); } }
+			public ByteBuffer save(StdItem E){ return CMLib.coffeeMaker().savString(E.name); }
+			public int size(){return 0;}
+			public void load(StdItem E, ByteBuffer S){ E.name=CMLib.coffeeMaker().loadString(S); } },
 		;
-		public abstract String save(StdItem E);
-		public abstract void load(StdItem E, String S);
-		public String save(CMSavable E){return save((StdItem)E);}
-		public void load(CMSavable E, String S){load((StdItem)E, S);} }
+		public abstract ByteBuffer save(StdItem E);
+		public abstract void load(StdItem E, ByteBuffer S);
+		public ByteBuffer save(CMSavable E){return save((StdItem)E);}
+		public CMSavable subObject(CMSavable fromThis){return null;}
+		public void load(CMSavable E, ByteBuffer S){load((StdItem)E, S);} }
 	private enum MCode implements CMModifiable.ModEnum{
 		VALUE(){
 			public String brief(StdItem E){return ""+E.baseGoldValue;}
 			public String prompt(StdItem E){return ""+E.baseGoldValue;}
-			public void mod(StdItem E, MOB M){E.baseGoldValue=CMLib.genEd().intPrompt(M, ""+E.baseGoldValue);} },
+			public void mod(StdItem E, MOB M){E.setBaseValue(CMLib.genEd().intPrompt(M, ""+E.baseGoldValue));} },
 		ENVIRONMENTAL(){
 			public String brief(StdItem E){return E.myEnvironmental.ID();}
 			public String prompt(StdItem E){return "";}
@@ -401,23 +468,23 @@ public class StdItem implements Item
 		WORNOUT(){
 			public String brief(StdItem E){return ""+E.wornOut;}
 			public String prompt(StdItem E){return ""+E.wornOut;}
-			public void mod(StdItem E, MOB M){E.wornOut=CMLib.genEd().intPrompt(M, ""+E.wornOut);} },
+			public void mod(StdItem E, MOB M){E.setWornOut(CMLib.genEd().intPrompt(M, ""+E.wornOut));} },
 		DAMAGABLE(){
 			public String brief(StdItem E){return ""+E.damagable;}
 			public String prompt(StdItem E){return ""+E.damagable;}
-			public void mod(StdItem E, MOB M){E.damagable=CMLib.genEd().booleanPrompt(M, ""+E.damagable);} },
+			public void mod(StdItem E, MOB M){E.setDamagable(CMLib.genEd().booleanPrompt(M, ""+E.damagable));} },
 		DISPLAY(){
 			public String brief(StdItem E){return E.display;}
 			public String prompt(StdItem E){return ""+E.display;}
-			public void mod(StdItem E, MOB M){E.display=CMLib.genEd().stringPrompt(M, ""+E.display, false);} },
+			public void mod(StdItem E, MOB M){E.setDisplayText(CMLib.genEd().stringPrompt(M, ""+E.display, false));} },
 		DESCRIPTION(){
-			public String brief(StdItem E){return E.display;}
-			public String prompt(StdItem E){return ""+E.display;}
-			public void mod(StdItem E, MOB M){E.display=CMLib.genEd().stringPrompt(M, ""+E.display, false);} },
+			public String brief(StdItem E){return E.desc;}
+			public String prompt(StdItem E){return ""+E.desc;}
+			public void mod(StdItem E, MOB M){E.setDescription(CMLib.genEd().stringPrompt(M, ""+E.display, false));} },
 		TEXT(){
 			public String brief(StdItem E){return E.miscText;}
 			public String prompt(StdItem E){return ""+E.miscText;}
-			public void mod(StdItem E, MOB M){E.miscText=CMLib.genEd().stringPrompt(M, ""+E.miscText, false);} },
+			public void mod(StdItem E, MOB M){E.setMiscText(CMLib.genEd().stringPrompt(M, ""+E.miscText, false));} },
 		EFFECTS(){
 			public String brief(StdItem E){return ""+E.affects.size();}
 			public String prompt(StdItem E){return "";}
@@ -429,7 +496,7 @@ public class StdItem implements Item
 		NAME(){
 			public String brief(StdItem E){return ""+E.name;}
 			public String prompt(StdItem E){return ""+E.name;}
-			public void mod(StdItem E, MOB M){E.name=CMLib.genEd().stringPrompt(M, ""+E.name, false);} }
+			public void mod(StdItem E, MOB M){E.setName(CMLib.genEd().stringPrompt(M, ""+E.name, false));} }
 		;
 		public abstract String brief(StdItem fromThis);
 		public abstract String prompt(StdItem fromThis);

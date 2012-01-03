@@ -10,17 +10,6 @@ import java.io.*;
 
 /*
 TODO IMMEDIATELY: CMSavable/Ownable objects!
-Format stuff
-	Array[32; Int size] of subobject types(Example from CMClass, compare IDs (O.ID()==subObjs[i].ID(), faster and safe because of how Java works))
-	Int of how many subobject types exist.
-Data stuff
-	Bitflag of sub objects(saved as an Int, &1 to get bit and >>1 each time to go to next) that are exceptions. Insert this into the save data, not the format itself.
-
-When reading data, check if found thisEnum.size()==-1(is subobject). If so check if format is good.
-	If good, this is variabledata. Find 
-	If not
-
-IGNORE ALL THAT
 Prepend both datas (fixed and var) copied into the subdata with a byte.
 When loading, if the byte is 0, this is fixed data. If the byte is 1, this is var data. If 2, it is all data (saved with save() instead of fixedSave and varSave)
 */
@@ -55,28 +44,32 @@ These are loaded in RAM and never stored to file. Instead they are rebuilt from 
 */
 
 @SuppressWarnings("unchecked")
-public class DBManager extends Thread implements DatabaseEngine
+public class DBManager implements DatabaseEngine	//extends Thread
 {
 	//Easily modifiable settings
-	public static final String saveDirectoryName="resources"+File.pathSeparator+"database"+File.pathSeparator;	//Note: If you change this you must make the new directory manually!
-	public static final String fixedExtensionName=File.separator+"fix";	//1 per CMSavable ID per backup. Holds fixed width data, defined in subFile
-	public static final String variableExtensionName=File.separator+"var";	//1 per CMSavable ID per backup. Holds variable width data
-	public static final String mainFileName="main"+File.separator+"bin";	//1. Holds general backup details
-	public static final String subFileName="sub"+File.separator+"bin";	//1 per backup. Holds fixed width data
-	public static final int timeTillDoFirst=600000;
-	public static final int timeTillDoLast=60000;
+	public static final String saveDirectoryName="resources"+File.separator+"database"+File.separator;	//Note: If you change this you must make the new directory manually!
+	public static final String fixedExtensionName=".fix";	//1 per CMSavable ID per backup. Holds fixed width data, defined in subFile
+	public static final String variableExtensionName=".var";	//1 per CMSavable ID per backup. Holds variable width data
+	public static final String mainFileName="main.bin";	//1. Holds general backup details
+	public static final String subFileName="sub.bin";	//1 per backup. Holds fixed width data
+	public static final int timeTillDoFirst=120000;
+	public static final int timeTillDoLast=30000;
 	public static final int numBackups=2;
-	public static final long waitInterval=1000;
+	public static final long waitInterval=timeTillDoLast/2+2000;
 	public static final long finalWaitInterval=1000;
 	public static final java.nio.charset.Charset charFormat=java.nio.charset.Charset.forName("UTF-8");	//This should probably not be changed. Mainly, 1-byte chars will be assumed.
 
 	//Internal variables
+//	private static Thread myThread;
 	private static int currentBackup=0;	//0-(numBackups)
+	private static int previousBackup=0;
 	private static File mainFile;
 	private static File subFile;
 	private static MyList updateList=new MyList();
 	private static HashSet<CMSavable> publicQueue=new HashSet<CMSavable>();
 	private static HashSet<CMSavable> processingQueue=new HashSet<CMSavable>();
+	private static HashSet<CMSavable> deleteQueue=new HashSet<CMSavable>();
+	private static HashSet<CMSavable> processingDelQueue=new HashSet<CMSavable>();
 	private static long timeOfNextSoonest;
 	private static HashMap<String,SaveFormat> formats=new HashMap();
 	private static boolean doneLoading=false;
@@ -97,6 +90,8 @@ public class DBManager extends Thread implements DatabaseEngine
 //		public ListNode firstLast(){return firstLast;}
 		public void add(CMSavable object)	//Make this return true if the first was changed?
 		{
+			if((object==null)||(object.saveNum()==0)) return;
+			
 			ListNode newNode=set.get(object);
 			if(newNode!=null)
 			{
@@ -119,6 +114,7 @@ public class DBManager extends Thread implements DatabaseEngine
 					lastFirst=newNode;
 					firstLast=newNode;
 					lastLast=newNode;
+					return;
 				}
 				lastFirst.nextFirst=newNode;
 				newNode.previousFirst=lastFirst;
@@ -219,10 +215,12 @@ public class DBManager extends Thread implements DatabaseEngine
 		public ListNode(CMSavable O) { this.O=O; }
 		public boolean equals(Object O){return (O instanceof ListNode)?((ListNode)O).O==this.O:false;}
 	}
-	private static class SaveFormat
+	public static class SaveFormat
 	{
 		//One-time generated data
-		public final WVector<CMSavable.SaveEnum> enums;	//This is not meant to be edited once written. Never modify enums.
+		public final WVector<CMSavable.SaveEnum> enums;
+		public final HashMap<CMSavable.SaveEnum,String> subTypes;
+		public final CMSavable myObject;
 		public final int size;	//counting the extra 4 Ints, aka ^ + 16
 		public final File fixedData;
 		public final File variableData;
@@ -236,9 +234,23 @@ public class DBManager extends Thread implements DatabaseEngine
 		public Vector<SimpleInt> freeEntries=new Vector();	//Values not in fileMap. Again, first entry is end-of-known-data.
 		protected FileChannel fixedChannel;
 		protected FileChannel variableChannel;
-		protected final HashMap<CMSavable.SaveEnum,String> subTypes;
-		public SaveFormat(WVector<CMSavable.SaveEnum> h, HashMap<CMSavable.SaveEnum,String> s, boolean c, File[] f)
+		public SaveFormat(CMSavable o, WVector<CMSavable.SaveEnum> h, int size, HashMap<CMSavable.SaveEnum,String> s, boolean c, File[] f)
 		{
+			myObject=o;
+			enums=h;
+			subTypes=s;
+			this.size=size;
+			fixedData=f[0];
+			variableData=f[1];
+			confirmedGood=c;
+			freeEntries.add(new SimpleInt(0));
+			freeSpaces.add(new SimpleInt(0),0);
+		}
+		public SaveFormat(CMSavable o, WVector<CMSavable.SaveEnum> h, HashMap<CMSavable.SaveEnum,String> s, boolean c, File[] f)
+		{
+			this(o, h, h.weight()+16, s, c, f);
+/*
+			myObject=o;
 			enums=h;
 			subTypes=s;
 			size=h.weight()+16;
@@ -247,6 +259,7 @@ public class DBManager extends Thread implements DatabaseEngine
 			confirmedGood=c;
 			freeEntries.add(new SimpleInt(0));
 			freeSpaces.add(new SimpleInt(0),0);
+*/
 		}
 		public FileChannel fChan()
 		{
@@ -264,14 +277,14 @@ public class DBManager extends Thread implements DatabaseEngine
 		}
 		public int getFreeEntry()
 		{
-			if(freeEntries.size()>1) return freeEntries.remove(1).Int;
+			if(freeEntries.size()>1) return freeEntries.remove(freeEntries.size()-1).Int;
 			return freeEntries.get(0).Int++;
 		}
 		public void addFreeEntry(int i)
 		{
 			freeEntries.add(new SimpleInt(i));
 		}
-		public void returnSpace(int position, int size)
+		protected int getPos(int position)
 		{
 			int start=1;	//first is end of file, ignore it!
 			int numEntries=freeSpaces.size();
@@ -284,6 +297,46 @@ public class DBManager extends Thread implements DatabaseEngine
 				else
 					start=mid+1;
 			}
+			return start;
+		}
+		public void claimSpace(int position, int size)
+		{
+			int extraSpace=freeSpaces.get(0).Int-position;
+			if(extraSpace>=0)
+			{
+				freeSpaces.get(0).Int=position+size;
+				//No need to check for overlap from a previous free space, it would have been swallowed by 0 if it existed.
+				if(extraSpace>0)
+					freeSpaces.add(new SimpleInt(position), extraSpace);
+			}
+			int start=getPos(position)-1;	//start should contain the index of the free space that contains the space claimed by this
+//			boolean reachesStart=(freeSpaces.get(start).Int==position);
+			boolean reachesEnd=(freeSpaces.get(start).Int+freeSpaces.weight(start)==position+size);
+			if(freeSpaces.get(start).Int==position)
+			{
+				if(reachesEnd)
+					freeSpaces.remove(start);
+				else
+				{
+					freeSpaces.get(start).Int=position;
+					freeSpaces.setWeight(start, freeSpaces.weight(start)-size);
+				}
+			}
+			else
+			{
+				if(reachesEnd)
+					freeSpaces.setWeight(start, freeSpaces.weight(start)-size);
+				else
+				{
+					freeSpaces.insert(start+1, new SimpleInt(position+size), freeSpaces.weight(start)+freeSpaces.get(start).Int-(size+position));
+					freeSpaces.setWeight(start, position-freeSpaces.get(start).Int);
+				}
+			}
+		}
+		public void returnSpace(int position, int size)
+		{
+			int start=getPos(position);
+			int numEntries=freeSpaces.size();
 			int prevSize=freeSpaces.weight(start-1);
 			boolean overlapsPrevious=(freeSpaces.get(start-1).Int+prevSize==position);
 			if(start==numEntries)
@@ -358,7 +411,7 @@ public class DBManager extends Thread implements DatabaseEngine
 				if(index==0) continue;
 				if(thisEnum.size()==-1)
 				{
-					CMSavable.CMSubSavable sub=thisEnum.subObject(O);
+					CMSavable sub=thisEnum.subObject(O);
 					if((sub!=null)&&(subTypes.get(new SimpleInt(index-1))==sub.ID()))	//Safe because intern()'d when loading
 						fixedVals[index]=DBManager.getFormat(sub).getPartFixedVals(sub);
 					else
@@ -384,7 +437,7 @@ public class DBManager extends Thread implements DatabaseEngine
 				if(index==-1) continue;
 				if(thisEnum.size()==-1)
 				{
-					CMSavable.CMSubSavable sub=thisEnum.subObject(O);
+					CMSavable sub=thisEnum.subObject(O);
 					if((sub!=null)&&(subTypes.get(new SimpleInt(index))==sub.ID()))	//Safe because intern()'d when loading
 						fixedVals[index]=DBManager.getFormat(sub).getPartFixedVals(sub);
 					else
@@ -398,7 +451,8 @@ public class DBManager extends Thread implements DatabaseEngine
 			for(int i=0;i<fixedVals.length;i++)
 				if(fixedVals[i]==null)
 					fixedVals[i]=ByteBuffer.wrap(new byte[enums.weight(i)]);
-			ByteBuffer partVal=ByteBuffer.wrap(new byte[size-16]);	//size meaning this format's size
+			ByteBuffer partVal=ByteBuffer.wrap(new byte[size-15]);	//size meaning this format's size
+			partVal.put((byte)3);
 			for(int i=0;i<fixedVals.length;i++)
 				partVal.put(fixedVals[i].array());
 			partVal.rewind();
@@ -409,7 +463,7 @@ public class DBManager extends Thread implements DatabaseEngine
 			Vector<ByteBuffer> variableVals=new Vector();
 			for(CMSavable.SaveEnum thisEnum : O.totalEnumS())
 			{
-				index=enums.index(thisEnum);
+				int index=enums.index(thisEnum);
 				if(index==-1)
 				{
 					ByteBuffer buf=thisEnum.save(O);
@@ -422,30 +476,89 @@ public class DBManager extends Thread implements DatabaseEngine
 				}
 				else if(thisEnum.size()==-1)
 				{
-					CMSavable.CMSubSavable sub=thisEnum.subObject(O);
+					CMSavable sub=thisEnum.subObject(O);
 					if(sub==null) continue;
+					ByteBuffer buf=null;
 					if(subTypes.get(new SimpleInt(index))==sub.ID())
 					{
-						ByteBuffer buf=sub.varSave();
-						if(buf.remaining()<=1) continue;	//1 because first byte is (should be) 1 to mark it as vardata.
-						variableVals.add(charFormat.encode(thisEnum.name()));
-						variableVals.add((ByteBuffer)ByteBuffer.wrap(new byte[4]).putInt(size).rewind());
-						variableVals.add(buf);
-						totalVarSize[0]+=size+7;
+						int vectorPosition=variableVals.size();
+						variableVals.add(null);
+						variableVals.add(null);
+						int size=getFormat(sub).getSubVarVal(sub, variableVals);
+						if(size>1)	//if <=, nothing added, move on)
+						{
+							variableVals.set(vectorPosition, charFormat.encode(thisEnum.name()));
+							variableVals.set(vectorPosition+1, (ByteBuffer)ByteBuffer.wrap(new byte[5]).putInt(size).put((byte)1).rewind());
+							totalVarSize[0]+=7+size;
+						}
+						else
+						{
+							variableVals.remove(vectorPosition+1);
+							variableVals.remove(vectorPosition);
+						}
+						continue;
 					}
-					else
-					{
-						ByteBuffer buf=thisEnum.save(O);
-						int size=buf.remaining();
-						if(size==0) continue;
-						variableVals.add(charFormat.encode(thisEnum.name()));
-						variableVals.add((ByteBuffer)ByteBuffer.wrap(new byte[4]).putInt(size).rewind());
-						variableVals.add(buf);
-						totalVarSize[0]+=size+7;
-					}
+					buf=thisEnum.save(O);
+					int size=buf.remaining();
+					if(size<=1) continue;	//1 because first byte is (should be) 2 to mark it as fulldata
+					variableVals.add(charFormat.encode(thisEnum.name()));
+					variableVals.add((ByteBuffer)ByteBuffer.wrap(new byte[4]).putInt(size).rewind());
+					variableVals.add(buf);
+					totalVarSize[0]+=size+7;
 				}
 			}
-			return (ByteBuffer[])variableVals.toArray(new ByteBuffer[0]);
+			return (ByteBuffer[])variableVals.toArray(new ByteBuffer[variableVals.size()]);
+		}
+		public int getSubVarVal(CMSavable O, Vector<ByteBuffer> variableVals)
+		{
+			int totalSize=1;
+			for(CMSavable.SaveEnum thisEnum : O.totalEnumS())
+			{
+				int index=enums.index(thisEnum);
+				if(index==-1)
+				{
+					ByteBuffer buf=thisEnum.save(O);
+					int thisSize=buf.remaining();
+					if(thisSize==0) continue;
+					variableVals.add(charFormat.encode(thisEnum.name()));
+					variableVals.add((ByteBuffer)ByteBuffer.wrap(new byte[4]).putInt(size).rewind());
+					variableVals.add(buf);
+					totalSize+=7+thisSize;
+				}
+				else if(thisEnum.size()==-1)
+				{
+					CMSavable sub=thisEnum.subObject(O);
+					if(sub==null) continue;
+					ByteBuffer buf=null;
+					if(subTypes.get(new SimpleInt(index))==sub.ID())
+					{
+						int vectorPosition=variableVals.size();
+						variableVals.add(null);
+						variableVals.add(null);
+						int size=getFormat(sub).getSubVarVal(sub, variableVals);
+						if(size>1)	//if <=, nothing added, move on)
+						{
+							variableVals.set(vectorPosition, charFormat.encode(thisEnum.name()));
+							variableVals.set(vectorPosition+1, (ByteBuffer)ByteBuffer.wrap(new byte[5]).putInt(size).put((byte)1).rewind());
+							totalSize+=7+size;
+						}
+						else
+						{
+							variableVals.remove(vectorPosition+1);
+							variableVals.remove(vectorPosition);
+						}
+						continue;
+					}
+					buf=thisEnum.save(O);
+					int size=buf.remaining();
+					if(size<=1) continue;	//1 because first byte is (should be) 2 to mark it as fulldata
+					variableVals.add(charFormat.encode(thisEnum.name()));
+					variableVals.add((ByteBuffer)ByteBuffer.wrap(new byte[4]).putInt(size).rewind());
+					variableVals.add(buf);
+					totalSize+=size+7;
+				}
+			}
+			return totalSize;
 		}
 	}
 	private static class SimpleInt implements Comparable<SimpleInt>
@@ -460,7 +573,7 @@ public class DBManager extends Thread implements DatabaseEngine
 
 	public DBManager()
 	{
-		super("DBManagerThread");
+//		super("DBManagerThread");
 	}
 
 	//Internal code
@@ -471,12 +584,15 @@ public class DBManager extends Thread implements DatabaseEngine
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 	public boolean activate()
 	{
-		start();
+//		start();
+		new Thread(this, "DBManagerThread").start();
 		return true;
 	}
 	public boolean shutdown()
 	{
-		finishUp=true;;
+		finishUp=true;
+//		myThread.interrupt();
+		synchronized(this) { notify(); }
 		return true;
 	}
 	public void propertiesLoaded(){}
@@ -492,10 +608,10 @@ public class DBManager extends Thread implements DatabaseEngine
 	public static File[] getObjectFiles(CMObject E)
 	{
 		File[] files=new File[2];
-		if(!(E instanceof CMSavable.CMSubSavable))
+//		if(!(E instanceof Ownable))	//TODO: Would like a check of some sort here to not make unnecessary files!
 		{
-			files[0]=getMakeFile(saveDirectoryName+currentBackup+File.pathSeparator+E.ID()+fixedExtensionName);
-			files[1]=getMakeFile(saveDirectoryName+E.ID()+variableExtensionName);
+			files[0]=getMakeFile(saveDirectoryName+currentBackup+File.separator+E.ID()+fixedExtensionName);
+			files[1]=getMakeFile(saveDirectoryName+currentBackup+File.separator+E.ID()+variableExtensionName);
 		}
 		return files;
 	}
@@ -524,7 +640,7 @@ public class DBManager extends Thread implements DatabaseEngine
 	{
 		if(subFile==null)
 		{
-			File f=new File(saveDirectoryName+currentBackup+File.pathSeparator+subFileName);
+			File f=new File(saveDirectoryName+currentBackup+File.separator+subFileName);
 			if(!f.exists())
 			try{ f.createNewFile(); }
 			catch(Exception e){Log.errOut("DBManager",e); return null;}
@@ -532,22 +648,53 @@ public class DBManager extends Thread implements DatabaseEngine
 		}
 		return subFile;
 	}
-	public static void saveObject(CMSavable O) { publicQueue.add(O); }
-	public static boolean doneLoading(){return doneLoading;}
+	public void saveObject(CMSavable O) { publicQueue.add(O); }
+	public void deleteObject(CMSavable O) { deleteQueue.add(O); }
+	public boolean doneLoading(){return doneLoading;}
 	public void run()
 	{
+//		myThread=Thread.currentThread();
 		try{
 			ByteBuffer mainInfo=ByteBuffer.wrap(new byte[2]);
 			FileChannel input=new RandomAccessFile(mainFile(), "rw").getChannel();
 			input.read(mainInfo);
 			input.close();
-			currentBackup=mainInfo.get(0);
+			previousBackup=mainInfo.get(0);
+			currentBackup=previousBackup;
 			if(mainInfo.get(1)==1)
 				Log.errOut("DBManager","Warning: MUD was not properly shutdown, data may be corrupted!");
 			input=new RandomAccessFile(subFile(), "rw").getChannel();
-			ByteBuffer formatInfo=ByteBuffer.wrap(new byte[input.size()]);
+			ByteBuffer formatInfo=ByteBuffer.wrap(new byte[(int)input.size()]);
 			input.read(formatInfo);
 			input.close();
+			subFile=null;
+			if(numBackups>0)
+			{
+				currentBackup++;
+				if(currentBackup>numBackups) currentBackup=0;
+				File newDir=new File(saveDirectoryName+currentBackup);
+				newDir.mkdirs();
+				File[] oldFiles=newDir.listFiles();
+				if(oldFiles!=null)
+				for(File oldFile : oldFiles)
+					oldFile.delete();
+//				formats.clear();
+//				for(SIDLib.Objects type : SIDLib.Objects.values())
+//					type.save();
+//				HashSet tempQueueRef=publicQueue;
+//				publicQueue=processingQueue;
+//				processingQueue=tempQueueRef;
+//				for(Iterator<CMSavable> e=processingQueue.iterator();e.hasNext();)
+//				{ updateList.add(e.next()); }
+//				processingQueue.clear();
+//				while(updateList.firstFirst!=null)
+//					writeToFile(updateList.removeFirst());
+			}
+			{
+				File newDir=new File(saveDirectoryName+currentBackup);
+				if(!newDir.exists())
+					newDir.mkdirs();
+			}
 			while(formatInfo.remaining()>0)
 			{
 				int end=formatInfo.getInt()+formatInfo.position();
@@ -569,7 +716,7 @@ public class DBManager extends Thread implements DatabaseEngine
 					continue;
 				}
 				boolean goodFormat=true;
-				Enum[] options=E.headerEnumS();
+				Enum[] options=obj.headerEnumS();
 				byte[] type=new byte[3];
 				CMSavable.SaveEnum thisEnum;
 				HashMap<CMSavable.SaveEnum, String> subTypes=new HashMap();
@@ -588,39 +735,147 @@ public class DBManager extends Thread implements DatabaseEngine
 						subTypes.put(thisEnum, new String(temp, charFormat).intern());	//intern() it to make it == ID()
 					}
 				}
+//				int totalSize=16;
 				WVector<CMSavable.SaveEnum> fixedVars=new WVector();
 				{
 					for(int i=0;formatInfo.position()<end;i++)
 					{
 						int size=formatInfo.get(type).getInt();
 						String option=new String(type, charFormat);
+//						totalSize+=size;
 						thisEnum=null;
-						for(int j=0;(j<options.length)&&(thisEnum==null);j++)
-							thisEnum=getParser(options[j], option);
-						if(thisEnum==null) {goodFormat=false; continue;}
-						if(thisEnum.size()==-1)
-						{
-							thisEnum.subObject(O);
-							//TODO: You Are Here. How get subobject size, What do if mismatch?
-							//On second thought, subformats will always have been saved first already, as attempting to make a new format
-							//has to access(make if necessary) all its subformats first
-						}
-						else if(thisEnum.size()!=size) {goodFormat=false; continue;}
+						for(Enum en : options)
+							if((thisEnum=getParser(en, option))!=null) break;
+						//On second thought, subformats will always have been saved first already, as attempting to make a new format
+						//has to access(make if necessary) all its subformats first
+						//On third thought, there is a possible exception. What if something wasn't a subformat before but was later made one?
+						//That's probably enough of an excuse to require a db reboot or something...
+						//On fourth thought, does subformat matter at this point in the code?
+						//Here's a case subformat matters: Marked as subformat in code, not in DB
+						if((thisEnum==null)||
+						  ((thisEnum.size()==-1)&&(!subTypes.containsKey(thisEnum)))||
+						  (thisEnum.size()!=size))
+							goodFormat=false;
+						//Still try to load it! Bad entries will be disabled later
 						fixedVars.add(thisEnum, size);
 					}
 				}
+				SaveFormat f=new SaveFormat(obj, fixedVars, subTypes, goodFormat, getObjectFiles(obj));	//Don't need totalSize I don't think..
+				formats.put(ID, f);
+			}
+			byte[] enumName=new byte[3];
+			for(Iterator<SaveFormat> e=formats.values().iterator();e.hasNext();)
+			{
+				SaveFormat format=e.next();
+				if(format.fixedData==null) continue;
 
-				//TODO: load data
+				CMSavable.SaveEnum[] parsers=new CMSavable.SaveEnum[format.enums.size()];
+				int[] weights=new int[parsers.length];
+				format.enums.toArrays(parsers, weights);
+				Enum[] options=format.myObject.headerEnumS();
+
+				FileChannel channel=format.fChan();
+				ByteBuffer fbuf=ByteBuffer.wrap(new byte[(int)channel.size()]);
+				channel.read(fbuf);
+				fbuf.rewind();
+				channel=format.vChan();
+				ByteBuffer vbuf=ByteBuffer.wrap(new byte[(int)channel.size()]);
+				channel.read(vbuf);
+				vbuf.rewind();
+				int numEntries=fbuf.remaining()/format.size;
+				byte[] thisData=new byte[format.size];
+				ByteBuffer thisBuf=ByteBuffer.wrap(thisData);
+				for(int fileIndex=0;fileIndex<numEntries;fileIndex++)
+				{
+					thisBuf.rewind();
+					fbuf.get(thisData);
+					int saveNum=thisBuf.getInt();
+					if(saveNum==0) continue;	//Deleted entry, skip
+					format.fileMap.put(new SimpleInt(saveNum), new SimpleInt(fileIndex));
+					CMSavable thisObj=(CMSavable)format.myObject.newInstance();
+					thisObj.setSaveNum(saveNum);	//This will also register the object with its associated SID library.
+					for(int parserNum=0;parserNum<parsers.length;parserNum++)
+					{
+						if(parsers[parserNum]==null)
+						{
+							thisBuf.position(thisBuf.position()+weights[parserNum]);
+							continue;
+						}
+						ByteBuffer saveBuffer=thisBuf.slice();
+						thisBuf.position(thisBuf.position()+weights[parserNum]);
+						saveBuffer.limit(weights[parserNum]);
+						parsers[parserNum].load(thisObj, saveBuffer);
+					}
+					int position=thisBuf.getInt();
+					int cap=thisBuf.getInt();	//Needed for space claiming
+					int varSize=thisBuf.getInt();
+					if(cap==0) continue;	//Done with this object, goto next
+					format.claimSpace(position, cap);
+					if(varSize==0) continue;
+					ByteBuffer varData=((ByteBuffer)vbuf.position(position)).slice();
+					varData.limit(varSize);
+					while(varData.remaining()>0)
+					{
+						varData.get(enumName);
+						String option=new String(enumName, charFormat);
+						CMSavable.SaveEnum thisEnum=null;
+						for(int j=0;(j<options.length)&&(thisEnum==null);j++)
+							thisEnum=getParser(options[j], option);
+						int size=varData.getInt();
+						if(thisEnum==null)
+						{
+							varData.position(varData.position()+size);
+							continue;
+						}
+						ByteBuffer saveBuffer=varData.slice();
+						varData.position(varData.position()+size);
+						saveBuffer.limit(size);
+						thisEnum.load(thisObj, saveBuffer);
+					}
+				}
+				
+				if(format.confirmedGood) continue;
+				for(int i=0;i<format.enums.size();i++)
+				{
+					CMSavable.SaveEnum thisEnum=format.enums.get(i);
+					if((thisEnum!=null)&&
+					   (((thisEnum.size()==-1)&&(format.subTypes.containsKey(thisEnum)))||
+					    (thisEnum.size()!=format.enums.weight(i))))
+						format.enums.replace(i, null, format.enums.weight(i));
+				}
+			}
+//			SIDLib.linkSIDs();	//Should be done here, SIDLib doesn't know about classes
+			for(Iterator<SaveFormat> e=formats.values().iterator();e.hasNext();)
+			{
+				SaveFormat format=e.next();
+				if(!format.myObject.needLink()) continue;	//Owner objects that do not need links themselves should check subobjects' needLink
+				SIDLib.Objects type=SIDLib.getType(format.myObject);
+				if(type==null) continue;	//Happens for subobjects that need links. Their owner object should call their link.
+				for(Iterator<SimpleInt> ee=format.fileMap.keySet().iterator();ee.hasNext();)
+				{
+					CMSavable obj=type.get(ee.next().Int);
+					if(obj!=null) obj.link();
+				}
 			}
 			
 			if(numBackups>0)
 			{
-				currentBackup++;
-				if(currentBackup>numBackups) currentBackup=0;
-				File newDir=new File(saveDirectoryName+currentBackup);
-				newDir.delete();
-				newDir.mkdirs();
-				//TODO: save data
+//				currentBackup++;
+//				if(currentBackup>numBackups) currentBackup=0;
+//				File newDir=new File(saveDirectoryName+currentBackup);
+//				newDir.delete();
+//				newDir.mkdirs();
+				formats.clear();
+				for(SIDLib.Objects type : SIDLib.Objects.values())
+					type.save();
+				HashSet tempQueueRef=publicQueue;
+				publicQueue=processingQueue;
+				processingQueue=tempQueueRef;
+				for(Iterator<CMSavable> e=processingQueue.iterator();e.hasNext();)
+				{ updateList.add(e.next()); }
+				processingQueue.clear();
+				while(updateList.firstFirst!=null)
+					writeToFile(updateList.removeFirst());
 			}
 			mainInfo.put(1,(byte)1).rewind();
 			input=new RandomAccessFile(mainFile(), "rw").getChannel();
@@ -628,45 +883,60 @@ public class DBManager extends Thread implements DatabaseEngine
 			input.close();
 		}
 		catch(Exception e){Log.errOut("DBManager",e); return;}
+		publicQueue.clear();	//Ignore requests to save that may have been triggered from booting the mud
 		doneLoading=true;
-		while(!finishUp)
 		{
+			HashSet tempQueueRef;
+			while(!finishUp)
 			{
-				CMSavable O;
-				while((O=getNext())!=null)
-					writeToFile(O);
-			}
-			
-			for(Iterator<CMSavable> e=processingQueue.iterator();e.hasNext();)
-			{ updateList.add(e.next()); }
-			processingQueue.clear();
-			{ //Swap queues to prepare for next processing cycle
-				HashSet tempQueueRef=publicQueue;
+				for(Iterator<CMSavable> e=processingDelQueue.iterator();e.hasNext();)
+				{
+					CMSavable O=e.next();
+					updateList.remove(O);
+					processingQueue.remove(O);
+					publicQueue.remove(O);
+					clearFromFile(O);
+				}
+				processingDelQueue.clear();
+				tempQueueRef=deleteQueue;	//Swap queues to prepare for next processing cycle
+				deleteQueue=processingDelQueue;
+				processingDelQueue=tempQueueRef;
+				{
+					CMSavable O;
+					while((O=getNext())!=null)
+						writeToFile(O);
+				}
+				
+				for(Iterator<CMSavable> e=processingQueue.iterator();e.hasNext();)
+				{ updateList.add(e.next()); }
+				processingQueue.clear();
+				tempQueueRef=publicQueue;	//Swap queues to prepare for next processing cycle
 				publicQueue=processingQueue;
 				processingQueue=tempQueueRef;
+				try{ synchronized(this){wait(waitInterval);} } catch(Exception e){Log.errOut("DBManager",e);}
 			}
-			try{ sleep(waitInterval); } catch(Exception e){Log.errOut("DBManager",e);}
 		}
 		for(Iterator<CMSavable> e=processingQueue.iterator();e.hasNext();)
 		{ updateList.add(e.next()); }
 		processingQueue=publicQueue;
 		if(finalWaitInterval>0)
-			try{ sleep(finalWaitInterval); } catch(Exception e){Log.errOut("DBManager",e);}
+			try{ Thread.sleep(finalWaitInterval); } catch(Exception e){Log.errOut("DBManager",e);}
 		for(Iterator<CMSavable> e=processingQueue.iterator();e.hasNext();)
 		{ updateList.add(e.next()); }
 		while(updateList.firstFirst!=null)
 			writeToFile(updateList.removeFirst());
 		byte[] mainFlags=new byte[2];
 		mainFlags[0]=(byte)currentBackup;
-		mainFlags[0]=(byte)0;
+		mainFlags[1]=(byte)0;
 		try{
 			FileChannel output=new RandomAccessFile(mainFile(), "rw").getChannel();
 			output.write(ByteBuffer.wrap(mainFlags));
 			output.close();
 		}
 		catch(Exception e){Log.errOut("DBManager",e);}
+		doneLoading=false;
 	}
-	protected CMSavable.SaveEnum getParser(Enum E, String S)
+	public static CMSavable.SaveEnum getParser(Enum E, String S)
 	{
 		try{return (CMSavable.SaveEnum)E.valueOf((Class)E.getClass().getSuperclass(), S);}
 		catch(IllegalArgumentException e){if(e.getMessage().startsWith("No")) return null;}
@@ -694,7 +964,7 @@ public class DBManager extends Thread implements DatabaseEngine
 		else if(timeOfNextSoonest<time) return updateList.removeFirst();
 		return null;
 	}
-	protected static SaveFormat getFormat(CMSavable obj)
+	public static SaveFormat getFormat(CMSavable obj)
 	{
 		String ID=obj.ID();
 		SaveFormat f=formats.get(ID);
@@ -713,7 +983,8 @@ public class DBManager extends Thread implements DatabaseEngine
 				if(i==0) continue;
 				if(i==-1)
 				{
-					CMSavable.CMSubSavable subObject=thisEnum.subObject(obj);
+					CMSavable subObject=thisEnum.subObject(obj);
+					if(subObject==null) continue;
 					String subObj=subObject.ID();
 					i=getFormat(subObject).size-15;	//-16 for SID and var info, +1 for subdata 'header' byte
 					if(i==1) continue;	//Don't write it if there is no fixed subdata.
@@ -725,7 +996,7 @@ public class DBManager extends Thread implements DatabaseEngine
 				totalSize+=i;
 				formatSize+=7;
 			}
-			f=new SaveFormat(fixedVars, subObjs, true, getObjectFiles(obj));
+			f=new SaveFormat(obj, fixedVars, subObjs, true, getObjectFiles(obj));
 			formats.put(ID, f);
 			
 			try{
@@ -733,18 +1004,44 @@ public class DBManager extends Thread implements DatabaseEngine
 				for(Iterator<CMSavable.SaveEnum> e=subObjs.keySet().iterator(); e.hasNext();)
 				{
 					CMSavable.SaveEnum i=e.next();
-					String str=e.get(i);
+					String str=subObjs.get(i);
 					fileFormat.put((byte)str.length()).put(i.name().getBytes(charFormat)).put(str.getBytes(charFormat));
 				}
 				fileFormat.put((byte)0);	//End-of-subobjects marker
 				for(int i=0;i<fixedVars.size();i++)
 					fileFormat.put(fixedVars.get(i).name().getBytes(charFormat)).putInt(fixedVars.weight(i));
 				FileChannel saveFormatChannel=new RandomAccessFile(subFile(), "rw").getChannel();
-				saveFormatChannel.write(fileFormat, saveFormatChannel.size());
+				saveFormatChannel.write((ByteBuffer)fileFormat.rewind(), saveFormatChannel.size());
 			}
 			catch(Exception e){Log.errOut("DBManager",e);}
 		}
 		return f;
+	}
+	protected static void clearFromFile(CMSavable O)
+	{
+		try
+		{
+			SaveFormat format=getFormat(O);
+			int fileIndex;
+			{
+				SimpleInt fileIndexInt=format.fileMap.remove(new SimpleInt(O.saveNum()));
+				if(fileIndexInt==null) return;
+				fileIndex=fileIndexInt.Int;
+				if(format.freeEntries.get(0).Int==fileIndex+1)
+					format.freeEntries.get(0).Int--;
+				else
+					format.freeEntries.add(fileIndexInt);
+			}
+			FileChannel fChan=format.fChan();
+			fChan.write(ByteBuffer.wrap(new byte[4]), fileIndex*format.size);	//Delete SID
+			ByteBuffer varInfo=ByteBuffer.wrap(new byte[8]);
+			fChan.read(varInfo, (fileIndex+1)*format.size-12);
+			int position=varInfo.getInt(0);
+			int size=varInfo.getInt(4);
+			if(size>0) format.returnSpace(position, size);
+			O.setSaveNum(0);
+		}
+		catch(Exception e){Log.errOut("DBManager",e);}
 	}
 	protected static void writeToFile(CMSavable O)
 	{
@@ -801,6 +1098,6 @@ public class DBManager extends Thread implements DatabaseEngine
 			fChan.write(input, varIntsPos);
 			format.vChan().position(position).write(varVals);
 		}
-		catch(Exception e){Log.errOut("DBManager",e);}
+		catch(Exception e){Log.errOut("DBManager",e); int x=1; int y=x-1; System.out.println(x/y);}
 	}
 }

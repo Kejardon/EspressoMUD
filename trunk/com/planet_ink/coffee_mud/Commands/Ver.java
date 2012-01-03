@@ -36,7 +36,7 @@ public class Ver extends StdCommand
 		mob.tell("^<A HREF=\"mailto:bo@zimmers.net\"^>bo@zimmers.net^</A^>");
 		mob.tell("^<A HREF=\"http://www.coffeemud.org\"^>http://www.coffeemud.org^</A^>");
 		mob.tell("EspressoMUD v"+CMProps.Strings.MUDVER.property());
-		mob.tell("(C) 2011 Kejardon");
+		mob.tell("(C) 2010-2012 Kejardon");
 		mob.tell("^<A HREF=\"http://sourceforge.net/projects/espress/\"^>http://sourceforge.net/projects/espress/^</A^>");
 		return false;
 	}

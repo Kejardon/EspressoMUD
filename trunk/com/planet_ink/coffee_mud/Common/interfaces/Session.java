@@ -607,6 +607,7 @@ public interface Session extends CMCommon
 	 */
 	public int getWrap();
 	
+	public byte[] getByteAddress();
 	/**
 	 * Gets the current telnet clients ip address.
 	 * 

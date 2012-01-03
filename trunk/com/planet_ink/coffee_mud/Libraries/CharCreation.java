@@ -29,9 +29,9 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 public class CharCreation extends StdLibrary implements CharCreationLibrary
 {
 	public String ID(){return "CharCreation";}
-	public Hashtable<String,String> startRooms=new Hashtable();
-	public Hashtable<String,String> deathRooms=new Hashtable();
-	public Hashtable<String,String> bodyRooms=new Hashtable();
+	public Hashtable<String,Integer> startRooms=new Hashtable();
+	public Hashtable<String,Integer> deathRooms=new Hashtable();
+	public Hashtable<String,Integer> bodyRooms=new Hashtable();
 
 	public Vector<Race> raceQualifies()
 	{
@@ -267,7 +267,7 @@ public class CharCreation extends StdLibrary implements CharCreationLibrary
 					session.println("You may only have "+CMProps.Ints.COMMONACCOUNTSYSTEM.property()+" characters.  Please delete one to create another.");
 					continue;
 				}
-				MOB newCharT = CMLib.players().getLoadPlayer(s);
+				MOB newCharT = CMLib.players().getPlayer(s);
 				if(newCharT==null)
 				{
 					session.println("Character not found.");
@@ -291,8 +291,8 @@ public class CharCreation extends StdLibrary implements CharCreationLibrary
 				{
 					acct.addNewPlayer(newCharT);
 					ps.setAccount(acct);
-					CMLib.database().DBUpdateAccount(acct);
-					CMLib.database().DBUpdatePlayer(newCharT);
+//					CMLib.database().DBUpdateAccount(acct);
+//					CMLib.database().DBUpdatePlayer(newCharT);
 					session.println(newCharT.name()+" has been imported into your account.");
 				}
 				continue;
@@ -301,7 +301,7 @@ public class CharCreation extends StdLibrary implements CharCreationLibrary
 			if(wizi) s=s.substring(0,s.length()-2).trim();
 			MOB playMe = null;
 			if(acct.isPlayer(s))
-				playMe = CMLib.players().getLoadPlayer(s);
+				playMe = CMLib.players().getPlayer(s);
 			if(playMe == null)
 			{
 				session.println("'"+s+"' is an unknown character or command.  Use ? for help.");
@@ -366,9 +366,9 @@ public class CharCreation extends StdLibrary implements CharCreationLibrary
 		}
 		acct.setAccountName(login);
 		acct.setPassword(BCrypt.hashpw(password, BCrypt.gensalt()));
-		acct.setLastIP(session.getAddress());
+		acct.setLastIP(session.getByteAddress());
 		acct.setLastDateTime(System.currentTimeMillis());
-		CMLib.database().DBCreateAccount(acct);
+//		CMLib.database().DBCreateAccount(acct);
 		StringBuffer doneText=new CMFile(Resources.buildResourcePath("text")+"doneacct.txt",null,true).text();
 		try { doneText = CMLib.httpUtils().doVirtualPage(doneText);}catch(Exception ex){}
 		session.println(null,null,null,"\n\r\n\r"+doneText.toString());
@@ -576,14 +576,14 @@ public class CharCreation extends StdLibrary implements CharCreationLibrary
 				mob.body().bringToLife(getDefaultStartRoom(mob),true);
 				mob.location().show(mob,mob.location(),null,EnumSet.of(CMMsg.MsgCode.ALWAYS,CMMsg.MsgCode.ENTER),"<S-NAME> appears!");
 //				mob.playerStats().leveledDateTime(0);
-				CMLib.database().DBCreateCharacter(mob);
+//				CMLib.database().DBCreateCharacter(mob);
 				CMLib.players().addPlayer(mob);
 	
-				mob.playerStats().setLastIP(session.getAddress());
+				mob.playerStats().setLastIP(session.getByteAddress());
 				Log.sysOut("FrontDoor","Created user: "+mob.name());
 				CMProps.addNewUserByIP(session.getAddress());
 				notifyFriends(mob,"^X"+mob.name()+" has just been created.^.^?");
-				CMLib.database().DBUpdatePlayer(mob);
+//				CMLib.database().DBUpdatePlayer(mob);
 				Vector channels=CMLib.channels().getFlaggedChannelNames(ChannelsLibrary.ChannelFlag.NEWPLAYERS);
 				for(int i=0;i<channels.size();i++)
 					CMLib.commands().postChannel((String)channels.elementAt(i),mob.name()+" has just been created.",true);
@@ -662,7 +662,7 @@ public class CharCreation extends StdLibrary implements CharCreationLibrary
 					MOB listenerM=sessionS.mob();
 					PlayerStats listenerPStats=listenerM.playerStats();
 					if((listenerPStats!=null)
-					&&((listenerPStats.getFriends().contains(mob.name())||listenerPStats.getFriends().contains("All"))))
+					&&(listenerPStats.getFriends().contains(mob)))
 						listenerM.tell(message);
 				}
 			}
@@ -749,7 +749,7 @@ public class CharCreation extends StdLibrary implements CharCreationLibrary
 		MOB player = null;
 		if(CMProps.Ints.COMMONACCOUNTSYSTEM.property()>1)
 		{
-			acct = CMLib.players().getLoadAccount(login);
+			acct = CMLib.players().getAccount(login);
 			if(acct==null)
 			{
 				player=CMLib.players().getPlayer(login);
@@ -895,7 +895,7 @@ public class CharCreation extends StdLibrary implements CharCreationLibrary
 		}
 		else
 		{
-			mob=CMLib.players().getLoadPlayer(login);
+			mob=CMLib.players().getPlayer(login);
 			mob.setSession(session);
 			session.setMob(mob);
 			if(loginsDisabled(mob))
@@ -905,7 +905,7 @@ public class CharCreation extends StdLibrary implements CharCreationLibrary
 		}
 		PlayerStats pstats = mob.playerStats();
 		if((session!=null)&&(mob.playerStats()!=null))
-			mob.playerStats().setLastIP(session.getAddress());
+			mob.playerStats().setLastIP(session.getByteAddress());
 		notifyFriends(mob,"^X"+mob.name()+" has logged on.^.^?");
 		Vector channels=CMLib.channels().getFlaggedChannelNames(ChannelsLibrary.ChannelFlag.LOGINS);
 		for(int i=0;i<channels.size();i++)
@@ -924,13 +924,15 @@ public class CharCreation extends StdLibrary implements CharCreationLibrary
 			roomID=(String)startRooms.get(realrace);
 		if((roomID==null)||(roomID.length()==0))
 */
-		String roomID=startRooms.get("ALL");
+		Integer roomID=startRooms.get("ALL");
 
 		Room room=null;
-		if((roomID!=null)&&(roomID.length()>0))
-			room=CMLib.map().getRoom(roomID);
-		if(room==null)
-			room=CMLib.map().getRoom("START");
+		if(roomID!=null)
+			room=(Room)SIDLib.Objects.ROOM.get(roomID.intValue());
+		else
+			room=(Room)SIDLib.Objects.ROOM.get(10000);
+//		if(room==null)
+//			room=CMLib.map().getRoom("START");
 		if((room==null)&&(CMLib.map().numRooms()>0))
 			room=(Room)CMLib.map().rooms().nextElement();
 		return room;
@@ -943,13 +945,15 @@ public class CharCreation extends StdLibrary implements CharCreationLibrary
 		String roomID=(String)deathRooms.get(race);
 		if((roomID==null)||(roomID.length()==0))
 */
-		String roomID=deathRooms.get("ALL");
+		Integer roomID=deathRooms.get("ALL");
 
 		Room room=null;
 //		if((roomID!=null)&&(roomID.equalsIgnoreCase("START")))
 //			room=mob.getStartRoom();
-		if((room==null)&&(roomID!=null)&&(roomID.length()>0))
-			room=CMLib.map().getRoom(roomID);
+		if(roomID!=null)
+			room=(Room)SIDLib.Objects.ROOM.get(roomID.intValue());
+		else
+			room=(Room)SIDLib.Objects.ROOM.get(10000);
 //		if(room==null)
 //			room=mob.getStartRoom();
 		if((room==null)&&(CMLib.map().numRooms()>0))
@@ -969,13 +973,13 @@ public class CharCreation extends StdLibrary implements CharCreationLibrary
 			roomID=(String)bodyRooms.get(realrace);
 		if((roomID==null)||(roomID.length()==0))
 */
-		String roomID=(String)bodyRooms.get("ALL");
+		Integer roomID=bodyRooms.get("ALL");
 
 		Room room=null;
-		if((roomID!=null)&&(roomID.equalsIgnoreCase("START")))
+		if((roomID!=null)&&(roomID.intValue()==0))
 			room=mob.location();
-		if((room==null)&&(roomID!=null)&&(roomID.length()>0))
-			room=CMLib.map().getRoom(roomID);
+		if((room==null)&&(roomID!=null))
+			room=(Room)SIDLib.Objects.ROOM.get(roomID.intValue());
 		if(room==null)
 			room=mob.location();
 		if((room==null)&&(CMLib.map().numRooms()>0))
@@ -983,17 +987,17 @@ public class CharCreation extends StdLibrary implements CharCreationLibrary
 		return room;
 	}
 
-	public void pageRooms(CMProps page, Hashtable table, String start)
+	public void pageRooms(CMProps page, Hashtable<String,Integer> table, String start)
 	{
 		for(Enumeration i=page.keys();i.hasMoreElements();)
 		{
 			String k=(String)i.nextElement();
 			if(k.startsWith(start+"_"))
-				table.put(k.substring(start.length()+1),page.getProperty(k));
+				table.put(k.substring(start.length()+1),CMath.s_int(page.getProperty(k)));
 		}
 		String thisOne=page.getProperty(start);
 		if((thisOne!=null)&&(thisOne.length()>0))
-			table.put("ALL",thisOne);
+			table.put("ALL",CMath.s_int(thisOne));
 	}
 
 	public void initStartRooms(CMProps page)

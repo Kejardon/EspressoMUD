@@ -8,12 +8,14 @@ import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -24,10 +26,10 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 */
 public class DefaultEnvironmental implements Environmental, Ownable
 {
-	protected CMObject parent;
+	protected CMSavable parent;
 	protected Tickable.TickStat tickStatus=Tickable.TickStat.Not;
-	protected EnvStats baseEnvStats=(EnvStats)CMClass.Objects.COMMON.get("DefaultEnvStats");
-	protected EnvStats envStats=(EnvStats)CMClass.Objects.COMMON.get("DefaultEnvStats");
+	protected EnvStats baseEnvStats=(EnvStats)(new DefaultEnvStats().setOwner(this));
+	protected EnvStats envStats=(EnvStats)(new DefaultEnvStats().setOwner(this));
 	protected Vector<EnvAffecter> envAffecters=null;
 	protected Vector<OkChecker> okCheckers=null;
 	protected Vector<ExcChecker> excCheckers=null;
@@ -35,10 +37,11 @@ public class DefaultEnvironmental implements Environmental, Ownable
 	protected Vector affects=new Vector(1);
 	protected long lastTick=0;
 	protected EnumSet<ListenHolder.Flags> lFlags=EnumSet.noneOf(ListenHolder.Flags.class);
+	protected int[] effectsToLoad=null;
 
 	//Ownable
-	public CMObject owner(){return parent;}
-	public void setOwner(CMObject owner){parent=owner;}
+	public CMSavable owner(){return parent;}
+	public Ownable setOwner(CMSavable owner){parent=owner; return this;}
 
 	//Affectable
 	public void addEffect(Effect to)
@@ -46,13 +49,15 @@ public class DefaultEnvironmental implements Environmental, Ownable
 		if(to==null) return;
 		affects.addElement(to);
 		to.setAffectedOne(this);
+		parent.saveThis();
 	}
 	public void delEffect(Effect to)
 	{
-		int size=affects.size();
-		affects.removeElement(to);
-		if(affects.size()<size)
+		if(affects.removeElement(to))
+		{
 			to.setAffectedOne(null);
+			parent.saveThis();
+		}
 	}
 	public int numEffects(){return affects.size();}
 	public Effect fetchEffect(int index)
@@ -174,10 +179,34 @@ public class DefaultEnvironmental implements Environmental, Ownable
 	public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]} ;}
 	public ModEnum[] totalEnumM(){return MCode.values();}
 	public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
+	public int saveNum(){return 0;}
+	public void setSaveNum(int num){}
+	public boolean needLink(){return true;}
+	public void link()
+	{
+		if(effectsToLoad!=null)
+		{
+			for(int SID : effectsToLoad)
+			{
+				Effect to = (Effect)SIDLib.Objects.EFFECT.get(SID);
+				if(to==null) continue;
+				affects.addElement(to);
+				to.setAffectedOne(this);
+			}
+			effectsToLoad=null;
+		}
+	}
+	public void saveThis(){parent.saveThis();}
 
 	//Environmental
 	public EnvStats baseEnvStats(){return baseEnvStats;}
-	public void setBaseEnvStats(EnvStats newBaseEnvStats){baseEnvStats=newBaseEnvStats; recoverEnvStats();}
+	public void setBaseEnvStats(EnvStats newBaseEnvStats)
+	{
+		baseEnvStats=(EnvStats)((Ownable)newBaseEnvStats).setOwner(this);
+		envStats=(EnvStats)newBaseEnvStats.copyOf();
+		recoverEnvStats();
+		parent.saveThis();
+	}
 	public EnvStats envStats(){return envStats;}
 	public void recoverEnvStats()
 	{
@@ -198,29 +227,26 @@ public class DefaultEnvironmental implements Environmental, Ownable
 			return true;
 		return false;
 	}
+
 	private enum SCode implements CMSavable.SaveEnum{
 		ENV(){
-			public String save(DefaultEnvironmental E){ return CMLib.coffeeMaker().getPropertiesStr(E.baseEnvStats); }
+			public ByteBuffer save(DefaultEnvironmental E){ return CMLib.coffeeMaker().savSubFull(E.baseEnvStats); }
 			public int size(){return -1;}
-			public CMSavable.CMSubSavable subObject(CMSavable fromThis){return ((DefaultEnvironmental)E).baseEnvStats;}
-			public void load(DefaultEnvironmental E, String S){
-				EnvStats newEnv=(EnvStats)CMClass.Objects.COMMON.get("DefaultEnvStats");
-				CMLib.coffeeMaker().setPropertiesStr(newEnv, S);
-				E.setBaseEnvStats(newEnv); } },
+			public CMSavable subObject(CMSavable fromThis){return ((DefaultEnvironmental)fromThis).baseEnvStats;}
+			public void load(DefaultEnvironmental E, ByteBuffer S){
+				E.setBaseEnvStats((EnvStats)CMLib.coffeeMaker().loadSub(S, E.baseEnvStats)); } },
 		EFC(){
-			public String save(DefaultEnvironmental E){ return CMLib.coffeeMaker().getVectorStr(E.affects); }
-			public void load(DefaultEnvironmental E, String S){
-				Vector<Effect> V=CMLib.coffeeMaker().setVectorStr(S);
-				for(Effect A : V)
-					E.addEffect(A);
-				
-				} },
+			public ByteBuffer save(DefaultEnvironmental E){
+				if(E.affects.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.affects.toArray(new CMSavable[E.affects.size()]));
+				return GenericBuilder.emptyBuffer; }
+			public int size(){return 0;}
+			public void load(DefaultEnvironmental E, ByteBuffer S){ E.effectsToLoad=CMLib.coffeeMaker().loadAInt(S); } },
 		;
-		public abstract String save(DefaultEnvironmental E);
-		public abstract void load(DefaultEnvironmental E, String S);
-		public String save(CMSavable E){return save((DefaultEnvironmental)E);}
-		public CMSavable.CMSubSavable subObject(CMSavable fromThis){return null;}
-		public void load(CMSavable E, String S){load((DefaultEnvironmental)E, S);} }
+		public abstract ByteBuffer save(DefaultEnvironmental E);
+		public abstract void load(DefaultEnvironmental E, ByteBuffer S);
+		public ByteBuffer save(CMSavable E){return save((DefaultEnvironmental)E);}
+		public CMSavable subObject(CMSavable fromThis){return null;}
+		public void load(CMSavable E, ByteBuffer S){load((DefaultEnvironmental)E, S);} }
 	private enum MCode implements CMModifiable.ModEnum{
 		ENVSTATS(){
 			public String brief(DefaultEnvironmental E){return E.baseEnvStats.ID();}

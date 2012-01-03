@@ -426,7 +426,7 @@ public class CommonMsgs extends StdLibrary implements CommonCommands
 				{
 					if(room.getArea()!=null)
 						Say.append("^!Area  :^N "+room.getArea().name()+"\n\r");
-					Say.append("^!RoomID:^N "+room.roomID()+"  ^!("+room.ID()+")^N\n\r");
+					Say.append("^!SaveNum:^N "+room.saveNum()+"  ^!("+room.ID()+")^N\n\r");
 				}
 			}
 			Say.append("^O^<RName^>" + room.displayText()+"^</RName^>"+"^L\n\r");
@@ -511,8 +511,8 @@ public class CommonMsgs extends StdLibrary implements CommonCommands
 				mob.tell("You don't see anything special.");
 			if((mob.playerStats().getBitmap()&PlayerStats.ATT_SYSOPMSGS)>0)
 			{
-				mob.tell("Type  : "+exit.ID());
-				mob.tell("ExitID: "+exit.exitID());
+				mob.tell("Type   : "+exit.ID());
+				mob.tell("SaveNum: "+exit.saveNum());
 			}
 		}
 	}
@@ -582,7 +582,7 @@ public class CommonMsgs extends StdLibrary implements CommonCommands
 				Say.append(exit.exitListLook(mob, room2));
 			else
 			if((room2!=null)&&((mob.playerStats().getBitmap()&PlayerStats.ATT_SYSOPMSGS)>0))
-				Say.append(room2.roomID()+" via NULL");
+				Say.append(room2.saveNum()+" via NULL");
 			if(Say.length()>0)
 			{
 //				Dir=CMStrings.padRightPreserve(Directions.getDirectionName(d),5);
@@ -876,7 +876,7 @@ public class CommonMsgs extends StdLibrary implements CommonCommands
 		&&(speaker!=me)
 		&&(speaker.playerStats()!=null)
 		&&(msg!=null)
-		&&(!me.playerStats().isIntroducedTo(speaker.name()))
+		&&(!me.playerStats().isIntroducedTo(speaker))
 		&&(CMLib.english().containsString(CMStrings.getSayFromMessage(msg),speaker.name())))
 			me.playerStats().introduceTo(speaker.name());
 	}

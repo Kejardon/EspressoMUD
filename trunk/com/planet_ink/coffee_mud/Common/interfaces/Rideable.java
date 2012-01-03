@@ -61,56 +61,10 @@ public interface Rideable extends CMObject, CMModifiable, CMSavable, CMCommon //
 
 	public static class RideThing
 	{
-		private static int saveNumber=1;
-		private static boolean started=false;
-		private static HashMap<Integer, Rideable> assignedNumbers=new HashMap<Integer, Rideable>();
-		public synchronized static int getNumber()
-		{
-			if(!started)
-			{
-				String S=CMLib.database().DBReadData("RideSNum");
-				if(S==null)
-				{
-					saveNumber=1;
-					CMLib.database().DBCreateData("RideSNum","1");
-				}
-				else
-					saveNumber=CMath.s_int(S);
-				assignedNumber.put(0,null);
-				started=true;
-			}
-			if(assignedNumbers.containsKey(saveNumber))
-			{
-				int inc=1;
-				while(assignedNumbers.containsKey(saveNumber+inc))
-				{
-					inc=inc*2;
-					if(inc==1) saveNumber+=1580030169; //(2^32)/e ; optimal interval for poking around randomly
-				}
-				saveNumber+=inc;
-			}
-			return saveNumber++;
-		}
-		public static void save()
-		{
-			CMLib.database().DBUpdateData("RideSNum",""+saveNumber);
-		}
-		public static void assignNumber(int i, Rideable A)
-		{
-			assignedNumbers.put(i, A);
-		}
-		public static void removeNumber(int i, Rideable A)
-		{
-			assignedNumbers.remove(i);
-		}
-		public static Rideable get(Integer i)
-		{
-			return assignedNumbers.get(i);
-		}
 		public static Rideable getFrom(CMObject O)
 		{
 			if(O instanceof Rideable) return (Rideable)O;
-			while(O instanceof Ownable) O=((Ownable)O).owner();
+			while((O instanceof Ownable)&&((Ownable)O).owner()!=O) O=((Ownable)O).owner();
 			if(O instanceof RideHolder) return ((RideHolder)O).getRideObject();
 			return null;
 		}

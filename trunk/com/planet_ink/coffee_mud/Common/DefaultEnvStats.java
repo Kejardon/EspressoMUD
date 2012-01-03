@@ -11,7 +11,9 @@ import com.planet_ink.coffee_mud.Items.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
+
 import java.util.Vector;
+import java.nio.ByteBuffer;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -21,7 +23,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 	http://www.apache.org/licenses/LICENSE-2.0
 */
 @SuppressWarnings("unchecked")
-public class DefaultEnvStats implements EnvStats
+public class DefaultEnvStats implements EnvStats, Ownable
 {
 	public String ID(){return "DefaultEnvStats";}
 	protected double Speed=1.0;			// should be positive
@@ -31,7 +33,12 @@ public class DefaultEnvStats implements EnvStats
 	protected int height;
 	protected int weight;
 	protected int magic;
+	protected CMSavable parent;
 	//TODO: Material should probably be stored here? Still need to decide how
+
+	//Ownable
+	public CMSavable owner(){return parent;}
+	public Ownable setOwner(CMSavable owner){parent=owner; return this;}
 
 	public DefaultEnvStats(){}
 
@@ -41,7 +48,7 @@ public class DefaultEnvStats implements EnvStats
 	public int length(){return length;}
 	public int width(){return width;}
 	public double speed(){return Speed;}
-	public String[] ambiances(){ return (String[])ambiances.toArray(new String[0]);}
+	public String[] ambiances(){ return (String[])ambiances.toArray(new String[ambiances.size()]);}
 
 	public void setWeight(int newWeight){weight=newWeight;}
 	public void setSpeed(double newSpeed){Speed=newSpeed;}
@@ -94,17 +101,24 @@ public class DefaultEnvStats implements EnvStats
 		}
 	}
 
+	public void destroy(){}
+
 	//CMModifiable and CMSavable
 	public SaveEnum[] totalEnumS(){return SCode.values();}
 	public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]};}
 	public ModEnum[] totalEnumM(){return MCode.values();}
 	public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
+	public int saveNum(){return 0;}
+	public void setSaveNum(int num){}
+	public boolean needLink(){return false;}
+	public void link(){}
+	public void saveThis(){parent.saveThis();}
 
 	private enum SCode implements CMSavable.SaveEnum{
 		SPD(){
-			public ByteBuffer save(DefaultEnvStats E){ return ""+Double.doubleToLongBits(E.Speed); }
+			public ByteBuffer save(DefaultEnvStats E){ return (ByteBuffer)ByteBuffer.wrap(new byte[8]).putDouble(E.Speed).rewind(); }
 			public int size(){return 8;}
-			public void load(DefaultEnvStats E, ByteBuffer S){ E.Speed=Double.longBitsToDouble(Long.parseLong(S)); } },
+			public void load(DefaultEnvStats E, ByteBuffer S){ E.Speed=S.getDouble(); } },
 		INT(){
 			public ByteBuffer save(DefaultEnvStats E){ return CMLib.coffeeMaker().savAInt(new int[] {E.width, E.length, E.height, E.weight, E.magic}); }
 			public int size(){return 20;}
@@ -116,9 +130,10 @@ public class DefaultEnvStats implements EnvStats
 			public int size(){return 0;}
 			public void load(DefaultEnvStats E, ByteBuffer S){ for(String newF : CMLib.coffeeMaker().loadAString(S)) E.ambiances.add(newF); } },
 		;
-		public abstract String save(DefaultEnvStats E);
+		public abstract ByteBuffer save(DefaultEnvStats E);
 		public abstract void load(DefaultEnvStats E, ByteBuffer S);
 		public ByteBuffer save(CMSavable E){return save((DefaultEnvStats)E);}
+		public CMSavable subObject(CMSavable fromThis){return null;}
 		public void load(CMSavable E, ByteBuffer S){load((DefaultEnvStats)E, S);} }
 	private enum MCode implements CMModifiable.ModEnum{
 		AMBIENCES(){

@@ -26,10 +26,10 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public interface WorldMap extends CMLibrary, Runnable
 {
-	public String getNewExitID();
-	public void removeExit(Exit E);
-	public void addExit(Exit E);
-	public Exit getExit(String S);
+//	public String getNewExitID();
+//	public void removeExit(Exit E);
+//	public void addExit(Exit E);
+//	public Exit getExit(String S);
 	/************************************************************************/
 	/**							 AREAS										*/
 	/************************************************************************/
@@ -52,9 +52,9 @@ public interface WorldMap extends CMLibrary, Runnable
 	public int numRooms();
 //	public Enumeration roomIDs();
 //	public Room getRoom(Room room);
-	public Room getRoom(String calledThis);
-	public Room getRoom(Vector<Room> roomSet, String calledThis);
-	public Room getRoom(Hashtable hashedRoomSet, String areaName, String calledThis);
+//	public Room getRoom(String calledThis);
+//	public Room getRoom(Vector<Room> roomSet, String calledThis);
+//	public Room getRoom(Hashtable hashedRoomSet, String areaName, String calledThis);
 	public Enumeration rooms();
 	public Room getRandomRoom();
 //	public void renameRooms(Area A, String oldName, Vector allMyDamnRooms);

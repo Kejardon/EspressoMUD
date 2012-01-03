@@ -31,9 +31,9 @@ public interface Exit extends Interactable, Closeable.CloseableHolder, CMModifia
 //	public String viewableText(MOB mob, Room destination);	//What was this supposed to be? Oh right it was from original code. Meh.
 	public boolean visibleExit(MOB mob, Room destination);
 	public void setVisible(boolean b);
-	public String exitID();
-	public void setExitID(String newID);
-	public void setSave(boolean b);
-	public boolean needSave();
+//	public String exitID();
+//	public void setExitID(String newID);
+//	public void setSave(boolean b);
+//	public boolean needSave();
 //	public boolean canGo(MOB mob, Room destination);
 }

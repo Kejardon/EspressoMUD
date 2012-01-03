@@ -20,6 +20,11 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-public interface MiscLibrary extends CMLibrary
+/*
+Tasks assigned to this library:
+	Handle saving and/or loading data for special things
+		SIDLib
+*/
+public interface MiscLibrary extends CMLibrary, CMSavable, Runnable
 {
 }

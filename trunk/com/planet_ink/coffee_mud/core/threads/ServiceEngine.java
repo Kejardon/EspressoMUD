@@ -1,5 +1,5 @@
 package com.planet_ink.coffee_mud.core.threads;
-import com.planet_ink.coffee_mud.core.database.DBInterface;
+//import com.planet_ink.coffee_mud.core.database.DBInterface;
 import com.planet_ink.coffee_mud.core.http.ProcessHTTPrequest;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
@@ -339,7 +339,7 @@ public class ServiceEngine implements ThreadEngine
 		{
 			Tickable E=C.clientObject;
 			if(E instanceof Room)
-				return ((Room)E).roomID();
+				return E.ID()+((Room)E).saveNum();
 			if(E!=null) return E.ID();
 			return "!NULL!";
 		}

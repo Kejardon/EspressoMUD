@@ -207,7 +207,9 @@ public class MUD extends Thread implements MudHost
 
 		Log.sysOut(Thread.currentThread().getName(),"Loading map...");
 		CMProps.Strings.MUDSTATUS.setProperty("Booting: loading rooms....");
-		CMLib.database().DBReadAllRooms();
+//		CMLib.database().DBReadAllRooms();
+		while(CMLib.database().doneLoading())
+		try{Thread.sleep(500);}catch(Exception e){}
 /*		for(Enumeration a=CMLib.map().areas();a.hasMoreElements();)
 		{
 			Area A=(Area)a.nextElement();
@@ -220,18 +222,18 @@ public class MUD extends Thread implements MudHost
 		if(CMLib.map().numAreas()==0)
 		{
 			Log.sysOut("NO MAPPED ROOM?!  I'll make ya one!");
-			String id="START";
+//			String id="START";
 			Area newArea=(Area)CMClass.Objects.AREA.getNew("StdArea");
 			newArea.setName("New Area");
-			newArea.initChildren();
+//			newArea.initChildren();
 			CMLib.map().addArea(newArea);
-			CMLib.database().DBCreateArea(newArea);
+//			CMLib.database().DBCreateArea(newArea);
 			Room room=(Room)CMClass.Objects.LOCALE.getNew("StdRoom");
-			room.setRoomID(id);
+//			room.setRoomID(id);
 			room.setArea(newArea);
 			room.setDisplayText("New Room");
 			room.setDescription("Brand new database room! You need to change this text with the MODIFY ROOM command.");
-			CMLib.database().DBCreateRoom(room);
+//			CMLib.database().DBCreateRoom(room);
 		}
 
 		CMLib.login().initStartRooms(page);
@@ -499,7 +501,7 @@ public class MUD extends Thread implements MudHost
 						M.playerStats().setLastDateTime(System.currentTimeMillis());
 				}
 			}
-		CMLib.players().savePlayers();
+//		CMLib.players().savePlayers();
 		if(S!=null)S.println("done");
 		Log.sysOut(Thread.currentThread().getName(),"All users saved.");
 		CMProps.Strings.MUDSTATUS.setProperty("Shutting down" + (keepItDown? "..." : " and restarting..."));
@@ -575,7 +577,11 @@ public class MUD extends Thread implements MudHost
 		if(S!=null)S.println("done");
 		Log.sysOut(Thread.currentThread().getName(),"Map Threads Stopped.");
 
-//		CMProps.Strings.MUDSTATUS.setProperty("Shutting down...closing db connections");
+		CMProps.Strings.MUDSTATUS.setProperty("Shutting down...closing db connections");
+		CMLib.misc().shutdown();
+		CMLib.database().shutdown();
+		while(CMLib.database().doneLoading())
+		try{Thread.sleep(500);}catch(Exception e){}
 //		for(int d=0;d<databases.size();d++)
 //			((DBConnector)databases.elementAt(d)).killConnections();
 //		if(S!=null)S.println("Database connections closed");
@@ -772,8 +778,9 @@ public class MUD extends Thread implements MudHost
 					Log.errOut(Thread.currentThread().getName(),"Debug logging is disabled! Check your DBGMSGS flag!");
 			}
 
-			DBConnector currentDBconnector=new DBConnector();
-			CMLib.registerLibrary(new DBInterface(currentDBconnector));
+//			DBConnector currentDBconnector=new DBConnector();
+//			CMLib.registerLibrary(new DBInterface(currentDBconnector));
+			CMLib.registerLibrary(new DBManager());
 			CMLib.registerLibrary(new ProcessHTTPrequest(null,null,null,true));
 			CMProps.Strings.MUDVER.setProperty(HOST_VERSION_MAJOR + "." + HOST_VERSION_MINOR);
 
@@ -902,7 +909,7 @@ public class MUD extends Thread implements MudHost
 			Log.sysOut(Thread.currentThread().getName(),"CoffeeMud v K1");
 			Log.sysOut(Thread.currentThread().getName(),"(C) 2000-2010 Bo Zimmerman");
 			Log.sysOut(Thread.currentThread().getName(),"http://www.coffeemud.org");
-			Log.sysOut(Thread.currentThread().getName(),"(C) 2010-2011 Kejardon");
+			Log.sysOut(Thread.currentThread().getName(),"(C) 2010-2012 Kejardon");
 			HostGroup joinable=null;
 			CMLib.hosts().clear();
 			for(int i=0;i<iniFiles.size();i++)

@@ -23,9 +23,11 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 	http://www.apache.org/licenses/LICENSE-2.0
 */
 @SuppressWarnings("unchecked")
-public interface DatabaseEngine extends CMLibrary
+public interface DatabaseEngine extends CMLibrary, Runnable
 {
-	
+	public void saveObject(CMSavable obj);
+	public void deleteObject(CMSavable obj);
+	public boolean doneLoading();
 /*
 No longer used DBInterface(below), switching to DBManager(above)
 	public String errorStatus();
