@@ -9,9 +9,13 @@ import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
+
 import java.util.*;
+import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -34,7 +38,10 @@ public class DefaultMessage implements CMMsg
 			DefaultMessage clone=(DefaultMessage)this.clone();
 			clone.sources=(Vector<Interactable>)sources.clone();
 			clone.tools=(Vector<CMObject>)tools.clone();
-			clone.trailMsgs=(Vector<CMMsg>)trailMsgs.clone();
+			if(clone.trailMsgs!=null)
+				clone.trailMsgs=(Vector<TrailMessage>)trailMsgs.clone();
+			if(clone.trailHpns!=null)
+				clone.trailHpns=(Vector<TrailMessage>)trailHpns.clone();
 			clone.responders=(SortedList<SortedList.SortableObject<ListenHolder.MsgListener>>)responders.clone();
 			return clone;
 		}
@@ -54,12 +61,12 @@ public class DefaultMessage implements CMMsg
 	protected Interactable target=null;
 	protected Vector<CMObject> tools=null;
 	protected int value=0;
-	protected Vector<CMMsg> trailMsgs=null;
+	protected Vector<TrailMessage> trailMsgs=null;
+	protected Vector<TrailMessage> trailHpns=null;
 	protected SortedList<SortedList.SortableObject<ListenHolder.MsgListener>> responders=null;
+	protected int[] obvious=new int[SenseFlags_SIZE];
 
-	//TODO: The JVM will only do this ONCE per object itself! Internal attempts at recycling messages should be done too
-	//After every CMClass.getMsg, later msg.finalize()?
-	public void finalize() throws Throwable
+	public void returnMsg()
 	{
 		targetCode=null;
 		sourceCode=null;
@@ -70,11 +77,24 @@ public class DefaultMessage implements CMMsg
 		sources=null;
 		target=null;
 		tools=null;
-		trailMsgs=null;
+		if(trailMsgs!=null)
+		{
+			for(CMMsg.TrailMessage trailer : trailMsgs)
+				trailer.msg.returnMsg();
+			trailMsgs=null;
+		}
+		if(trailHpns!=null)
+		{
+			for(CMMsg.TrailMessage trailer : trailHpns)
+				trailer.msg.returnMsg();
+			trailHpns=null;
+		}
 		value=0;
 		responders=null;
-		if(!CMClass.returnMsg(this))
-			super.finalize();
+		obvious=new int[SenseFlags_SIZE];
+		CMClass.returnMsg(this);
+		//if(!CMClass.returnMsg(this))
+		//	super.finalize();
 	}
 
 	public EnumSet<MsgCode> targetCode() { return targetCode; }
@@ -134,7 +154,7 @@ public class DefaultMessage implements CMMsg
 	}
 	public void setSourceMessage(String str){sourceMsg=str;}
 	public String sourceMessage() { return sourceMsg;}
-	public Interactable[] sourceArr() { return (Interactable[])sources.toArray(new Interactable[0]); }
+	public Interactable[] sourceArr() { return (Interactable[])sources.toArray(Interactable.dummyInteractableArray); }
 
 	public EnumSet<MsgCode> othersCode() { return othersCode; }
 	public void setOthersCode(EnumSet<MsgCode> codes){othersCode=codes;}
@@ -170,6 +190,8 @@ public class DefaultMessage implements CMMsg
 	{
 		value=amount;
 	}
+	public int obvious(int type){return obvious[type];}
+	public void setObvious(int type, int value){obvious[type]=value;}
 
 	public Vector<ListenHolder.MsgListener> responders()
 	{
@@ -193,11 +215,17 @@ public class DefaultMessage implements CMMsg
 		return true;
 	}
 
-	public Vector<CMMsg> trailerMsgs(){ return trailMsgs;}
-	public void addTrailerMsg(CMMsg msg)
+	public Vector<TrailMessage> trailerMsgs(){ return trailMsgs;}
+	public void addTrailerMsg(Room forHere, CMMsg msg)
 	{
-		if(trailMsgs==null) trailMsgs=new Vector<CMMsg>();
-		trailMsgs.addElement(msg);
+		if(trailMsgs==null) trailMsgs=new Vector<TrailMessage>();
+		trailMsgs.add(new TrailMessage(forHere, msg));
+	}
+	public Vector<TrailMessage> trailerHappens(){ return trailHpns;}
+	public void addTrailerHappens(Room forHere, CMMsg msg)
+	{
+		if(trailHpns==null) trailHpns=new Vector<TrailMessage>();
+		trailHpns.add(new TrailMessage(forHere, msg));
 	}
 
 	public Interactable target() { return target; }
@@ -234,7 +262,7 @@ public class DefaultMessage implements CMMsg
 		return tools.add(O);
 	}
 	public boolean removeTool(CMObject O){return tools.remove(O);}
-	public CMObject[] toolArr() { return (CMObject[])tools.toArray(new CMObject[0]); }
+	public CMObject[] toolArr() { return (CMObject[])tools.toArray(CMObject.dummyCMOArray); }
 
 	public boolean isTool(CMObject E)
 	{

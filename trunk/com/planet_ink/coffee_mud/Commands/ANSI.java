@@ -24,51 +24,49 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class ANSI extends StdCommand
 {
-	public ANSI(){}
+	public ANSI(){access=new String[]{"ANSI","COLOR","COLOUR"};}
 
-	private String[] access={"ANSI","COLOR","COLOUR"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		PlayerStats ps=mob.playerStats();
 		if(ps==null) return false;
 		PlayerAccount acct = ps.getAccount();
 		if(commands.size()>1)
 		{
-			if(((String)commands.get(1)).equalsIgnoreCase("on"))
+			if(commands.get(1).equalsIgnoreCase("on"))
 			{
-				if(acct != null) acct.setFlag(PlayerAccount.FLAG_ANSI, true);
-				if((ps.getBitmap()&PlayerStats.ATT_ANSI)==0)
+				if(acct != null) acct.setBits(PlayerStats.ATT_ANSI, true);
+				if(!ps.hasBits(PlayerStats.ATT_ANSI))
 				{
-					ps.setBitmap(ps.getBitmap()|PlayerStats.ATT_ANSI);
-					mob.tell("^!ANSI^N ^Hcolour^N enabled.\n\r");
+					ps.setBits(PlayerStats.ATT_ANSI, true);
+					mob.tell("^!ANSI^N ^Hcolour^N enabled.\r\n");
 				}
 				else
-					mob.tell("^!ANSI^N is ^Halready^N enabled.\n\r");
+					mob.tell("^!ANSI^N is ^Halready^N enabled.\r\n");
 				mob.session().setClientTelnetMode(Session.TELNET_ANSI,true);
-				mob.session().setServerTelnetMode(Session.TELNET_ANSI,true);
+				//mob.session().setServerTelnetMode(Session.TELNET_ANSI,true);
 				return false;
 			}
-			else if(((String)commands.get(1)).equalsIgnoreCase("off"))
+			else if(commands.get(1).equalsIgnoreCase("off"))
 			{
-				if(acct != null) acct.setFlag(PlayerAccount.FLAG_ANSI, false);
-				if((ps.getBitmap()&PlayerStats.ATT_ANSI)>0)
+				if(acct != null) acct.setBits(PlayerStats.ATT_ANSI, false);
+				if(ps.hasBits(PlayerStats.ATT_ANSI))
 				{
-					ps.setBitmap(ps.getBitmap()&~PlayerStats.ATT_ANSI);
-					mob.tell("ANSI colour disabled.\n\r");
+					ps.setBits(PlayerStats.ATT_ANSI, false);
+					mob.tell("ANSI colour disabled.\r\n");
 				}
 				else
-					mob.tell("ANSI is already disabled.\n\r");
+					mob.tell("ANSI is already disabled.\r\n");
 				mob.session().setClientTelnetMode(Session.TELNET_ANSI,false);
-				mob.session().setServerTelnetMode(Session.TELNET_ANSI,false);
+				//mob.session().setServerTelnetMode(Session.TELNET_ANSI,false);
 				return false;
 			}
 		}
-		mob.tell(((ps.getBitmap()&PlayerStats.ATT_ANSI)>0)?("^!ANSI^N is ^Hcurrently^N enabled.\n\r"):("ANSI is currently disabled.\n\r"));
-		mob.tell("Use 'ansi on' or 'ansi off' to set colour.\n\r");
+		mob.tell((ps.hasBits(PlayerStats.ATT_ANSI))?("^!ANSI^N is ^Hcurrently^N enabled.\r\n"):("ANSI is currently disabled.\r\n"));
+		mob.tell("Use 'ansi on' or 'ansi off' to set colour.\r\n");
 		return false;
 	}
-	
+
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	public boolean canBeOrdered(){return true;}
 }

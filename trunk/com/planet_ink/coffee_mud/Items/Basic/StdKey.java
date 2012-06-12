@@ -8,13 +8,14 @@ import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
 import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -33,7 +34,7 @@ public class StdKey extends StdItem implements Key
 		super();
 		name="a metal key";
 		display="a small metal key sits here.";
-		desc="You can't tell what it\\`s to by looking at it.";
+		desc="You can't tell what it's to by looking at it.";
 
 //		material=RawMaterial.RESOURCE_STEEL;
 //		baseGoldValue=0;
@@ -52,10 +53,7 @@ public class StdKey extends StdItem implements Key
 		{
 			ModEnum[] arrA=MCode.values();
 			ModEnum[] arrB=super.totalEnumM();
-			ModEnum[] total=new ModEnum[arrA.length+arrB.length];
-			System.arraycopy(arrA, 0, total, 0, arrA.length);
-			System.arraycopy(arrB, 0, total, arrA.length, arrB.length);
-			totalEnumM=total;
+			totalEnumM=CMParms.appendToArray(arrA, arrB, ModEnum[].class);
 		}
 		return totalEnumM;
 	}
@@ -65,10 +63,7 @@ public class StdKey extends StdItem implements Key
 		{
 			Enum[] arrA=new Enum[] {MCode.values()[0]};
 			Enum[] arrB=super.headerEnumM();
-			Enum[] total=new Enum[arrA.length+arrB.length];
-			System.arraycopy(arrA, 0, total, 0, arrA.length);
-			System.arraycopy(arrB, 0, total, arrA.length, arrB.length);
-			headerEnumM=total;
+			headerEnumM=CMParms.appendToArray(arrA, arrB, Enum[].class);
 		}
 		return headerEnumM;
 	}
@@ -80,10 +75,7 @@ public class StdKey extends StdItem implements Key
 		{
 			SaveEnum[] arrA=SCode.values();
 			SaveEnum[] arrB=super.totalEnumS();
-			SaveEnum[] total=new SaveEnum[arrA.length+arrB.length];
-			System.arraycopy(arrA, 0, total, 0, arrA.length);
-			System.arraycopy(arrB, 0, total, arrA.length, arrB.length);
-			totalEnumS=total;
+			totalEnumS=CMParms.appendToArray(arrA, arrB, SaveEnum[].class);
 		}
 		return totalEnumS;
 	}
@@ -93,10 +85,7 @@ public class StdKey extends StdItem implements Key
 		{
 			Enum[] arrA=new Enum[] {SCode.values()[0]};
 			Enum[] arrB=super.headerEnumS();
-			Enum[] total=new Enum[arrA.length+arrB.length];
-			System.arraycopy(arrA, 0, total, 0, arrA.length);
-			System.arraycopy(arrB, 0, total, arrA.length, arrB.length);
-			headerEnumS=total;
+			headerEnumS=CMParms.appendToArray(arrA, arrB, Enum[].class);
 		}
 		return headerEnumS;
 	}

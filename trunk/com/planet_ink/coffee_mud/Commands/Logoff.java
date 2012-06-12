@@ -21,20 +21,18 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
+//Note: This is not a prompter command, it must be responded to immediately by the player
 @SuppressWarnings("unchecked")
 public class Logoff extends StdCommand
 {
-	public Logoff(){}
+	public Logoff(){access=new String[]{"LOGOFF","LOGOUT"};}
 
-	private String[] access={"LOGOFF","LOGOUT"};
-	public String[] getAccessWords(){return access;}
-
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		if(!mob.isMonster())
 		{
 			Session session=mob.session();
+/*
 			if((session!=null)
 			&&(session.getLastPKFight()>0)
 			&&((System.currentTimeMillis()-session.getLastPKFight())<(5*60*1000)))
@@ -42,17 +40,19 @@ public class Logoff extends StdCommand
 				mob.tell("You must wait a few more minutes before you are allowed to logout.");
 				return false;
 			}
+*/
 			try
 			{
-				if ((session != null)&& (session.confirm("\n\rLogout -- are you sure (y/N)?","N")))
+				if ((session != null)&& (session.confirm("\r\nLogout -- are you sure (y/N)?","N")))
 				{
 					CMMsg msg=CMClass.getMsg(mob,null,null,EnumSet.of(CMMsg.MsgCode.QUIT),null);
 					Room R=mob.location();
 					if((R!=null)&&(R.okMessage(mob,msg))) 
 					{
 						CMLib.map().sendGlobalMessage(mob,EnumSet.of(CMMsg.MsgCode.QUIT), msg);
-						session.logout(true);
+						session.logout();
 					}
+					msg.returnMsg();
 				}
 			}
 			catch(Exception e)
@@ -62,6 +62,7 @@ public class Logoff extends StdCommand
 		}
 		return false;
 	}
-	
+
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	public boolean canBeOrdered(){return false;}
 }

@@ -38,8 +38,11 @@ public interface Environmental extends Affectable, CMModifiable, CMSavable, CMCo
 		public static Environmental getFrom(CMObject O)
 		{
 			if(O instanceof Environmental) return (Environmental)O;
-			while((O instanceof Ownable)&&((Ownable)O).owner()!=O) O=((Ownable)O).owner();
 			if(O instanceof EnvHolder) return ((EnvHolder)O).getEnvObject();
+			while((O instanceof Ownable)&&((Ownable)O).owner()!=O) {
+				O=((Ownable)O).owner();
+				if(O instanceof Environmental) return (Environmental)O;
+				if(O instanceof EnvHolder) return ((EnvHolder)O).getEnvObject(); }
 			return null;
 		}
 	}

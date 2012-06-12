@@ -55,9 +55,9 @@ public class SignLanguage extends StdLanguage
 			return false;
 		}
 		String oldStartFullMsg = startFullMsg;
-		startFullMsg = CMStrings.replaceFirstWord(startFullMsg, "say(s)", "sign(s)");
-		startFullMsg = CMStrings.replaceFirstWord(startFullMsg, "ask(s)", "sign(s) askingly");
-		startFullMsg = CMStrings.replaceFirstWord(startFullMsg, "exclaim(s)", "sign(s) excitedly");
+		startFullMsg = startFullMsg.replace("say(s)", "sign(s)");
+		startFullMsg = startFullMsg.replace("ask(s)", "sign(s) askingly");
+		startFullMsg = startFullMsg.replace("exclaim(s)", "sign(s) excitedly");
 		if(oldStartFullMsg.equals(startFullMsg))
 		{
 			int x=startFullMsg.toLowerCase().lastIndexOf("(s)");
@@ -93,10 +93,10 @@ public class SignLanguage extends StdLanguage
 		case 13: verb="wiggle(s) <S-HIS-HER> fingers"; break;
 		}
 		String oldStartFullMsg = startFullMsg;
-		startFullMsg = CMStrings.replaceFirstWord(startFullMsg, "tell(s)", verb);
-		startFullMsg = CMStrings.replaceFirstWord(startFullMsg, "say(s)", verb);
-		startFullMsg = CMStrings.replaceFirstWord(startFullMsg, "ask(s)", verb+" askingly");
-		startFullMsg = CMStrings.replaceFirstWord(startFullMsg, "exclaim(s)", verb+" excitedly");
+		startFullMsg = startFullMsg.replace("tell(s)", verb);
+		startFullMsg = startFullMsg.replace("say(s)", verb);
+		startFullMsg = startFullMsg.replace("ask(s)", verb+" askingly");
+		startFullMsg = startFullMsg.replace("exclaim(s)", verb+" excitedly");
 		if(oldStartFullMsg.equals(startFullMsg))
 		{
 			int x=startFullMsg.toLowerCase().lastIndexOf("(s)");
@@ -124,7 +124,7 @@ public class SignLanguage extends StdLanguage
 				otherMes=otherMes.replace('.', ' ')+'\''+sourceWords+'\'';
 			if(msg.target()!=null)
 				otherMes=CMLib.coffeeFilter().fullOutFilter(null,(MOB)affected,msg.firstSource(),msg.target(),msg.firstTool(),otherMes,false);
-			msg.addTrailerMsg(CMClass.getMsg(msg.firstSource(),(MOB)affected,null,CMMsg.NO_EFFECT,null,msg.othersCode(),CMStrings.substituteSayInMessage(otherMes,sourceWords)+" (translated from "+name()+")",CMMsg.NO_EFFECT,null));
+			msg.addTrailerMsg(((MOB)affected).location(), CMClass.getMsg(msg.firstSource(),(MOB)affected,null,CMMsg.NO_EFFECT,null,msg.othersCode(),CMStrings.substituteSayInMessage(otherMes,sourceWords)+" (translated from "+name()+")",CMMsg.NO_EFFECT,null));
 			return true;
 		}
 		return false;
@@ -139,7 +139,7 @@ public class SignLanguage extends StdLanguage
 				otherMes=otherMes.replace('.', ' ')+'\''+sourceWords+'\'';
 			if(msg.target()!=null)
 				otherMes=CMLib.coffeeFilter().fullOutFilter(null,(MOB)affected,msg.firstSource(),msg.target(),msg.firstTool(),otherMes,false);
-			msg.addTrailerMsg(CMClass.getMsg(msg.firstSource(),(MOB)affected,null,CMMsg.NO_EFFECT,null,msg.targetCode(),CMStrings.substituteSayInMessage(otherMes,sourceWords)+" (translated from "+name()+")",CMMsg.NO_EFFECT,null));
+			msg.addTrailerMsg(((MOB)affected).location(), CMClass.getMsg(msg.firstSource(),(MOB)affected,null,CMMsg.NO_EFFECT,null,msg.targetCode(),CMStrings.substituteSayInMessage(otherMes,sourceWords)+" (translated from "+name()+")",CMMsg.NO_EFFECT,null));
 			return true;
 		}
 		return false;
@@ -152,7 +152,7 @@ public class SignLanguage extends StdLanguage
 			String otherMes=msg.othersMessage();
 			if((otherMes.lastIndexOf('\'')==otherMes.indexOf('\'')))
 				otherMes=otherMes.replace('.', ' ')+'\''+sourceWords+'\'';
-			msg.addTrailerMsg(CMClass.getMsg(msg.source(),null,null,CMMsg.NO_EFFECT,null,CMMsg.NO_EFFECT,null,msg.othersCode(),CMStrings.substituteSayInMessage(otherMes,sourceWords)+" (translated from "+name()+")"));
+			msg.addTrailerMsg(((MOB)affected).location(), CMClass.getMsg(msg.source().clone(),null,null,CMMsg.NO_EFFECT,null,CMMsg.NO_EFFECT,null,msg.othersCode(),CMStrings.substituteSayInMessage(otherMes,sourceWords)+" (translated from "+name()+")"));
 			return true;
 		}
 		return false;

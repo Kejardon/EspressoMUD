@@ -149,11 +149,11 @@ public class CMath
 	 * @param x the base number
 	 * @param y the power
 	 * @return x to the y power, rounded off
-	 */
 	public static long pow(long x, long y)
 	{
 		return Math.round(Math.pow(((double)x),((double)y)));
 	}
+	 */
 	// Returns true if the given string represents a percentage in the form X% where X is any real number.
 	public static boolean isPct(String s)
 	{

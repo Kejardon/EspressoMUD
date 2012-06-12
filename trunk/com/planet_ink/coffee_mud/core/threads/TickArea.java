@@ -16,28 +16,29 @@ Container object for areas to make sure they tick on time - every 4 seconds by d
 */
 public class TickArea extends Thread implements TickableGroup, Cloneable
 {
-	private final int tickObjectCounter;
+	public final int tickObjectCounter;
 	private static volatile int tickObjReference=0;
 
 	public final Tickable clientObject;
-	public final Tickable.TickID tickID=Tickable.TickID.Time;
+	//public final Tickable.TickID tickID=Tickable.TickID.Time;
 	public long TICK_TIME;
 	public boolean suspended=false;
-	public volatile long lastStart=0;
-	public volatile long lastStop=0;
-	public volatile long milliTotal=0;
-	public volatile long tickTotal=0;
-	public volatile boolean awake=false;
+	//public long lastStart=0;
+	public long lastStop=0;
+	public long milliTotal=0;
+	public long tickTotal=0;
+	public boolean awake=false;
+	public boolean dead=false;
 
 	public TickArea(long sleep, Tickable CO)
 	{
-		super("Tick."+(tickObjReference+1));
+		super("TickArea."+(tickObjReference+1));
 		clientObject=CO;
 		tickObjectCounter=tickObjReference++;
 		TICK_TIME=sleep;
 		this.start();
 	}
-	public TickArea(String a_name, long sleep, Tickable CO)
+/*	public TickArea(String a_name, long sleep, Tickable CO)
 	{
 		super("Tick."+ a_name + "." +(tickObjReference+1));
 		clientObject=CO;
@@ -45,13 +46,13 @@ public class TickArea extends Thread implements TickableGroup, Cloneable
 		tickObjectCounter=tickObjReference++;
 		TICK_TIME=sleep;
 		this.start();
-	}
+	} */
 
 	public static boolean tickTicker(Tickable C)
 	{
 		try
 		{
-			if(!C.tick(C,Tickable.TickID.Time))
+			if(!C.tick(C.tickCounter()+1))
 			{
 				return true;
 			}
@@ -69,53 +70,39 @@ public class TickArea extends Thread implements TickableGroup, Cloneable
 			return clientObject == ((TickArea)obj).clientObject;
 		return false;
 	}
-	public void shutdown()
+	public void shutdown()	//Important note: This may block for as long as 4 seconds if it is locked up.
 	{
-		CMLib.killThread(this,10,1);
+		dead=true;
+		CMLib.killThread(this,100,40);
 	}
 	public void run()
 	{
-		lastStart=System.currentTimeMillis();
-		boolean going=true;
-		int SUBTRACT_TIME=0;
-		while(going)
+		lastStop=System.currentTimeMillis();
+		long nextStart=lastStop;
+		try
 		{
-			try
+			while(!dead)
 			{
-				lastStop=System.currentTimeMillis();
-				SUBTRACT_TIME+=(lastStop-lastStart);
-				milliTotal+=SUBTRACT_TIME;
-				tickTotal++;
 				awake=false;
-				long timeToSleep=TICK_TIME;
-				if(SUBTRACT_TIME<timeToSleep)
-				{
-					timeToSleep-=SUBTRACT_TIME;
-					SUBTRACT_TIME=0;
-				}
-				else
-				{
-					timeToSleep=0;
-				}
-				if(timeToSleep>0)
+				milliTotal+=(System.currentTimeMillis()-lastStop);
+				tickTotal++;
+				long timeToSleep=nextStart-System.currentTimeMillis();
+				if(timeToSleep>10)
 					Thread.sleep(timeToSleep);
+				lastStop=System.currentTimeMillis();
+				nextStart+=TICK_TIME;
 				awake=true;
-				lastStart=System.currentTimeMillis();
 				if((CMProps.Bools.MUDSTARTED.property())
 				&&(!CMLib.threads().isAllSuspended()))
 				{
 					if(tickTicker(clientObject))
 					{
-						if(CMLib.threads() instanceof ServiceEngine)
-							((ServiceEngine)CMLib.threads()).delArea(this);
-						going=false;
+						CMLib.threads().delArea(this);
+						dead=true;
 					}
 				}
 			}
-			catch(InterruptedException ioe)
-			{
-				// a perfectly good and normal thing
-			}
 		}
+		catch(InterruptedException ioe){}	//Means this thread is due to die.
 	}
 }

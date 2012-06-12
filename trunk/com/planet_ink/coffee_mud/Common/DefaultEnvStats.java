@@ -9,11 +9,13 @@ import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
-import java.util.Vector;
+import java.util.*;
 import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -27,7 +29,7 @@ public class DefaultEnvStats implements EnvStats, Ownable
 {
 	public String ID(){return "DefaultEnvStats";}
 	protected double Speed=1.0;			// should be positive
-	protected Vector<String> ambiances=new Vector();
+	protected CopyOnWriteArrayList<String> ambiances=new CopyOnWriteArrayList();
 	protected int width;
 	protected int length;
 	protected int height;
@@ -48,26 +50,37 @@ public class DefaultEnvStats implements EnvStats, Ownable
 	public int length(){return length;}
 	public int width(){return width;}
 	public double speed(){return Speed;}
-	public String[] ambiances(){ return (String[])ambiances.toArray(new String[ambiances.size()]);}
+	public Iterator<String> ambiances(){ return ambiances.iterator();}
 
-	public void setWeight(int newWeight){weight=newWeight;}
-	public void setSpeed(double newSpeed){Speed=newSpeed;}
-	public void setAbility(int newAdjustment){magic=newAdjustment;}
-	public void setHeight(int newHeight){height=newHeight;}
-	public void setLength(int newLength){length=newLength;}
-	public void setWidth(int newWidth){weight=newWidth;}
+	public void setWeight(int newWeight){weight=newWeight; if(parent!=null)parent.saveThis();}
+	public void setSpeed(double newSpeed){Speed=newSpeed; if(parent!=null)parent.saveThis();}
+	public void setAbility(int newAdjustment){magic=newAdjustment; if(parent!=null)parent.saveThis();}
+	public void setHeight(int newHeight){height=newHeight; if(parent!=null)parent.saveThis();}
+	public void setLength(int newLength){length=newLength; if(parent!=null)parent.saveThis();}
+	public void setWidth(int newWidth){weight=newWidth; if(parent!=null)parent.saveThis();}
 	public void addAmbiance(String ambiance)
 	{
-		for(int i=0;i<ambiances.size();i++)
-			if(ambiances.get(i).equalsIgnoreCase(ambiance))
-				return;
-		ambiances.add(ambiance);
+		synchronized(ambiances)
+		{
+			for(String S : ambiances)
+				if(S.equalsIgnoreCase(ambiance))
+					return;
+			ambiances.add(ambiance);
+		}
+		if(parent!=null)parent.saveThis();
 	}
 	public void delAmbiance(String ambiance)
 	{
-		for(int i=0;i<ambiances.size();i++)
-			if(ambiances.get(i).equalsIgnoreCase(ambiance))
-				{ ambiances.remove(i); return; }
+		synchronized(ambiances)
+		{
+			for(String S : ambiances)
+				if(S.equalsIgnoreCase(ambiance))
+				{
+					ambiances.remove(S);
+					if(parent!=null)parent.saveThis();
+					return;
+				}
+		}
 	}
 
 	public CMObject newInstance(){try{return (CMObject)getClass().newInstance();}catch(Exception e){return new DefaultEnvStats();}}
@@ -77,7 +90,7 @@ public class DefaultEnvStats implements EnvStats, Ownable
 		try
 		{
 			DefaultEnvStats E=(DefaultEnvStats)this.clone();
-			E.ambiances=(Vector<String>)ambiances.clone();
+			E.ambiances=(CopyOnWriteArrayList<String>)ambiances.clone();
 			return E;
 		}
 		catch(java.lang.CloneNotSupportedException e)
@@ -97,11 +110,18 @@ public class DefaultEnvStats implements EnvStats, Ownable
 			copy.weight=weight;
 			copy.magic=magic;
 			copy.Speed=Speed;
-			copy.ambiances=(Vector<String>)ambiances.clone();
+			copy.ambiances=(CopyOnWriteArrayList<String>)ambiances.clone();
+			copy.saveThis();
 		}
 	}
 
 	public void destroy(){}
+	public boolean amDestroyed()
+	{
+		if(parent!=null)
+			return parent.amDestroyed();
+		return true;
+	}
 
 	//CMModifiable and CMSavable
 	public SaveEnum[] totalEnumS(){return SCode.values();}
@@ -112,7 +132,8 @@ public class DefaultEnvStats implements EnvStats, Ownable
 	public void setSaveNum(int num){}
 	public boolean needLink(){return false;}
 	public void link(){}
-	public void saveThis(){parent.saveThis();}
+	public void saveThis(){if(parent!=null)parent.saveThis();}
+	public void prepDefault(){}
 
 	private enum SCode implements CMSavable.SaveEnum{
 		SPD(){
@@ -126,9 +147,9 @@ public class DefaultEnvStats implements EnvStats, Ownable
 				int[] ints=CMLib.coffeeMaker().loadAInt(S);
 				E.width=ints[0]; E.length=ints[1]; E.height=ints[2]; E.weight=ints[3]; E.magic=ints[4]; } },
 		AMB(){
-			public ByteBuffer save(DefaultEnvStats E){ return CMLib.coffeeMaker().savAString((String[])E.ambiances.toArray(new String[0])); }
+			public ByteBuffer save(DefaultEnvStats E){ return CMLib.coffeeMaker().savAString((String[])E.ambiances.toArray(CMClass.dummyStringArray)); }
 			public int size(){return 0;}
-			public void load(DefaultEnvStats E, ByteBuffer S){ for(String newF : CMLib.coffeeMaker().loadAString(S)) E.ambiances.add(newF); } },
+			public void load(DefaultEnvStats E, ByteBuffer S){ E.ambiances=new CopyOnWriteArrayList(CMLib.coffeeMaker().loadAString(S)); } },
 		;
 		public abstract ByteBuffer save(DefaultEnvStats E);
 		public abstract void load(DefaultEnvStats E, ByteBuffer S);
@@ -142,15 +163,15 @@ public class DefaultEnvStats implements EnvStats, Ownable
 			public void mod(DefaultEnvStats E, MOB M){
 				boolean done=false;
 				while((M.session()!=null)&&(!M.session().killFlag())&&(!done)) {
-					Vector<String> V=(Vector<String>)E.ambiances.clone();
+					String[] V=(String[])E.ambiances.toArray(CMClass.dummyStringArray);
 					int i=CMLib.genEd().promptVector(M, V, true);
 					if(--i<0) done=true;
-					else if(i==V.size()) {
+					else if(i==V.length) {
 						String S=CMLib.genEd().stringPrompt(M, "", false);
 						if(S.length()>0) {
 							E.delAmbiance(S);
 							E.addAmbiance(S); } }
-					else if(i<V.size()) E.delAmbiance(V.get(i)); } } },
+					else if(i<V.length) E.delAmbiance(V[i]); } } },
 		SPEED(){
 			public String brief(DefaultEnvStats E){return ""+E.Speed;}
 			public String prompt(DefaultEnvStats E){return ""+E.Speed;}

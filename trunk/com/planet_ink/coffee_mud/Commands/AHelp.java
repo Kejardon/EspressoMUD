@@ -24,13 +24,9 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class AHelp extends StdCommand
 {
-	public AHelp(){}
+	public AHelp(){access=new String[]{"ARCHELP","AHELP"};}
 
-	private String[] access={"ARCHELP","AHELP"};
-	public String[] getAccessWords(){return access;}
-
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		String helpStr=CMParms.combine(commands,1);
 		if(CMLib.help().getArcHelpFile().size()==0)
@@ -38,53 +34,26 @@ public class AHelp extends StdCommand
 			mob.tell("No archon help is available.");
 			return false;
 		}
-		StringBuffer thisTag=null;
+		String thisTag=null;
 		if(helpStr.length()==0)
 		{
-			thisTag=Resources.getFileResource("help/arc_help.txt",true);
-			if((thisTag!=null)&&(helpStr.equalsIgnoreCase("more")))
-			{
-				StringBuffer theRest=(StringBuffer)Resources.getResource("arc_help.therest");
-				if(theRest==null)
-				{
-					Vector<String> V=new Vector();
-					theRest=new StringBuffer("");
-
-					for(Iterator<? extends CMObject> a=CMClass.Objects.EFFECT.all();a.hasNext();)
-						V.addElement(a.next().ID());
-					if(V.size()>0)
-					{
-						theRest.append("\n\rEffects:\n\r");
-						theRest.append(CMLib.lister().fourColumns(V));
-					}
-
-					V.clear();
-					for(Iterator<? extends CMObject> b=CMClass.Objects.BEHAVIOR.all();b.hasNext();)
-						V.addElement(b.next().ID());
-					if(V.size()>0)
-					{
-						theRest.append("\n\r\n\rBehaviors:\n\r");
-						theRest.append(CMLib.lister().fourColumns(V));
-					}
-					Resources.submitResource("arc_help.therest",theRest);
-				}
-				thisTag=new StringBuffer(thisTag.toString());
-				thisTag.append(theRest);
-			}
+			StringBuffer thisBuf=Resources.getFileResource("help/arc_help.txt",true);
+			if(thisBuf!=null) thisTag=thisBuf.toString();
 		}
 		else
-			thisTag=new StringBuffer(CMLib.help().getHelpText(helpStr,CMLib.help().getArcHelpFile(),mob).toString());
+			thisTag=CMLib.help().getHelpText(helpStr,CMLib.help().getArcHelpFile(),mob);
 		if(thisTag==null)
 		{
-			mob.tell("No archon help is available on "+helpStr+" .\n\rEnter 'COMMANDS' for a command list, or 'TOPICS' for a complete list.");
+			mob.tell("No archon help is available on "+helpStr+" .\r\nEnter 'COMMANDS' for a command list, or 'TOPICS' for a complete list.");
 			Log.errOut("Help: "+mob.name()+" wanted archon help on "+helpStr);
 		}
 		else
 		if(!mob.isMonster())
-			mob.session().wraplessPrintln(thisTag.toString());
+			mob.session().wraplessPrintln(thisTag);
 		return false;
 	}
-	
+
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	public boolean canBeOrdered(){return true;}
-	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,mob.location(),"AHELP");}
+	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,"AHELP");}
 }

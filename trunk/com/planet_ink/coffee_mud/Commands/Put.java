@@ -24,14 +24,11 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Put extends StdCommand
 {
-	public Put(){}
+	public Put(){access=new String[]{"PUT","PU","P"};}
 
-	private String[] access={"PUT","PU","P"};
-	public String[] getAccessWords(){return access;}
-
-	public boolean asRider(MOB mob, Vector commands, int partition)
+	public boolean asRider(MOB mob, Vector<String> commands, int partition)
 	{
-		int maxToPut=CMLib.english().calculateMaxToGive(mob,commands,true,mob,false);
+		int maxToPut=CMLib.english().calculateMaxToGive(mob,commands,mob,false);
 		if(maxToPut<0) return false;
 		Room R=mob.location();
 
@@ -49,7 +46,7 @@ public class Put extends StdCommand
 		}
 
 		String holdThis=CMParms.combine(commands,0,partition);
-		boolean allFlag=(commands.size()>0)?((String)commands.elementAt(0)).equalsIgnoreCase("all"):false;
+		boolean allFlag=(commands.size()>0)?commands.elementAt(0).equalsIgnoreCase("all"):false;
 		if(holdThis.toUpperCase().startsWith("ALL.")){ allFlag=true; holdThis="ALL "+holdThis.substring(4);}
 		if(holdThis.toUpperCase().endsWith(".ALL")){ allFlag=true; holdThis="ALL "+holdThis.substring(0,holdThis.length()-4);}
 		if(allFlag)
@@ -60,9 +57,16 @@ public class Put extends StdCommand
 				mob.tell("You don't have '"+holdThis+"'.");
 				return false;
 			}
-			for(Item I : (Item[])V.toArray(new Item[0]))
-				if(!R.doMessage(CMClass.getMsg(mob,rideThis,I,EnumSet.of(CMMsg.MsgCode.MOUNT),"<S-NAME> put(s) <O-NAME> on <T-NAME>.")))
+			for(Item I : (Item[])V.toArray(Item.dummyItemArray))
+			{
+				CMMsg msg=CMClass.getMsg(mob,rideThis,I,EnumSet.of(CMMsg.MsgCode.MOUNT),"<S-NAME> put(s) <O-NAME> on <T-NAME>.");
+				if(!R.doMessage(msg))
+				{
+					msg.returnMsg();
 					break;
+				}
+				msg.returnMsg();
+			}
 		}
 		else
 		{
@@ -72,12 +76,13 @@ public class Put extends StdCommand
 				mob.tell("You don't have '"+holdThis+"'.");
 				return false;
 			}
-			R.doMessage(CMClass.getMsg(mob,rideThis,I,EnumSet.of(CMMsg.MsgCode.MOUNT),"<S-NAME> put(s) <O-NAME> on <T-NAME>."));
+			CMMsg msg=CMClass.getMsg(mob,rideThis,I,EnumSet.of(CMMsg.MsgCode.MOUNT),"<S-NAME> put(s) <O-NAME> on <T-NAME>.");
+			R.doMessage(msg);
+			msg.returnMsg();
 		}
 		return false;
 	}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		if(commands.size()<3)
 		{
@@ -95,7 +100,7 @@ public class Put extends StdCommand
 			else partition=commands.size()-1;
 		}
 
-		int maxToPut=CMLib.english().calculateMaxToGive(mob,commands,true,mob,false);
+		int maxToPut=CMLib.english().calculateMaxToGive(mob,commands,mob,false);
 		if(maxToPut<0) return false;
 		Room R=mob.location();
 
@@ -113,7 +118,7 @@ public class Put extends StdCommand
 		}
 
 		String holdThis=CMParms.combine(commands,0,partition);
-		boolean allFlag=(commands.size()>0)?((String)commands.elementAt(0)).equalsIgnoreCase("all"):false;
+		boolean allFlag=(commands.size()>0)?commands.elementAt(0).equalsIgnoreCase("all"):false;
 		if(holdThis.toUpperCase().startsWith("ALL.")){ allFlag=true; holdThis="ALL "+holdThis.substring(4);}
 		if(holdThis.toUpperCase().endsWith(".ALL")){ allFlag=true; holdThis="ALL "+holdThis.substring(0,holdThis.length()-4);}
 		if(allFlag)
@@ -124,9 +129,16 @@ public class Put extends StdCommand
 				mob.tell("You don't have '"+holdThis+"'.");
 				return false;
 			}
-			for(Item I : (Item[])V.toArray(new Item[0]))
-				if(!R.doMessage(CMClass.getMsg(mob,container,I,EnumSet.of(CMMsg.MsgCode.PUT),"<S-NAME> put(s) <O-NAME> in <T-NAME>.")))
+			for(Item I : (Item[])V.toArray(Item.dummyItemArray))
+			{
+				CMMsg msg=CMClass.getMsg(mob,container,I,EnumSet.of(CMMsg.MsgCode.PUT),"<S-NAME> put(s) <O-NAME> in <T-NAME>.");
+				if(!R.doMessage(msg))
+				{
+					msg.returnMsg();
 					break;
+				}
+				msg.returnMsg();
+			}
 		}
 		else
 		{
@@ -136,10 +148,13 @@ public class Put extends StdCommand
 				mob.tell("You don't have '"+holdThis+"'.");
 				return false;
 			}
-			R.doMessage(CMClass.getMsg(mob,container,I,EnumSet.of(CMMsg.MsgCode.PUT),"<S-NAME> put(s) <O-NAME> in <T-NAME>."));
+			CMMsg msg=CMClass.getMsg(mob,container,I,EnumSet.of(CMMsg.MsgCode.PUT),"<S-NAME> put(s) <O-NAME> in <T-NAME>.");
+			R.doMessage(msg);
+			msg.returnMsg();
 		}
 		return false;
 	}
-	public double actionsCost(MOB mob, Vector cmds){return DEFAULT_NONCOMBATACTION;}
+
+	public int commandType(MOB mob, String cmds){return CT_LOW_P_ACTION;}
 	public boolean canBeOrdered(){return true;}
 }

@@ -9,13 +9,13 @@ import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.MoneyLibrary;
-
 
 import java.util.*;
 import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -29,16 +29,15 @@ public class StdBody extends StdItem implements Body
 {
 	public String ID(){	return "StdBody";}
 
-	protected Vector<CharAffecter> charAffecters=null;
-	protected WVector<Race> myRaces=new WVector();
+	protected CopyOnWriteArrayList<CharAffecter> charAffecters=new CopyOnWriteArrayList();
+	//protected WVector<Race> myRaces=new WVector();	//make HybridBody for this instead
+	protected Race myRace=null;
 	protected Gender myGender=null;
 	protected boolean dead=false;
 	protected MOB myMob=null;
-	protected CharStats baseCharStats=(CharStats)((Ownable)CMClass.Objects.COMMON.getNew("BodyCharStats")).setOwner(this);
-	protected CharStats charStats=(CharStats)((Ownable)CMClass.Objects.COMMON.getNew("BodyCharStats")).setOwner(this);
+	protected CharStats baseCharStats;//=(CharStats)((Ownable)CMClass.COMMON.getNew("BodyCharStats")).setOwner(this);
+	protected CharStats charStats;//=(CharStats)((Ownable)CMClass.COMMON.getNew("BodyCharStats")).setOwner(this);
 	protected int[] birthday={-1, -1, -1};
-
-//	protected int mobToLink=0;
 
 	public StdBody()
 	{
@@ -56,30 +55,36 @@ public class StdBody extends StdItem implements Body
 	public int[] birthday(){return birthday;}
 //	public int initializeBirthday(int ageHours, Race R) { }
 
-	public CharStats baseCharStats(){return baseCharStats;}
-	public CharStats charStats(){return charStats;}
+	public CharStats baseCharStats(){
+		if(baseCharStats==null)
+			synchronized(this){if(baseCharStats==null) setBaseCharStats((CharStats)CMClass.COMMON.getNew("BodyCharStats"));}
+		return baseCharStats;}
+	public CharStats charStats(){
+		if(charStats==null)
+			synchronized(this){if(charStats==null) setBaseCharStats((CharStats)CMClass.COMMON.getNew("BodyCharStats"));}
+		return charStats;}
 	public void recoverCharStats()
 	{
 		baseCharStats.copyStatic(charStats);
-		if(charAffecters!=null)
-		for(int a=charAffecters.size();a>0;a--)
-			charAffecters.get(a-1).affectCharStats(this,charStats);
-		CMLib.database().saveObject(this);
+		for(CharAffecter C : charAffecters)
+			C.affectCharStats(this,charStats);
+		//CMLib.database().saveObject(this);
 	}
 
 	public void setBaseCharStats(CharStats newBaseCharStats)
 	{
 		baseCharStats=(CharStats)((Ownable)newBaseCharStats.copyOf()).setOwner(this);
-		charStats=(CharStats)((Ownable)CMClass.Objects.COMMON.getNew(newBaseCharStats.ID())).setOwner(this);
+		charStats=(CharStats)((Ownable)CMClass.COMMON.getNew(newBaseCharStats.ID())).setOwner(this);
 		recoverCharStats();
 		charStats.resetState();
+		CMLib.database().saveObject(this);
 	}
 
 	public String healthText(MOB viewer)
 	{
-		String mxp="^<!ENTITY vicmaxhp \""+charStats().getMaxPoints(CharStats.Points.HIT)+"\"^>^<!ENTITY vichp \""+charStats().getPoints(CharStats.Points.HIT)+"\"^>^<Health^>^<HealthText \""+name()+"\"^>";
+//		String mxp="^<!ENTITY vicmaxhp \""+charStats().getMaxPoints(CharStats.Points.HIT)+"\"^>^<!ENTITY vichp \""+charStats().getPoints(CharStats.Points.HIT)+"\"^>^<Health^>^<HealthText \""+name()+"\"^>";
 		//TODO: Race stuff for healthText
-		return mxp+standardHealthText(viewer)+"^</HealthText^>";
+		return standardHealthText(viewer);//+"^</HealthText^>";	//mxp+<--
 	}
 	public String standardHealthText(MOB viewer)
 	{
@@ -88,7 +93,7 @@ public class StdBody extends StdItem implements Body
 		int pct=(int)(charStats().getPointsPercent(CharStats.Points.HIT)*(num-1));
 		if(pct<0) pct=0;
 		if(pct>=num) pct=num-1;
-		return CMStrings.replaceAll(healthDescs[pct],"<MOB>",myMob.displayName(viewer));
+		return healthDescs[pct].replace("<MOB>",myMob.displayName(viewer));
 	}
 
 	public boolean amDead(){return dead;}
@@ -121,41 +126,25 @@ public class StdBody extends StdItem implements Body
 				charStats().setMaxPoints(CharStats.Points.HIT, 1);
 		CMLib.database().saveObject(this);
 	}
-	public boolean isRace(Race R){return myRaces.contains(R);}
+	public boolean isRace(Race R){return myRace==R;}
 	public void setRace(Race[] R)
 	{
-		WVector<Race> newRaces=new WVector<Race>();
-		for(Race r : R)
+		if(R.length==1)
 		{
-			int i=newRaces.index(r);
-			if(i>=0) newRaces.setWeight(i, newRaces.weight(i));
-			else newRaces.add(r, 1);
+			myRace=R[0];
+			CMLib.database().saveObject(this);
 		}
-		myRaces=newRaces;
-		CMLib.database().saveObject(this);
 	}
-	public void addRace(Race R)
-	{
-		int i=myRaces.index(R);
-		if(i>=0) myRaces.setWeight(i, myRaces.weight(i)+1);
-		else myRaces.add(R, 1);
-		CMLib.database().saveObject(this);
-	}
+	public void addRace(Race R){}	//Not supported by StdBody, need HybridBody
 	public String raceName()
 	{
-		StringBuilder name=new StringBuilder("");
-		for(int i=0;i<myRaces.size();i++)
-		{
-			name.append(myRaces.get(i).name());
-			if(i<myRaces.size()-1) name.append("-");
-		}
-		return name.toString();
+		return (myRace==null?"":myRace.name());
 	}
 	public void setGender(Gender G){myGender=G; CMLib.database().saveObject(this);}
-	public Gender gender(){return myGender;}
+	public Gender gender(){return ((myGender==null)?(CMClass.GENDER.get("StdGender")):myGender);}
 
 	//Affectable/Behavable shared
-	public Vector<CharAffecter> charAffecters(){if(charAffecters==null) charAffecters=new Vector(); return charAffecters;}
+	public CopyOnWriteArrayList<CharAffecter> charAffecters(){return charAffecters;}
 	public void removeListener(Listener oldAffect, EnumSet flags)
 	{
 		ListenHolder.O.removeListener(this, oldAffect, flags);
@@ -179,23 +168,17 @@ public class StdBody extends StdItem implements Body
 	}
 	protected void cloneFix(StdBody E)
 	{
+		charAffecters=new CopyOnWriteArrayList();
+		if(baseCharStats!=null) setBaseCharStats((CharStats)baseCharStats.copyOf());
+		birthday=birthday.clone();
+		if(myMob!=null)
+		{
+			myMob=(MOB)myMob.copyOf();
+			myMob.setBody(this);
+		}
 		super.cloneFix(E);
+		
 	}
-	public CMObject copyOf()
-	{
-		try
-		{
-			StdBody E=(StdBody)this.clone();
-			E.cloneFix(this);
-			return E;
-
-		}
-		catch(CloneNotSupportedException e)
-		{
-			return this.newInstance();
-		}
-	}
-
 	public int value() { return baseGoldValue(); }
 	public void setBaseValue(int newValue) { }
 	public void setWornOut(int worn) { }
@@ -204,19 +187,29 @@ public class StdBody extends StdItem implements Body
 
 	public boolean okMessage(ListenHolder.OkChecker myHost, CMMsg msg)
 	{
-		super.okMessage(myHost, msg);
-		return true;
+		if(!super.okMessage(myHost, msg))
+			return false;
+		if(myMob==null) return true;
+		return myMob.okMessage(myHost, msg);
 	}
-	public boolean respondTo(CMMsg msg){super.respondTo(msg); return true;}
+	public boolean respondTo(CMMsg msg)
+	{
+		if(!super.respondTo(msg))
+			return false;
+		if(myMob==null) return true;
+		return myMob.respondTo(msg);
+	}
 	public void executeMsg(ListenHolder.ExcChecker myHost, CMMsg msg)
 	{
 		super.executeMsg(myHost, msg);
+		if(myMob!=null) myMob.executeMsg(myHost, msg);
 	}
 
 	public void destroy()
 	{
 		dead=true;
 		super.destroy();
+		if((myMob!=null)&&(myMob.playerStats()==null)) myMob.destroy();
 	}
 
 	//CMModifiable and CMSavable
@@ -228,10 +221,7 @@ public class StdBody extends StdItem implements Body
 		{
 			ModEnum[] arrA=MCode.values();
 			ModEnum[] arrB=super.totalEnumM();
-			ModEnum[] total=new ModEnum[arrA.length+arrB.length];
-			System.arraycopy(arrA, 0, total, 0, arrA.length);
-			System.arraycopy(arrB, 0, total, arrA.length, arrB.length);
-			totalEnumM=total;
+			totalEnumM=CMParms.appendToArray(arrA, arrB, ModEnum[].class);
 		}
 		return totalEnumM;
 	}
@@ -241,10 +231,7 @@ public class StdBody extends StdItem implements Body
 		{
 			Enum[] arrA=new Enum[] {MCode.values()[0]};
 			Enum[] arrB=super.headerEnumM();
-			Enum[] total=new Enum[arrA.length+arrB.length];
-			System.arraycopy(arrA, 0, total, 0, arrA.length);
-			System.arraycopy(arrB, 0, total, arrA.length, arrB.length);
-			headerEnumM=total;
+			headerEnumM=CMParms.appendToArray(arrA, arrB, Enum[].class);
 		}
 		return headerEnumM;
 	}
@@ -256,10 +243,7 @@ public class StdBody extends StdItem implements Body
 		{
 			SaveEnum[] arrA=SCode.values();
 			SaveEnum[] arrB=super.totalEnumS();
-			SaveEnum[] total=new SaveEnum[arrA.length+arrB.length];
-			System.arraycopy(arrA, 0, total, 0, arrA.length);
-			System.arraycopy(arrB, 0, total, arrA.length, arrB.length);
-			totalEnumS=total;
+			totalEnumS=CMParms.appendToArray(arrA, arrB, SaveEnum[].class);
 		}
 		return totalEnumS;
 	}
@@ -269,10 +253,7 @@ public class StdBody extends StdItem implements Body
 		{
 			Enum[] arrA=new Enum[] {SCode.values()[0]};
 			Enum[] arrB=super.headerEnumS();
-			Enum[] total=new Enum[arrA.length+arrB.length];
-			System.arraycopy(arrA, 0, total, 0, arrA.length);
-			System.arraycopy(arrB, 0, total, arrA.length, arrB.length);
-			headerEnumS=total;
+			headerEnumS=CMParms.appendToArray(arrA, arrB, Enum[].class);
 		}
 		return headerEnumS;
 	}
@@ -281,7 +262,7 @@ public class StdBody extends StdItem implements Body
 		super.link();
 		if(mobToLink!=0)
 		{
-			myMob=(MOB)SIDLib.Objects.CREATURE.get(mobToLink);
+			myMob=SIDLib.CREATURE.get(mobToLink);
 			mobToLink=0;
 		}
 	}
@@ -291,12 +272,20 @@ public class StdBody extends StdItem implements Body
 			public ByteBuffer save(StdBody E){ return CMLib.coffeeMaker().savSubFull(E.baseCharStats); }
 			public int size(){return -1;}
 			public CMSavable subObject(CMSavable fromThis){return ((StdBody)fromThis).baseCharStats;}
-			public void load(StdBody E, ByteBuffer S){ E.baseCharStats=(CharStats)((Ownable)CMLib.coffeeMaker().loadSub(S, E.baseCharStats)).setOwner(E); } },
+			public void load(StdBody E, ByteBuffer S){
+				CharStats old=E.baseCharStats;
+				E.baseCharStats=(CharStats)CMLib.coffeeMaker().loadSub(S, E, this);
+				if(E.baseCharStats!=null) ((Ownable)E.baseCharStats).setOwner(E);
+				if((old!=null)&&(old!=E.baseCharStats)) old.destroy(); } },
 		CHS(){
 			public ByteBuffer save(StdBody E){ return CMLib.coffeeMaker().savSubFull(E.charStats); }
 			public int size(){return -1;}
 			public CMSavable subObject(CMSavable fromThis){return ((StdBody)fromThis).charStats;}
-			public void load(StdBody E, ByteBuffer S){ E.charStats=(CharStats)((Ownable)CMLib.coffeeMaker().loadSub(S, E.charStats)).setOwner(E); } },
+			public void load(StdBody E, ByteBuffer S){
+				CharStats old=E.charStats;
+				E.charStats=(CharStats)CMLib.coffeeMaker().loadSub(S, E, this);
+				if(E.charStats!=null) ((Ownable)E.charStats).setOwner(E);
+				if((old!=null)&&(old!=E.charStats)) old.destroy(); } },
 		BDY(){
 			public ByteBuffer save(StdBody E){ return CMLib.coffeeMaker().savAInt(E.birthday); }
 			public int size(){return 12;}
@@ -305,16 +294,18 @@ public class StdBody extends StdItem implements Body
 			public ByteBuffer save(StdBody E){ return (ByteBuffer)ByteBuffer.wrap(new byte[1]).put(E.dead?(byte)1:(byte)0).rewind(); }
 			public int size(){return 1;}
 			public void load(StdBody E, ByteBuffer S){ E.dead=(S.get()!=0); } },
-/*	Handled MOB side, not body side.
-		MOB(){
-			public ByteBuffer save(StdBody E){ return (ByteBuffer)ByteBuffer.wrap(new byte[4]).putInt(E.myMob.saveNum()).rewind(); }
-			public int size(){return 4;}
-			public void load(StdBody E, ByteBuffer S){ E.mobToLink=S.getInt(); } },
-*/
 		RAC(){
-			public ByteBuffer save(StdBody E){ return CMLib.coffeeMaker().getRaceWVector(E.myRaces); }
+			public ByteBuffer save(StdBody E){
+				if(E.myRace==null) return GenericBuilder.emptyBuffer;
+				return CMLib.coffeeMaker().savString(E.myRace.ID()); }
 			public int size(){return 0;}
-			public void load(StdBody E, ByteBuffer S){ E.myRaces=CMLib.coffeeMaker().setRaceWVector(S); } },
+			public void load(StdBody E, ByteBuffer S){ E.myRace=CMClass.RACE.get(CMLib.coffeeMaker().loadString(S)); } },
+		GEN(){
+			public ByteBuffer save(StdBody E){
+				if(E.myGender==null) return GenericBuilder.emptyBuffer;
+				return CMLib.coffeeMaker().savString(E.myGender.ID()); }
+			public int size(){return 0;}
+			public void load(StdBody E, ByteBuffer S){ E.myGender=CMClass.GENDER.get(CMLib.coffeeMaker().loadString(S)); } },
 		;
 		public abstract ByteBuffer save(StdBody E);
 		public abstract void load(StdBody E, ByteBuffer S);
@@ -331,33 +322,21 @@ public class StdBody extends StdItem implements Body
 			public String prompt(StdBody E){return "";}
 			public void mod(StdBody E, MOB M){CMLib.genEd().genMiscSet(M, E.myMob);} },
 		CHARSTATS(){
-			public String brief(StdBody E){return E.charStats.ID();}
+			public String brief(StdBody E){return (E.charStats==null?"null":E.charStats.ID());}
 			public String prompt(StdBody E){return "";}
-			public void mod(StdBody E, MOB M){CMLib.genEd().genMiscSet(M, E.charStats);} },
+			public void mod(StdBody E, MOB M){CMLib.genEd().genMiscSet(M, E.charStats());} },
 		BASECHARSTATS(){
-			public String brief(StdBody E){return E.baseCharStats.ID();}
+			public String brief(StdBody E){return (E.baseCharStats==null?"null":E.baseCharStats.ID());}
 			public String prompt(StdBody E){return "";}
-			public void mod(StdBody E, MOB M){CMLib.genEd().genMiscSet(M, E.baseCharStats);} },
+			public void mod(StdBody E, MOB M){CMLib.genEd().genMiscSet(M, E.baseCharStats());} },
 		BIRTHDAY(){	//TODO: Better birthday modification code
 			public String brief(StdBody E){return ""+E.birthday;}
 			public String prompt(StdBody E){return ""+E.birthday;}
 			public void mod(StdBody E, MOB M){CMLib.genEd().aintPrompt(M, E.birthday);} },
 		RACE(){
-			public String brief(StdBody E){return ((E.myRaces.size()==1)?(E.myRaces.get(0).name()):(""+E.myRaces.size()));}
+			public String brief(StdBody E){return (E.myRace==null?"null":E.myRace.name());}
 			public String prompt(StdBody E){return "";}
-			public void mod(StdBody E, MOB M){
-				boolean done=false;
-				while((M.session()!=null)&&(!M.session().killFlag())&&(!done)) {
-					WVector<Race> V=E.myRaces.clone();
-					int i=CMLib.genEd().promptWVector(M, V, true);
-					if(--i<0) done=true;
-					else if(i==V.size()) {
-						Race R=CMLib.genEd().racePrompt(M);
-						if(R!=null) E.myRaces.add(R, CMLib.genEd().intPrompt(M, "1")); }
-					else if(i<V.size()) {
-						int newWeight=CMLib.genEd().intPrompt(M, ""+V.weight(i));
-						if(newWeight==0) E.myRaces.remove(V.get(i));
-						else E.myRaces.setWeight(V.get(i), newWeight); } } } },
+			public void mod(StdBody E, MOB M){E.myRace=CMLib.genEd().racePrompt(M);} },
 		;
 		public abstract String brief(StdBody fromThis);
 		public abstract String prompt(StdBody fromThis);

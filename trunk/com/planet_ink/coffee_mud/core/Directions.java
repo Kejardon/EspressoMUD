@@ -11,28 +11,20 @@ import java.util.*;
 @SuppressWarnings("unchecked")
 public class Directions
 {
-	public Directions(){
-		if(dirs==null) dirs=this;
-	}
-	public static Directions instance(){
-		if(dirs==null) return new Directions();
-		return dirs;
-	}
-	private static Directions dirs=null;
-
 	public enum Dirs
 	{
 		NORTH("N","the north","to the north"),
 		SOUTH("S","the south","to the south"),
 		EAST("E","the east","to the east"),
 		WEST("W","the west","to the west"),
-		UP("U","above","above you"),
-		DOWN("D","below","below"),
-		GATE("V","out of nowhere","there"),
 		NORTHEAST("NE","the northeast","to the northeast"),
 		NORTHWEST("NW","the northwest","to the northwest"),
 		SOUTHEAST("SE","the southeast","to the southeast"),
-		SOUTHWEST("SW","the southwest","to the southwest");
+		SOUTHWEST("SW","the southwest","to the southwest"),
+		UP("U","above","above you"),
+		DOWN("D","below","below"),
+		GATE("V","out of nowhere","there"),
+		;
 		private static boolean parsed=false;
 		private String chars;
 		private String from;
@@ -63,23 +55,16 @@ public class Directions
 		}
 	}
 	
-	private EnumSet<Dirs> BASE=EnumSet.range(Dirs.NORTH, Dirs.WEST);
-	private String DIRECTIONS_DESC="N, S, E, W, U, D, or V";
-	private int NUM_DIRECTIONS=7;
-
-	public static int NUM_DIRECTIONS(){
-		return dirs.NUM_DIRECTIONS;
-	};
+	public static final EnumSet<Dirs> DIRECTIONS_BASE=EnumSet.range(Dirs.NORTH, Dirs.SOUTHWEST);
+	public static final String DIRECTIONS_DESC="N, S, E, W, NE, NW, SE, SW, U, D, or V";
 	
-	public static EnumSet DIRECTIONS_BASE(){
-		return dirs.BASE;
-	};
+	public static final int NUM_DIRECTIONS=11;
+	//public static int NUM_DIRECTIONS(){return 11;}
+	//public static EnumSet DIRECTIONS_BASE(){ return BASE; };
 	
-	public static String DIRECTIONS_DESC(){
-		return dirs.DIRECTIONS_DESC;
-	};
+	//public static String DIRECTIONS_DESC(){ return DIRECTIONS_DESC; };
 	
-	private class StringNum
+	private static class StringNum
 	{
 		public StringNum(String S, int i){this.S=S; this.i=i;}
 		private String S=null;
@@ -87,7 +72,7 @@ public class Directions
 		public int value(){return i;}
 		public String S(){return S;}
 	}
-	private StringNum[] DIRECTIONS_FULL_CHART={
+	private static StringNum[] DIRECTIONS_FULL_CHART={
 		new StringNum("UP",Dirs.UP.ordinal()),
 		new StringNum("ABOVE",Dirs.UP.ordinal()),
 		new StringNum("NORTH",Dirs.NORTH.ordinal()),
@@ -110,24 +95,9 @@ public class Directions
 		new StringNum("VORTEX",Dirs.GATE.ordinal())
 	};
 
-	public void reInitialize(int dirs)
-	{
-		NUM_DIRECTIONS=dirs;
-		if(dirs<11)
-		{
-			BASE=EnumSet.range(Dirs.NORTH, Dirs.WEST);
-			DIRECTIONS_DESC="N, S, E, W, U, D, or V";
-		}
-		else
-		{
-			BASE=EnumSet.range(Dirs.NORTH, Dirs.WEST);
-			BASE.addAll(EnumSet.range(Dirs.NORTHEAST, Dirs.SOUTHWEST));
-			DIRECTIONS_DESC="N, S, E, W, NE, NW, SE, SW, U, D, or V";
-		}
-	}
 	public static Dirs getDirection(int code)
 	{
-		if(code>NUM_DIRECTIONS())
+		if(code>NUM_DIRECTIONS)
 			return null;
 		return Dirs.values()[code];
 	}
@@ -139,7 +109,7 @@ public class Directions
 		{
 			theDir=theDir.toUpperCase();
 			Dirs[] options=Dirs.values();
-			for(int i=0;i<NUM_DIRECTIONS();i++)
+			for(int i=0;i<NUM_DIRECTIONS;i++)
 				if(theDir.startsWith(options[i].toString()))
 					return options[i];
 		}
@@ -150,8 +120,8 @@ public class Directions
 	{
 		if(theDir.length()==0) return null;
 		theDir=theDir.toUpperCase();
-		for(StringNum S : instance().DIRECTIONS_FULL_CHART)
-			if((S.S().startsWith(theDir))&&(S.value()<NUM_DIRECTIONS()))
+		for(StringNum S : DIRECTIONS_FULL_CHART)
+			if((S.S().startsWith(theDir))&&(S.value()<NUM_DIRECTIONS))
 				return Dirs.values()[S.value()];
 		return null;
 	}

@@ -25,12 +25,9 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class WizList extends StdCommand
 {
-	public WizList(){}
+	public WizList(){access=new String[]{"WIZLIST"};}
 
-	private String[] access={"WIZLIST"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		boolean isArchonLooker=CMSecurity.isASysOp(mob);
 		String output=(String)Resources.getResource(isArchonLooker?"WIZLIST_ARCHON":"WIZLIST_NORMAL");
@@ -41,7 +38,7 @@ public class WizList extends StdCommand
 			head.append(CMStrings.padRight("Race",8)+" ");
 			if(isArchonLooker)
 				head.append(CMStrings.padRight("Last",18)+" ");
-			head.append("] Archon Character Name^.^?\n\r");
+			head.append("] Archon Character Name^.^?\r\n");
 			for(Enumeration<MOB> e=CMLib.players().players();e.hasMoreElements();)
 			{
 				MOB U=e.nextElement();
@@ -52,7 +49,7 @@ public class WizList extends StdCommand
 					if(isArchonLooker)
 						head.append(CMStrings.padRight(CMLib.time().date2String(U.playerStats().lastDateTime()),18)+" ");
 					head.append("] "+CMStrings.padRight(U.name(),25));
-					head.append("\n\r");
+					head.append("\r\n");
 				}
 			}
 			output=head.toString();
@@ -62,8 +59,7 @@ public class WizList extends StdCommand
 		mob.tell(output);
 		return false;
 	}
-	
-	public boolean canBeOrdered(){return true;}
 
-	
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
+	public boolean canBeOrdered(){return true;}
 }

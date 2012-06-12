@@ -24,26 +24,22 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Replay extends StdCommand
 {
-	public Replay(){}
+	public Replay(){access=new String[]{"REPLAY"};}
 
-	private String[] access={"REPLAY"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
-		if(!mob.isMonster())
-		{
-			Session S=mob.session();
-			int num=Session.MAX_PREVMSGS;
-			if(commands.size()>1) num=CMath.s_int(CMParms.combine(commands,1));
-			if(num<=0) return false;
-			Vector last=S.getLastMsgs();
-			if(num>last.size()) num=last.size();
-			for(int v=last.size()-num;v<last.size();v++)
-				S.onlyPrint(((String)last.elementAt(v))+"\n\r",true);
-		}
+		Session S=mob.session();
+		if(S==null) return false;
+		int num=Session.MAX_PREVMSGS;
+		if(commands.size()>1) num=CMath.s_int(CMParms.combine(commands,1));
+		if(num<=0) return false;
+		LinkedList<String> last=S.getLastMsgs();
+		if(num>last.size()) num=last.size();
+		for(ListIterator<String> iter=last.listIterator(last.size()-num);iter.hasNext();)
+			S.onlyPrint(iter.next()+"\r\n",true);
 		return false;
 	}
-	
+
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	public boolean canBeOrdered(){return true;}
 }

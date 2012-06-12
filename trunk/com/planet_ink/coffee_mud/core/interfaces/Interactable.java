@@ -12,6 +12,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 //A thing that players can directly observe and interact with in the MUD
 public interface Interactable extends Environmental.EnvHolder, Affectable, Behavable
 {
+	public static final Interactable[] dummyInteractableArray=new Interactable[0];
 	public String name();
 	public void setName(String newName);
 	public String displayText();

@@ -8,13 +8,15 @@ import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
-import java.io.IOException;
 import java.util.*;
+import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.io.IOException;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -28,28 +30,28 @@ public class CoffeeUtensils extends StdLibrary implements CMMiscUtils
 {
 	public String ID(){return "CoffeeUtensils";}
 	
-	public String niceCommaList(Vector V, boolean andTOrF)
+	public String niceCommaList(Vector V, boolean endAnd)
 	{
-		String id="";
-		for(int v=0;v<V.size();v++)
+		StringBuilder id=new StringBuilder();
+		Object[] array=V.toArray();
+		for(int i=0;i<array.length;i++)
 		{
+			Object O=array[i];
 			String s=null;
-			if(V.elementAt(v) instanceof Interactable)
-				s=((Interactable)V.elementAt(v)).name();
-			else
-			if(V.elementAt(v) instanceof String)
-				s=(String)V.elementAt(v);
+			if(O instanceof Interactable)
+				s=((Interactable)O).name();
+			else if(O instanceof String)
+				s=(String)O;
 			else
 				continue;
-			if(V.size()==1)
-				id+=s;
+			if(array.length==1)
+				return s;
+			else if(i==(array.length-1))
+				id.append((endAnd)?"and ":"or ").append(s);
 			else
-			if(v==(V.size()-1))
-				id+=((andTOrF)?"and ":"or ")+s;
-			else
-				id+=s+", ";
+				id.append(s).append(", ");
 		}
-		return id;
+		return id.toString();
 	}
 	
 	public String getFormattedDate(Interactable E)
@@ -63,6 +65,90 @@ public class CoffeeUtensils extends StdLibrary implements CMMiscUtils
 		}
 		return date;
 	}
+	//NOTE: This will need to be heavily redone later.
+	public boolean reachableItem(MOB mob, Interactable E)
+	{
+		if((E==null)||(!(E instanceof Item)))
+			return true;
+		Item I=(Item)E;
+		CMObject O=I.container();
+		if((mob.isMine(I))
+		||(O==null)
+		||((O instanceof Room)&&(!((Room)O).isContent(I, false))))
+		   return true;
+		return false;
+	}
+	//TODO when more mechanics are in place
+	public String builtPrompt(MOB mob)
+	{
+		StringBuilder buf=new StringBuilder("\r\n");
+		String prompt=mob.playerStats().getPrompt();
+		//String promptUp=null;
+		int c=0;
+		while(c<prompt.length())
+			/*if((prompt.charAt(c)=='%')&&(c<(prompt.length()-1)))
+			{
+				switch(prompt.charAt(++c))
+				{
+				case '-':
+					break;
+				case 'B': { buf.append("\r\n"); c++; break;}
+				case 'c': { buf.append(mob.getItemCollection().numItems()); c++; break;}
+				case 'C': { c++; break;}
+				case 'd': { c++; break; }
+				case 'e': { c++; break; }
+				case 'E': { c++; break; }
+//				case 'g': { buf.append((int)Math.round(Math.floor(CMLib.beanCounter().getTotalAbsoluteNativeValue(mob)/CMLib.beanCounter().getLowestDenomination(CMLib.beanCounter().getCurrency(mob))))); c++; break;}
+//				case 'G': { buf.append(CMLib.beanCounter().nameCurrencyShort(mob,CMLib.beanCounter().getTotalAbsoluteNativeValue(mob))); c++; break;}
+				case 'h': { buf.append("^<Hp^>"+mob.charStats().getPoints(CharStats.Points.HIT)+"^</Hp^>"); c++; break;}
+				case 'H': { buf.append("^<MaxHp^>"+mob.charStats().getMaxPoints(CharStats.Points.HIT)+"^</MaxHp^>"); c++; break;}
+				case 'K':
+				case 'k': { MOB tank=mob;
+							if((tank.getVictim() instanceof MOB)
+							&&(((MOB)tank.getVictim()).getVictim() instanceof MOB)
+							&&(((MOB)tank.getVictim()).getVictim()!=mob))
+								tank=(MOB)((MOB)tank.getVictim()).getVictim();
+							if(((c+1)<prompt.length())&&(tank!=null))
+								switch(prompt.charAt(c+1))
+								{
+									case 'h': { buf.append(tank.charStats().getPoints(CharStats.Points.HIT)); c++; break;}
+									case 'H': { buf.append(tank.charStats().getMaxPoints(CharStats.Points.HIT)); c++; break;}
+									case 'm': { buf.append(tank.charStats().getPoints(CharStats.Points.MANA)); c++; break;}
+									case 'M': { buf.append(tank.charStats().getMaxPoints(CharStats.Points.MANA)); c++; break;}
+									case 'e': { buf.append(tank.displayName(mob)); c++; break;}
+									case 'E': { c++; break; }
+								}
+							c++;
+							break;
+						  }
+				case 'm': { buf.append("^<Mana^>"+mob.charStats().getPoints(CharStats.Points.MANA)+"^</Mana^>"); c++; break;}
+				case 'M': { buf.append("^<MaxMana^>"+mob.charStats().getMaxPoints(CharStats.Points.MANA)+"^</MaxMana^>"); c++; break;}
+				case 'r': {   if(mob.location()!=null)
+							  buf.append(mob.location().displayText());
+							  c++; break; }
+				case 'R': {   if((mob.location()!=null)&&CMSecurity.isAllowed(mob,"SYSMSGS"))
+							  buf.append(mob.location().saveNum());
+							  c++; break; }
+				case 'w': { buf.append(mob.body().getEnvObject().envStats().weight()); c++; break;}
+				case 'z': {   if(mob.location()!=null)
+								  buf.append(mob.location().getArea().name());
+							  c++; break; }
+				case 't': {   if(mob.location()!=null)
+								  buf.append(CMStrings.capitalizeAndLower(TimeClock.TOD_DESC[mob.location().getArea().getTimeObj().getTODCode()].toLowerCase()));
+							  c++; break;
+						  }
+				case 'T': {   if(mob.location()!=null)
+								  buf.append(mob.location().getArea().getTimeObj().getTimeOfDay());
+							  c++; break;
+						  }
+				default:{ buf.append("%"+prompt.charAt(c)); c++; break;}
+				}
+			}
+			else */
+				buf.append(prompt.charAt(c++));
+		return buf.toString();
+	}
+
 /*
 	public void outfit(MOB mob, Vector items)
 	{
@@ -85,20 +171,6 @@ public class CoffeeUtensils extends StdLibrary implements CMMiscUtils
 			}
 		}
 	}
-*/
-	public boolean reachableItem(MOB mob, Interactable E)
-	{
-		if((E==null)||(!(E instanceof Item)))
-			return true;
-		Item I=(Item)E;
-		if((mob.isMine(I))
-		||(I.container()==null)
-		||((I.container() instanceof Room)&&(!((Room)I.container()).isContent(I, false))))
-		   return true;
-		return false;
-	}
-
-/*
 	public double memoryUse ( Interactable E, int number )
 	{
 		double s=-1.0;
@@ -350,73 +422,4 @@ public class CoffeeUtensils extends StdLibrary implements CMMiscUtils
 		return false;
 	}
 */
-	public String builtPrompt(MOB mob)
-	{
-		StringBuffer buf=new StringBuffer("\n\r");
-		String prompt=mob.playerStats().getPrompt();
-		String promptUp=null;
-		int c=0;
-		while(c<prompt.length())
-			if((prompt.charAt(c)=='%')&&(c<(prompt.length()-1)))
-			{
-				switch(prompt.charAt(++c))
-				{
-				case '-':
-					break;
-				case 'B': { buf.append("\n\r"); c++; break;}
-				case 'c': { buf.append(mob.getItemCollection().numItems()); c++; break;}
-				case 'C': { c++; break;}
-				case 'd': { c++; break; }
-				case 'e': { c++; break; }
-				case 'E': { c++; break; }
-//				case 'g': { buf.append((int)Math.round(Math.floor(CMLib.beanCounter().getTotalAbsoluteNativeValue(mob)/CMLib.beanCounter().getLowestDenomination(CMLib.beanCounter().getCurrency(mob))))); c++; break;}
-//				case 'G': { buf.append(CMLib.beanCounter().nameCurrencyShort(mob,CMLib.beanCounter().getTotalAbsoluteNativeValue(mob))); c++; break;}
-				case 'h': { buf.append("^<Hp^>"+mob.charStats().getPoints(CharStats.Points.HIT)+"^</Hp^>"); c++; break;}
-				case 'H': { buf.append("^<MaxHp^>"+mob.charStats().getMaxPoints(CharStats.Points.HIT)+"^</MaxHp^>"); c++; break;}
-				case 'K':
-				case 'k': { MOB tank=mob;
-							if((tank.getVictim() instanceof MOB)
-							&&(((MOB)tank.getVictim()).getVictim() instanceof MOB)
-							&&(((MOB)tank.getVictim()).getVictim()!=mob))
-								tank=(MOB)((MOB)tank.getVictim()).getVictim();
-							if(((c+1)<prompt.length())&&(tank!=null))
-								switch(prompt.charAt(c+1))
-								{
-									case 'h': { buf.append(tank.charStats().getPoints(CharStats.Points.HIT)); c++; break;}
-									case 'H': { buf.append(tank.charStats().getMaxPoints(CharStats.Points.HIT)); c++; break;}
-									case 'm': { buf.append(tank.charStats().getPoints(CharStats.Points.MANA)); c++; break;}
-									case 'M': { buf.append(tank.charStats().getMaxPoints(CharStats.Points.MANA)); c++; break;}
-									case 'e': { buf.append(tank.displayName(mob)); c++; break;}
-									case 'E': { c++; break; }
-								}
-							c++;
-							break;
-						  }
-				case 'm': { buf.append("^<Mana^>"+mob.charStats().getPoints(CharStats.Points.MANA)+"^</Mana^>"); c++; break;}
-				case 'M': { buf.append("^<MaxMana^>"+mob.charStats().getMaxPoints(CharStats.Points.MANA)+"^</MaxMana^>"); c++; break;}
-				case 'r': {   if(mob.location()!=null)
-							  buf.append(mob.location().displayText());
-							  c++; break; }
-				case 'R': {   if((mob.location()!=null)&&CMSecurity.isAllowed(mob,mob.location(),"SYSMSGS"))
-							  buf.append(mob.location().saveNum());
-							  c++; break; }
-				case 'w': { buf.append(mob.body().getEnvObject().envStats().weight()); c++; break;}
-				case 'z': {   if(mob.location()!=null)
-								  buf.append(mob.location().getArea().name());
-							  c++; break; }
-				case 't': {   if(mob.location()!=null)
-								  buf.append(CMStrings.capitalizeAndLower(TimeClock.TOD_DESC[mob.location().getArea().getTimeObj().getTODCode()].toLowerCase()));
-							  c++; break;
-						  }
-				case 'T': {   if(mob.location()!=null)
-								  buf.append(mob.location().getArea().getTimeObj().getTimeOfDay());
-							  c++; break;
-						  }
-				default:{ buf.append("%"+prompt.charAt(c)); c++; break;}
-				}
-			}
-			else
-				buf.append(prompt.charAt(c++));
-		return buf.toString();
-	}
 }

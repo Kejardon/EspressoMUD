@@ -25,20 +25,16 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Time extends StdCommand
 {
-	public Time(){}
+	public Time(){access=new String[]{"TIME","DATE"};}
 
-	private String[] access={"TIME","DATE"};
-	public String[] getAccessWords(){return access;}
-	
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		Room room=mob.location();
 		if(room==null) return false;
 		mob.tell(room.getArea().getTimeObj().timeDescription(mob,room));
 /*		if((mob.playerStats()!=null)&&(mob.getBirthday()!=null))
 		{
-			TimeClock C=CMLib.time().globalClock();
+			TimeClock C=CMLib.misc().globalClock();
 			int day=C.getDayOfMonth();
 			int month=C.getMonth();
 			int year=C.getYear();
@@ -58,11 +54,13 @@ public class Time extends StdCommand
 			timeDesc.append("the "+bday+CMath.numAppendage(bday));
 			timeDesc.append(" day of "+C.getMonthNames()[bmonth-1]);
 			if(C.getYearNames().length>0)
-				timeDesc.append(", "+CMStrings.replaceAll(C.getYearNames()[year%C.getYearNames().length],"#",""+year));
+				timeDesc.append(", "+C.getYearNames()[year%C.getYearNames().length].replace("#",""+year));
 			mob.tell("Your next birthday is "+timeDesc.toString()+".");
 		}
 */
 		return false;
 	}
+
+	public int commandType(MOB mob, String cmds){return CT_NON_ACTION;}
 	public boolean canBeOrdered(){return true;}
 }

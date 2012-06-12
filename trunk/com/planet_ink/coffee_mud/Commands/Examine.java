@@ -24,12 +24,9 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Examine extends StdCommand
 {
-	public Examine(){}
+	public Examine(){access=new String[]{"EXAMINE","EXAM","EXA","LONGLOOK","LLOOK","LL"};}
 
-	private String[] access={"EXAMINE","EXAM","EXA","LONGLOOK","LLOOK","LL"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		String textMsg="<S-NAME> examine(s) ";
 		Interactable thisThang=null;
@@ -50,14 +47,17 @@ public class Examine extends StdCommand
 			String name="<T-NAMESELF>";
 			if(thisThang==mob.location())
 				name="around";
-			if((mob.location().doMessage(CMClass.getMsg(mob,thisThang,null,EnumSet.of(CMMsg.MsgCode.EXAMINE),textMsg+name+" closely.")))
+			CMMsg msg=CMClass.getMsg(mob,thisThang,null,EnumSet.of(CMMsg.MsgCode.EXAMINE),textMsg+name+" closely.");
+			if((mob.location().doMessage(msg))
 				&&(thisThang instanceof Room))
 				CMLib.commands().lookAtExits((Room)thisThang,mob);
+			msg.returnMsg();
 		}
 		else
 			mob.tell("You don't see that here!");
 		return false;
 	}
-	public double actionsCost(MOB mob, Vector cmds){return 1.0;}
+
+	public int commandType(MOB mob, String cmds){return CT_LOW_P_ACTION;}
 	public boolean canBeOrdered(){return true;}
 }

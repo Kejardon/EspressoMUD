@@ -24,70 +24,42 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Announce extends StdCommand
 {
-	public Announce(){}
+	public Announce(){access=new String[]{"ANNOUNCE","ANNOUNCETO"};}
 
-	private String[] access={"ANNOUNCE","ANNOUNCETO","ANNOUNCEMSG"};
-	public String[] getAccessWords(){return access;}
-
-	public void sendAnnounce(MOB from, String announcement, Session S)
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
-		StringBuffer Message=new StringBuffer("");
-		Message.append("^pA powerful voice rings out '"+announcement+"'.^N");
-		S.stdPrintln(Message.toString());
-	}
-
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
-	{
-		
-		String cmd=((String)commands.firstElement()).toUpperCase();
-		if((!cmd.equalsIgnoreCase("ANNOUNCETO"))
-		&&(!cmd.equalsIgnoreCase("ANNOUNCE")))
-		{
-			boolean cmdt="ANNOUNCETO".toUpperCase().startsWith(cmd);
-			boolean cmd1="ANNOUNCE".toUpperCase().startsWith(cmd);
-			if(cmdt&&(!cmd1))
-				cmd="ANNOUNCETO";
-			else
-			if(cmd1&&(!cmdt))
-				cmd="ANNOUNCE";
-		}
+		boolean announceTo="ANNOUNCETO".startsWith(commands.firstElement().toUpperCase());
 		if(commands.size()>1)
 		{
-			if((!cmd.equalsIgnoreCase("ANNOUNCETO"))
-			||(((String)commands.elementAt(1)).toUpperCase().equals("ALL")))
+			if((!announceTo)||(commands.get(1).toUpperCase().equals("ALL")))
 			{
-				String text=null;
-				if(cmd.equalsIgnoreCase("ANNOUNCETO"))
-					text=CMParms.combine(commands,2);
-				else
-					text=CMParms.combine(commands,1);
-					
-				for(int s=0;s<CMLib.sessions().size();s++)
+				String text="^pA powerful voice rings out '"+CMParms.combine(commands,announceTo?2:1)+"'.^N";
+
+				for(Session S : CMLib.sessions().toArray())
 				{
-					Session S=CMLib.sessions().elementAt(s);
 					if((S.mob()!=null)
 					&&(S.mob().location()!=null)
-					&&(CMSecurity.isAllowed(mob,S.mob().location(),"ANNOUNCE")))
-						sendAnnounce(mob,text,S);
+					&&(CMSecurity.isAllowed(mob,"ANNOUNCE")))
+						S.stdPrintln(text);
 				}
 			}
 			else
 			{
+				String text="^pA powerful voice rings out '"+CMParms.combine(commands,2)+"'.^N";
 				boolean found=false;
-				String name=(String)commands.elementAt(1);
-				for(int s=0;s<CMLib.sessions().size();s++)
+				String name=commands.get(1);
+				boolean toHere=name.equalsIgnoreCase("here");
+				for(Session S : CMLib.sessions().toArray())
 				{
-					Session S=CMLib.sessions().elementAt(s);
 					if((S.mob()!=null)
 					&&(S.mob().location()!=null)
-					&&(CMSecurity.isAllowed(mob,S.mob().location(),"ANNOUNCE"))
-					&&(((name.equalsIgnoreCase("here"))&&(S.mob().location()==mob.location()))
+					&&(CMSecurity.isAllowed(mob,"ANNOUNCE"))
+					&&(((toHere)&&(S.mob().location()==mob.location()))
 						||(CMLib.english().containsString(S.mob().name(),name))))
 					{
-						sendAnnounce(mob,CMParms.combine(commands,2),S);
+						S.stdPrintln(text);
 						found=true;
-						break;
+						if(!toHere) break;
 					}
 				}
 				if(!found)
@@ -95,10 +67,11 @@ public class Announce extends StdCommand
 			}
 		}
 		else
-			mob.tell("Usage ANNOUNCETO [ALL|HERE|(USER NAME)] (MESSAGE)\n\rANNOUNCE (MESSAGE)\n\rANNOUNCEMSG (NEW ANNOUNCE PREFIX)\n\r");
+			mob.tell("Usage ANNOUNCETO [ALL|HERE|(USER NAME)] (MESSAGE)\r\nANNOUNCE (MESSAGE)\r\n");
 		return false;
 	}
-	
+
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	public boolean canBeOrdered(){return true;}
-	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,mob.location(),"ANNOUNCE");}
+	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,"ANNOUNCE");}
 }

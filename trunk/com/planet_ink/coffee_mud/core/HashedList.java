@@ -55,6 +55,7 @@ public class HashedList<E>
 	{
 		return new ListIterate<E>(first);
 	}
+	public int size(){return set.size();}
 	
 	private class ListIterate<E> implements Iterator<E>
 	{

@@ -8,14 +8,17 @@ import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
-import com.planet_ink.coffee_mud.Libraries.MUDZapper;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
+import com.planet_ink.coffee_mud.Libraries.MUDZapper;
+
+import java.util.*;
+import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.*;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -34,7 +37,7 @@ public interface LanguageLibrary extends CMLibrary
 //	public String filterTranslation(String item);
 //	public DVector getLanguageTranslator(String parser);
 //	public void setLocale(String lang, String state);
-	public Vector preCommandParser(Vector CMDS);
+	//public Vector preCommandParser(Vector CMDS);
 //	public String preItemParser(String item);
 //	public String failedItemParser(String item);
 	

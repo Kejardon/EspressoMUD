@@ -24,12 +24,9 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Shutdown extends StdCommand
 {
-	public Shutdown(){}
+	public Shutdown(){access=new String[]{"SHUTDOWN"};}
 
-	private String[] access={"SHUTDOWN"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		if(mob.isMonster()) return false;
 		boolean keepItDown=true;
@@ -37,7 +34,7 @@ public class Shutdown extends StdCommand
 		String externalCommand=null;
 		for(int i=commands.size()-1;i>=1;i--)
 		{
-			String s=(String)commands.elementAt(i);
+			String s=commands.elementAt(i);
 			if(s.equalsIgnoreCase("RESTART"))
 			{ keepItDown=false; commands.removeElementAt(i);}
 			else
@@ -49,8 +46,8 @@ public class Shutdown extends StdCommand
 		&&(!mob.session().confirm("Are you fully aware of the consequences of this act (y/N)?","N")))
 			return false;
 		
-		for(int s=0;s<CMLib.sessions().size();s++)
-			CMLib.sessions().elementAt(s).colorOnlyPrintln("\n\r\n\r^x"+CMProps.Strings.MUDNAME.property()+" is now shutting down!^.^?\n\r");
+		for(Session S : CMLib.sessions().toArray())
+			S.colorOnlyPrintln("\r\n\r\n^x"+CMProps.Strings.MUDNAME.property()+" is now shutting down!^.^?\r\n");
 
 		if(keepItDown)
 			Log.errOut("CommandProcessor",mob.name()+" starts system shutdown...");
@@ -61,9 +58,8 @@ public class Shutdown extends StdCommand
 		com.planet_ink.coffee_mud.application.MUD.globalShutdown(mob.session(),keepItDown);
 		return false;
 	}
-	
-	public boolean canBeOrdered(){return false;}
-	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,mob.location(),"SHUTDOWN");}
 
-	
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
+	public boolean canBeOrdered(){return false;}
+	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,"SHUTDOWN");}
 }

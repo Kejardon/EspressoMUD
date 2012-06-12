@@ -25,12 +25,9 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Kill extends StdCommand
 {
-	public Kill(){}
+	public Kill(){access=new String[]{"KILL","K","ATTACK"};}
 
-	private String[] access={"KILL","K","ATTACK"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		MOB target=null;
 		if(commands.size()<2)
@@ -41,9 +38,10 @@ public class Kill extends StdCommand
 		
 		boolean reallyKill=false;
 		String whomToKill=CMParms.combine(commands,1);
-		if(CMSecurity.isAllowed(mob,mob.location(),"KILLDEAD")&&(!mob.isMonster()))
+		Room location=mob.location();
+		if(CMSecurity.isAllowed(mob,"KILLDEAD")&&(!mob.isMonster()))
 		{
-			if(((String)commands.lastElement()).equalsIgnoreCase("DEAD"))
+			if(commands.lastElement().equalsIgnoreCase("DEAD"))
 			{
 				commands.removeElementAt(commands.size()-1);
 				whomToKill=CMParms.combine(commands,1);
@@ -53,7 +51,7 @@ public class Kill extends StdCommand
 
 		if(target==null)
 		{
-			target=mob.location().fetchInhabitant(whomToKill);
+			target=location.fetchInhabitant(whomToKill);
 			if(target==null)
 			{
 				mob.tell("You don't see '"+whomToKill+"' here.");
@@ -65,11 +63,12 @@ public class Kill extends StdCommand
 		{
 			CMMsg msg=CMClass.getMsg(mob,target,null,EnumSet.of(CMMsg.MsgCode.VISUAL),"^F^<FIGHT^><S-NAME> touch(es) <T-NAMESELF>.^</FIGHT^>^?");
 			CMLib.color().fixSourceFightColor(msg);
-			if(mob.location().doMessage(msg))
+			if(location.doMessage(msg))
 			{
 				target.body().charStats().setPoints(CharStats.Points.HIT, 0);
 //				CMLib.combat().postDeath(mob,target,null);
 			}
+			msg.returnMsg();
 			return false;
 		}
 		
@@ -79,14 +78,16 @@ public class Kill extends StdCommand
 			mob.tell("^f^<FIGHT^>You are already fighting "+mob.getVictim().name()+".^</FIGHT^>^?");
 			return false;
 		}
-		
-		if(mob.location().okMessage(mob,CMClass.getMsg(mob,target,null,EnumSet.of(CMMsg.MsgCode.ATTACK),null)))
+		CMMsg msg=CMClass.getMsg(mob,target,null,EnumSet.of(CMMsg.MsgCode.ATTACK),null);
+		if(location.okMessage(location,msg))
 		{
 			mob.tell("^f^<FIGHT^>You are now targeting "+target.name()+".^</FIGHT^>^?");
 			mob.setVictim(target);
-			return false;
 		}
+		msg.returnMsg();
 		return false;
 	}
+
+	public int commandType(MOB mob, String cmds){return CT_HIGH_P_ACTION;}
 	public boolean canBeOrdered(){return true;}
 }

@@ -65,7 +65,7 @@ public class HTTPserver extends Thread implements MudHost
 	protected String serverTemplateDir = null;
 
 	protected FileGrabber pageGrabber=new FileGrabber(this);
-	protected FileGrabber templateGrabber=new FileGrabber(this);
+	//protected FileGrabber templateGrabber=new FileGrabber(this);
 	public DVector activeRequests=new DVector(2);
 
 	public HTTPserver(MudHost a_mud, String a_name, int num)
@@ -75,10 +75,7 @@ public class HTTPserver extends Thread implements MudHost
 		mud = a_mud;
 		myServerNumber=num;
 		setDaemon(true);
-		if (!initServer(num))
-			isOK = false;
-		else
-			isOK = true;
+		isOK = initServer(num);
 	}
 
 	public String getPartialName()	{return partialName;}
@@ -86,6 +83,7 @@ public class HTTPserver extends Thread implements MudHost
 	public String getServerDir() {return serverDir;}
 	public String getServerTemplateDir() {return serverTemplateDir;}
 	public long getUptimeSecs() { return (System.currentTimeMillis()-startupTime)/1000;}
+	public long getUptimeStart() { return startupTime;}
 
 	public Properties getCommonPropPage()
 	{
@@ -132,13 +130,9 @@ public class HTTPserver extends Thread implements MudHost
 		}
 
 		if (page.getStr("BASEDIRECTORY").length()==0)
-		{
 			serverDir = "web/" + partialName;
-		}
 		else
-		{
 			serverDir = page.getStr("BASEDIRECTORY");
-		}
 
 		// don't want any trailing / chars
 		serverDir = FileGrabber.fixDirName(serverDir);
@@ -148,7 +142,7 @@ public class HTTPserver extends Thread implements MudHost
 			Log.errOut(getName(),"Could not set server base directory: "+serverDir);
 			return false;
 		}
-
+/*
 		if (page.getStr("TEMPLATEDIRECTORY").length()==0)
 			serverTemplateDir = serverDir + ".templates";
 		else
@@ -162,37 +156,31 @@ public class HTTPserver extends Thread implements MudHost
 			Log.errOut(getName(),"Could not set server template directory: "+serverTemplateDir);
 			return false;
 		}
-
-		addVirtualDirectories();
-
-
+		addVirtualDirectories(); */
 		return true;
 	}
 
-	public Hashtable getVirtualDirectories(){return pageGrabber.getVirtualDirectories();}
-
+/*	public Hashtable getVirtualDirectories(){return pageGrabber.getVirtualDirectories();}
 	private void addVirtualDirectories()
 	{
 		for (Enumeration e = page.keys() ; e.hasMoreElements() ;)
 		{
 			String s = (String) e.nextElement();
-
 			// nb: hard-coded!
 			if (s.startsWith("MOUNT/"))
 			{
 				// nb: hard-coded! - leaves in '/'
 				String v = s.substring(5);
-
 				pageGrabber.addVirtualDirectory(v,page.getStr(s));
 			}
 		}
 	}
-
+*/
 	protected boolean loadPropPage()
 	{
 		if (page==null || !page.loaded)
 		{
-			String fn = "web/" + getPartialName() + ".ini";
+			String fn = "web/" + partialName + ".ini";
 			page=new CMProps(getCommonPropPage(), fn);
 			if(!page.loaded)
 			{
@@ -209,14 +197,15 @@ public class HTTPserver extends Thread implements MudHost
 	{
 		if(acceptConnections)
 		{
-			while(CMLib.threads().isAllSuspended()) {
+			while(CMLib.threads().isAllSuspended()) {	//NOTE: Dunno if this is really appropriate
 				try { Thread.sleep(1000); } catch(Exception e) { throw new IOException(e.getMessage());}
 			}
 			state=1;
-			ProcessHTTPrequest W=new ProcessHTTPrequest(sock,this,page,isAdminServer);
+			new ProcessHTTPrequest(sock,this,page,isAdminServer);
+/*			ProcessHTTPrequest W=
 			W.equals(W); // this prevents an initialized by never used error
 			// nb - ProcessHTTPrequest is a Thread, but it .start()s in the constructor
-			//  if succeeds - no need to .start() it here
+			//  if succeeds - no need to .start() it here */
 		}
 	}
 	
@@ -234,14 +223,12 @@ public class HTTPserver extends Thread implements MudHost
 			return;
 		}
 
-
 		if (page.getInt("BACKLOG") > 0)
 			q_len = page.getInt("BACKLOG");
 
 		InetAddress bindAddr = null;
 
-
-		if (page.getStr("ADMIN") != null && page.getStr("ADMIN").equalsIgnoreCase("true"))
+		if ("true".equalsIgnoreCase(page.getStr("ADMIN")))
 			isAdminServer = true;
 		if (page.getStr("BIND") != null && page.getStr("BIND").length() > 0)
 		{
@@ -257,15 +244,13 @@ public class HTTPserver extends Thread implements MudHost
 
 		try
 		{
-			Vector allports=CMParms.parseCommas(page.getStr("PORT"),true);
-			myPort=CMath.s_int((String)allports.elementAt(myServerNumber));
+			Vector<String> allports=CMParms.parseCommas(page.getStr("PORT"),true);
+			myPort=CMath.s_int(allports.elementAt(myServerNumber));
 			servsock=new ServerSocket(myPort, q_len, bindAddr);
 
 			Log.sysOut(getName(),"Started on port: "+myPort);
 			if (bindAddr != null)
 				Log.sysOut(getName(),"Bound to: "+bindAddr.toString());
-
-
 			serverOK = true;
 
 			while(true)
@@ -282,7 +267,6 @@ public class HTTPserver extends Thread implements MudHost
 			//   and serverOK will be true
 			Log.errOut(getName(),e.getMessage());
 
-
 			// jef: this prevents initHost() from running if run() has failed (eg socket in use)
 			if (!serverOK)
 				isOK = false;
@@ -295,17 +279,12 @@ public class HTTPserver extends Thread implements MudHost
 			if(sock!=null)
 				sock.close();
 		}
-		catch(IOException e)
-		{
-		}
-
+		catch(IOException e) { }
 		//Log.sysOut(getName(),"Thread stopped!");
 	}
 
-
 	// sends shutdown message to both log and optional session
 	// then just calls interrupt
-
 	public void shutdown(Session S)
 	{
 		Log.sysOut(getName(),"Shutting down.");
@@ -315,8 +294,6 @@ public class HTTPserver extends Thread implements MudHost
 	}
 
 	public void shutdown()	{shutdown(null);}
-
-
 
 	// interrupt does NOT interrupt the ServerSocket.accept() call...
 	//  override it so it does
@@ -331,9 +308,7 @@ public class HTTPserver extends Thread implements MudHost
 				// (so run() can tell it was interrupted & didn't have an error)
 				servsock = null;
 			}
-			catch(IOException e)
-			{
-			}
+			catch(IOException e){}
 		}
 		super.interrupt();
 	}
@@ -351,7 +326,6 @@ public class HTTPserver extends Thread implements MudHost
 	{
 		return page.getStr("PORT");
 	}
-	public String getHost(){return getName();}
 	public void shutdown(Session S, boolean keepItDown){
 		shutdown(S);
 	}
@@ -362,39 +336,23 @@ public class HTTPserver extends Thread implements MudHost
 	public void setAcceptConnections(boolean truefalse){ acceptConnections=truefalse;}
 	public boolean isAcceptingConnections(){ return acceptConnections;}
 
-	public String getLanguage() 
+	public Vector<ProcessHTTPrequest> getOverdueThreads()
 	{
-		String lang = CMProps.instance().getStr("LANGUAGE").toUpperCase().trim();
-		if(lang.length()==0) return "English";
-		for(int i=0;i<LanguageLibrary.ISO_LANG_CODES.length;i++)
-			if(lang.equals(LanguageLibrary.ISO_LANG_CODES[i][0]))
-				return LanguageLibrary.ISO_LANG_CODES[i][1];
-		return "English";
-	}
-
-	public Vector getOverdueThreads()
-	{
-		Vector V=new Vector();
-		long time=System.currentTimeMillis();
+		Vector<ProcessHTTPrequest> V=new Vector();
 		synchronized(activeRequests)
 		{
+			long time=System.currentTimeMillis();
 			for(int a=activeRequests.size()-1;a>=0;a--)
 			{
-				ProcessHTTPrequest P=(ProcessHTTPrequest)activeRequests.elementAt(a, 1);
-				long pTime=((Long)activeRequests.elementAt(a,2)).longValue();
+				ProcessHTTPrequest P=(ProcessHTTPrequest)activeRequests.elementAt(a, 0);
+				long pTime=((Long)activeRequests.elementAt(a,1)).longValue();
 				if((time-pTime)>(60*1000*60))
 				{
 					V.addElement(P);
-					activeRequests.removeElementsAt(a);
+					activeRequests.removeRow(a);
 				}
 			}
 		}
 		return V;
-	}
-
-	public String executeCommand(String cmd)
-		throws Exception
-	{
-		throw new Exception("Not implemented");
 	}
 }

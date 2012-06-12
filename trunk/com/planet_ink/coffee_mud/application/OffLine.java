@@ -25,7 +25,7 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-
+//Generally unsupported file
 @SuppressWarnings("unchecked")
 public class OffLine extends Thread implements MudHost
 {
@@ -37,7 +37,6 @@ public class OffLine extends Thread implements MudHost
 	public static boolean isOK = false;
 
 	public boolean acceptConnections=false;
-	public String host="MyHost";
 	public static String bind="";
 	public static String ports="";
 	public int port=5555;
@@ -179,13 +178,13 @@ public class OffLine extends Thread implements MudHost
 			try{
 				for(int a=accessed.size()-1;a>=0;a--)
 				{
-					if((((Long)accessed.elementAt(a,2)).longValue()+LastConnectionDelay)<System.currentTimeMillis())
-						accessed.removeElementAt(a);
+					if((((Long)accessed.elementAt(a,1)).longValue()+LastConnectionDelay)<System.currentTimeMillis())
+						accessed.removeRow(a);
 					else
-					if(((String)accessed.elementAt(a,1)).trim().equalsIgnoreCase(address))
+					if(((String)accessed.elementAt(a,0)).trim().equalsIgnoreCase(address))
 					{
 						anyAtThisAddress=true;
-						if((((Long)accessed.elementAt(a,2)).longValue()+ConnectionWindow)>System.currentTimeMillis())
+						if((((Long)accessed.elementAt(a,1)).longValue()+ConnectionWindow)>System.currentTimeMillis())
 							numAtThisAddress++;
 					}
 				}
@@ -204,17 +203,17 @@ public class OffLine extends Thread implements MudHost
 				}
 			}catch(java.lang.ArrayIndexOutOfBoundsException e){}
 
-			accessed.addElement(address,Long.valueOf(System.currentTimeMillis()));
+			accessed.addRow(address,Long.valueOf(System.currentTimeMillis()));
 			if(proceed!=0)
 			{
 				System.out.println("Blocking a connection from "+address+" on port "+port);
 				PrintWriter out = new PrintWriter(sock.getOutputStream());
-				out.println("\n\rOFFLINE: Blocked\n\r");
+				out.println("\r\nOFFLINE: Blocked\r\n");
 				out.flush();
 				if(proceed==2)
-					out.println("\n\rYour address has been blocked temporarily due to excessive invalid connections.  Please try back in " + (LastConnectionDelay/60000) + " minutes, and not before.\n\r\n\r");
+					out.println("\r\nYour address has been blocked temporarily due to excessive invalid connections.  Please try back in " + (LastConnectionDelay/60000) + " minutes, and not before.\r\n\r\n");
 				else
-					out.println("\n\rYou are unwelcome.  No one likes you here. Go away.\n\r\n\r");
+					out.println("\r\nYou are unwelcome.  No one likes you here. Go away.\r\n\r\n");
 				out.flush();
 				out.close();
 				sock = null;
@@ -363,10 +362,6 @@ public class OffLine extends Thread implements MudHost
 		}
 		super.interrupt();
 	}
-	public String getHost()
-	{
-		return host;
-	}
 	public int getPort()
 	{
 		return port;
@@ -464,11 +459,5 @@ public class OffLine extends Thread implements MudHost
 	public boolean isAcceptingConnections(){ return acceptConnections;}
 	public Vector getOverdueThreads(){return new Vector();}
 	public long getUptimeSecs() { return (System.currentTimeMillis()-startupTime)/1000;}
-	public String getLanguage() { return "English";}
-
-	public String executeCommand(String cmd)
-		throws Exception
-	{
-		throw new Exception("Not implemented");
-	}
+	public long getUptimeStart() { return startupTime;}
 }

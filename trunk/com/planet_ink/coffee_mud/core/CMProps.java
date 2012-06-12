@@ -13,6 +13,8 @@ import com.planet_ink.coffee_mud.Locales.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
+import com.planet_ink.coffee_mud.application.MUD;
+
 import java.util.*;
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,6 +31,12 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 public class CMProps extends Properties
 {
 	private static CMProps props=null;
+
+	//protected DVector newusersByIP=new DVector(2);
+	protected static HashMap<String,Object[]> listData=new HashMap();
+
+	public boolean loaded=false;
+
 	public CMProps()
 	{
 		if(props==null) props=this;
@@ -39,14 +47,13 @@ public class CMProps extends Properties
 		if(props==null) p=new CMProps();
 		return p;
 	}
-	private static CMProps p(){ return props;}
 
 	public static final long serialVersionUID=0;
 	public enum Strings
 	{
 		PLAYERKILL, PLAYERDEATH, FLEE, DOMAIN, DEFAULTPROMPT, COLORSCHEME, CHARSETINPUT, CHARSETOUTPUT, MUDVER, MUDNAME, 
 		//Below do not get their Strings set on reset
-		MUDSTATUS, MUDPORTS, INIPATH, MUDBINDADDRESS;
+		MUDSTATUS, MUDPORTS, MUDBINDADDRESS;
 		private String property="";
 		public void setProperty(String s)
 		{
@@ -80,10 +87,84 @@ public class CMProps extends Properties
 		public boolean property(){return property;}
 	}
 
-	protected DVector newusersByIP=new DVector(2);
-	protected HashMap<String,Object[]> listData=new HashMap();
+	private enum MSSPOptions
+	{
+		NAME{public String[] value(){return new String[]{Strings.MUDNAME.property()};}},
+		PLAYERS{public String[] value(){return new String[]{Integer.toString(CMLib.sessions().size())};}},
+		UPTIME{public String[] value(){return new String[]{Long.toString(MUD.hosts.firstElement().getUptimeStart())};}},
+		CRAWLTIME{public String[] value(){return new String[]{"-1"};} public String toString(){return "CRAWL TIME";}},
+		HOSTNME{public String[] value(){return new String[]{Strings.DOMAIN.property()};}},
+		PORT{public String[] value(){return new String[]{Integer.toString(MUD.hosts.firstElement().getPort())};}},
+		CODEBASE{public String[] value(){return new String[]{"EspressoMUD v"+Strings.MUDVER.property()};}},
+		//CONTACT{public String[] value(){return new String[]{""};}},	//should probably be a CMProps call for this. TODO. Also other things below this not marked Optional.
+		//CREATED{public String[] value(){return new String[]{"20??"};}},
+		//ICON{public String[] value(){return new String[]{""};}},	//Optional
+		//IP{public String[] value(){return new String[]{""};}},	//Optional. Dunno if this is a good idea.
+		LANGUAGE{public String[] value(){return new String[]{"English"};}},
+		//LOCATION{public String[] value(){return new String[]{""};}},
+		//MINIMUMAGE{public String[] value(){return new String[]{"13"};} public String toString(){return "MINIMUM AGE";}},	//also should be CMProps
+		//WEBSITE{public String[] value(){return new String[]{"http://"+Strings.DOMAIN.property()+":"+CMLib.httpUtils().getWebServerPort()};}},
+		FAMILY{public String[] value(){return new String[]{"Custom", "CoffeeMUD"};}},
+		GENRE{public String[] value(){return new String[]{"Fantasy", "Modern"};}},
+		GAMEPLAY{public String[] value(){return new String[]{"Adventure"};}},
+		STATUS{public String[] value(){return new String[]{"Alpha"};}},	//TODO. Eventually.
+		GAMESYSTEM{public String[] value(){return new String[]{"Custom"};}},
+		//INTERMUD{public String[] value(){return new String[]{};}},
+		SUBGENRE{public String[] value(){return new String[]{"None"};}},
+		AREAS{public String[] value(){return new String[]{Integer.toString(CMLib.map().numAreas())};}},
+		HELPFILES{public String[] value(){return new String[]{Integer.toString(CMLib.help().getHelpFile().size())};}},
+		ROOMS{public String[] value(){return new String[]{"-1"};}},
+		CLASSES{public String[] value(){return new String[]{"0"};}},
+		LEVELS{public String[] value(){return new String[]{"0"};}},
+		RACES{public String[] value(){return new String[]{Integer.toString(CMLib.login().raceQualifies().size())};}},
+		//SKILLS{public String[] value(){return new String[]{""};}},
+		ANSI{public String[] value(){return new String[]{"1"};}},
+		GMCP{public String[] value(){return new String[]{"0"};}},
+		MCCP{public String[] value(){return new String[]{"0"};}},
+		MCP{public String[] value(){return new String[]{"0"};}},
+		MSDP{public String[] value(){return new String[]{"1"};}},
+		MSP{public String[] value(){return new String[]{"1"};}},
+		MXP{public String[] value(){return new String[]{"1"};}},
+		PUEBLO{public String[] value(){return new String[]{"0"};}},
+		UTF8{public String[] value(){return new String[]{"0"};} public String toString(){return "UTF-8";}},
+		VT100{public String[] value(){return new String[]{"0"};}},
+		PAY2PLAY{public String[] value(){return new String[]{"0"};} public String toString(){return "PAY TO PLAY";}},
+		PAY4PERKS{public String[] value(){return new String[]{"0"};} public String toString(){return "PAY FOR PERKS";}},
+		HIRINGBUILDERS{public String[] value(){return new String[]{"0"};} public String toString(){return "HIRING BUILDERS";}},
+		HIRINGCODERS{public String[] value(){return new String[]{"0"};} public String toString(){return "HIRING CODERS";}},
+		;
+		public abstract String[] value();
+	}
 
-	public boolean loaded=false;
+	public static String getMSSPIAC()
+	{
+		if(MUD.hosts.size()==0) return "";
+		MudHost host = MUD.hosts.firstElement();
+		StringBuilder rpt = new StringBuilder((char)Session.TELNET_IAC+(char)Session.TELNET_SB+(char)Session.TELNET_MSSP);
+		for(MSSPOptions option : MSSPOptions.values())
+		{
+			rpt.append(((char)1)+option.toString());
+			for(String value : option.value())
+				rpt.append(((char)2)+value);
+		}
+		rpt.append((char)Session.TELNET_IAC+(char)Session.TELNET_SE);
+		return rpt.toString();
+	}
+
+	public static String getMSSPPacket()
+	{
+		if(MUD.hosts.size()==0) return "";
+		MudHost host = MUD.hosts.firstElement();
+		StringBuilder rpt = new StringBuilder("\r\nMSSP-REPLY-START");
+		for(MSSPOptions option : MSSPOptions.values())
+		{
+			rpt.append("\r\n"+option.toString());
+			for(String value : option.value())
+				rpt.append("\t"+value);
+		}
+		rpt.append("\r\nMSSP-REPLY-END\r\n");
+		return rpt.toString();
+	}
 
 	public CMProps(InputStream in)
 	{
@@ -154,18 +235,6 @@ public class CMProps extends Properties
 			return null;
 		return page;
 	}
-	/** retrieve a local .ini file entry as a string
-	*
-	* <br><br><b>Usage:</b>  String s=getPrivateStr("TAG");
-	* @param tagToGet   the property tag to retreive.
-	* @return String   the value of the .ini file tag
-	*/
-	public String getPrivateStr(String tagToGet)
-	{
-		String s=getProperty(tagToGet);
-		if(s==null) return "";
-		return s;
-	}
 
 	/** retrieve raw local .ini file entry as a string
 	*
@@ -214,22 +283,22 @@ public class CMProps extends Properties
 	{
 		DVector strBag = new DVector(2);
 		tagStartersToGet = tagStartersToGet.toUpperCase();
-		for(Enumeration e=propertyNames(); e.hasMoreElements();)
+		for(Enumeration<String> e=(Enumeration<String>)propertyNames(); e.hasMoreElements();)
 		{
-			String propName = (String)e.nextElement();
+			String propName = e.nextElement();
 			if(propName.toUpperCase().startsWith(tagStartersToGet))
 			{
 				String subPropName = propName.substring(tagStartersToGet.length()).toUpperCase();
 				String thisTag=this.getProperty(propName);
 				if(thisTag!=null)
-					strBag.addElement(subPropName,thisTag);
+					strBag.addRow(subPropName,thisTag);
 			}
 		}
 		String[][] strArray = new String[strBag.size()][2];
 		for(int s = 0; s < strBag.size(); s++)
 		{
-			strArray[s][0] = (String)strBag.elementAt(s,1);
-			strArray[s][1] = (String)strBag.elementAt(s,2);
+			strArray[s][0] = (String)strBag.elementAt(s,0);
+			strArray[s][1] = (String)strBag.elementAt(s,1);
 		}
 		return strArray;
 	}
@@ -243,9 +312,7 @@ public class CMProps extends Properties
 	public boolean getBoolean(String tagToGet)
 	{
 		String thisVal=getStr(tagToGet);
-		if(thisVal.toUpperCase().startsWith("T"))
-			return true;
-		return false;
+		return ((thisVal.length()>0)&&(Character.toUpperCase(thisVal.charAt(0))=='T'));
 	}
 
 	/** retrieve a particular .ini file entry as a double
@@ -285,48 +352,23 @@ public class CMProps extends Properties
 	}
 
 	//Ints.X.setProperty(CMath.s_int(val));
-	public static int getCountNewUserByIP(String address)
-	{
-		int count=0;
-		DVector DV=p().newusersByIP;
-		synchronized(DV)
-		{
-			for(int i=DV.size()-1;i>=0;i--)
-				if(((String)DV.elementAt(i,1)).equalsIgnoreCase(address))
-				{
-					if(System.currentTimeMillis()>(((Long)DV.elementAt(i,2)).longValue()))
-						DV.removeElementAt(i);
-					else
-						count++;
-				}
-		}
-		return count;
-	}
-	public static void addNewUserByIP(String address)
-	{
-		DVector DV=p().newusersByIP;
-		synchronized(DV)
-		{
-			DV.addElement(address,Long.valueOf(System.currentTimeMillis()+TimeManager.MILI_DAY));
-		}
-	}
 
 	public static String[] getSListVar(String key)
 	{
-		String[] results=(String[])p().listData.get(key);
+		String[] results=(String[])listData.get(key);
 		if(results == null)
 		{
 			String S=getListValue(key);
 			if(S==null) return null;
 			results=CMParms.toStringArray(CMParms.parseCommas(S,true));
-			p().listData.put(key, results);
+			listData.put(key, results);
 		}
 		return results;
 	}
 
 	public static String getListValue(String key)
 	{
-		final String listFileName=CMProps.p().getProperty("LISTFILE");
+		final String listFileName=CMProps.props.getProperty("LISTFILE");
 		synchronized(listFileName.intern())
 		{
 			Properties rawListData=(Properties)Resources.getResource("PROPS: " + listFileName);
@@ -348,8 +390,6 @@ public class CMProps extends Properties
 
 	public void resetSystemVars()
 	{
-//		if(CMLib.lang()!=null)
-//			CMLib.lang().setLocale(getStr("LANGUAGE"),getStr("COUNTRY"));
 		for(Strings e : EnumSet.range(Strings.PLAYERKILL, Strings.CHARSETOUTPUT))
 			e.setProperty(getStr(e.toString()));
 
@@ -359,8 +399,7 @@ public class CMProps extends Properties
 		for(Bools e : EnumSet.range(Bools.INTRODUCTIONSYSTEM, Bools.SHOWDAMAGE))
 			e.setProperty(getBoolean(e.toString()));
 
-		if(CMLib.color()!=null) CMLib.color().clearLookups();
-		Directions.instance().reInitialize(getInt("DIRECTIONS"));
+		//if(CMLib.color()!=null) CMLib.color().clearLookups();
 		resetSecurityVars();
 		CMLib.propertiesLoaded();
 	}
@@ -370,79 +409,18 @@ public class CMProps extends Properties
 		CMSecurity.setDebugVars(getStr("DEBUG"));
 	}
 
-	// this is the sound support method.
-	// it builds a valid MSP sound code from built-in web server
-	// info, and the info provided.
-	public static String msp(String soundName, int volume, int priority)
-	{
-		if((soundName==null)||(soundName.length()==0)||CMSecurity.isDisabled("MSP")) return "";
-		return " !!SOUND("+soundName+" V="+volume+" P="+priority+") ";
-	}
-
-	public static String[] mxpImagePath(String fileName)
-	{
-		if((fileName==null)||(fileName.trim().length()==0))
-			return new String[]{"",""};
-		if(CMSecurity.isDisabled("MXP"))
-			return new String[]{"",""};
-		int x=fileName.lastIndexOf('=');
-		String preFilename="";
-		if(x>=0)
-		{
-			preFilename=fileName.substring(0,x+1);
-			fileName=fileName.substring(x+1);
-		}
-		x=fileName.lastIndexOf('/');
-		if(x>=0)
-		{
-			preFilename+=fileName.substring(0,x+1);
-			fileName=fileName.substring(x+1);
-		}
-		String domain=Strings.DOMAIN.property();
-		if((domain==null)||(domain.length()==0))
-			domain="localhost";
-		return new String[]{"http://"+domain+":27744/images/mxp/"+preFilename,fileName};
-	}
-
-	public static String getHashedMXPImage(String key)
-	{
-		Hashtable H=(Hashtable)Resources.getResource("MXP_IMAGES");
-		if(H==null) getDefaultMXPImage(null);
-		H=(Hashtable)Resources.getResource("MXP_IMAGES");
-		if(H==null) return "";
-		return getHashedMXPImage(H,key);
-
-	}
-	public static String getHashedMXPImage(Hashtable H, String key)
-	{
-		if(H==null) return "";
-		String s=(String)H.get(key);
-		if(s==null) return null;
-		if(s.trim().length()==0) return null;
-		if(s.equalsIgnoreCase("NULL")) return "";
-		return s;
-	}
-
-	public static String getDefaultMXPImage(Object O)
-	{
-		return "";
-	}
-
-	public static String msp(String soundName, int priority)
-	{ return msp(soundName,50,CMLib.dice().roll(1,50,priority));}
-
-	public static Vector loadEnumerablePage(String iniFile)
+	public static Vector<String> loadEnumerablePage(String iniFile)
 	{
 		StringBuffer str=new CMFile(iniFile,null,true).text();
 		if((str==null)||(str.length()==0)) return new Vector();
-		Vector page=Resources.getFileLineVector(str);
+		Vector<String> page=Resources.getFileLineVector(str);
 		for(int p=0;p<(page.size()-1);p++)
 		{
-			String s=((String)page.elementAt(p)).trim();
+			String s=(page.elementAt(p)).trim();
 			if(s.startsWith("#")||s.startsWith("!")) continue;
 			if((s.endsWith("\\"))&&(!s.endsWith("\\\\")))
 			{
-				s=s.substring(0,s.length()-1)+((String)page.elementAt(p+1)).trim();
+				s=s.substring(0,s.length()-1)+(page.elementAt(p+1)).trim();
 				page.removeElementAt(p+1);
 				page.setElementAt(s,p);
 				p=p-1;

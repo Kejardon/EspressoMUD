@@ -24,19 +24,16 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Prompt extends StdCommand
 {
-	public Prompt(){}
+	public Prompt(){access=new String[]{"PROMPT"};}
 
-	private String[] access={"PROMPT"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		if(mob.session()==null) return false;
 		PlayerStats pstats=mob.playerStats();
 		if(pstats==null) return false;
 
 		if(commands.size()==1)
-			mob.session().rawPrintln("Your prompt is currently set at:\n\r"+pstats.getPrompt());
+			mob.session().rawPrintln("Your prompt is currently set at:\r\n"+pstats.getPrompt());
 		else
 		{
 			String str=CMParms.combine(commands,1);
@@ -46,10 +43,12 @@ public class Prompt extends StdCommand
 			if(mob.session().confirm("Change your prompt to: "+str+", are you sure (Y/n)?","Y"))
 			{
 				pstats.setPrompt(str);
-				mob.session().rawPrintln("Your prompt is currently now set at:\n\r"+pstats.getPrompt());
+				mob.session().rawPrintln("Your prompt is currently now set at:\r\n"+pstats.getPrompt());
 			}
 		}
 		return false;
 	}
+
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	public boolean canBeOrdered(){return false;}
 }

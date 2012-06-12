@@ -9,12 +9,14 @@ import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
-import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.io.IOException;
 
 //import org.mozilla.javascript.Context;
 //import org.mozilla.javascript.ScriptableObject;
@@ -78,7 +80,8 @@ public class LimbCharStats implements CharStats
 			copyStatic(newStats);
 			for(int i=0; i<points.length; i++)
 				newStats.points[i]=points[i];
-			CMLib.database().saveObject(newStats.parent);
+			if(newStats.parent!=null)
+				newStats.parent.saveThis();
 		}
 	}
 	public void copyStatic(CharStats intoStats)
@@ -93,13 +96,14 @@ public class LimbCharStats implements CharStats
 			for(int i=0; i<save.length; i++)
 				newStats.save[i]=save[i];
 			newStats.parent=parent;
+			if(parent!=null) parent.saveThis();
 		}
 	}
 	public void resetState()
 	{
 		for(int i=0; i<points.length; i++)
 			points[i]=pointsMax[i];
-		CMLib.database().saveObject(parent);
+		if(parent!=null) parent.saveThis();
 	}
 
 	public CMObject copyOf()
@@ -119,7 +123,7 @@ public class LimbCharStats implements CharStats
 	public void setSave(Save option, short value)
 	{
 		int i=getSaveIndex(option);
-		if(i>=0) { save[i]=value; CMLib.database().saveObject(parent); }
+		if(i>=0) { save[i]=value; if(parent!=null) parent.saveThis(); }
 	}
 
 	public short getStat(Stat option)
@@ -132,7 +136,7 @@ public class LimbCharStats implements CharStats
 	public void setStat(Stat option, short value)
 	{
 		int i=getStatIndex(option);
-		if(i>=0) { stat[i]=value; CMLib.database().saveObject(parent);}
+		if(i>=0) { stat[i]=value; if(parent!=null) parent.saveThis();}
 	}
 
 	public int getPoints(Points option)
@@ -150,7 +154,7 @@ public class LimbCharStats implements CharStats
 	public boolean setPoints(Points option, int newVal)	//Return if it broke a min or max cap, do not cap yourself
 	{
 		int i=getPointsIndex(option);
-		if(i>=0) {points[i]=newVal; CMLib.database().saveObject(parent); return newVal>pointsMax[i];}
+		if(i>=0) {points[i]=newVal; if(parent!=null) parent.saveThis(); return newVal>pointsMax[i];}
 		return false;
 	}
 	public boolean adjPoints(Points option, int byThisMuch)	//Cap, return if cap did something
@@ -162,16 +166,16 @@ public class LimbCharStats implements CharStats
 			if(points[i]>pointsMax[i])
 			{
 				points[i]=pointsMax[i];
-				CMLib.database().saveObject(parent);
+				if(parent!=null) parent.saveThis();
 				return true;
 			}
 			else if(points[i]<0)
 			{
 				points[i]=0;
-				CMLib.database().saveObject(parent);
+				if(parent!=null) parent.saveThis();
 				return true;
 			}
-			CMLib.database().saveObject(parent);
+			if(parent!=null) parent.saveThis();
 		}
 		return false;
 	}
@@ -187,7 +191,7 @@ public class LimbCharStats implements CharStats
 		int i=getPointsIndex(option);
 		if(i<0) return false;
 		pointsMax[i]=newVal;
-		CMLib.database().saveObject(parent);
+		if(parent!=null) parent.saveThis();
 		if(newVal<points[i])
 			return true;
 		return false;
@@ -207,10 +211,10 @@ public class LimbCharStats implements CharStats
 			if(points[i]>pointsMax[i])
 			{
 				points[i]=pointsMax[i];
-				CMLib.database().saveObject(parent);
+				if(parent!=null) parent.saveThis();
 				return true;
 			}
-			CMLib.database().saveObject(parent);
+			if(parent!=null) parent.saveThis();
 			return change;
 		}
 		return false;
@@ -245,8 +249,8 @@ public class LimbCharStats implements CharStats
 		sourceStats.adjPoints(Points.THIRST, -thirstCost);
 		sourceStats.adjPoints(Points.HUNGER, -hungerCost);
 		adjPoints(Points.FATIGUE, fatigueRegen);
-		CMLib.database().saveObject(parent);
-		sourceStats.saveThis();
+		/*if(parent!=null) parent.saveThis();
+		sourceStats.saveThis(); */
 	}
 
 //	public void expendEnergy(MOB mob, boolean expendMovement)
@@ -258,6 +262,12 @@ public class LimbCharStats implements CharStats
 		return false;
 	}
 	public void destroy(){}	//TODO?
+	public boolean amDestroyed()
+	{
+		if(parent!=null)
+			return parent.amDestroyed();
+		return true;
+	}
 	//CMModifiable and CMSavable
 	public SaveEnum[] totalEnumS(){return SCode.values();}
 	public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]};}
@@ -267,7 +277,8 @@ public class LimbCharStats implements CharStats
 	public void setSaveNum(int num){}
 	public boolean needLink(){return false;}
 	public void link(){}
-	public void saveThis(){CMLib.database().saveObject(parent);}
+	public void saveThis(){if(parent!=null) parent.saveThis();}
+	public void prepDefault(){}
 
 	private enum SCode implements CMSavable.SaveEnum{
 		STT(){

@@ -37,6 +37,8 @@ import com.planet_ink.coffee_mud.core.exceptions.*;
    limitations under the License.
 */
 
+//TODO: Look over this and see how it works. Maybe.
+
 @SuppressWarnings("unchecked")
 public class ProcessHTTPrequest extends Thread implements ExternalHTTPRequests
 {
@@ -51,6 +53,7 @@ public class ProcessHTTPrequest extends Thread implements ExternalHTTPRequests
 
 	private static long instanceCnt = 0;
 	private long processStartTime=0;
+	private static byte[] CRCR="\r\n\r\n".getBytes();
 
 	protected String command = null;
 	protected String request = null;
@@ -122,13 +125,13 @@ public class ProcessHTTPrequest extends Thread implements ExternalHTTPRequests
 		if (page != null && sock != null && a_webServer != null)
 		{
 			synchronized(a_webServer.activeRequests){
-				a_webServer.activeRequests.addElement(this,Long.valueOf(System.currentTimeMillis()));
+				a_webServer.activeRequests.addRow(this,Long.valueOf(System.currentTimeMillis()));
 			}
 			this.start();
 		}
 	}
 
-	public Hashtable getVirtualDirectories(){return webServer.getVirtualDirectories();}
+	//public Hashtable getVirtualDirectories(){return webServer.getVirtualDirectories();}
 	public HTTPserver getWebServer()	{return webServer;}
 	public String getHTTPstatus()	{return status;}
 	public String getHTTPstatusInfo()	{return statusExtra==null?"":statusExtra;}
@@ -138,7 +141,7 @@ public class ProcessHTTPrequest extends Thread implements ExternalHTTPRequests
 	
 	public CMFile grabFile(String fn)
 	{
-		GrabbedFile GF=getWebServer().pageGrabber.grabFile(fn);
+		GrabbedFile GF=webServer.pageGrabber.grabFile(fn);
 		if(GF==null) return null;
 		switch(GF.state)
 		{
@@ -157,7 +160,7 @@ public class ProcessHTTPrequest extends Thread implements ExternalHTTPRequests
 
 	protected boolean process(String inLine) throws Exception
 	{
-		virtualPage = false;
+		//virtualPage = false;
 		try
 		{
 			StringTokenizer inTok = new StringTokenizer(inLine," ");
@@ -206,9 +209,9 @@ public class ProcessHTTPrequest extends Thread implements ExternalHTTPRequests
 			else
 			if (command.equalsIgnoreCase("MUD"))
 			{
-				if(getWebServer() != null) {
-					if(getWebServer().getMUD() != null) {
-						getWebServer().getMUD().acceptConnection(sock);
+				if(webServer != null) {
+					if(webServer.getMUD() != null) {
+						webServer.getMUD().acceptConnection(sock);
 					}
 				}
 				return false;
@@ -279,7 +282,7 @@ public class ProcessHTTPrequest extends Thread implements ExternalHTTPRequests
 
 	public void resetRequestEncodedParameters()
 	{
-		StringBuffer buf=new StringBuffer("");
+		StringBuilder buf=new StringBuilder("");
 		for(Enumeration e=getRequestParameters().keys();e.hasMoreElements();)
 		{
 			String key=(String)e.nextElement();
@@ -389,7 +392,7 @@ public class ProcessHTTPrequest extends Thread implements ExternalHTTPRequests
 						if(thisParamName.equalsIgnoreCase("RAWTEXT"))
 							thisParamValue=URLDecoder.decode(thisParam.substring(eq+1), "UTF-8");
 						else
-							thisParamValue=preFilter(new StringBuffer(URLDecoder.decode(thisParam.substring(eq+1), "UTF-8")));
+							thisParamValue=preFilter(new StringBuilder(URLDecoder.decode(thisParam.substring(eq+1), "UTF-8")));
 					}
 					catch(UnsupportedEncodingException e)
 					{
@@ -429,7 +432,7 @@ public class ProcessHTTPrequest extends Thread implements ExternalHTTPRequests
 	}
 
 
-	protected String preFilter(StringBuffer input)
+	protected String preFilter(StringBuilder input)
 	{
 		if(input==null) return null;
 
@@ -444,10 +447,10 @@ public class ProcessHTTPrequest extends Thread implements ExternalHTTPRequests
 			{
 				String newStr=input.toString();
 				if(x==0)
-					input=new StringBuffer(newStr.substring(x+1));
+					input=new StringBuilder(newStr.substring(x+1));
 				else
 				{
-					input=new StringBuffer(newStr.substring(0,x-1)+newStr.substring(x+1));
+					input=new StringBuilder(newStr.substring(0,x-1)+newStr.substring(x+1));
 					x--;
 				}
 				x--;
@@ -521,7 +524,7 @@ public class ProcessHTTPrequest extends Thread implements ExternalHTTPRequests
 	{
 		try
 		{
-		String hdrRedirectTo = null;
+		//String hdrRedirectTo = null;
 		processStartTime=System.currentTimeMillis();
 
 		DataOutputStream sout = null;
@@ -540,7 +543,7 @@ public class ProcessHTTPrequest extends Thread implements ExternalHTTPRequests
 			GrabbedFile requestedFile;
 			headersOnly = false;
 
-			virtualPage = false;
+			//virtualPage = false;
 			sock.setSoTimeout(10000);
 			String totalRequest=getHTTPRequest(sock.getInputStream());
 			boolean processOK = process(totalRequest);
@@ -590,7 +593,7 @@ public class ProcessHTTPrequest extends Thread implements ExternalHTTPRequests
 						break;
 					case GrabbedFile.STATE_SECURITY_VIOLATION:
 						status = S_401;
-						statusExtra = "Denied access to <i>" + requestMain + "</i>. WARNING: I will never be your best friend.";
+						statusExtra = "Denied access to <i>" + requestMain + "</i>.";
 						processOK = false;
 						break;
 
@@ -614,8 +617,8 @@ public class ProcessHTTPrequest extends Thread implements ExternalHTTPRequests
 					if (mimetype.length() == 0)
 						mimetype = "application/octet-stream";	// default to raw binary
 
-					if (page.getStr("VIRTUALPAGEEXTENSION").equalsIgnoreCase(exten) )
-						virtualPage = true;
+					/*if (page.getStr("VIRTUALPAGEEXTENSION").equalsIgnoreCase(exten) )
+						virtualPage = true; */
 
 					if((replyData==null)&&(requestedFile!=null))
 					{
@@ -643,7 +646,7 @@ public class ProcessHTTPrequest extends Thread implements ExternalHTTPRequests
 			{
 				if(totalRequest.equalsIgnoreCase("MUD"))
 					return;
-				
+				/*
 				//mimetype = "text/html";
 				mimetype = getMimeType(page.getStr("VIRTUALPAGEEXTENSION"));
 
@@ -677,17 +680,17 @@ public class ProcessHTTPrequest extends Thread implements ExternalHTTPRequests
 				}
 
 				if (replyData == null)
+				*/
 				{
 					// make the builtin error page
-					virtualPage = false;
+					//virtualPage = false;
 					mimetype = "text/html";
 					replyData = WebHelper.makeErrorPage(status,statusExtra);
 				}
 
 			}
 
-
-			if(virtualPage)
+			/*if(virtualPage)
 			{
 				try
 				{
@@ -699,7 +702,7 @@ public class ProcessHTTPrequest extends Thread implements ExternalHTTPRequests
 					hdrRedirectTo = e.getMessage();
 					replyData = makeRedirectPage(hdrRedirectTo).getBytes();
 				}
-			}
+			} */
 
 			// first the status header
 			sout.writeBytes("HTTP/1.0 " + status + cr);
@@ -708,10 +711,10 @@ public class ProcessHTTPrequest extends Thread implements ExternalHTTPRequests
 			// may add content-length at some point, shouldn't
 			//  be necassary though
 			// should also probably add Last-Modified
-			if (hdrRedirectTo != null)
+			/*if (hdrRedirectTo != null)
 			{
 				sout.writeBytes("Location: " + hdrRedirectTo + cr);
-			}
+			} */
 
 
 			sout.writeBytes("Server: " + HTTPserver.ServerVersionString + cr);
@@ -739,9 +742,7 @@ public class ProcessHTTPrequest extends Thread implements ExternalHTTPRequests
 		catch (Exception e)
 		{
 			String errMsg=e.getMessage()==null?e.toString():e.getMessage();
-			if((errMsg!=null)
-			&&((!Log.isMaskedErrMsg(errMsg))
-				||(CMSecurity.isDebugging("HTTPERR"))))
+			if((!Log.isMaskedErrMsg(errMsg))||(CMSecurity.isDebugging("HTTPERR")))
 			{
 				Log.errOut(getName(),"Exception: " + errMsg );
 				if((!(e instanceof java.net.SocketException))
@@ -759,7 +760,6 @@ public class ProcessHTTPrequest extends Thread implements ExternalHTTPRequests
 		{
 			if (sout != null)
 			{
-
 				sout.flush();
 				OutputStream o=sock.getOutputStream();
 				if(bout!=null)
@@ -822,12 +822,12 @@ public class ProcessHTTPrequest extends Thread implements ExternalHTTPRequests
 				replyData=null;
 				throw new IOException("File not found!");
 			}
-			String exten="";
+/*			String exten="";
 			try { exten = filename.substring(filename.lastIndexOf(".")); }
 			catch (Exception e) {}
 			if(page.getStr("VIRTUALPAGEEXTENSION").equalsIgnoreCase(exten) )
 				replyData=doVirtualPage(replyData);
-			return new String(replyData);
+*/			return new String(replyData);
 		}
 		catch (Exception e)
 		{
@@ -845,6 +845,7 @@ public class ProcessHTTPrequest extends Thread implements ExternalHTTPRequests
 		return "";
 	}
 
+	//Normally all strings. Last element may be byte[] if something unusual happens
 	protected Vector getData(InputStream sin)
 	{
 		Vector data=new Vector();
@@ -956,6 +957,7 @@ public class ProcessHTTPrequest extends Thread implements ExternalHTTPRequests
 		return "";
 	}
 
+	//True if 'to' is a subset of 'buf' and starts at buf[start]
 	public boolean byteCompare(byte[] buf, int start, byte[] to)
 	{
 		if((buf.length-start)<to.length)
@@ -974,7 +976,7 @@ public class ProcessHTTPrequest extends Thread implements ExternalHTTPRequests
 
 			//Log.sysOut("HTTP",inLine);
 
-			if((inData==null)||(inData.size()==0)||(!(inData.elementAt(0) instanceof String)))
+			if((inData.size()==0)||(!(inData.elementAt(0) instanceof String)))
 				return "[400 -- no request received]";
 			String inLine=(String)inData.elementAt(0);
 			if(CMSecurity.isDebugging("HTTPACCESS"))
@@ -986,77 +988,87 @@ public class ProcessHTTPrequest extends Thread implements ExternalHTTPRequests
 			{
 				String type=getContentType(inData);
 				if(type.length()==0) return "";
-				if(!(inData.lastElement() instanceof byte[]))
+				if(!(inData.lastElement() instanceof byte[]))	//This doesn't make much sense.. I thought this happened only if length exceeded claimed content-length?
 					return "[400 -- no content data received]";
 				if(type.toLowerCase().indexOf("multipart/form-data")>=0)
 				{
 					int x=inLine.lastIndexOf(" ");
 					if(x<0) return "[400 -- improperly formatted post request]";
-					StringBuffer parms=new StringBuffer("");
-					String boundary="--"+getBoundary(inData)+"\r\n";
-					String secondBoundary="\r\n"+boundary;
+					StringBuilder parms=new StringBuilder("");
+					String boundary=getBoundary(inData);
+					//Is this supposed to check getBoundary? .. yes, http specs say it should.
 					if(boundary.length()==0) return "[400 -- improperly formatted post request]";
+					boundary="--"+boundary+"\r\n";
+					String secondBoundary="\r\n"+boundary;
 					byte[] bounBytes=boundary.getBytes();
 					byte[] bounBytes2=secondBoundary.getBytes();
 					byte[] buf=(byte[])inData.lastElement();
-					byte[] CRCR="\r\n\r\n".getBytes();
 					int s=0;
 					int lastEnd=-1;
-					while(s<buf.length)
+					int stop=buf.length-bounBytes.length;
+					while(true)
 					{
+						while((s<stop)&&(buf[s]!='-')) s++;
 						if(byteCompare(buf,s,bounBytes))
 						{
-							if(lastEnd>0)
-							{
-								for(int i=lastEnd;i<s;i++)
-									if(byteCompare(buf,i,CRCR))
-									{
-										byte[] mybuf=new byte[i-lastEnd];
-										System.arraycopy(buf,lastEnd,mybuf,0,mybuf.length);
-										String header=new String(mybuf);
-										int nameDex=header.indexOf("name=\"");
-										String name=null;
-										if(nameDex>=0)
-										{
-											int nameEnDex=header.indexOf("\"",nameDex+6);
-											if(nameEnDex>nameDex)
-												name=header.substring(nameDex+6,nameEnDex);
-										}
-										nameDex=header.indexOf("filename=\"");
-										String filename=null;
-										if(nameDex>=0)
-										{
-											int nameEnDex=header.indexOf("\"",nameDex+10);
-											if(nameEnDex>nameDex)
-												filename=header.substring(nameDex+10,nameEnDex);
-										}
-										boolean binary=filename!=null;
-										mybuf=new byte[s-(i+CRCR.length)];
-										System.arraycopy(buf,(i+CRCR.length),mybuf,0,mybuf.length);
-										if(!binary)
-										{
-											parms.append("&"+URLEncoder.encode(name, "UTF-8")+"="+URLEncoder.encode(new String(mybuf), "UTF-8"));
-										}
-										else
-										if(filename!=null)
-										{
-											getRequestObjects().put(name,mybuf);
-											char c3=' ';
-											for(int i3=0;i3<filename.length();i3++)
-											{
-												if((filename.charAt(i3)=='\\')||(filename.charAt(i3)=='/'))
-												{ c3=filename.charAt(i3); break;}
-											}
-											if(c3!=' ')
-												filename=filename.substring(filename.lastIndexOf(c3)+1);
-											parms.append("&"+URLEncoder.encode(name, "UTF-8")+"="+URLEncoder.encode(filename, "UTF-8"));
-										}
-										break;
-									}
-							}
 							s+=bounBytes.length;
 							lastEnd=s;
-							bounBytes=bounBytes2;
+							break;
+						}
+						if(s>=stop) break;
+					}
+					while(s<stop)
+					{
+						while((s<buf.length)&&(buf[s]!='\r')) s++;
+						if(byteCompare(buf,s,bounBytes2))
+						{
+							for(int i=lastEnd;i<s;i++)
+								if(byteCompare(buf,i,CRCR))
+								{
+									byte[] mybuf=new byte[i-lastEnd];
+									System.arraycopy(buf,lastEnd,mybuf,0,mybuf.length);
+									String header=new String(mybuf);
+									int nameDex=header.indexOf("name=\"");
+									String name=null;
+									if(nameDex>=0)
+									{
+										int nameEnDex=header.indexOf("\"",nameDex+6);
+										if(nameEnDex>nameDex)
+											name=header.substring(nameDex+6,nameEnDex);
+									}
+									nameDex=header.indexOf("filename=\"");
+									String filename=null;
+									if(nameDex>=0)
+									{
+										int nameEnDex=header.indexOf("\"",nameDex+10);
+										if(nameEnDex>nameDex)
+											filename=header.substring(nameDex+10,nameEnDex);
+									}
+									boolean binary=filename!=null;
+									mybuf=new byte[s-(i+CRCR.length)];
+									System.arraycopy(buf,(i+CRCR.length),mybuf,0,mybuf.length);
+									if(!binary)
+									{
+										parms.append("&"+URLEncoder.encode(name, "UTF-8")+"="+URLEncoder.encode(new String(mybuf), "UTF-8"));
+									}
+									else
+									if(filename!=null)
+									{
+										getRequestObjects().put(name,mybuf);
+										char c3=' ';
+										for(int i3=0;i3<filename.length();i3++)
+										{
+											if((filename.charAt(i3)=='\\')||(filename.charAt(i3)=='/'))
+											{ c3=filename.charAt(i3); break;}
+										}
+										if(c3!=' ')
+											filename=filename.substring(filename.lastIndexOf(c3)+1);
+										parms.append("&"+URLEncoder.encode(name, "UTF-8")+"="+URLEncoder.encode(filename, "UTF-8"));
+									}
+									break;
+								}
+							s+=bounBytes2.length;
+							lastEnd=s;
 						}
 						else
 							s++;
@@ -1092,17 +1104,14 @@ public class ProcessHTTPrequest extends Thread implements ExternalHTTPRequests
 					Log.errOut(getName(),e);
 			}
 		}
-		finally
-		{
-		}
 		return "[400 -- error occurred processing request]";
 	}
 
 	public String ServerVersionString(){return HTTPserver.ServerVersionString;}
-	public int getWebServerPort(){return getWebServer().getPort();}
-	public String getWebServerPortStr(){return getWebServer().getPortStr();}
-	public String getWebServerPartialName(){ return getWebServer().getPartialName();}
-	public MudHost getMUD(){return getWebServer().getMUD();}
+	public int getWebServerPort(){return webServer.getPort();}
+	public String getWebServerPortStr(){return webServer.getPortStr();}
+	public String getWebServerPartialName(){ return webServer.getPartialName();}
+	public MudHost getMUD(){return webServer.getMUD();}
 /*	protected String parseFoundMacro(StringBuffer s, int i, boolean lookOnly)
 	{
 		String foundMacro=null;

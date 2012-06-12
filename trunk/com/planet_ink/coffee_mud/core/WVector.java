@@ -13,7 +13,8 @@ public class WVector<E> implements Cloneable
 	private int totalWeight=0;
 	private int largest=-1;
 
-	private class WeightedObject<E>
+	private static final WeightedObject[] dummyWOArray=new WeightedObject[0];
+	private static class WeightedObject<E>
 	{
 		public E obj;
 		public int weight=1;
@@ -266,7 +267,7 @@ public class WVector<E> implements Cloneable
 			gcd=CMath.gcd(objects.get(i).weight,gcd);
 			if(gcd==1) return;
 		}
-		for(WeightedObject<E> O : (WeightedObject<E>[])objects.toArray(new WeightedObject[0]))
+		for(WeightedObject<E> O : (WeightedObject<E>[])objects.toArray(dummyWOArray))
 			O.weight=O.weight/gcd;
 		totalWeight/=gcd;
 	}

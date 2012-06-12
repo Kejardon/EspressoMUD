@@ -8,14 +8,14 @@ import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.DatabaseEngine;
-import com.planet_ink.coffee_mud.Libraries.interfaces.XMLLibrary;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
 import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -34,20 +34,31 @@ public class DefaultTimeClock implements TimeClock, Ownable
 	public String name(){return "Time Object";}
 	public CMObject newInstance(){try{return (CMObject)getClass().newInstance();}catch(Exception e){return new DefaultTimeClock();}}
 	public void initializeClass(){}
-	public long lastTick=0;
+	//public long lastTick=0;
 
 	//Ownable
 	public CMSavable owner(){return parent;}
-	public Ownable setOwner(CMSavable owner){parent=owner; return this;}
+	public Ownable setOwner(CMSavable owner)
+	{
+		if(parent==null)
+		{
+			if(owner!=null)
+				CMLib.threads().addClock(this);
+		}
+		else if(owner==null)
+			CMLib.threads().delClock(this);
+		parent=owner;
+		return this;
+	}
 
 	protected Tickable.TickStat tickStatus=Tickable.TickStat.Not;
-	public Tickable.TickStat getTickStatus(){return tickStatus;}
-	protected boolean loaded=false;
+	protected int tickCount=0;
 	protected int year=1;
 	protected int baseYear=0;
 	protected int month=1;
 	protected int day=1;
-	protected int time=0;
+	protected int hour=0;
+	protected int subHour=0;
 	protected long baseTime=System.currentTimeMillis();
 	protected int hoursInDay=6;
 	protected String[] monthsInYear={
@@ -59,32 +70,45 @@ public class DefaultTimeClock implements TimeClock, Ownable
 	protected String[] weekNames={};
 	protected String[] yearNames={"year #"};
 	
+	public Tickable.TickStat getTickStatus(){return tickStatus;}
 	protected void recalcTime()	//Assume current time is accurate, get new baseTime
 	{
 		long revertThisFar=0;
-		long multiplier=Tickable.TIME_MILIS_PER_MUDHOUR;
-		revertThisFar+=time*multiplier;
+		long multiplier=Tickable.TIME_TICK; //Tickable.TIME_MILIS_PER_MUDHOUR;
+		revertThisFar+=subHour*multiplier;
+		multiplier*=Tickable.TIME_TICKS_PER_MUDHOUR;
+		revertThisFar+=hour*multiplier;
 		multiplier*=hoursInDay;
 		revertThisFar+=day*multiplier;
 		multiplier*=daysInMonth;
 		revertThisFar+=month*multiplier;
 		multiplier*=monthsInYear.length;
 		baseYear=year;
-		baseTime=lastTick-revertThisFar;
-		CMLib.database().saveObject(this);
+		baseTime=System.currentTimeMillis()-revertThisFar;
+		if(parent!=null)parent.saveThis();
 	}
 	protected void setBaseTime(long newTime, int newBaseYear)	//Absolute base values
 	{
 		baseYear=newBaseYear;
 		baseTime=newTime;
-		lastTick=System.currentTimeMillis();
-		long tempTime=(lastTick-newTime)/Tickable.TIME_MILIS_PER_MUDHOUR;
-		long tempDay=tempTime/hoursInDay;
-		time=(int)(tempTime%hoursInDay);
+		//lastTick=System.currentTimeMillis();
+		long tempTime=(System.currentTimeMillis()-newTime)/Tickable.TIME_TICK;
+		subHour=(int)(tempTime%Tickable.TIME_TICKS_PER_MUDHOUR);
+		tempTime=tempTime/Tickable.TIME_TICKS_PER_MUDHOUR;
+		hour=(int)(tempTime%hoursInDay);
+		tempTime=tempTime/hoursInDay;
+		day=(int)(tempTime%daysInMonth);
+		tempTime=tempTime/daysInMonth;
+		month=(int)(tempTime%monthsInYear.length);
+		year=(int)(tempTime/monthsInYear.length);
+		if(parent!=null)parent.saveThis();
+/*		long tempHour=(tempTime)/Tickable.TIME_TICKS_PER_MUDHOUR;
+		long tempDay=tempHour/hoursInDay;
+		hour=(int)(tempHour%hoursInDay);
 		long tempMonth=tempDay/daysInMonth;
 		day=(int)(tempDay%daysInMonth);
 		year=(int)(tempMonth/monthsInYear.length);
-		month=(int)(tempMonth%monthsInYear.length);
+		month=(int)(tempMonth%monthsInYear.length); */
 	}
 	
 	public int getHoursInDay(){return hoursInDay;}
@@ -96,7 +120,7 @@ public class DefaultTimeClock implements TimeClock, Ownable
 	public void setMonthsInYear(String[] months){monthsInYear=months; recalcTime();}
 	public int[] getDawnToDusk(){return dawnToDusk;}
 	public String[] getYearNames(){return yearNames;}
-	public void setYearNames(String[] years){yearNames=years; CMLib.database().saveObject(this);}
+	public void setYearNames(String[] years){yearNames=years; if(parent!=null)parent.saveThis();}
 	public void setDawnToDusk(int dawn, int day, int dusk, int night)
 	{ 
 		dawnToDusk[TIME_DAWN]=dawn;
@@ -107,7 +131,7 @@ public class DefaultTimeClock implements TimeClock, Ownable
 	}
 	public String[] getWeekNames(){return weekNames;}
 	public int getDaysInWeek(){return weekNames.length;}
-	public void setDaysInWeek(String[] days){weekNames=days; CMLib.database().saveObject(this);}
+	public void setDaysInWeek(String[] days){weekNames=days; recalcTime();}
 	
 	public String getShortestTimeDescription()
 	{
@@ -132,37 +156,8 @@ public class DefaultTimeClock implements TimeClock, Ownable
 		timeDesc.append("the "+getDayOfMonth()+CMath.numAppendage(getDayOfMonth()));
 		timeDesc.append(" day of "+getMonthNames()[getMonth()-1]);
 		if(getYearNames().length>0)
-			timeDesc.append(", "+CMStrings.replaceAll(getYearNames()[getYear()%getYearNames().length],"#",""+getYear()));
+			timeDesc.append(", "+getYearNames()[getYear()%getYearNames().length].replace("#",""+getYear()));
 		return timeDesc.toString();
-	}
-	
-	public void initializeINIClock(CMProps page)
-	{
-		if(CMath.s_int(page.getStr("HOURSINDAY"))>0)
-			setHoursInDay(CMath.s_int(page.getStr("HOURSINDAY")));
-
-		if(CMath.s_int(page.getStr("DAYSINMONTH"))>0)
-			setDaysInMonth(CMath.s_int(page.getStr("DAYSINMONTH")));
-
-		String monthsInYear=page.getStr("MONTHSINYEAR");
-		if(monthsInYear.trim().length()>0)
-			setMonthsInYear(CMParms.toStringArray(CMParms.parseCommas(monthsInYear,true)));
-
-		setDaysInWeek(CMParms.toStringArray(CMParms.parseCommas(page.getStr("DAYSINWEEK"),true)));
-
-		if(page.containsKey("YEARDESC"))
-			setYearNames(CMParms.toStringArray(CMParms.parseCommas(page.getStr("YEARDESC"),true)));
-
-		if(page.containsKey("DAWNHR")&&page.containsKey("DAYHR")
-				&&page.containsKey("DUSKHR")&&page.containsKey("NIGHTHR"))
-		setDawnToDusk(
-						CMath.s_int(page.getStr("DAWNHR")),
-						CMath.s_int(page.getStr("DAYHR")),
-						CMath.s_int(page.getStr("DUSKHR")),
-						CMath.s_int(page.getStr("NIGHTHR")));
-
-//		CMProps.Ints.TICKSPERMUDDAY.setProperty(Tickable.TIME_MILIS_PER_MUDHOUR*CMLib.time().globalClock().getHoursInDay()/Tickable.TIME_TICK);
-//		CMProps.Ints.TICKSPERMUDMONTH.setProperty(Tickable.TIME_MILIS_PER_MUDHOUR*CMLib.time().globalClock().getHoursInDay()*CMLib.time().globalClock().getDaysInMonth()/Tickable.TIME_TICK);
 	}
 	
 	public String timeDescription(MOB mob, Room room)
@@ -172,7 +167,7 @@ public class DefaultTimeClock implements TimeClock, Ownable
 		if(getTODCode()>=0)
 			timeDesc.append(TOD_DESC[getTODCode()]);
 		timeDesc.append("(Hour: "+getTimeOfDay()+"/"+(getHoursInDay()-1)+")");
-		timeDesc.append("\n\rIt is ");
+		timeDesc.append("\r\nIt is ");
 		if(getDaysInWeek()>0)
 		{
 			long x=((long)getYear())*((long)getMonthsInYear())*getDaysInMonth();
@@ -183,13 +178,13 @@ public class DefaultTimeClock implements TimeClock, Ownable
 		timeDesc.append("the "+getDayOfMonth()+CMath.numAppendage(getDayOfMonth()));
 		timeDesc.append(" day of "+getMonthNames()[getMonth()-1]);
 		if(getYearNames().length>0)
-			timeDesc.append(", "+CMStrings.replaceAll(getYearNames()[getYear()%getYearNames().length],"#",""+getYear()));
-		timeDesc.append(".\n\rIt is "+(TimeClock.SEASON_DESCS[getSeasonCode()]).toLowerCase()+".");
+			timeDesc.append(", "+getYearNames()[getYear()%getYearNames().length].replace("#",""+getYear()));
+		timeDesc.append(".\r\nIt is "+(TimeClock.SEASON_DESCS[getSeasonCode()]).toLowerCase()+".");
 		return timeDesc.toString();
 	}
 
 	public int getYear(){return year;}
-	public void setYear(int y){year=y; CMLib.database().saveObject(this);}
+	public void setYear(int y){year=y; recalcTime();}
 
 	public int getSeasonCode(){
 		int div=getMonthsInYear()/4;
@@ -199,20 +194,20 @@ public class DefaultTimeClock implements TimeClock, Ownable
 		return TimeClock.SEASON_FALL;
 	}
 	public int getMonth(){return month;}
-	public void setMonth(int m){month=m; CMLib.database().saveObject(this);}
+	public void setMonth(int m){month=m; recalcTime();}
 
 	public int getDayOfMonth(){return day;}
-	public void setDayOfMonth(int d){day=d; CMLib.database().saveObject(this);}
-	public int getTimeOfDay(){return time;}
+	public void setDayOfMonth(int d){day=d; recalcTime();}
+	public int getTimeOfDay(){return hour;}
 	public int getTODCode()
 	{
-		if((time>=getDawnToDusk()[TimeClock.TIME_NIGHT])&&(getDawnToDusk()[TimeClock.TIME_NIGHT]>=0))
+		if((hour>=getDawnToDusk()[TimeClock.TIME_NIGHT])&&(getDawnToDusk()[TimeClock.TIME_NIGHT]>=0))
 			return TimeClock.TIME_NIGHT;
-		if((time>=getDawnToDusk()[TimeClock.TIME_DUSK])&&(getDawnToDusk()[TimeClock.TIME_DUSK]>=0))
+		if((hour>=getDawnToDusk()[TimeClock.TIME_DUSK])&&(getDawnToDusk()[TimeClock.TIME_DUSK]>=0))
 			return TimeClock.TIME_DUSK;
-		if((time>=getDawnToDusk()[TimeClock.TIME_DAY])&&(getDawnToDusk()[TimeClock.TIME_DAY]>=0))
+		if((hour>=getDawnToDusk()[TimeClock.TIME_DAY])&&(getDawnToDusk()[TimeClock.TIME_DAY]>=0))
 			return TimeClock.TIME_DAY;
-		if((time>=getDawnToDusk()[TimeClock.TIME_DAWN])&&(getDawnToDusk()[TimeClock.TIME_DAWN]>=0))
+		if((hour>=getDawnToDusk()[TimeClock.TIME_DAWN])&&(getDawnToDusk()[TimeClock.TIME_DAWN]>=0))
 			return TimeClock.TIME_DAWN;
 		// it's before night, dusk, day, and dawn... before dawn is still night.
 		if(getDawnToDusk()[TimeClock.TIME_NIGHT]>=0)
@@ -222,8 +217,8 @@ public class DefaultTimeClock implements TimeClock, Ownable
 	public boolean setTimeOfDay(int t)
 	{
 		int oldCode=getTODCode();
-		time=t;
-		CMLib.database().saveObject(this);
+		hour=t;
+		recalcTime();
 		return getTODCode()!=oldCode;
 	}
 	
@@ -240,7 +235,7 @@ public class DefaultTimeClock implements TimeClock, Ownable
 		}
 	}
 
-	public String deriveEllapsedTimeString(long millis)
+/*	public String deriveEllapsedTimeString(long millis)
 	{
 		int hours=(int)(millis/Tickable.TIME_MILIS_PER_MUDHOUR);
 		int days=0;
@@ -280,19 +275,18 @@ public class DefaultTimeClock implements TimeClock, Ownable
 		}
 		if(buf.length()==0) return "any second now";
 		return buf.toString();
-	}
+	} */
 	
 	public void raiseLowerTheSunEverywhere()
 	{
 		try
 		{
-			for(Enumeration a=CMLib.map().areas();a.hasMoreElements();)
+			for(Iterator<Area> a=CMLib.map().areas();a.hasNext();)
 			{
-				Area A=(Area)a.nextElement();
+				Area A=a.next();
 				if(A.getTimeObj()==this)
-				for(Enumeration r=A.getProperMap();r.hasMoreElements();)
+				for(Room R : A.getProperMap())
 				{
-					Room R=(Room)r.nextElement();
 					/*
 					if((R!=null)&&((R.numInhabitants()>0)||(R.numItems()>0)))
 					{
@@ -327,14 +321,14 @@ public class DefaultTimeClock implements TimeClock, Ownable
 	public void tickTock(int howManyHours)
 	{
 		int todCode=getTODCode();
-		time+=howManyHours;
-		lastTick=System.currentTimeMillis();
+		hour+=howManyHours;
+		//lastTick=System.currentTimeMillis();
 		if(howManyHours>0)
 		{
-			if(time>hoursInDay)
+			if(hour>hoursInDay)
 			{
-				day+=time/hoursInDay;
-				time=time%hoursInDay;
+				day+=hour/hoursInDay;
+				hour=hour%hoursInDay;
 				if(day>daysInMonth)
 				{
 					month+=day/daysInMonth;
@@ -349,10 +343,10 @@ public class DefaultTimeClock implements TimeClock, Ownable
 		}
 		else if(howManyHours<0)
 		{
-			if(time<0)
+			if(hour<0)
 			{
-				day+=time/hoursInDay-1;
-				time=time%hoursInDay+hoursInDay;
+				day+=hour/hoursInDay-1;
+				hour=hour%hoursInDay+hoursInDay;
 				if(day<0)
 				{
 					month+=day/daysInMonth-1;
@@ -367,40 +361,59 @@ public class DefaultTimeClock implements TimeClock, Ownable
 		}
 		if(getTODCode()!=todCode) raiseLowerTheSunEverywhere();
 	}
-	public boolean tick(Tickable ticking, Tickable.TickID tickID)
+	public int tickCounter(){return tickCount;}
+	public void tickAct(){}
+	public boolean tick(int tickTo)
 	{
-//		tickStatus=Tickable.TickStat.Not;
-		if((System.currentTimeMillis()-lastTick)<=Tickable.TIME_MILIS_PER_MUDHOUR)
-			return true;
-		synchronized(this)
+		//It shouldn't be needed... but 'ideally' if tickCount==0 the clock should recalc current subhour/hour/etc.
+		//Eh. The calculation is simple enough, I'll include it.
+		if(tickCount==0)
 		{
-			boolean timeToTick = ((System.currentTimeMillis()-lastTick)>Tickable.TIME_MILIS_PER_MUDHOUR);
-			lastTick=System.currentTimeMillis();
-			if(timeToTick)
-				if(++time>=hoursInDay)
-				{
-					time=0;
-					if(++day>daysInMonth)
-					{
-						day=1;
-						if(++month>monthsInYear.length)
-						{
-							month=1;
-							year++;
-						}
-					}
-				}
+			tickCount=tickTo-1;
+			setBaseTime(baseTime, baseYear);
+		}
+		while(tickCount<tickTo)
+		{
+			tickCount++;
+			if(!doTick()) {tickCount=0; return false;}
 		}
 		return true;
 	}
-	public long lastTick(){return lastTick;}
-	public long lastAct(){return 0;}
+	protected boolean doTick()
+	{
+		if(++subHour>=Tickable.TIME_TICKS_PER_MUDHOUR)
+		{
+			subHour=0;
+			if(++hour>=hoursInDay)
+			{
+				hour=0;
+				if(++day>daysInMonth)
+				{
+					day=1;
+					if(++month>monthsInYear.length)
+					{
+						month=1;
+						year++;
+					}
+				}
+			}
+		}
+		return true;
+	}
+	//public long lastTick(){return lastTick;}
+	//public long lastAct(){return 0;}
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 
 	public void destroy()
 	{
-		//TODO
-		CMLib.database().deleteObject(this);
+		//TODO?
+		//CMLib.database().deleteObject(this);
+	}
+	public boolean amDestroyed()
+	{
+		if(parent!=null)
+			return parent.amDestroyed();
+		return true;
 	}
 
 	public SaveEnum[] totalEnumS(){return SCode.values();}
@@ -411,7 +424,8 @@ public class DefaultTimeClock implements TimeClock, Ownable
 	public void setSaveNum(int num){}
 	public boolean needLink(){return false;}
 	public void link(){}
-	public void saveThis(){parent.saveThis();}
+	public void saveThis(){if(parent!=null)parent.saveThis();}
+	public void prepDefault(){}
 
 	private enum SCode implements CMSavable.SaveEnum{
 		TIM(){
@@ -450,10 +464,14 @@ public class DefaultTimeClock implements TimeClock, Ownable
 		public CMSavable subObject(CMSavable fromThis){return null;}
 		public void load(CMSavable E, ByteBuffer S){load((DefaultTimeClock)E, S);} }
 	private enum MCode implements CMModifiable.ModEnum{
+		SUBHOUR(){
+			public String brief(DefaultTimeClock E){return ""+E.subHour;}
+			public String prompt(DefaultTimeClock E){return ""+E.subHour;}
+			public void mod(DefaultTimeClock E, MOB M){E.subHour=CMLib.genEd().intPrompt(M, ""+E.subHour); E.recalcTime();} },
 		HOUR(){
-			public String brief(DefaultTimeClock E){return ""+E.time;}
-			public String prompt(DefaultTimeClock E){return ""+E.time;}
-			public void mod(DefaultTimeClock E, MOB M){E.time=CMLib.genEd().intPrompt(M, ""+E.time); E.recalcTime();} },
+			public String brief(DefaultTimeClock E){return ""+E.hour;}
+			public String prompt(DefaultTimeClock E){return ""+E.hour;}
+			public void mod(DefaultTimeClock E, MOB M){E.hour=CMLib.genEd().intPrompt(M, ""+E.hour); E.recalcTime();} },
 		DAY(){
 			public String brief(DefaultTimeClock E){return ""+E.day;}
 			public String prompt(DefaultTimeClock E){return ""+E.day;}

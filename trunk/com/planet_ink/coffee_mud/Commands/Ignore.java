@@ -24,30 +24,27 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Ignore extends StdCommand
 {
-	public Ignore(){}
+	public Ignore(){access=new String[]{"IGNORE"};}
 
-	private String[] access={"IGNORE"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		PlayerStats pstats=mob.playerStats();
 		if(pstats==null) return false;
-		HashSet<MOB> h=pstats.getIgnored();
-		if((commands.size()<2)||(((String)commands.elementAt(1)).equalsIgnoreCase("list")))
+		if((commands.size()<2)||(commands.elementAt(1).equalsIgnoreCase("list")))
 		{
-			if(h.size()==0)
+			MOB[] h=pstats.getIgnored();
+			if(h.length==0)
 				mob.tell("You have no names on your ignore list.  Use IGNORE ADD to add more.");
 			else
 			{
 				StringBuffer str=new StringBuffer("You are ignoring: ");
-				for(Iterator<MOB> e=h.iterator();e.hasNext();)
-					str.append((e.next().name())+" ");
+				for(MOB M : h)
+					str.append((M.name())+" ");
 				mob.tell(str.toString());
 			}
 		}
 		else
-		if(((String)commands.elementAt(1)).equalsIgnoreCase("ADD"))
+		if(commands.elementAt(1).equalsIgnoreCase("ADD"))
 		{
 			String name=CMParms.combine(commands,2);
 			if(name.length()==0)
@@ -62,16 +59,22 @@ public class Ignore extends StdCommand
 				mob.tell("No player by that name was found.");
 				return false;
 			}
-			if(h.contains(newIgnore))
+			if(pstats.hasIgnored(newIgnore))
 			{
 				mob.tell("That name is already on your list.");
 				return false;
 			}
-			h.add(newIgnore);
+			pstats.addIgnored(newIgnore);
+			newIgnore.playerStats().addIgnoredBy(pstats);
+			/*if(newIgnore.playerStats().getAccount()==null)
+				newIgnore.playerStats().saveThis();
+			else
+				newIgnore.playerStats().getAccount().saveThis();
+			pstats.saveThis();*/
 			mob.tell("The Player '"+name+"' has been added to your ignore list.");
 		}
 		else
-		if(((String)commands.elementAt(1)).equalsIgnoreCase("REMOVE"))
+		if(commands.elementAt(1).equalsIgnoreCase("REMOVE"))
 		{
 			String name=CMParms.combine(commands,2);
 			if(name.length()==0)
@@ -79,26 +82,31 @@ public class Ignore extends StdCommand
 				mob.tell("Remove whom?");
 				return false;
 			}
-			for (Iterator<MOB> iter=h.iterator(); iter.hasNext();)
-			{
-				MOB newIgnore=iter.next();
+			
+			for (MOB newIgnore : pstats.getIgnored())
 				if(newIgnore.name().equalsIgnoreCase(name))
 				{
-					h.remove(newIgnore);
+					pstats.removeIgnored(newIgnore);
+					newIgnore.playerStats().removeIgnoredBy(pstats);
+					/*if(newIgnore.playerStats().getAccount()==null)
+						newIgnore.playerStats().saveThis();
+					else
+						newIgnore.playerStats().getAccount().saveThis();
+					pstats.saveThis();*/
 					mob.tell("The Player '"+name+"' has been removed from your ignore list.");
 					return false;
 				}
-			}
 			mob.tell("That name '"+name+"' does not appear on your list.");
 			return false;
 		}
 		else
 		{
-			mob.tell("Parameter '"+((String)commands.elementAt(1))+"' is not recognized.  Try LIST, ADD, or REMOVE.");
+			mob.tell("Parameter '"+commands.elementAt(1)+"' is not recognized.  Try LIST, ADD, or REMOVE.");
 			return false;
 		}
 		return false;
 	}
-	
+
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	public boolean canBeOrdered(){return true;}
 }

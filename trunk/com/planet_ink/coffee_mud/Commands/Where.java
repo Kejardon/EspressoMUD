@@ -24,18 +24,14 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Where extends StdCommand
 {
-	public Where(){}
+	public Where(){access=new String[]{"WHERE"};}
 
-	private String[] access={"WHERE"};
-	public String[] getAccessWords(){return access;}
-
-
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
-		mob.tell("You are currently in: ^H"+mob.location().getArea().name()+"^?\n\r");
+		mob.tell("You are currently in: ^H"+mob.location().getArea().name()+"^?\r\n");
 		return false;
 	}
 
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	public boolean canBeOrdered(){return true;}
 }

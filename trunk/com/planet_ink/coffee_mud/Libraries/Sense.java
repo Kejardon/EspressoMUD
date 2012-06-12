@@ -9,12 +9,13 @@ import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
-
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -32,10 +33,10 @@ public class Sense extends StdLibrary implements CMFlagLibrary
 	{ return (E instanceof MOB)&&(((MOB)E).session()!=null)&&((System.currentTimeMillis()-((MOB)E).session().lastLoopTime())>30000);}
 	public boolean isAnimalIntelligence(MOB E)
 	{ return (E!=null)&&(E.charStats().getStat(CharStats.Stat.INTELLIGENCE)<2); }
-	public boolean stillAffectedBy(Affectable obj, Vector oneOf, boolean anyTallF)
+	public boolean stillAffectedBy(Affectable obj, Vector<Effect> oneOf, boolean anyTallF)
 	{
 		for(int a=oneOf.size()-1;a>=0;a--)
-			if(obj.fetchEffect(((Effect)oneOf.elementAt(a)).ID())==null)
+			if(obj.fetchEffect(oneOf.get(a).ID())==null)
 			{
 				if(!anyTallF)
 					return false;
@@ -48,54 +49,65 @@ public class Sense extends StdLibrary implements CMFlagLibrary
 		return !anyTallF;
 	}
 
+	public boolean isInTheGame(Area E)
+	{
+		if(E==null) return false;
+		return (CMLib.map().getArea(E.name())==E);
+	}
 	public boolean isInTheGame(Interactable E, boolean reqInhabitation)
 	{
+		if((E instanceof CMSavable)&&(((CMSavable)E).amDestroyed()))
+			return false;
+		
+		if((E instanceof MOB)||(E instanceof Body))
+		{
+			//NOTE: If multiple mobs of a body is implemented, this needs to be redone
+			MOB M=((E instanceof MOB)?((MOB)E):(((Body)E).mob()));
+			if(M!=null)
+			{
+				if((reqInhabitation)&&(M.playerStats()!=null)&&(M.session()==null))
+					return false;
+				E=M.body();
+			}
+			//return (((MOB)E).location()!=null)&&((!reqInhabitation)||(((MOB)E).location().isContent(((MOB)E).body(), true)));
+		}
 		if(E instanceof Room)
-			return ((Room)E).saveNum()!=0;
-		else
-		if(E instanceof MOB)
-			return (((MOB)E).location()!=null)
-//				   &&((MOB)E).amActive()
-				   &&((!reqInhabitation)||(((MOB)E).location().isContent(((MOB)E).body(), true)));
-		else
+			return isInTheGame(((Room)E).getArea());
+
 		if(E instanceof Item)
 		{
-			if(((Item)E).container() instanceof MOB)
-				return isInTheGame((MOB)((Item)E).container(),reqInhabitation);
-			else
-			if(((Item)E).container() instanceof Room)
-				return ((!((Item)E).amDestroyed())
-						&&((!reqInhabitation)||(((Room)((Item)E).container()).isContent((Item)E, true))));
-			else
-				return false;
+			CMObject O=((Item)E).container();
+			if(O instanceof Interactable)
+				return isInTheGame((Interactable)O,reqInhabitation);
 		}
-		else
-		if(E instanceof Area)
-			return CMLib.map().getArea(E.name())==E;
-		else
-			return true;
+		
+		return (E!=null);
 	}
-	public Vector flaggedAnyAffects(Affectable A, EnumSet flag)
+	public Vector<Effect> flaggedAnyAffects(Affectable A, EnumSet<Effect.Flags> flags)
 	{
-		Vector V=new Vector();
+		Vector<Effect> V=new Vector();
 		if(A!=null)
-			for(int a=0;a<A.numEffects();a++)
+		{
+			Effect.Flags[] set=flags.toArray(Effect.dummyEFlagsArray);
+			for(Iterator<Effect> e=A.allEffects();e.hasNext();)
 			{
-				Effect E=A.fetchEffect(a);
-				if((E!=null)&&(E.effectFlags().clone().removeAll(flag)))
-				{ V.addElement(E);}
+				Effect E=e.next();
+				for(Effect.Flags flag : set)
+					if((E.effectFlags().contains(flag)))
+						{ V.add(E); break; }
 			}
+		}
 		return V;
 	}
-	public Vector flaggedAffects(Affectable A, EnumSet flag)
+	public Vector<Effect> flaggedAffects(Affectable A, EnumSet<Effect.Flags> flag)
 	{
-		Vector V=new Vector();
+		Vector<Effect> V=new Vector();
 		if(A!=null)
-			for(int a=0;a<A.numEffects();a++)
+			for(Iterator<Effect> e=A.allEffects();e.hasNext();)
 			{
-				Effect E=A.fetchEffect(a);
-				if((E!=null)&&(E.effectFlags().containsAll(flag)))
-				{ V.addElement(E);}
+				Effect E=e.next();
+				if((E.effectFlags().containsAll(flag)))
+					V.add(E);
 			}
 		return V;
 	}

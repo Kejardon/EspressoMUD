@@ -1,6 +1,5 @@
 package com.planet_ink.coffee_mud.Libraries.interfaces;
 import com.planet_ink.coffee_mud.core.interfaces.*;
-import com.planet_ink.coffee_mud.core.threads.Tick;
 import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
@@ -12,7 +11,12 @@ import com.planet_ink.coffee_mud.Items.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
+
+import com.planet_ink.coffee_mud.core.threads.TickArea;
+
 import java.util.*;
+import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -25,20 +29,33 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 public interface ThreadEngine extends CMLibrary, Runnable
 {
 	// tick related
-	public void startTickDown(Tickable E, long TICK_TIME);
+	public void startTickDown(TickActer E);
 	public void startArea(Tickable E);
 	public void startArea(Tickable E, long TICK_TIME);
-	public boolean deleteTick(Tickable E);
+	public boolean deleteTick(TickActer E);
 	public boolean deleteArea(Tickable E);
-	public void suspendAll();
-	public void resumeAll();
+	public void delArea(TickArea tock);
+	public void addArea(TickArea tock);
+	public Iterator<TickArea> areaGroups();
+	public void delExit(Exit exit);
+	public void addExit(Exit exit);
+	public void delClock(TimeClock clock);
+	public void addClock(TimeClock clock);
+	//public void suspendAll();
+	//public void resumeAll();
+	public void setSuspended(boolean b);
 	public boolean isAllSuspended();
-	public String tickInfo(String which);
-	public String systemReport(String itemCode);
-	public  Iterator<Tick> tickGroups();
-	public String getTickStatusSummary(Tickable obj);
+	//public String tickReport(String request);
+	//public String tickInfo(String which);
+	public String[] mobTimes();
+	public long[] memoryUse();
+	//public int numTickGroups();
+	public String[][] threadInfo();
+	//public String systemReport(String itemCode);
+	//public Iterator<Tick> tickGroups();
+	//public String getTickStatusSummary(Tickable obj);
 	public String getServiceThreadSummary(Thread T);
-	public Vector getNamedTickingObjects(String name);
+	//public Vector getNamedTickingObjects(String name);
 	
 	public class SupportThread extends Thread {
 		public boolean started=false;
@@ -84,8 +101,8 @@ public interface ThreadEngine extends CMLibrary, Runnable
 		
 		public void run()
 		{
-			try {
-				lastStart=System.currentTimeMillis();
+			try
+			{
 				if(started)
 				{
 					Log.errOut(getName(),"DUPLICATE "+getName().toUpperCase()+" RUNNING!!");
@@ -97,55 +114,50 @@ public interface ThreadEngine extends CMLibrary, Runnable
 				while(!CMProps.Bools.MUDSTARTED.property())
 					try{Thread.sleep(1000);}catch(Exception e){}
 				lastStart=System.currentTimeMillis();
-				while(true)
-				{
-					try
-					{
+				
+				try{ while(true) {
+					try{ while(true) {
 						while(CMLib.threads().isAllSuspended())
 							try{Thread.sleep(2000);}catch(Exception e){}
-						if(!CMSecurity.isDisabled(getName()))
+//						if(!CMSecurity.isDisabled(getName()))
 						{
-//							status("checking database health");
-//							String ok=CMLib.database().errorStatus();
-//							if((ok.length()!=0)&&(!ok.startsWith("OK")))
-//								Log.errOut(getName(),"DB: "+ok);
-//							else
+							lastStop=System.currentTimeMillis();
+							long intermediate=(lastStop-lastStart);
+							milliTotal+=intermediate;
+							tickTotal++;
+							status("sleeping");
+							if(intermediate<sleepTime)
 							{
-								lastStop=System.currentTimeMillis();
-								milliTotal+=(lastStop-lastStart);
-								tickTotal++;
-								status("stopped at "+lastStop+", prev was "+(lastStop-lastStart)+"ms");
-								status("sleeping");
-								Thread.sleep(sleepTime);
-								lastStart=System.currentTimeMillis();
-								status("starting run at: "+lastStart);
-								engine.run();
+								Thread.sleep(sleepTime-intermediate);
+								lastStart+=sleepTime;
 							}
+							else
+								lastStart=System.currentTimeMillis();
+							status("running");
+							engine.run();
 						}
-						else
-						{
-							status="sleeping";
-							Thread.sleep(sleepTime);
-						}
-					}
-					catch(InterruptedException ioe)
-					{
-						Log.sysOut(getName(),"Interrupted!");
-						if(shutDown)
-						{
-							shutDown=false;
-							started=false;
-							break;
-						}
-					}
+//						else
+//						{
+//							status="sleeping";
+//							Thread.sleep(sleepTime);
+//						}
+					} }
 					catch(Exception e)
 					{
+						if(e instanceof InterruptedException) throw e;
 						Log.errOut(getName(),e);
 					}
+				} }
+				catch(InterruptedException ioe)
+				{
+					Log.sysOut(getName(),"Interrupted!");
+					if(shutDown)
+					{
+						shutDown=false;
+						started=false;
+					}
 				}
-			} finally {
-				started=false;
-			}
+			} finally { started=false; }
 			Log.sysOut(getName(),"Shutdown complete.");
 		}
 	}

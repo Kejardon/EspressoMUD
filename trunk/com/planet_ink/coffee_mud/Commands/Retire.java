@@ -21,15 +21,13 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
+//Note: This is not a prompter command, it must be responded to immediately by the player
 @SuppressWarnings("unchecked")
 public class Retire extends StdCommand
 {
-	public Retire(){}
+	public Retire(){access=new String[]{"RETIRE"};}
 
-	private String[] access={"RETIRE"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		Session session=mob.session();
 		if(mob.isMonster()) return false;
@@ -48,11 +46,13 @@ public class Retire extends StdCommand
 		{
 			String reason=session.prompt("OK.  Please leave us a short message as to why you are deleting this"
 											  +" character.  Your answers will be kept confidential, "
-											  +"and are for administrative purposes only.\n\r: ","",120000);
+											  +"and are for administrative purposes only.\r\n: ","",120000);
 			Log.sysOut("Retire",mob.name()+" retiring: "+reason);
 		}
 		CMLib.players().obliteratePlayer(mob,false);
 		return false;
 	}
+
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	public boolean canBeOrdered(){return false;}
 }

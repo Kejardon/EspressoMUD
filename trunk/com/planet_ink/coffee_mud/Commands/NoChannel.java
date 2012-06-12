@@ -24,16 +24,13 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class NoChannel extends StdCommand
 {
-	public NoChannel(){}
+	public NoChannel(){access=new String[0];}
 
-	private String[] access=new String[0];
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		PlayerStats pstats=mob.playerStats();
 		if(pstats==null) return false;
-		String channelName=((String)commands.elementAt(0)).toUpperCase().trim().substring(2);
+		String channelName=commands.elementAt(0).toUpperCase().trim().substring(2);
 		commands.removeElementAt(0);
 		int channelNum=-1;
 		for(int c=0;c<CMLib.channels().getNumChannels();c++)
@@ -69,5 +66,6 @@ public class NoChannel extends StdCommand
 		return false;
 	}
 
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	public boolean canBeOrdered(){return true;}
 }

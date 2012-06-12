@@ -22,13 +22,11 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
+//TODO in general
 @SuppressWarnings("unchecked")
 public class List extends StdCommand
 {
-	public List(){}
-
-	private String[] access={"LIST"};
-	public String[] getAccessWords(){return access;}
+	public List(){access=new String[]{"LIST"};}
 
 	public static void dumpThreadGroup(StringBuffer lines,ThreadGroup tGroup)
 	{
@@ -38,25 +36,25 @@ public class List extends StdCommand
 		ThreadGroup tgArray[] = new ThreadGroup [agc+1];
 		tGroup.enumerate(tArray,false);
 		tGroup.enumerate(tgArray,false);
-		lines.append(" ^HTGRP^?  ^H" + tGroup.getName() + "^?\n\r");
+		lines.append(" ^HTGRP^?  ^H" + tGroup.getName() + "^?\r\n");
 		for (int i = 0; i<ac; ++i) {
 			if (tArray[i] != null) {
 				if((tArray[i] instanceof Tickable)&&(((Tickable)tArray[i]).getTickStatus()==Tickable.TickStat.Not)) continue;
 				lines.append(tArray[i].isAlive()? "  ok   " : " BAD!  ");
-				lines.append(CMStrings.padRight(tArray[i].getName(),20)+": ");
+				lines.append(CMStrings.padRight(tArray[i].getName(),20)).append(": ");
 				if(tArray[i] instanceof Session) {
 					Session S=(Session)tArray[i];
-					lines.append("Session status "+S.getStatus()+"-"+CMParms.combine(S.previousCMD(),0) + "\n\r"); }
+					lines.append("Session status ").append(S.getStatus()).append("-").append(S.previousCMD()).append("\r\n"); }
 				else if(tArray[i] instanceof Tickable) {
 					Tickable T=(Tickable)tArray[i];
-					lines.append("Tickable "+T.ID()+"-"+T.getTickStatus() + "\n\r"); }
+					lines.append("Tickable ").append(T.ID()).append("-").append(T.getTickStatus()).append("\r\n"); }
 				else {
 					String status=CMLib.threads().getServiceThreadSummary(tArray[i]);
-					lines.append("Thread "+tArray[i].getName() + status+"\n\r"); } } }
+					lines.append("Thread ").append(tArray[i].getName()).append(status).append("\r\n"); } } }
 		if (agc > 0) {
-			lines.append("{\n\r");
+			lines.append("{\r\n");
 			for (int i = 0; i<agc; ++i) if (tgArray[i] != null) dumpThreadGroup(lines,tgArray[i]);
-			lines.append("}\n\r"); }
+			lines.append("}\r\n"); }
 	}
 /*
 	protected String reallyFindOneWays(MOB mob, Vector commands)
@@ -68,11 +66,11 @@ public class List extends StdCommand
 			{
 				Room R=(Room)r.nextElement();
 				if(R.roomID().length()>0)
-					for(int d=Directions.NUM_DIRECTIONS()-1;d>=0;d--)
+					for(int d=Directions.NUM_DIRECTIONS-1;d>=0;d--)
 					{
 						Room R2=R.rawDoors()[d];
 						if((R2!=null)&&(R2.rawDoors()[Directions.getOpDirectionCode(d)]!=R))
-							str.append(CMStrings.padRight(R.roomID(),30)+": "+Directions.getDirectionName(d)+" to "+R2.roomID()+"\n\r");
+							str.append(CMStrings.padRight(R.roomID(),30)+": "+Directions.getDirectionName(d)+" to "+R2.roomID()+"\r\n");
 					}
 			}
 		}catch(NoSuchElementException e){}
@@ -86,7 +84,7 @@ public class List extends StdCommand
 	public Vector<String> getMyCmdWords(MOB mob)
 	{
 		Vector<String> V=new Vector();
-		if(CMSecurity.isAllowed(mob,mob.location(),"LISTADMIN"))
+		if(CMSecurity.isAllowed(mob,"LISTADMIN"))
 			for(ListOption option : allOptions)
 				V.add(option.toString());
 		else
@@ -104,7 +102,7 @@ public class List extends StdCommand
 
 	public ListOption getAnyCode(MOB mob)
 	{
-		if(CMSecurity.isAllowed(mob,mob.location(),"LISTADMIN"))
+		if(CMSecurity.isAllowed(mob,"LISTADMIN"))
 			return allOptions[0];
 		for(ListOption option : allOptions)
 			if(option.isAllowed(mob)) return option;
@@ -116,26 +114,26 @@ public class List extends StdCommand
 		//Removed: Races, Classes, Staff, Skills, Diseases, Poisons, RealEstate, NoPurge, RaceCats
 		RACES(new String[] {"CMDRACES"}){
 			public void list(MOB mob, String rest){
-				Iterator these=CMClass.Objects.RACE.all();
+				Iterator<Race> these=CMClass.RACE.all();
 				boolean shortList=rest.equalsIgnoreCase("SHORT");
 				StringBuffer lines=new StringBuffer("");
 				if(!these.hasNext()) return;
 				int column=0;
 				if(shortList) {
 					Vector raceNames=new Vector();
-					for(;these.hasNext();) raceNames.addElement(((Race)these.next()).ID());
+					for(;these.hasNext();) raceNames.addElement(these.next().ID());
 					lines.append(CMParms.toStringList(raceNames)); }
 				else for(;these.hasNext();) {
-					Race thisThang=(Race)these.next();
+					Race thisThang=these.next();
 					if(++column>3) {
-						lines.append("\n\r");
+						lines.append("\r\n");
 						column=1; }
 					lines.append(CMStrings.padRight(thisThang.ID()+" ("+thisThang.racialCategory()+")",25)); }
-				lines.append("\n\r");
+				lines.append("\r\n");
 				mob.session().wraplessPrintln(lines.toString()); } },
 		RACECATS(new String[] {"CMDRACES"}){
 			public void list(MOB mob, String rest){
-				Iterator these=CMClass.Objects.RACE.all();
+				Iterator<Race> these=CMClass.RACE.all();
 				boolean shortList=rest.equalsIgnoreCase("SHORT");
 				StringBuffer lines=new StringBuffer("");
 				if(!these.hasNext()) return;
@@ -143,7 +141,7 @@ public class List extends StdCommand
 				Vector raceCats=new Vector();
 				Race R=null;
 				for(;these.hasNext();) {
-					R=(Race)these.next();
+					R=these.next();
 					if(!raceCats.contains(R.racialCategory())) raceCats.addElement(R.racialCategory()); }
 				Object[] sortedB=(new TreeSet(raceCats)).toArray();
 				if(shortList) {
@@ -153,17 +151,17 @@ public class List extends StdCommand
 				else for(int i=0;i<sortedB.length;i++) {
 					String raceCat=(String)sortedB[i];
 					if(++column>3) {
-						lines.append("\n\r");
+						lines.append("\r\n");
 						column=1; }
 					lines.append(CMStrings.padRight(raceCat,25)); }
-				lines.append("\n\r");
+				lines.append("\r\n");
 				mob.session().wraplessPrintln(lines.toString()); } },
 		ITEMS(new String[] {"CMDITEMS"}){
 			public void list(MOB mob, String rest){
-				mob.session().wraplessPrintln(CMLib.lister().reallyList(CMClass.Objects.ITEM.all()).toString()); } },
+				mob.session().wraplessPrintln(CMLib.lister().reallyList(CMClass.ITEM.all()).toString()); } },
 		ARMOR(new String[] {"CMDITEMS"}){
 			public void list(MOB mob, String rest){
-				mob.session().wraplessPrintln(CMLib.lister().reallyList(CMClass.Objects.WEARABLE.all()).toString());} },
+				mob.session().wraplessPrintln(CMLib.lister().reallyList(CMClass.WEARABLE.all()).toString());} },
 		ENVRESOURCES(new String[] {"CMDITEMS","CMDROOMS","CMDAREAS"}){
 			public void list(MOB mob, String rest){
 				if(rest.equalsIgnoreCase("SHORT")) {
@@ -183,49 +181,48 @@ public class List extends StdCommand
 					str.append(CMStrings.padRight(""+R.frequency,5));
 					str.append(CMStrings.padRight(""+R.hardness,4));
 					str.append(CMStrings.padRight(""+R.density,8));
-					str.append("\n\r"); }
+					str.append("\r\n"); }
 				mob.session().wraplessPrintln(str.toString()); } },
 		WEAPONS(new String[] {"CMDITEMS"}){
 			public void list(MOB mob, String rest){
-				mob.session().wraplessPrintln(CMLib.lister().reallyList(CMClass.Objects.WEAPON.all()).toString());} },
+				mob.session().wraplessPrintln(CMLib.lister().reallyList(CMClass.WEAPON.all()).toString());} },
 		MOBS(new String[] {"CMDMOBS"}){
 			public void list(MOB mob, String rest){
-				mob.session().wraplessPrintln(CMLib.lister().reallyList(CMClass.Objects.MOB.all()).toString());} },
+				mob.session().wraplessPrintln(CMLib.lister().reallyList(CMClass.CREATURE.all()).toString());} },
 		ROOMS(new String[] {"CMDMOBS","CMDITEMS","CMDROOMS","CMDAREAS","CMDEXITS","CMDRACES"}){	//, CMDCLASSES
 			public void list(MOB mob, String rest){
 				StringBuilder S=new StringBuilder();
-				for(Enumeration<Room> rooms=mob.location().getArea().getProperMap();rooms.hasMoreElements();){
-					Room R=rooms.nextElement();
-					S.append(CMStrings.padRightPreserve("^<LSTROOMID^>"+R.saveNum()+"^</LSTROOMID^>",30)+": "+CMStrings.limit(R.displayText(),43)+"\n\r"); }
-				mob.session().wraplessPrintln(S.toString()+"\n\r"); } },
+				for(Room R : mob.location().getArea().getProperMap()){
+					S.append(CMStrings.padRightPreserve("^<LSTROOMID^>"+R.saveNum()+"^</LSTROOMID^>",30)+": "+CMStrings.limit(R.displayText(),43)+"\r\n"); }
+				mob.session().wraplessPrintln(S.toString()+"\r\n"); } },
 		AREA(new String[] {"CMDMOBS","CMDITEMS","CMDROOMS","CMDAREAS","CMDEXITS","CMDRACES"}){	//CMDCLASSES
 			public void list(MOB mob, String rest){
 				StringBuilder S=new StringBuilder();
-				for(Enumeration<Room> rooms=mob.location().getArea().getProperMap();rooms.hasMoreElements();){
-					Room R=rooms.nextElement();
-					S.append(CMStrings.padRightPreserve(""+R.saveNum(),30)+": "+R.ID()+"\n\r"); }
-				mob.session().wraplessPrintln(S.toString()+"\n\r"); } },
+				for(Room R : mob.location().getArea().getProperMap()){
+					S.append(CMStrings.padRightPreserve(""+R.saveNum(),30)+": "+R.ID()+"\r\n"); }
+				mob.session().wraplessPrintln(S.toString()+"\r\n"); } },
 		LOCALES(new String[] {"CMDROOMS"}){
 			public void list(MOB mob, String rest){
-				mob.session().wraplessPrintln(CMLib.lister().reallyList(CMClass.Objects.LOCALE.all()).toString());} },
+				mob.session().wraplessPrintln(CMLib.lister().reallyList(CMClass.LOCALE.all()).toString());} },
 		BEHAVIORS(new String[] {"CMDMOBS","CMDITEMS","CMDROOMS","CMDAREAS","CMDEXITS","CMDRACES"}){	//CMDCLASSES
 			public void list(MOB mob, String rest){
-				mob.session().wraplessPrintln(CMLib.lister().reallyList(CMClass.Objects.BEHAVIOR.all()).toString());} },
+				mob.session().wraplessPrintln(CMLib.lister().reallyList(CMClass.BEHAVIOR.all()).toString());} },
 		EXITS(new String[] {"CMDEXITS"}){
 			public void list(MOB mob, String rest){
-				mob.session().wraplessPrintln(CMLib.lister().reallyList(CMClass.Objects.EXIT.all()).toString());} },
+				mob.session().wraplessPrintln(CMLib.lister().reallyList(CMClass.EXIT.all()).toString());} },
 		PROPERTIES(new String[] {"CMDMOBS","CMDITEMS","CMDROOMS","CMDAREAS","CMDEXITS","CMDRACES"}){	//CMDCLASSES
 			public void list(MOB mob, String rest){
 				mob.session().wraplessPrintln("TODO, whoops");} },
-		TICKS(new String[] {"LISTADMIN"}){
+		/* TICKS(new String[] {"LISTADMIN"}){
 			public void list(MOB mob, String rest){
-				StringBuffer msg=new StringBuffer("\n\r");
+				mob.session().println(CMLib.threads().tickReport(rest));
+				StringBuffer msg=new StringBuffer("\r\n");
 				boolean activeOnly=false;
 				String mask=null;
 				if("ACTIVE".startsWith(rest.toUpperCase())&&(rest.length()>0)) {
 					activeOnly=true;
 					rest=""; }
-				msg.append(CMStrings.padRight("Grp",4)+CMStrings.padRight("Client",20)+" "+CMStrings.padRight("ID",3)+CMStrings.padRight("Status",8)+"\n\r");
+				msg.append(CMStrings.padRight("Grp",4)+CMStrings.padRight("Client",20)+" "+CMStrings.padRight("ID",3)+CMStrings.padRight("Status",8)+"\r\n");
 				int col=0;
 				int numGroups=CMath.s_int(CMLib.threads().tickInfo("tickGroupSize"));
 				int whichTick=-1;
@@ -242,30 +239,34 @@ public class List extends StdCommand
 							String name=CMLib.threads().tickInfo("tickerName"+v+"-"+t);
 							if((mask==null)||(name.toUpperCase().indexOf(mask)>=0)) {
 								if(((col++)>=2)||(activeOnly)) {
-									msg.append("\n\r");
+									msg.append("\r\n");
 									col=1; }
 								msg.append(CMStrings.padRight(""+v,4)+CMStrings.padRight(name,22)+" "+CMStrings.padRight("",3)+CMStrings.padRight(status,8)); } } } }
-				mob.session().println(msg.toString()); } },
+				mob.session().println(msg.toString()); } }, */
 		BANNED(new String[] {"BAN"}){
 			public void list(MOB mob, String rest){
-				StringBuffer str=new StringBuffer("\n\rBanned names/ips:\n\r");
-				Vector banned=Resources.getFileLineVector(Resources.getFileResource("banned.ini",false));
-				if((banned!=null)&&(banned.size()>0))
-				for(int b=0;b<banned.size();b++) str.append((b+1)+") "+((String)banned.elementAt(b))+"\n\r");
+				StringBuffer str=new StringBuffer("\r\nBanned names/ips:\r\n");
+				LinkedList<String> banned=(LinkedList)Resources.getResource("BANNEDLIST");
+				if(banned==null) {
+					banned=Resources.getFileLineList(Resources.getFileResource("banned.ini",false));
+					Resources.submitResource("BANNEDLIST",banned); }
+				if((banned!=null)&&(banned.peek()!=null)) {
+					int b=1;
+					for(Iterator<String> iter=banned.iterator();iter.hasNext();b++) str.append(b).append(": ").append(iter.next()).append("\r\n"); }
 				mob.session().wraplessPrintln(str.toString());} },
 		LOG(new String[] {"LISTADMIN"}){
 			public void list(MOB mob, String rest){
-				int pageBreak=((mob.playerStats()!=null)?mob.playerStats().getPageBreak():0);
-				int lineNum=0;
+				//int pageBreak=((mob.playerStats()!=null)?mob.playerStats().getPageBreak():0);
+				//int lineNum=0;
 				if(rest.length()==0) {
 					Log.LogReader log=Log.instance().getLogReader();
 					String line=log.nextLine();
 					while((line!=null)&&(mob.session()!=null)&&(!mob.session().killFlag())) {
 						mob.session().rawPrintln(line);
-						if((pageBreak>0)&&(lineNum>=pageBreak))
-							if(!pause(mob.session())) break;
-							else lineNum=0;
-						lineNum++;
+						//if((pageBreak>0)&&(lineNum>=pageBreak))
+							//if(!pause(mob.session())) break;
+							//else lineNum=0;
+						//lineNum++;
 						line=log.nextLine(); }
 					log.close();
 					return; }
@@ -293,15 +294,15 @@ public class List extends StdCommand
 				if(end>=logSize) end=logSize;
 				if(start<0) start=0;
 				String line=log.nextLine();
-				lineNum=0;
-				int shownLineNum=0;
+				int lineNum=0;
+				//int shownLineNum=0;
 				while((line!=null)&&(mob.session()!=null)&&(!mob.session().killFlag())) {
 					if((lineNum>start)&&(lineNum<=end)) {
-						mob.session().rawPrintln(line);
-						if((pageBreak>0)&&(shownLineNum>=pageBreak)) {
-							if(!pause(mob.session())) break;
-							else shownLineNum=0; }
-						shownLineNum++; }
+						mob.session().rawPrintln(line); }
+						//if((pageBreak>0)&&(shownLineNum>=pageBreak)) {
+							//if(!pause(mob.session())) break;
+							//else shownLineNum=0; }
+						//shownLineNum++; }
 					lineNum++;
 					line=log.nextLine(); }
 				log.close(); } },
@@ -314,7 +315,7 @@ public class List extends StdCommand
 		//		head.append(CMStrings.padRight("Hours",5)+" ");
 				head.append(CMStrings.padRight("IP Address",17)+" ");
 				head.append(CMStrings.padRight("Last",18)+" ");
-				head.append("] Character name\n\r");
+				head.append("] Character name\r\n");
 				for(Enumeration<MOB> players=CMLib.players().players();players.hasMoreElements();) {
 					MOB player=players.nextElement();
 					head.append("[");
@@ -325,27 +326,26 @@ public class List extends StdCommand
 					head.append(CMStrings.padRight(Arrays.toString(player.playerStats().lastIP()),17)+" ");
 					head.append(CMStrings.padRight(CMLib.time().date2String(player.playerStats().lastDateTime()),18)+" ");
 					head.append("] "+CMStrings.padRight("^<LSTUSER^>"+player.name()+"^</LSTUSER^>",15));
-					head.append("\n\r"); }
+					head.append("\r\n"); }
 				mob.tell(head.toString()); } },
 		LINKAGES(new String[] {"CMDAREAS"}){
 			public void list(MOB mob, String rest){
 				mob.session().wraplessPrintln("TODO, whoops");} },
 		REPORTS(new String[] {"LISTADMIN"}){
 			public void list(MOB mob, String rest){
-				mob.tell("\n\r^xCoffeeMud System Report:^.^N");
+				mob.tell("\r\n^xCoffeeMud System Report:^.^N");
 				try {
 					System.gc();
 					Thread.sleep(1500); }
 				catch(Exception e){}
 				StringBuffer buf=new StringBuffer("");
 				long totalTime=System.currentTimeMillis()-CMSecurity.getStartTime();
-				buf.append("The system has been running for ^H"+CMLib.english().returnTime(totalTime,0)+"^?.\n\r");
-				long free=Runtime.getRuntime().freeMemory()/1000;
-				long total=Runtime.getRuntime().totalMemory()/1000;
-				buf.append("The system is utilizing ^H"+(total-free)+"^?kb out of ^H"+total+"^?kb.\n\r");
-				buf.append("\n\r^xService Engine report:^.^N\n\r");
-				String totalTickers=CMLib.threads().systemReport("totalTickers");
-				String tickGroupSize=CMLib.threads().systemReport("TICKGROUPSIZE");
+				buf.append("The system has been running for ^H"+CMLib.english().returnTime(totalTime,0)+"^?.\r\n");
+				long free=Runtime.getRuntime().freeMemory()/1024;
+				long total=Runtime.getRuntime().totalMemory()/1024;
+				buf.append("The system is utilizing ^H"+(total-free)+"^?kb out of ^H"+total+"^?kb.\r\n");
+				buf.append("\r\n^xService Engine report:^.^N\r\n");
+				/*String tickGroupSize=CMLib.threads().numTickGroups();
 				long totalMillis=CMath.s_long(CMLib.threads().systemReport("totalMillis"));
 				long totalTicks=CMath.s_long(CMLib.threads().systemReport("totalTicks"));
 				String topGroupNumber=CMLib.threads().systemReport("topGroupNumber");
@@ -353,54 +353,47 @@ public class List extends StdCommand
 				long topGroupTicks=CMath.s_long(CMLib.threads().systemReport("topGroupTicks"));
 				long topObjectMillis=CMath.s_long(CMLib.threads().systemReport("topObjectMillis"));
 				long topObjectTicks=CMath.s_long(CMLib.threads().systemReport("topObjectTicks"));
-				buf.append("There are ^H"+totalTickers+"^? ticking objects in ^H"+tickGroupSize+"^? threads.\n\r");
-				buf.append("The ticking objects have consumed: ^H"+CMLib.english().returnTime(totalMillis,totalTicks)+"^?.\n\r");
-				buf.append("The most active group, #^H"+topGroupNumber+"^?, has consumed: ^H"+CMLib.english().returnTime(topGroupMillis,topGroupTicks)+"^?.\n\r");
+				buf.append("There are ^H"+tickGroupSize+"^? tick groups.\r\n");
+				buf.append("The ticking objects have consumed: ^H"+CMLib.english().returnTime(totalMillis,totalTicks)+"^?.\r\n");
+				buf.append("The most active group, #^H"+topGroupNumber+"^?, has consumed: ^H"+CMLib.english().returnTime(topGroupMillis,topGroupTicks)+"^?.\r\n");
 				String topObjectClient=CMLib.threads().systemReport("topObjectClient");
 				String topObjectGroup=CMLib.threads().systemReport("topObjectGroup");
 				if(topObjectClient.length()>0) {
-					buf.append("The most active object has been '^H"+topObjectClient+"^?', from group #^H"+topObjectGroup+"^?.\n\r");
-					buf.append("That object has consumed: ^H"+CMLib.english().returnTime(topObjectMillis,topObjectTicks)+"^?.\n\r"); }
-				buf.append("\n\r");
-				buf.append("^xThread reports:^.^N\n\r");
-				int threadNum=0;
-				String threadName=CMLib.threads().systemReport("Thread"+threadNum+"name");
-				while(threadName.trim().length()>0) {
-					long saveThreadMilliTotal=CMath.s_long(CMLib.threads().systemReport("Thread"+threadNum+"MilliTotal"));
-					long saveThreadTickTotal=CMath.s_long(CMLib.threads().systemReport("Thread"+threadNum+"TickTotal"));
-					buf.append("Thread '"+threadName+"' has consumed: ^H"+CMLib.english().returnTime(saveThreadMilliTotal,saveThreadTickTotal)+" ("+CMLib.threads().systemReport("Thread"+threadNum+"Status")+")^?.");
-					buf.append("\n\r");
-					threadNum++;
-					threadName=CMLib.threads().systemReport("Thread"+threadNum+"name"); }
-				buf.append("\n\r");
-				buf.append("^xSession report:^.^N\n\r");
-				long totalMOBMillis=CMath.s_long(CMLib.threads().systemReport("totalMOBMillis"));
-				long totalMOBTicks=CMath.s_long(CMLib.threads().systemReport("totalMOBTicks"));
-				buf.append("There are ^H"+CMLib.sessions().size()+"^? ticking players logged on.\n\r");
-				buf.append("The ticking players have consumed: ^H"+CMLib.english().returnTime(totalMOBMillis,totalMOBTicks)+"^?.\n\r");
-				long topMOBMillis=CMath.s_long(CMLib.threads().systemReport("topMOBMillis"));
-				long topMOBTicks=CMath.s_long(CMLib.threads().systemReport("topMOBTicks"));
-				String topMOBClient=CMLib.threads().systemReport("topMOBClient");
-				if(topMOBClient.length()>0) {
-					buf.append("The most active mob has been '^H"+topMOBClient+"^?'\n\r");
-					buf.append("That mob has consumed: ^H"+CMLib.english().returnTime(topMOBMillis,topMOBTicks)+"^?.\n\r"); }
+					buf.append("The most active object has been '^H"+topObjectClient+"^?', from group #^H"+topObjectGroup+"^?.\r\n");
+					buf.append("That object has consumed: ^H"+CMLib.english().returnTime(topObjectMillis,topObjectTicks)+"^?.\r\n"); } */
+				buf.append("\r\n");
+				buf.append("^xThread reports:^.^N\r\n");
+				for(String[] S : CMLib.threads().threadInfo()) buf.append("Thread '"+S[0]+"' has consumed: ^H"+S[1]+" ("+S[2]+")^?.\r\n");
+				buf.append("\r\n");
+				buf.append("^xSession report:^.^N\r\n");
+				String[] mobTimes=CMLib.threads().mobTimes();
+/*				long totalMOBMillis=CMath.s_long(CMLib.threads().systemReport("totalMOBMillis"));
+				long totalMOBTicks=CMath.s_long(CMLib.threads().systemReport("totalMOBTicks")); */
+				buf.append("There are ^H"+CMLib.sessions().size()+"^? ticking players logged on.\r\n");
+				buf.append("The ticking players have consumed: ^H"+mobTimes[0]+"^?.\r\n");
+/*				long topMOBMillis=CMath.s_long(CMLib.threads().systemReport("topMOBMillis"));
+				long topMOBTicks=CMath.s_long(CMLib.threads().systemReport("topMOBTicks")); 
+				String topMOBClient=CMLib.threads().systemReport("topMOBClient"); */
+				if(mobTimes[2].length()>0) {
+					buf.append("The most active mob has been '^H"+mobTimes[2]+"^?'\r\n");
+					buf.append("That mob has consumed: ^H"+mobTimes[1]+"^?.\r\n"); }
 				mob.session().println(buf.toString()); } },
 		THREADS(new String[] {"LISTADMIN"}){
 			public void list(MOB mob, String rest){
-				StringBuffer lines=new StringBuffer("^xStatus|Name                 ^.^?\n\r");
+				StringBuffer lines=new StringBuffer("^xStatus|Name				 ^.^?\r\n");
 				try {
 					ThreadGroup topTG = Thread.currentThread().getThreadGroup();
 					while (topTG != null && topTG.getParent() != null) topTG = topTG.getParent();
 					if (topTG != null) dumpThreadGroup(lines,topTG); }
 				catch (Exception e) {
-					lines.append ("\n\rBastards! Exception while listing threads: " + e.getMessage() + "\n\r"); }
+					lines.append ("\r\nBastards! Exception while listing threads: " + e.getMessage() + "\r\n"); }
 				mob.session().wraplessPrintln(lines.toString()); } },
 		RESOURCES(new String[] {"LOADUNLOAD"}){
 			public void list(MOB mob, String rest){
-				Vector keySet=Resources.findResourceKeys(rest);
+				ArrayList<String> keySet=Resources.findResourceKeys(rest);
 				if(keySet.size()==1) {
-					String key=(String)keySet.firstElement();
-					StringBuffer str=new StringBuffer("^x"+key+"^?\n\r");
+					String key=keySet.get(0);
+					StringBuffer str=new StringBuffer("^x"+key+"^?\r\n");
 					Object o=Resources.getResource(key);
 					if(o instanceof Vector) str.append(CMParms.toStringList((Vector)o));
 					else if(o instanceof Hashtable) str.append(CMParms.toStringList((Hashtable)o));
@@ -415,8 +408,8 @@ public class List extends StdCommand
 					else if(o!=null) str.append(o.toString());
 					mob.session().println(str.toString());
 					return; }
-				Enumeration keys=keySet.elements();
-				mob.session().println(CMLib.lister().reallyList2Cols(keys,-1,null).toString()); } },
+				Iterator keys=keySet.iterator();
+				mob.session().println(CMLib.lister().reallyList2Cols(keys,null).toString()); } },
 		ONEWAYDOORS(new String[] {"CMDEXITS","CMDROOMS","CMDAREAS"}){
 			public void list(MOB mob, String rest){
 				mob.session().wraplessPrintln("TODO, whoops");} },
@@ -445,29 +438,29 @@ public class List extends StdCommand
 					R=(Room)roomsToDo.nextElement();
 					if(R.roomID().length()==0) continue;
 					set=CMLib.database().DBReadRoomData(R.roomID(),false);
-					if((set==null)||(set.size()==0)) buf.append("'"+R.roomID()+"' could not be read from the database!\n\r");
+					if((set==null)||(set.size()==0)) buf.append("'"+R.roomID()+"' could not be read from the database!\r\n");
 					else {
 						TR=(Room)set.elements().nextElement();
 						CMLib.database().DBReadContent(TR,set);
-						buf.append("\n\r^NRoomID: "+CMLib.map().getExtendedRoomID(TR)+"\n\r");
+						buf.append("\r\n^NRoomID: "+CMLib.map().getExtendedRoomID(TR)+"\r\n");
 						for(int m=0;m<TR.numInhabitants();m++) {
 							MOB M=TR.fetchInhabitant(m);
 							if(M==null) continue;
 							buf.append("^M"+CMStrings.padRight(M.ID(),15)+": "+CMStrings.padRight(M.displayText(),35)+": "
 										+CMStrings.padRight(M.envStats().level()+"",3)+": "
-										+"^N\n\r");
+										+"^N\r\n");
 							for(int i=0;i<M.numItems();i++) {
 								Item I=M.getItem(i);
-								if(I!=null) buf.append("    ^I"+CMStrings.padRight(I.ID(),15)
+								if(I!=null) buf.append("	^I"+CMStrings.padRight(I.ID(),15)
 											+": "+CMStrings.padRight((I.displayText().length()>0?I.displayText():I.Name()),35)+": "
 											+CMStrings.padRight(I.envStats().level()+"",3)+": "
-											+"^N"+((I.container()!=null)?I.Name():"")+"\n\r"); } }
+											+"^N"+((I.container()!=null)?I.Name():"")+"\r\n"); } }
 						for(int i=0;i<TR.numItems();i++) {
 							Item I=TR.getItem(i);
 							if(I!=null) buf.append("^I"+CMStrings.padRight(I.ID(),15)+": "
 										+CMStrings.padRight((I.displayText().length()>0?I.displayText():I.Name()),35)+": "
 										+CMStrings.padRight(I.envStats().level()+"",3)+": "
-										+"^N"+((I.container()!=null)?I.Name():"")+"\n\r"); }
+										+"^N"+((I.container()!=null)?I.Name():"")+"\r\n"); }
 						TR.destroy(); } }
 				mob.session().wraplessPrintln(buf.toString()); */ } },
 		HELPFILEREQUESTS(new String[] {"LISTADMIN"}){
@@ -500,12 +493,12 @@ public class List extends StdCommand
 					int[] val=(int[])entries.get(key);
 					readyEntries.put(key,Integer.valueOf(val[0])); }
 				DVector sightingsDV=DVector.toDVector(readyEntries);
-				sightingsDV.sortBy(2);
-				StringBuffer str=new StringBuffer("^HHelp entries, sorted by popularity: ^N\n\r");
-				for(int d=0;d<sightingsDV.size();d++) str.append("^w"+CMStrings.padRight(sightingsDV.elementAt(d,2).toString(),4))
+				sightingsDV.sortBy(1);
+				StringBuffer str=new StringBuffer("^HHelp entries, sorted by popularity: ^N\r\n");
+				for(int d=0;d<sightingsDV.size();d++) str.append("^w"+CMStrings.padRight(sightingsDV.elementAt(d,1).toString(),4))
 					   .append(" ")
-					   .append(sightingsDV.elementAt(d,1).toString())
-					   .append("\n\r");
+					   .append(sightingsDV.elementAt(d,0).toString())
+					   .append("\r\n");
 				mob.session().wraplessPrint(str.toString()+"^N"); } },
 		ACCOUNTS(new String[] {"CMDPLAYERS","STAT"}){
 			public void list(MOB mob, String rest){
@@ -515,19 +508,21 @@ public class List extends StdCommand
 				head.append(CMStrings.padRight("Account",10)+" ");
 				head.append(CMStrings.padRight("Last",18)+" ");
 				head.append(CMStrings.padRight("IP Address",23)+" ");
-				head.append("] Characters^.^N\n\r");
+				head.append("] Characters^.^N\r\n");
 //				Vector<PlayerAccount> allAccounts=CMLib.database().DBListAccounts(null);
 //				for(int u=0;u<allAccounts.size();u++) {
 //					PlayerAccount U=allAccounts.elementAt(u);
-				for(Iterator<PlayerAccount> allAccounts=SIDLib.Objects.ACCOUNT.getAll();allAccounts.hasNext();) {
-					PlayerAccount U=allAccounts.next();
+				for(Iterator<AccountStats> allAccounts=SIDLib.ACCOUNTSTATS.getAll();allAccounts.hasNext();) {
+					AccountStats O=allAccounts.next();
+					if(!(O instanceof PlayerAccount)) continue;
+					PlayerAccount U=(PlayerAccount)O;
 					StringBuffer line=new StringBuffer("");
 					line.append("[");
 					line.append(CMStrings.padRight(U.accountName(),10)+" ");
 					line.append(CMStrings.padRight(CMLib.time().date2String(U.lastDateTime()),18)+" ");
-					Enumeration<MOB> players = U.getLoadPlayers();
 					Vector<String> pListsV = new Vector<String>();
-					while(players.hasMoreElements()) pListsV.add(players.nextElement().name());
+					Iterator<MOB> players = U.getLoadPlayers();
+					while(players.hasNext()) pListsV.add(players.next().name());
 					line.append(CMStrings.padRight(Arrays.toString(U.lastIP()),23)+" ");
 					line.append("] ");
 					int len = line.length();
@@ -537,18 +532,68 @@ public class List extends StdCommand
 						if(notYet) notYet=false;
 						else head.append(CMStrings.repeat(" ", len));
 						head.append(s);
-						head.append("\n\r"); }
-					if(pListsV.size()==0) head.append("\n\r"); }
+						head.append("\r\n"); }
+					if(pListsV.size()==0) head.append("\r\n"); }
 				mob.tell(head.toString()); } },
+		SESSIONS(new String[] {"SESSIONS"}){
+			public void list(MOB mob, String rest){
+				rest=rest.toUpperCase();
+				StringBuffer lines=new StringBuffer("\r\n^x");
+				lines.append(CMStrings.padRight("#",3)+"| ");
+				lines.append(CMStrings.padRight("Status",9)+"| ");
+				lines.append(CMStrings.padRight("Valid",5)+"| ");
+				lines.append(CMStrings.padRight("Name",17)+"| ");
+				lines.append(CMStrings.padRight("IP",17)+"| ");
+				lines.append(CMStrings.padRight("Idle",17)+"^.^N\r\n");
+				Vector<String[]> broken=new Vector();
+				Session[] sessionList=CMLib.sessions().toArray();
+				for(int s=0;s<sessionList.length;s++) {
+					Session thisSession=sessionList[s];
+					String[] set=new String[6];
+					set[0]=CMStrings.padRight(""+s,3)+"| ";
+					set[1]=(thisSession.killFlag()?"^H":"")+CMStrings.padRight(Session.STATUS_STR[thisSession.getStatus()],9)+(thisSession.killFlag()?"^?":"")+"| ";
+					if (thisSession.mob() != null) {
+						set[2]=CMStrings.padRight(((thisSession.mob().session()==thisSession)?"Yes":"^HNO!^?"),5)+"| ";
+						set[3]="^!"+CMStrings.padRight("^<LSTUSER^>"+thisSession.mob().name()+"^</LSTUSER^>",17)+"^?| "; }
+					else {
+						set[2]=CMStrings.padRight("N/A",5)+"| ";
+						set[3]=CMStrings.padRight("NAMELESS",17)+"| "; }
+					set[4]=CMStrings.padRight(thisSession.getAddress(),17)+"| ";
+					set[5]=CMStrings.padRight(CMLib.english().returnTime(thisSession.getIdleMillis(),0)+"",17);
+					broken.addElement(set); }
+				Vector<String[]> sorted=null;
+				int sortNum=-1;
+				if(rest.length()>0) {
+					if("STATUS".startsWith(rest)) sortNum=1;
+					else if("VALID".startsWith(rest)) sortNum=2;
+					else if(("NAME".startsWith(rest))||("PLAYER".startsWith(rest))) sortNum=3;
+					else if(("IP".startsWith(rest))||("ADDRESS".startsWith(rest))) sortNum=4;
+					else if(("IDLE".startsWith(rest))||("MILLISECONDS".startsWith(rest))) sortNum=5; }
+				if(sortNum<0) sorted=broken;
+				else {
+					sorted=new Vector();
+					while(broken.size()>0) {
+						int selected=0;
+						for(int s=1;s<broken.size();s++) {
+							String[] S=broken.elementAt(s);
+							if(S[sortNum].compareToIgnoreCase(broken.elementAt(selected)[sortNum])<0) selected=s; }
+						sorted.addElement(broken.elementAt(selected));
+						broken.removeElementAt(selected); } }
+				for(int s=0;s<sorted.size();s++) {
+					String[] S=(String[])sorted.elementAt(s);
+					for(int i=0;i<S.length;i++) lines.append(S[i]);
+					lines.append("\r\n"); }
+				mob.session().colorOnlyPrintln(lines.toString()); } },
 		;
 		private final String[] securityList;
 		private ListOption(String[] list){securityList=list;}
 		public abstract void list(MOB mob, String rest);
 		public boolean isAllowed(MOB mob) {
-			for(String S : securityList) if(CMSecurity.isAllowed(mob,mob.location(),S)) return true;
+			for(String S : securityList) if(CMSecurity.isAllowed(mob,S)) return true;
 			return false; } }
 	private static final ListOption[] allOptions=ListOption.values();
 
+/*
 	public static boolean pause(Session sess) {
 		if((sess==null)||(sess.killFlag())) return false;
 		sess.out("<pause - enter>".toCharArray());
@@ -560,12 +605,11 @@ public class List extends StdCommand
 				if(s.startsWith("qu")||s.startsWith("ex")||s.equals("x"))
 					return false;
 			}
-		}catch(Exception e){return false;}
+		}catch(java.io.IOException e){return false;}
 		return !sess.killFlag();
 	}
-
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+*/
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		commands.removeElementAt(0);
 		if(commands.size()==0)
@@ -576,7 +620,7 @@ public class List extends StdCommand
 
 		if(mob.session()==null) return false;
 
-		String listWord=((String)commands.firstElement()).toUpperCase();
+		String listWord=commands.firstElement().toUpperCase();
 		String rest=(commands.size()>1)?CMParms.combine(commands,1):"";
 		ListOption code=getMyCmdCode(mob, listWord);
 		if((code==null)||(listWord.length()==0))
@@ -605,7 +649,7 @@ public class List extends StdCommand
 		return false;
 	}
 
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	public boolean canBeOrdered(){return true;}
 	public boolean securityCheck(MOB mob){return getAnyCode(mob)!=null;}
-
 }

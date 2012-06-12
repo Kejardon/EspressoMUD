@@ -9,14 +9,15 @@ import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.util.*;
-
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import java.nio.*;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.io.*;
+import java.io.IOException;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -30,13 +31,13 @@ public class MUDHelp extends StdLibrary implements HelpLibrary
 {
 	public String ID(){return "MUDHelp";}
 
-	public StringBuilder getHelpText(String helpStr, MOB forMOB, boolean favorAHelp)
+	public String getHelpText(String helpStr, MOB forMOB, boolean favorAHelp)
 	{ return getHelpText(helpStr, forMOB, favorAHelp, false);}
 	
-	public StringBuilder getHelpText(String helpStr, MOB forMOB, boolean favorAHelp, boolean noFix)
+	public String getHelpText(String helpStr, MOB forMOB, boolean favorAHelp, boolean noFix)
 	{
 		if(helpStr.length()==0) return null;
-		StringBuilder thisTag=null;
+		String thisTag=null;
 		if(favorAHelp)
 		{
 			if(getArcHelpFile().size()>0)
@@ -67,37 +68,33 @@ public class MUDHelp extends StdLibrary implements HelpLibrary
 			getHelpFile().put(ID.toUpperCase(),text);
 	}
 
-	public Vector getTopics(boolean archonHelp, boolean standardHelp)
+	public Vector<String> getTopics(boolean archonHelp, boolean standardHelp)
 	{
-		Vector reverseList=new Vector();
+		Vector<String> reverseList=new Vector();
 		Properties rHelpFile=null;
 		if(archonHelp)
 			rHelpFile=getArcHelpFile();
 		if(standardHelp)
 		{
-			if(rHelpFile==null)
-				rHelpFile=getHelpFile();
-			else
+			if(rHelpFile!=null)
+			for(Enumeration<String> e=(Enumeration)rHelpFile.keys();e.hasMoreElements();)
 			{
-				for(Enumeration e=rHelpFile.keys();e.hasMoreElements();)
-				{
-					String ptop = (String)e.nextElement();
-					String thisTag=rHelpFile.getProperty(ptop);
-					if ((thisTag==null)||(thisTag.length()==0)||(thisTag.length()>=35)
-						|| (rHelpFile.getProperty(thisTag)== null) )
-							reverseList.addElement(ptop);
-				}
-				rHelpFile=getHelpFile();
+				String ptop = e.nextElement();
+				String thisTag=rHelpFile.getProperty(ptop);
+				if //((thisTag==null)||(thisTag.length()==0)||(thisTag.length()>=35)||
+				  (rHelpFile.getProperty(thisTag)==null)
+					reverseList.add(ptop);
 			}
+			rHelpFile=getHelpFile();
 		}
 		if(rHelpFile!=null)
-		for(Enumeration e=rHelpFile.keys();e.hasMoreElements();)
+		for(Enumeration<String> e=(Enumeration)rHelpFile.keys();e.hasMoreElements();)
 		{
-			String ptop = (String)e.nextElement();
+			String ptop = e.nextElement();
 			String thisTag=rHelpFile.getProperty(ptop);
-			if ((thisTag==null)||(thisTag.length()==0)||(thisTag.length()>=35)
-				|| (rHelpFile.getProperty(thisTag)== null) )
-					reverseList.addElement(ptop);
+			if //((thisTag==null)||(thisTag.length()==0)||(thisTag.length()>=35)||
+			  (rHelpFile.getProperty(thisTag)==null)
+				reverseList.add(ptop);
 		}
 		Collections.sort(reverseList);
 		return reverseList;
@@ -105,8 +102,8 @@ public class MUDHelp extends StdLibrary implements HelpLibrary
 	
 	public String fixHelp(String tag, String str, MOB forMOB)
 	{
-		boolean worldCurrency=str.startsWith("<CURRENCIES>");
-/*		if(str.startsWith("<CURRENCY>")||worldCurrency)
+		/*boolean worldCurrency=str.startsWith("<CURRENCIES>");
+		if(str.startsWith("<CURRENCY>")||worldCurrency)
 		{
 			str=str.substring(worldCurrency?12:10);
 			Vector currencies=new Vector();
@@ -124,14 +121,14 @@ public class MUDHelp extends StdLibrary implements HelpLibrary
 				currencies.addElement(CMLib.beanCounter().getCurrency(forMOB.location()));
 			StringBuilder help=new StringBuilder("");
 			if(worldCurrency)
-				help.append("\n\r"+CMStrings.padRight("World Currencies",20)+":");
+				help.append("\r\n"+CMStrings.padRight("World Currencies",20)+":");
 			for(Enumeration e=currencies.elements();e.hasMoreElements();)
 			{
 				String currency=(String)e.nextElement();
 				if(worldCurrency)
-					help.append("\n\r"+CMStrings.padRight("Currency",20)+":");
+					help.append("\r\n"+CMStrings.padRight("Currency",20)+":");
 				else
-					help.append("\n\r"+CMStrings.padRight("Local Currency",20)+":");
+					help.append("\r\n"+CMStrings.padRight("Local Currency",20)+":");
 				if(currency.length()==0)
 					help.append("default");
 				else
@@ -140,24 +137,24 @@ public class MUDHelp extends StdLibrary implements HelpLibrary
 				for(int d=0;d<denoms.length;d++)
 				{
 					if(denoms[d].abbr.length()>0)
-						help.append("\n\r"+CMStrings.padRight(denoms[d].name+" ("+denoms[d].abbr+")",20)+":");
+						help.append("\r\n"+CMStrings.padRight(denoms[d].name+" ("+denoms[d].abbr+")",20)+":");
 					else
-						help.append("\n\r"+CMStrings.padRight(denoms[d].name,20)+":");
+						help.append("\r\n"+CMStrings.padRight(denoms[d].name,20)+":");
 					if(denoms[d].value==CMLib.beanCounter().getLowestDenomination(currency))
 						help.append(" (exchange rate is "+denoms[d].value+" of base)");
 					else
 						help.append(" "+CMLib.beanCounter().getConvertableDescription(currency,denoms[d].value));
 				}
-				help.append("\n\r");
+				help.append("\r\n");
 			}
 			help.append(str);
 			str=help.toString();
-		}
-*/		if(str.startsWith("<RACE>"))
+		}*/
+		if(str.startsWith("<RACE>"))
 		{
 			str=str.substring(6);
-			Race R=(Race)CMClass.Objects.RACE.get(tag);
-			if(R==null) R=(Race)CMClass.Objects.RACE.get(tag.replace('_',' '));
+			Race R=CMClass.RACE.get(tag);
+			if(R==null) R=CMClass.RACE.get(tag.replace('_',' '));
 			if(R!=null)
 			{
 				StringBuilder prepend=new StringBuilder("");
@@ -166,62 +163,51 @@ public class MUDHelp extends StdLibrary implements HelpLibrary
 					wrap=forMOB.session().getWrap();
 				if(wrap <=0 ) wrap=78;
 				prepend.append("^HRace Name : ^N"+R.name()+" ^H(^N"+R.racialCategory()+"^H)^N");
-				prepend.append("\n\r");
+				prepend.append("\r\n");
 				
 				String s=R.getStatAdjDesc();
 				prepend.append(columnHelper("^HStat Mods.:^N",s,wrap));
 				s=""; //R.getSensesChgDesc();
-//				if(R.getDispositionChgDesc().length()>0)
-//					s+=((s.length()>0)?", ":"")+R.getDispositionChgDesc();
-//				if(R.getAbilitiesDesc().length()>0)
-//					s+=((s.length()>0)?", ":"")+R.getAbilitiesDesc();
-//				prepend.append(columnHelper("^HAbilities :^N",s,wrap));
+				//if(R.getDispositionChgDesc().length()>0)
+				//	s+=((s.length()>0)?", ":"")+R.getDispositionChgDesc();
+				//if(R.getAbilitiesDesc().length()>0)
+				//	s+=((s.length()>0)?", ":"")+R.getAbilitiesDesc();
+				//prepend.append(columnHelper("^HAbilities :^N",s,wrap));
 				prepend.append(columnHelper("^HLanguages :^N",R.getLanguagesDesc(),wrap));
-//				prepend.append(columnHelper("^HLife Exp. :^N",R.getAgingChart()[Race.AGE_ANCIENT]+" years",wrap));
+				//prepend.append(columnHelper("^HLife Exp. :^N",R.getAgingChart()[Race.AGE_ANCIENT]+" years",wrap));
 				prepend.append("^HDesc.     : ^N");
-				str=prepend.toString()+"\n\r"+str;
+				str=prepend.toString()+"\r\n"+str;
 			}
 		}
-		try{
+		/*try{
 			if(str!=null)
 				return CMLib.httpUtils().doVirtualPage(str);
-		}catch(com.planet_ink.coffee_mud.core.exceptions.HTTPRedirectException x){}
+		}catch(com.planet_ink.coffee_mud.core.exceptions.HTTPRedirectException x){}*/
 		return str;
 	}
 
-	public StringBuilder getHelpText(String helpStr, Properties rHelpFile, MOB forMOB)
+	public String getHelpText(String helpStr, Properties rHelpFile, MOB forMOB)
 	{ return getHelpText(helpStr,rHelpFile,forMOB,false);}
-	public StringBuilder getHelpText(String helpStr, Properties rHelpFile, MOB forMOB, boolean noFix)
+	public String getHelpText(String helpStr, Properties rHelpFile, MOB forMOB, boolean noFix)
 	{
-		helpStr=helpStr.toUpperCase().trim();
+		helpStr=helpStr.trim().toUpperCase();
 		if(helpStr.indexOf(" ")>=0)
 			helpStr=helpStr.replace(' ','_');
 		String thisTag=null;
 
-		Race R=(Race)CMClass.Objects.RACE.get(helpStr.toUpperCase());
-		
-		boolean found=false;
+		//Race R=CMClass.RACE.get(helpStr);
+
 		if(thisTag==null) thisTag=rHelpFile.getProperty(helpStr);
 		boolean areaTag=(thisTag==null)&&helpStr.startsWith("AREAHELP_");
-		if(thisTag==null){thisTag=rHelpFile.getProperty("SPELL_"+helpStr); if(thisTag!=null) helpStr="SPELL_"+helpStr;}
-		if(thisTag==null){thisTag=rHelpFile.getProperty("PRAYER_"+helpStr); if(thisTag!=null) helpStr="PRAYER_"+helpStr;}
-		if(thisTag==null){thisTag=rHelpFile.getProperty("SONG_"+helpStr); if(thisTag!=null) helpStr="SONG_"+helpStr;}
-		if(thisTag==null){thisTag=rHelpFile.getProperty("DANCE_"+helpStr); if(thisTag!=null) helpStr="DANCE_"+helpStr;}
-		if(thisTag==null){thisTag=rHelpFile.getProperty("PLAY_"+helpStr); if(thisTag!=null) helpStr="PLAY_"+helpStr;}
-		if(thisTag==null){thisTag=rHelpFile.getProperty("CHANT_"+helpStr); if(thisTag!=null) helpStr="CHANT_"+helpStr;}
-		if(thisTag==null){thisTag=rHelpFile.getProperty("BEHAVIOR_"+helpStr); if(thisTag!=null) helpStr="BEHAVIOR_"+helpStr;}
-		if(thisTag==null){thisTag=rHelpFile.getProperty("POWER_"+helpStr); if(thisTag!=null) helpStr="POWER_"+helpStr;}
-		if(thisTag==null){thisTag=rHelpFile.getProperty("SKILL_"+helpStr); if(thisTag!=null) helpStr="SKILL_"+helpStr;}
-		if(thisTag==null){thisTag=rHelpFile.getProperty("PROP_"+helpStr); if(thisTag!=null) helpStr="PROP_"+helpStr;}
-		found=((thisTag!=null)&&(thisTag.length()>0));
+		boolean found=((thisTag!=null)&&(thisTag.length()>0));
 
 		if(!found)
 		{
-			String ahelpStr=helpStr.replaceAll("_"," ").trim();
+			String ahelpStr=helpStr.replace("_"," ").trim();
 			if(areaTag) ahelpStr=ahelpStr.substring(9);
-			for(Enumeration e=CMLib.map().areas();e.hasMoreElements();)
+			for(Iterator<Area> e=CMLib.map().areas();e.hasNext();)
 			{
-				Area A=(Area)e.nextElement();
+				Area A=e.next();
 				if(A.name().equalsIgnoreCase(ahelpStr))
 				{
 					helpStr=A.name();
@@ -234,22 +220,12 @@ public class MUDHelp extends StdLibrary implements HelpLibrary
 		
 		if((!areaTag)&&(!found))
 		{
-			String ahelpStr=helpStr.replaceAll("_"," ").trim();
-/*			if(!found)
-			{ 
-				String s=CMLib.socials().getSocialsHelp(forMOB,helpStr.toUpperCase(), true);
-				if(s!=null)
-				{
-					thisTag=s;
-					helpStr=helpStr.toUpperCase();
-					found=true;
-				}
-			}
-*/			// INEXACT searches start here
+			String ahelpStr=helpStr.replace("_"," ").trim();
+			// INEXACT searches start here
 			if(!found)
-				for(Enumeration e=rHelpFile.keys();e.hasMoreElements();)
+				for(Enumeration<String> e=(Enumeration)rHelpFile.keys();e.hasMoreElements();)
 				{
-					String key=((String)e.nextElement()).toUpperCase();
+					String key=e.nextElement();
 					if(key.startsWith(helpStr))
 					{
 						thisTag=rHelpFile.getProperty(key);
@@ -258,25 +234,10 @@ public class MUDHelp extends StdLibrary implements HelpLibrary
 						break;
 					}
 				}
-/*			if(!found)
-			{
-				String currency=CMLib.english().matchAnyCurrencySet(ahelpStr);
-				if(currency!=null)
-				{
-					double denom=CMLib.english().matchAnyDenomination(currency,ahelpStr);
-					if(denom>0.0)
-					{
-						Coins C2=CMLib.beanCounter().makeCurrency(currency,denom,1);
-						if((C2!=null)&&(C2.description().length()>0))
-							return new StringBuilder(C2.name()+" is "+C2.description().toLowerCase());
-					}
-				}
-			}
-*/
 			if(!found)
-				for(Enumeration e=rHelpFile.keys();e.hasMoreElements();)
+				for(Enumeration<String> e=(Enumeration)rHelpFile.keys();e.hasMoreElements();)
 				{
-					String key=((String)e.nextElement()).toUpperCase();
+					String key=e.nextElement();
 					if(CMLib.english().containsString(key,helpStr))
 					{
 						thisTag=rHelpFile.getProperty(key);
@@ -285,22 +246,10 @@ public class MUDHelp extends StdLibrary implements HelpLibrary
 						break;
 					}
 				}
-			
-/*			if(!found)
-			{ 
-				String s=CMLib.socials().getSocialsHelp(forMOB,helpStr.toUpperCase(), false);
-				if(s!=null)
-				{
-					thisTag=s;
-					helpStr=helpStr.toUpperCase();
-					found=true;
-				}
-			}
-*/
 			if(!found)
-				for(Enumeration e=CMLib.map().areas();e.hasMoreElements();)
+				for(Iterator<Area> e=CMLib.map().areas();e.hasNext();)
 				{
-					Area A=(Area)e.nextElement();
+					Area A=e.next();
 					if(CMLib.english().containsString(A.name(),ahelpStr))
 					{
 						helpStr=A.name();
@@ -313,8 +262,7 @@ public class MUDHelp extends StdLibrary implements HelpLibrary
 			String thisOtherTag=rHelpFile.getProperty(thisTag);
 			if((thisOtherTag!=null)&&(thisOtherTag.equals(thisTag)))
 				thisTag=null;
-			else
-			if(thisOtherTag!=null)
+			else if(thisOtherTag!=null)
 			{
 				helpStr=thisTag;
 				thisTag=thisOtherTag;
@@ -324,9 +272,9 @@ public class MUDHelp extends StdLibrary implements HelpLibrary
 		}
 		
 		// the area exception
-//		if((thisTag==null)||(thisTag.length()==0))
-//			if(CMLib.map().getArea(helpStr.trim())!=null)
-//				return new StringBuilder(CMLib.map().getArea(helpStr.trim()).getAreaStats().toString());
+		//if((thisTag==null)||(thisTag.length()==0))
+		//	if(CMLib.map().getArea(helpStr.trim())!=null)
+		//		return new StringBuilder(CMLib.map().getArea(helpStr.trim()).getAreaStats().toString());
 		
 		// internal exceptions
 		if((thisTag==null)||(thisTag.length()==0))
@@ -345,21 +293,21 @@ public class MUDHelp extends StdLibrary implements HelpLibrary
 					thisTag=rHelpFile.getProperty("NOCHANNEL");
 				else
 					thisTag=rHelpFile.getProperty("CHANNEL");
-				thisTag=CMStrings.replaceAll(thisTag,"[CHANNEL]",s.toUpperCase());
-				thisTag=CMStrings.replaceAll(thisTag,"[channel]",s.toLowerCase());
+				thisTag=thisTag.replace("[CHANNEL]",s.toUpperCase());
+				thisTag=thisTag.replace("[channel]",s.toLowerCase());
 				String extra = no?"":CMLib.channels().getExtraChannelDesc(s);
-				thisTag=CMStrings.replaceAll(thisTag,"[EXTRA]",extra);
-				return new StringBuilder(thisTag);
+				thisTag=thisTag.replace("[EXTRA]",extra);
+				return thisTag;
 			}
 		}
 		
 		if((thisTag==null)||(thisTag.length()==0))
 			return null;
-		if(noFix) return new StringBuilder(thisTag);
-		return new StringBuilder(fixHelp(helpStr,thisTag,forMOB));
+		if(noFix) return thisTag;
+		return fixHelp(helpStr,thisTag,forMOB);
 	}
 
-	public StringBuilder getHelpList(String helpStr, 
+	public String getHelpList(String helpStr, 
 								   Properties rHelpFile1, 
 								   Properties rHelpFile2, 
 								   MOB forMOB)
@@ -367,132 +315,97 @@ public class MUDHelp extends StdLibrary implements HelpLibrary
 		helpStr=helpStr.toUpperCase().trim();
 		if(helpStr.indexOf(" ")>=0)
 			helpStr=helpStr.replace(' ','_');
-		Vector matches=new Vector();
+		Vector<String> matches=new Vector();
 
-		for(Enumeration e=rHelpFile1.keys();e.hasMoreElements();)
+		for(Enumeration<String> e=(Enumeration)rHelpFile1.keys();e.hasMoreElements();)
 		{
-			String key=(String)e.nextElement();
+			String key=e.nextElement();
 			String prop=rHelpFile1.getProperty(key,"");
-			if((key.toUpperCase().indexOf(helpStr)>=0)||(CMLib.english().containsString(prop,helpStr)))
-				matches.addElement(key.toUpperCase());
+			if((key.indexOf(helpStr)>=0)||(CMLib.english().containsString(prop,helpStr)))
+				matches.add(key);
 		}
 		if(rHelpFile2!=null)
-		for(Enumeration e=rHelpFile2.keys();e.hasMoreElements();)
+		for(Enumeration<String> e=(Enumeration)rHelpFile2.keys();e.hasMoreElements();)
 		{
-			String key=(String)e.nextElement();
+			String key=e.nextElement();
 			String prop=rHelpFile1.getProperty(key,"");
-			if((key.toUpperCase().indexOf(helpStr)>=0)||(CMLib.english().containsString(prop,helpStr)))
-				matches.addElement(key.toUpperCase());
+			if((key.indexOf(helpStr)>=0)||(CMLib.english().containsString(prop,helpStr)))
+				matches.add(key);
 		}
 		if(matches.size()==0)
-			return new StringBuilder("");
-		return CMLib.lister().fourColumns(matches);
+			return "";
+		return CMLib.lister().fourColumns(matches).toString();
 	}
 	
 	public Properties getArcHelpFile()
 	{
+		Properties arcHelpFile=(Properties)Resources.getResource("ARCHON HELP FILE");
+		if(arcHelpFile==null)
 		try
 		{
-			Properties arcHelpFile=(Properties)Resources.getResource("ARCHON HELP FILE");
-			if(arcHelpFile==null)
+			arcHelpFile=new Properties();
+			CMFile directory=new CMFile("resources/help/",null,true);
+			if((directory.canRead())&&(directory.isDirectory()))
 			{
-				arcHelpFile=new Properties();
-				CMFile directory=new CMFile(Resources.buildResourcePath("help"),null,true);
-				if((directory.canRead())&&(directory.isDirectory()))
+				String[] list=directory.list();
+				for(String item : list)
 				{
-					String[] list=directory.list();
-					for(int l=0;l<list.length;l++)
-					{
-						String item=list[l];
-						if((item!=null)
-						&&(item.length()>0)
-						&&item.toUpperCase().endsWith(".INI")
-						&&(item.toUpperCase().startsWith("ARC_")))
-							arcHelpFile.load(new ByteArrayInputStream(new CMFile(Resources.buildResourcePath("help")+item,null,true).raw()));
-					}
+					if((item!=null)&&(item.toUpperCase().endsWith(".INI"))&&(item.toUpperCase().startsWith("ARC_")))
+						arcHelpFile.load(new BufferedInputStream(new FileInputStream(CMFile.getProperExistingPath("resources/help/"+item))));
 				}
-				//DVector suspiciousPairs=suspiciousTags(arcHelpFile);
-				//for(int d=0;d<suspiciousPairs.size();d++)
-				//	Syst/em.out.pri/ntln(suspiciousPairs.elementAt(d,1)+": "+suspiciousPairs.elementAt(d,2));
-				for(Enumeration e=arcHelpFile.keys();e.hasMoreElements();)
-				{
-					String key=(String)e.nextElement();
-					String entry=(String)arcHelpFile.get(key);
-					int x=entry.indexOf("<ZAP=");
-					if(x>=0)
-					{
-						int y=entry.indexOf(">",x);
-						if(y>(x+5))
-						{
-							String word=entry.substring(x+5,y).trim();
-							entry=entry.substring(0,x)+CMLib.masking().maskHelp("\n\r",word)+entry.substring(y+1);
-							arcHelpFile.remove(key);
-							arcHelpFile.put(key,entry);
-						}
-					}
-				}
-				Resources.submitResource("ARCHON HELP FILE",arcHelpFile);
 			}
-			return arcHelpFile;
+			//DVector suspiciousPairs=suspiciousTags(arcHelpFile);
+			//for(int d=0;d<suspiciousPairs.size();d++)
+			//	Syst/em.out.pri/ntln(suspiciousPairs.elementAt(d,1)+": "+suspiciousPairs.elementAt(d,2));
+			/*for(Enumeration<String> e=arcHelpFile.keys();e.hasMoreElements();)
+			{
+				String key=e.nextElement();
+				String entry=arcHelpFile.get(key);
+				int x=entry.indexOf("<ZAP=");
+				if(x<0) continue;
+				int y=entry.indexOf(">",x);
+				if(y<(x+6)) continue;
+				String word=entry.substring(x+5,y).trim();
+				entry=entry.substring(0,x)+CMLib.masking().maskHelp("\r\n",word)+entry.substring(y+1);
+				arcHelpFile.remove(key);
+				arcHelpFile.put(key,entry);
+			}*/
+			Resources.submitResource("ARCHON HELP FILE",arcHelpFile);
 		}
 		catch(IOException e)
 		{
 			Log.errOut("MUDHelp",e);
+			return new Properties();
 		}
-		return new Properties();
+		return arcHelpFile;
 	}
 
-	protected DVector suspiciousTags(Properties p)
-	{
-		String k=null;
-		DVector pairs=new DVector(2);
-		for(Enumeration e=p.keys();e.hasMoreElements();)
-		{
-			k=(String)e.nextElement();
-			for(int i=0;i<k.length();i++)
-				if(Character.isLowerCase(k.charAt(i)))
-				{
-					pairs.addElement(k,p.get(k));
-					break;
-				}
-		}
-		return pairs;
-	}
-	
 	public Properties getHelpFile()
 	{
+		Properties helpFile=(Properties)Resources.getResource("MAIN HELP FILE");
+		if(helpFile==null)
 		try
 		{
-			Properties helpFile=(Properties)Resources.getResource("MAIN HELP FILE");
-			if(helpFile==null)
+			helpFile=new Properties();
+			CMFile directory=new CMFile("resources/help/",null,true);
+			if((directory.canRead())&&(directory.isDirectory()))
 			{
-				helpFile=new Properties();
-				CMFile directory=new CMFile(Resources.buildResourcePath("help"),null,true);
-				if((directory.canRead())&&(directory.isDirectory()))
-				{
-					String[] list=directory.list();
-					for(int l=0;l<list.length;l++)
-					{
-						String item=list[l];
-						if((item!=null)
-						&&(item.length()>0)
-						&&item.toUpperCase().endsWith(".INI")
-						&&(!item.toUpperCase().startsWith("ARC_")))
-							helpFile.load(new ByteArrayInputStream(new CMFile(Resources.buildResourcePath("help")+item,null,true).raw()));
-					}
-				}
-				//DVector suspiciousPairs=suspiciousTags(helpFile);
-				//for(int d=0;d<suspiciousPairs.size();d++)
-				//	Syst/em.out.pri/ntln(suspiciousPairs.elementAt(d,1)+": "+suspiciousPairs.elementAt(d,2));
-				Resources.submitResource("MAIN HELP FILE",helpFile);
+				String[] list=directory.list();
+				for(String item : list)
+					if((item!=null)&&(item.toUpperCase().endsWith(".INI"))&&(!item.toUpperCase().startsWith("ARC_")))
+						helpFile.load(new BufferedInputStream(new FileInputStream(CMFile.getProperExistingPath("resources/help/"+item))));
 			}
-			return helpFile;
+			//DVector suspiciousPairs=suspiciousTags(helpFile);
+			//for(int d=0;d<suspiciousPairs.size();d++)
+			//	Syst/em.out.pri/ntln(suspiciousPairs.elementAt(d,1)+": "+suspiciousPairs.elementAt(d,2));
+			Resources.submitResource("MAIN HELP FILE",helpFile);
 		}
 		catch(IOException e)
 		{
 			Log.errOut("MUDHelp",e);
+			return new Properties();
 		}
-		return new Properties();
+		return helpFile;
 	}
 	
 	public boolean shutdown() {
@@ -501,37 +414,23 @@ public class MUDHelp extends StdLibrary implements HelpLibrary
 	}
 	public void unloadHelpFile(MOB mob)
 	{
-		if(Resources.getResource("PLAYER TOPICS")!=null)
-			Resources.removeResource("PLAYER TOPICS");
-		if(Resources.getResource("ARCHON TOPICS")!=null)
-			Resources.removeResource("ARCHON TOPICS");
-		if(Resources.getResource("help/help.txt")!=null)
-			Resources.removeResource("help/help.txt");
-		if(Resources.getResource("help/accts.txt")!=null)
-			Resources.removeResource("help/accts.txt");
-		if(Resources.getResource("text/races.txt")!=null)
-			Resources.removeResource("text/races.txt");
-		if(Resources.getResource("text/newacct.txt")!=null)
-			Resources.removeResource("text/newacct.txt");
-		if(Resources.getResource("text/selchar.txt")!=null)
-			Resources.removeResource("text/selchar.txt");
-		if(Resources.getResource("text/newchar.txt")!=null)
-			Resources.removeResource("text/newchar.txt");
-		if(Resources.getResource("text/doneacct.txt")!=null)
-			Resources.removeResource("text/doneacct.txt");
-		if(Resources.getResource("text/stats.txt")!=null)
-			Resources.removeResource("text/stats.txt");
-		if(Resources.getResource("text/classes.txt")!=null)
-			Resources.removeResource("text/classes.txt");
-		if(Resources.getResource("help/arc_help.txt")!=null)
-			Resources.removeResource("help/arc_help.txt");
-		if(Resources.getResource("MAIN HELP FILE")!=null)
-			Resources.removeResource("MAIN HELP FILE");
-		if(Resources.getResource("ARCHON HELP FILE")!=null)
-			Resources.removeResource("ARCHON HELP FILE");
+		Resources.removeResource("PLAYER TOPICS");
+		Resources.removeResource("ARCHON TOPICS");
+		Resources.removeResource("help/help.txt");
+		Resources.removeResource("help/accts.txt");
+		Resources.removeResource("text/races.txt");
+		Resources.removeResource("text/newacct.txt");
+		Resources.removeResource("text/selchar.txt");
+		Resources.removeResource("text/newchar.txt");
+		Resources.removeResource("text/doneacct.txt");
+		Resources.removeResource("text/stats.txt");
+		Resources.removeResource("text/classes.txt");
+		Resources.removeResource("help/arc_help.txt");
+		Resources.removeResource("MAIN HELP FILE");
+		Resources.removeResource("ARCHON HELP FILE");
 
 		// also the intro page
-		CMFile introDir=new CMFile(Resources.makeFileResourceName("text"),null,false,true);
+		CMFile introDir=new CMFile("resources/text",null,false,true);
 		if(introDir.isDirectory())
 		{
 			CMFile[] files=introDir.listFiles();
@@ -541,8 +440,7 @@ public class MUDHelp extends StdLibrary implements HelpLibrary
 					Resources.removeResource("text/"+files[f].getName());
 		}
 
-		if(Resources.getResource("text/offline.txt")!=null)
-			Resources.removeResource("text/offline.txt");
+		Resources.removeResource("text/offline.txt");
 
 		if(mob!=null)
 			mob.tell("Help files unloaded. Next HELP, AHELP, new char will reload.");
@@ -553,9 +451,26 @@ public class MUDHelp extends StdLibrary implements HelpLibrary
 		String[] maxStats = CMLib.coffeeFilter().wrapOnlyFilter(msg,wrap-12);
 		for(String s : maxStats)
 		{
-			prepend.append(CMStrings.padRight(word, 12)).append(s).append("\n\r");
+			prepend.append(CMStrings.padRight(word, 12)).append(s).append("\r\n");
 			word=" ";
 		}
 		return prepend.toString();
 	}
+
+	/*protected DVector suspiciousTags(Properties p)
+	{
+		String k=null;
+		DVector pairs=new DVector(2);
+		for(Enumeration e=p.keys();e.hasMoreElements();)
+		{
+			k=(String)e.nextElement();
+			for(int i=0;i<k.length();i++)
+				if(Character.isLowerCase(k.charAt(i)))
+				{
+					pairs.addRow(k,p.get(k));
+					break;
+				}
+		}
+		return pairs;
+	}*/
 }

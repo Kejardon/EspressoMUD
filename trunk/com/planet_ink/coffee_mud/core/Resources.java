@@ -34,11 +34,12 @@ public class Resources
 
 	public static Resources newResources(){ return new Resources();}
 
-	private DVector resources=new DVector(3);
+	//private DVector resources=new DVector(3);
+	private HashMap<String, Object> resources=new HashMap();
 
 	public static void clearResources(){instance()._clearResources();}
 	public static void removeResource(String ID){ instance()._removeResource(ID);}
-	public static Vector findResourceKeys(String srch){return instance()._findResourceKeys(srch);}
+	public static ArrayList<String> findResourceKeys(String srch){return instance()._findResourceKeys(srch);}
 	public static Object getResource(String ID){return instance()._getResource(ID);}
 	public static void submitResource(String ID, Object obj){instance()._submitResource(ID,obj);}
 	public static boolean isFileResource(String filename){return instance()._isFileResource(filename);}
@@ -61,36 +62,61 @@ public class Resources
 					return "\r\n";
 				return "\r";
 			}
-		return "\n\r";
+		return "\r\n";
 	}
-	
-	public static Vector getFileLineVector(StringBuffer buf)
+
+	//More efficient, preferred option when you want to iterate anyways.
+	public static LinkedList<String> getFileLineList(StringBuffer buf)
 	{
-		Vector V=new Vector();
+		LinkedList<String> V=new LinkedList();
 		if(buf==null) return V;
-		StringBuffer str=new StringBuffer("");
-		for(int i=0;i<buf.length();i++)
+		int start=0;
+		int stop=buf.length();
+		for(int i=0;i<stop;i++)
 		{
-			if(((buf.charAt(i)=='\n')&&(i<buf.length()-1)&&(buf.charAt(i+1)=='\r'))
-			   ||((buf.charAt(i)=='\r')&&(i<buf.length()-1)&&(buf.charAt(i+1)=='\n')))
+			if((i<stop-1)&&
+			   (((buf.charAt(i)=='\n')&&(buf.charAt(i+1)=='\r'))||((buf.charAt(i)=='\r')&&(buf.charAt(i+1)=='\n'))))
 			{
+				V.add(buf.substring(start, i));
 				i++;
-				V.addElement(str.toString());
-				str.setLength(0);
+				start=i+1;
 			}
 			else
-			if(((buf.charAt(i)=='\r'))
-			||((buf.charAt(i)=='\n')))
+			if((buf.charAt(i)=='\r')||(buf.charAt(i)=='\n'))
 			{
-				V.addElement(str.toString());
-				str.setLength(0);
+				V.add(buf.substring(start, i));
+				start=i+1;
+			}
+		}
+		if(stop>start)
+			V.add(buf.substring(start));
+		return V;
+	}
+	public static Vector<String> getFileLineVector(StringBuffer buf)
+	{
+		Vector<String> V=new Vector();
+		if(buf==null) return V;
+		int start=0;
+		int stop=buf.length();
+		for(int i=0;i<stop;i++)
+		{
+			if((i<stop-1)&&
+			   (((buf.charAt(i)=='\n')&&(buf.charAt(i+1)=='\r'))||((buf.charAt(i)=='\r')&&(buf.charAt(i+1)=='\n'))))
+			{
+				V.addElement(buf.substring(start, i));
+				i++;
+				start=i+1;
 			}
 			else
-				str.append(buf.charAt(i));
+			if((buf.charAt(i)=='\r')||(buf.charAt(i)=='\n'))
+			{
+				V.addElement(buf.substring(start, i));
+				start=i+1;
+			}
 		}
-		if(str.length()>0)
-			V.addElement(str.toString());
-		V.trimToSize();
+		if(stop>start)
+			V.addElement(buf.substring(start));
+		//V.trimToSize();
 		return V;
 	}
 
@@ -100,55 +126,51 @@ public class Resources
 		return "resources/"+path+"/";
 	}
 
-	public static void updateMultiList(String filename, Hashtable lists)
+	//What is this for? Saves a Hshtable to file I guess, nothing currently uses it.. Might be intended for stuff like lists.ini
+	public static void updateMultiList(String filename, Hashtable<String, Vector<String>> lists)
 	{
 		StringBuffer str=new StringBuffer("");
-		for(Enumeration e=lists.keys();e.hasMoreElements();)
+		for(Enumeration<String> e=lists.keys();e.hasMoreElements();)
 		{
-			String ml=(String)e.nextElement();
-			Vector V=(Vector)lists.get(ml);
-			str.append(ml+"\r\n");
+			String ml=e.nextElement();
+			Vector<String> V=lists.get(ml);
+			str.append(ml+"\n");	//Use \n because this is what CMFile prefers
 			if(V!=null)
 			for(int v=0;v<V.size();v++)
-				str.append(((String)V.elementAt(v))+"\r\n");
-			str.append("\r\n");
+				str.append(V.elementAt(v)+"\n");
+			str.append("\n");
 		}
 		new CMFile(filename,null,false).saveText(str);
 	}
 
-	public static Hashtable getMultiLists(String filename)
+	//Nothing currently uses this. Inverse of above
+	public static Hashtable<String, Vector<String>> getMultiLists(String filename)
 	{
-		Hashtable oldH=new Hashtable();
-		Vector V=new Vector();
+		Hashtable<String, Vector<String>> oldH=new Hashtable();
+		LinkedList<String> V=new LinkedList();
 		try{
-			V=getFileLineVector(new CMFile("resources/"+filename,null,false).text());
+			V=getFileLineList(new CMFile("resources/"+filename,null,false).text());
 		}catch(Exception e){}
-		if((V!=null)&&(V.size()>0))
+		if((V!=null)&&(V.peek()!=null))
 		{
 			String journal="";
-			Vector set=new Vector();
-			for(int v=0;v<V.size();v++)
+			Vector<String> set=null;//=new Vector();
+			while(V.peek()!=null)
 			{
-				String s=(String)V.elementAt(v);
+				String s=V.pop();
 				if(s.trim().length()==0)
 					journal="";
-				else
-				if(journal.length()==0)
+				else if(journal.length()==0)
 				{
 					journal=s;
 					set=new Vector();
 					oldH.put(journal,set);
 				}
-				else
-					set.addElement(s);
+				else if(set!=null)
+					set.add(s);
 			}
 		}
 		return oldH;
-	}
-
-	public static String makeFileResourceName(String filename)
-	{
-		return "resources/"+filename;
 	}
 
 	public void _clearResources()
@@ -159,59 +181,35 @@ public class Resources
 		}
 	}
 
-	public Vector _findResourceKeys(String srch)
+	public ArrayList<String> _findResourceKeys(String srch)
 	{
+		srch=srch.toUpperCase();
+		ArrayList<String> V=new ArrayList();
 		synchronized(resources)
 		{
-			Vector V=new Vector();
-			for(int i=0;i<resources.size();i++)
+			Iterator<String> keys=resources.keySet().iterator();
+			while(keys.hasNext())
 			{
-				String key=(String)resources.elementAt(i,1);
-				if((srch.length()==0)||(key.toUpperCase().indexOf(srch.toUpperCase())>=0))
-					V.addElement(key);
+				String key=keys.next();
+				if((srch.length()==0)||(key.toUpperCase().indexOf(srch)>=0))
+					V.add(key);
 			}
-			return V;
 		}
+		return V;
 	}
 
-	private int _getResourceIndex(String ID)
-	{
-		// protected elsewhere
-		if(resources.size()==0) return -1;
-		int start=0;
-		int end=resources.size()-1;
-		while(start<=end)
-		{
-			int mid=(end+start)/2;
-			int comp=((String)resources.elementAt(mid,1)).compareToIgnoreCase(ID);
-			if(comp==0)
-				return mid;
-			else
-			if(comp>0)
-				end=mid-1;
-			else
-				start=mid+1;
-
-		}
-		return -1;
-	}
-	
 	public Object _getResource(String ID)
 	{
 		synchronized(resources)
 		{
-			// protected elsewhere
-			int x = _getResourceIndex(ID);
-			if((x<resources.size())&&(x>=0))
-				return resources.elementAt(x,2);
-			return null;
+			return resources.get(ID);
 		}
 	}
 
 	public static Object prepareObject(Object obj)
 	{
 		if(obj instanceof Vector) ((Vector)obj).trimToSize();
-		if(obj instanceof DVector) ((DVector)obj).trimToSize();
+		else if(obj instanceof DVector) ((DVector)obj).trimToSize();
 		return obj;
 	}
 
@@ -219,50 +217,8 @@ public class Resources
 	{
 		synchronized(resources)
 		{
-			int properIndex=-1;
-			if(ID.length()==0) 
-				properIndex=0;
-			else
-			if(resources.size()>0)
-			{
-				int start=0;
-				int end=resources.size()-1;
-				int mid=0;
-				while(start<=end)
-				{
-					mid=(end+start)/2;
-					int comp=((String)resources.elementAt(mid,1)).compareToIgnoreCase(ID);
-					if(comp==0) 
-						return;
-					else
-					if(comp>0)
-						end=mid-1;
-					else
-						start=mid+1;
-				}
-				if(end<0) 
-					properIndex=0;
-				else
-				if(start>=resources.size()) 
-					properIndex=resources.size()-1;
-				else
-					properIndex=mid;
-			}
 			Object prepared=prepareObject(obj);
-			Boolean preparedB=new Boolean(prepared!=obj);
-			if(properIndex<0)
-				resources.addElement(ID,prepared,preparedB);
-			else
-			{
-				int comp=((String)resources.elementAt(properIndex,1)).compareToIgnoreCase(ID);
-				if(comp>0)
-					resources.insertElementAt(properIndex,ID,prepared,preparedB);
-				else
-				if(properIndex==resources.size()-1)
-					resources.addElement(ID,prepared,preparedB);
-				else
-					resources.insertElementAt(properIndex+1,ID,prepared,preparedB);
-			}
+			resources.put(ID, prepared);
 		}
 	}
 
@@ -270,11 +226,8 @@ public class Resources
 	{
 		synchronized(resources)
 		{
-			int index=_getResourceIndex(ID);
-			if(index<0) return null;
 			Object prepared=prepareObject(obj);
-			resources.setElementAt(index,2,prepared);
-			resources.setElementAt(index,3,new Boolean(prepared!=obj));
+			resources.put(ID, prepared);
 			return prepared;
 		}
 	}
@@ -283,18 +236,14 @@ public class Resources
 	{
 		synchronized(resources)
 		{
-			try{
-				int index=_getResourceIndex(ID);
-				if(index<0) return;
-				resources.removeElementAt(index);
-			}catch(ArrayIndexOutOfBoundsException e){}
+			resources.remove(ID);
 		}
 	}
 
 	public boolean _isFileResource(String filename)
 	{
 		if(_getResource(filename)!=null) return true;
-		if(new CMFile(makeFileResourceName(filename),null,false).exists())
+		if(new CMFile("resources/"+filename,null,false).exists())
 			return true;
 		return false;
 	}
@@ -317,7 +266,7 @@ public class Resources
 		Object rsc=_getResource(filename);
 		if(rsc != null)
 			return _toStringBuffer(rsc);
-		StringBuffer buf=new CMFile(makeFileResourceName(filename),null,reportErrors).text();
+		StringBuffer buf=new CMFile("resources/"+filename,null,reportErrors).text();
 		_submitResource(filename,buf);
 		return buf;
 	}
@@ -333,7 +282,6 @@ public class Resources
 		filename=CMFile.vfsifyFilename(filename);
 		if(!filename.startsWith("resources/"))
 			filename="resources/"+filename;
-		filename="//"+filename;
 		return new CMFile(filename,whom,false).saveRaw(myRsc);
 	}
 
@@ -341,31 +289,35 @@ public class Resources
 	{
 		boolean removed=false;
 		StringBuffer text=F.textUnformatted();
-		int x=text.toString().toUpperCase().indexOf(match.toUpperCase());
+		String upper=text.toString().toUpperCase();
+		match=match.toUpperCase();
+		int x=upper.lastIndexOf(match);
+		//int offset=0;
 		while(x>=0)
 		{
-			if(((x==0)||(!Character.isLetterOrDigit(text.charAt(x-1))))
-			&&(text.substring(x+match.length()).trim().startsWith("=")))
+			falsePos:
+			if((x==0)||(!Character.isLetterOrDigit(text.charAt(x-1))))
 			{
-				int zb1=text.lastIndexOf("\n",x);
-				int zb2=text.lastIndexOf("\r",x);
-				int zb=(zb2>zb1)?zb2:zb1;
+				int i;
+				for(i=x+match.length();Character.isWhitespace(text.charAt(i));i++){}
+				if(text.charAt(i)!='=') break falsePos;
+				int temp1=text.lastIndexOf("\n",x);
+				int temp2=text.lastIndexOf("\r",x);
+				int zb=(temp2>temp1)?temp2:temp1;
 				if(zb<0) zb=0; else zb++;
-				int ze1=text.indexOf("\n",x);
-				int ze2=text.indexOf("\r",x);
-				int ze=ze2+1;
-				if((ze1>zb)&&(ze1==ze2+1)) ze=ze1+1;
-				else
-				if((ze2<0)&&(ze1>0)) ze=ze1+1;
+				temp1=text.indexOf("\n",i);
+				temp2=text.indexOf("\r",i);
+				int ze=temp2+1;
+				if((temp1>zb)&&(temp1==temp2+1)) ze=temp1+1;
+				else if((temp2<0)&&(temp1>0)) ze=temp1+1;
 				if(ze<=0) ze=text.length();
-				if(!text.substring(zb).trim().startsWith("#"))
-				{
-					text.delete(zb,ze);
-					x=-1;
-					removed=true;
-				}
+				for(i=zb;Character.isWhitespace(text.charAt(i));i++){}
+				if(text.charAt(i)=='#') break falsePos;
+				text.delete(zb,ze);
+				//x=-1;
+				removed=true;
 			}
-			x=text.toString().toUpperCase().indexOf(match.toUpperCase(),x+1);
+			x=upper.lastIndexOf(match,x-match.length());
 		}
 		if(removed) F.saveRaw(text);
 		return removed;

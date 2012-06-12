@@ -24,14 +24,11 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Rules extends StdCommand
 {
-	public Rules(){}
+	public Rules(){access=new String[]{"RULES"};}
 
-	private String[] access={"RULES"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
-		StringBuffer credits=new CMFile(Resources.buildResourcePath("text")+"rules.txt",null,true).text();
+		StringBuffer credits=new CMFile("resources/text/rules.txt",null,true).text();
 		try { credits = CMLib.httpUtils().doVirtualPage(credits); } catch(Exception e){}
 		if((credits!=null)&&(mob.session()!=null)&&(credits.length()>0))
 			mob.session().colorOnlyPrintln(credits.toString());
@@ -39,6 +36,7 @@ public class Rules extends StdCommand
 			mob.tell("This mud has no rules.  Welcome to chaos.");
 		return false;
 	}
-	
+
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	public boolean canBeOrdered(){return true;}
 }

@@ -11,7 +11,10 @@ import com.planet_ink.coffee_mud.Items.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
+
 import java.util.*;
+import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -26,10 +29,10 @@ public interface CMFlagLibrary extends CMLibrary
 	public boolean isBusy(Interactable E);
 	public boolean isAnimalIntelligence(MOB E);
 //	public boolean isVegetable(MOB E);
-	public boolean stillAffectedBy(Affectable obj, Vector oneOf, boolean anyTallF);
+	public boolean stillAffectedBy(Affectable obj, Vector<Effect> oneOf, boolean anyTallF);
 	public boolean isInTheGame(Interactable E, boolean reqInhabitation);
-	public Vector flaggedAnyAffects(Affectable E, EnumSet flag);
-	public Vector flaggedAffects(Affectable E, EnumSet flag);
+	public Vector<Effect> flaggedAnyAffects(Affectable A, EnumSet<Effect.Flags> flags);
+	public Vector<Effect> flaggedAffects(Affectable A, EnumSet<Effect.Flags> flag);
 /*
 	public final static int flag_arrives=0;
 	public final static int flag_leaves=1;

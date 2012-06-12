@@ -24,12 +24,9 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Fill extends StdCommand
 {
-	public Fill(){}
+	public Fill(){access=new String[]{"FILL"};}
 
-	private String[] access={"FILL"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		if(commands.size()<2)
 		{
@@ -43,11 +40,11 @@ public class Fill extends StdCommand
 		{
 			if(!(mob.location() instanceof Drink))
 			{
-				mob.tell("From what should I fill the "+(String)commands.elementAt(0)+"?");
+				mob.tell("From what should I fill the "+commands.elementAt(0)+"?");
 				return false;
 			}
 			fillFromThis=mob.location();
-			thingToFill=(String)commands.firstElement();
+			thingToFill=commands.firstElement();
 		}
 		else
 		{
@@ -69,12 +66,12 @@ public class Fill extends StdCommand
 			}
 		}
 
-		int maxToFill=CMLib.english().calculateMaxToGive(mob,commands,true,mob,false);
+		int maxToFill=CMLib.english().calculateMaxToGive(mob,commands,mob,false);
 		if(maxToFill<0) return false;
 
 		Interactable fillThis=null;
 		Vector<Item> V=null;
-		boolean allFlag=(commands.size()>0)?((String)commands.elementAt(0)).equalsIgnoreCase("all"):false;
+		boolean allFlag=(commands.size()>0)?commands.elementAt(0).equalsIgnoreCase("all"):false;
 		if(thingToFill.toUpperCase().startsWith("ALL.")){ allFlag=true; thingToFill="ALL "+thingToFill.substring(4);}
 		if(thingToFill.toUpperCase().endsWith(".ALL")){ allFlag=true; thingToFill="ALL "+thingToFill.substring(0,thingToFill.length()-4);}
 		if(allFlag)
@@ -121,13 +118,24 @@ public class Fill extends StdCommand
 		}
 
 		if(allFlag)
-			for(Item fillThisThing : (Item[])V.toArray(new Item[0]))
-				if(!mob.location().doMessage(CMClass.getMsg(mob,fillThisThing,fillFromThis,EnumSet.of(CMMsg.MsgCode.FILL),"<S-NAME> pour(s) <O-NAME> into <T-NAME>.")))
+			for(Item fillThisThing : (Item[])V.toArray(Item.dummyItemArray))
+			{
+				CMMsg msg=CMClass.getMsg(mob,fillThisThing,fillFromThis,EnumSet.of(CMMsg.MsgCode.FILL),"<S-NAME> pour(s) <O-NAME> into <T-NAME>.");
+				if(!mob.location().doMessage(msg))
+				{
+					msg.returnMsg();
 					break;
+				}
+				msg.returnMsg();
+			}
 		else
-			mob.location().doMessage(CMClass.getMsg(mob,fillThis,fillFromThis,EnumSet.of(CMMsg.MsgCode.FILL),"<S-NAME> pour(s) <O-NAME> into <T-NAME>."));
+		{
+			CMMsg msg=CMClass.getMsg(mob,fillThis,fillFromThis,EnumSet.of(CMMsg.MsgCode.FILL),"<S-NAME> pour(s) <O-NAME> into <T-NAME>.");
+			mob.location().doMessage(msg);
+			msg.returnMsg();
+		}
 		return false;
 	}
-	public double actionsCost(MOB mob, Vector cmds){return DEFAULT_NONCOMBATACTION;}
+	public int commandType(MOB mob, String cmds){return CT_LOW_P_ACTION;}
 	public boolean canBeOrdered(){return true;}
 }

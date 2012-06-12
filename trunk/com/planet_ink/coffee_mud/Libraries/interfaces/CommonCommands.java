@@ -13,6 +13,8 @@ import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
+import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -24,7 +26,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public interface CommonCommands extends CMLibrary
 {
-	public boolean forceStandardCommand(MOB mob, String command, Vector parms);
+	public boolean forceStandardCommand(MOB mob, String command, String parms);
 	public StringBuilder getScore(MOB mob);
 	public StringBuilder getScore(MOB mob, String parm);
 	public StringBuilder getEquipment(MOB viewer, MOB mob);
@@ -32,14 +34,14 @@ public interface CommonCommands extends CMLibrary
 	public StringBuilder getInventory(MOB viewer, MOB mob, String mask);
 	public void postChannel(MOB mob, String channelName, String message, boolean systemMsg);
 	public void postChannel(String channelName, String message, boolean systemMsg);
-	public boolean postDrop(MOB mob, Environmental dropThis, boolean quiet, boolean optimized);
-	public boolean postGet(MOB mob, Item container, Item getThis, boolean quiet);
-	public boolean postRemove(MOB mob, Item item, boolean quiet);
+	//public boolean postDrop(MOB mob, Environmental dropThis, boolean quiet, boolean optimized);
+	//public boolean postGet(MOB mob, Item container, Item getThis, boolean quiet);
+	//public boolean postRemove(MOB mob, Item item, boolean quiet);
 	public void postLook(MOB mob);
-	public void postFlee(MOB mob, String whereTo);
-	public void postSheath(MOB mob, boolean ifPossible);
-	public void postDraw(MOB mob, boolean doHold, boolean ifNecessary);
-	public void postStand(MOB mob, boolean ifNecessary);
+	//public void postFlee(MOB mob, String whereTo);
+	//public void postSheath(MOB mob, boolean ifPossible);
+	//public void postDraw(MOB mob, boolean doHold, boolean ifNecessary);
+	//public void postStand(MOB mob, boolean ifNecessary);
 	public void postSay(MOB mob, MOB target, String text, boolean isPrivate);
 	public void postSay(MOB mob, MOB target,String text);
 	public void postSay(MOB mob, String text);
@@ -51,7 +53,7 @@ public interface CommonCommands extends CMLibrary
 //	public void handleLayDown(CMMsg msg);
 //	public void handleStand(CMMsg msg);
 //	public void handleSleep(CMMsg msg);
-	public void handleBeingSniffed(CMMsg msg);
+	//public void handleBeingSniffed(CMMsg msg);
 //	public void handleBeingGivenTo(CMMsg msg);
 //	public void handleBeingGetted(CMMsg msg);
 //	public void handleBeingDropped(CMMsg msg);
@@ -61,7 +63,7 @@ public interface CommonCommands extends CMLibrary
 //	public void handleBeingHeld(CMMsg msg);
 	public void lookAtExits(Room room, MOB mob);
 //	public void lookAtExitsShort(Room room, MOB mob);
-	public boolean handleUnknownCommand(MOB mob, Vector command);
+	public boolean handleUnknownCommand(MOB mob, String command);
 //	public void handleIntroductions(MOB speaker, MOB me, String said);
 //	public void tickAging(MOB mob);
 }

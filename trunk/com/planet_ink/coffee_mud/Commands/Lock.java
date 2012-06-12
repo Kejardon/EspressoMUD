@@ -24,12 +24,9 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Lock extends StdCommand
 {
-	public Lock(){}
+	public Lock(){access=new String[]{"LOCK","LOC"};}
 
-	private String[] access={"LOCK","LOC"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		String whatTolock=CMParms.combine(commands,1);
 		if(whatTolock.length()==0)
@@ -44,40 +41,12 @@ public class Lock extends StdCommand
 			mob.tell("You don't see '"+whatTolock+"' here.");
 			return false;
 		}
-		CMMsg msg=CMClass.getMsg(mob,lockThis,null,EnumSet.of(CMMsg.MsgCode.LOCK),"<S-NAME> lock(s) <T-NAMESELF>."+CMProps.msp("doorlock.wav",10));
-/*		if(lockThis instanceof Exit)
-		{
-			boolean locked=((Exit)lockThis).isLocked();
-			if((mob.location().okMessage(msg.source(),msg))
-			&&(!locked))
-			{
-				mob.location().send(msg.source(),msg);
-				if(dirCode<0)
-				for(int d=Directions.NUM_DIRECTIONS()-1;d>=0;d--)
-					if(mob.location().getExitInDir(d)==lockThis)
-					{dirCode=d; break;}
-
-				if((dirCode>=0)&&(mob.location().getRoomInDir(dirCode)!=null))
-				{
-					Room opR=mob.location().getRoomInDir(dirCode);
-					Exit opE=mob.location().getPairedExit(dirCode);
-					if(opE!=null)
-					{
-						CMMsg altMsg=CMClass.getMsg(msg.source(),opE,msg.tool(),msg.sourceCode(),null,msg.targetCode(),null,msg.othersCode(),null);
-						opE.executeMsg(msg.source(),altMsg);
-					}
-					int opCode=Directions.getOpDirectionCode(dirCode);
-					if((opE!=null)
-					&&(opE.isLocked())
-					&&(((Exit)lockThis).isLocked()))
-					   opR.showHappens(CMMsg.MSG_OK_ACTION,opE.name()+" "+Directions.getInDirectionName(opCode)+" is locked from the other side.");
-				}
-			}
-		}
-		else */
+		CMMsg msg=CMClass.getMsg(mob,lockThis,null,EnumSet.of(CMMsg.MsgCode.LOCK),"<S-NAME> lock(s) <T-NAMESELF>.");
 		mob.location().doMessage(msg);
+		msg.returnMsg();
 		return false;
 	}
-	public double actionsCost(MOB mob, Vector cmds){return DEFAULT_NONCOMBATACTION;}
+	
+	public int commandType(MOB mob, String cmds){return CT_LOW_P_ACTION;}
 	public boolean canBeOrdered(){return true;}
 }

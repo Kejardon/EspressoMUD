@@ -1,13 +1,23 @@
 package com.planet_ink.coffee_mud.Libraries;
+import com.planet_ink.coffee_mud.core.interfaces.*;
+import com.planet_ink.coffee_mud.core.*;
+import com.planet_ink.coffee_mud.Effects.interfaces.*;
+import com.planet_ink.coffee_mud.Areas.interfaces.*;
+import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
+import com.planet_ink.coffee_mud.Commands.interfaces.*;
+import com.planet_ink.coffee_mud.Common.interfaces.*;
+import com.planet_ink.coffee_mud.Exits.interfaces.*;
+import com.planet_ink.coffee_mud.Items.interfaces.*;
+import com.planet_ink.coffee_mud.Locales.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.MOBS.interfaces.*;
+import com.planet_ink.coffee_mud.Races.interfaces.*;
+
+import java.util.*;
+import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.text.DateFormat;
 import java.text.ParseException;
-import java.util.Calendar;
-import java.util.TimeZone;
-
-import com.planet_ink.coffee_mud.Common.interfaces.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
-import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.core.interfaces.*;
 
 
 /*
@@ -17,10 +27,11 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
+//NOTE: Only the date2String methods are actually used
 public class CoffeeTime extends StdLibrary implements TimeManager
 {
 	public String ID(){return "CoffeeTime";}
-	public static TimeClock globalClock=null;
+	//public static TimeClock globalClock=null;
 //	protected TimeClock globalClock=null;
 	/**
 	 * Returns the numeric representation of the month
@@ -671,19 +682,18 @@ public class CoffeeTime extends StdLibrary implements TimeManager
 		return T.trim();
 	}
 
-//TODO: Make this load (and probably save) a global timeclock properly
+	/*
 	public TimeClock globalClock()
 	{
-		if(globalClock==null)
-		{
-			globalClock=(TimeClock)((Ownable)CMClass.Objects.COMMON.getNew("DefaultTimeClock")).setOwner(CMLib.misc());
-//			if(globalClock!=null) globalClock.setLoadName("GLOBAL");
-		}
+		if(globalClock==null) synchronized(this){
+			if(globalClock==null) globalClock=(TimeClock)((Ownable)CMClass.COMMON.getNew("DefaultTimeClock")).setOwner(CMLib.misc());}
 		return globalClock;
 	}
+	*/
 	
 	private double getTickExpressionMultiPlier(String lastWord) {
 		lastWord=lastWord.toUpperCase().trim();
+		TimeClock clock=CMLib.misc().globalClock();
 		if(lastWord.startsWith("MINUTE")||lastWord.equals("MINS")||lastWord.equals("MIN"))
 			return TimeManager.MILI_MINUTE/Tickable.TIME_TICK_DOUBLE;
 		else
@@ -703,16 +713,16 @@ public class CoffeeTime extends StdLibrary implements TimeManager
 			return TimeClock.TIME_MILIS_PER_MUDHOUR/Tickable.TIME_TICK_DOUBLE;
 		else
 		if(lastWord.startsWith("MUDDAY"))
-			return TimeClock.TIME_MILIS_PER_MUDHOUR*globalClock().getHoursInDay()/Tickable.TIME_TICK_DOUBLE;
+			return TimeClock.TIME_MILIS_PER_MUDHOUR*clock.getHoursInDay()/Tickable.TIME_TICK_DOUBLE;
 		else
 		if(lastWord.startsWith("MUDWEEK"))
-			return TimeClock.TIME_MILIS_PER_MUDHOUR*globalClock().getHoursInDay()*globalClock().getDaysInWeek()/Tickable.TIME_TICK_DOUBLE;
+			return TimeClock.TIME_MILIS_PER_MUDHOUR*clock.getHoursInDay()*clock.getDaysInWeek()/Tickable.TIME_TICK_DOUBLE;
 		else
 		if(lastWord.startsWith("MUDMONTH"))
-			return TimeClock.TIME_MILIS_PER_MUDHOUR*globalClock().getHoursInDay()*globalClock().getDaysInMonth()/Tickable.TIME_TICK_DOUBLE;
+			return TimeClock.TIME_MILIS_PER_MUDHOUR*clock.getHoursInDay()*clock.getDaysInMonth()/Tickable.TIME_TICK_DOUBLE;
 		else
 		if(lastWord.startsWith("MUDYEAR"))
-			return TimeClock.TIME_MILIS_PER_MUDHOUR*globalClock().getHoursInDay()*globalClock().getDaysInMonth()*globalClock().getMonthsInYear()
+			return TimeClock.TIME_MILIS_PER_MUDHOUR*clock.getHoursInDay()*clock.getDaysInMonth()*clock.getMonthsInYear()
 					/Tickable.TIME_TICK_DOUBLE;
 		return 0.0;
 	}

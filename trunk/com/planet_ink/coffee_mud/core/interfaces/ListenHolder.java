@@ -4,6 +4,7 @@ import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -21,11 +22,11 @@ public interface ListenHolder extends Tickable {
 	public void addListener(Listener newAffect, EnumSet<Flags> flags);
 	public void removeListener(Listener oldAffect, EnumSet<Flags> flags);
 //	public void recheckListeners();	//actually uh, not sure if this will work. Maybe this should be used to check for bad listeners?
-	public Vector<CharAffecter> charAffecters();
-	public Vector<EnvAffecter> envAffecters();
-	public Vector<OkChecker> okCheckers();
-	public Vector<ExcChecker> excCheckers();
-	public Vector<TickActer> tickActers();
+	public CopyOnWriteArrayList<CharAffecter> charAffecters();
+	public CopyOnWriteArrayList<EnvAffecter> envAffecters();
+	public CopyOnWriteArrayList<OkChecker> okCheckers();
+	public CopyOnWriteArrayList<ExcChecker> excCheckers();
+	public CopyOnWriteArrayList<TickActer> tickActers();
 
 	public static enum Flags
 	{
@@ -60,31 +61,31 @@ public interface ListenHolder extends Tickable {
 		{
 			if(flags.contains(Flags.CHAR))
 			{
-				Vector<CharAffecter> V=onThis.charAffecters();
+				CopyOnWriteArrayList<CharAffecter> V=onThis.charAffecters();
 				if(V!=null)
 					V.remove(oldAffect);
 			}
 			if(flags.contains(Flags.ENV))
 			{
-				Vector<EnvAffecter> V=onThis.envAffecters();
+				CopyOnWriteArrayList<EnvAffecter> V=onThis.envAffecters();
 				if(V!=null)
 					V.remove(oldAffect);
 			}
 			if(flags.contains(Flags.OK))
 			{
-				Vector<OkChecker> V=onThis.okCheckers();
+				CopyOnWriteArrayList<OkChecker> V=onThis.okCheckers();
 				if(V!=null)
 					V.remove(oldAffect);
 			}
 			if(flags.contains(Flags.EXC))
 			{
-				Vector<ExcChecker> V=onThis.excCheckers();
+				CopyOnWriteArrayList<ExcChecker> V=onThis.excCheckers();
 				if(V!=null)
 					V.remove(oldAffect);
 			}
 			if(flags.contains(Flags.TICK))
 			{
-				Vector<TickActer> V=onThis.tickActers();
+				CopyOnWriteArrayList<TickActer> V=onThis.tickActers();
 				if(V!=null)
 					V.remove(oldAffect);
 			}
@@ -103,15 +104,26 @@ public interface ListenHolder extends Tickable {
 			if(flags.contains(Flags.TICK))
 				addListenSub(onThis, onThis.tickActers(), newAffect, newAffect.priority(onThis));
 		}
-		private static void addListenSub(ListenHolder onThis, Vector V, Listener newAffect, int p)
+		private static void addListenSub(ListenHolder onThis, CopyOnWriteArrayList V, Listener newAffect, int p)
 		{
-			if((V==null)||(V.contains(newAffect))) return;
+			if(V==null) return;
 			int i=0;
 			if(p==Integer.MAX_VALUE)
-				i=V.size();
-			for(;(i<V.size())&&(((Listener)V.get(i)).priority(onThis)<p);i++)
-				{}
-			V.add(i, newAffect);
+				V.addIfAbsent(newAffect);
+			else synchronized(V)
+			{
+				while(true)
+				{
+					int sizeCheck=V.size();
+					if(V.contains(newAffect)) return;
+					for(;(i<V.size())&&(((Listener)V.get(i)).priority(onThis)<p);i++)
+						{}
+					V.add(i, newAffect);
+					if(sizeCheck==V.size()+1) return;
+					V.remove(newAffect);
+					i=0;
+				}
+			}
 		}
 	}
 }

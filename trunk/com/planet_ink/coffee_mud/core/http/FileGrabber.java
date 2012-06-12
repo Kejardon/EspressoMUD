@@ -37,7 +37,7 @@ import java.io.IOException;
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+	   http://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -52,9 +52,9 @@ public class FileGrabber
 	private static String sepStr = java.io.File.separator;
 
 //	protected Vector permittedDirectories = new Vector();
-	private Hashtable virtualDirectories = new Hashtable();
+//	private Hashtable virtualDirectories = new Hashtable();
 
-//	protected String baseDir = null;
+	protected String baseDir = "/";
 
 	private HTTPserver webServer = null;
 
@@ -65,44 +65,35 @@ public class FileGrabber
 
 	public static String fixDirName(String fn)
 	{
-		fn = fn.replace(File.separatorChar,'/');
-		if (fn.endsWith(sepStr))
-		{
-			if (fn.length() > 1)
-				fn = fn.substring(0,fn.length()-2);
-			else
-				fn = "";
-		}
+		fn = fn.replace(sep,'/');
+		if (fn.endsWith("/"))
+			return fn.substring(0,fn.length()-1);
 		return fn;
 	}
-
+/*
 	public Hashtable getVirtualDirectories()
 	{
 		return virtualDirectories;
-	}
+	} */
 	//assumes pathName has been fixed!
 	// actPath may be relative to coffeemud root; the canonical
 	// form is stored
 	protected boolean addPermittedDirectory(String virtPath, String actPath)
 	{
-        virtPath=virtPath.replace(File.separatorChar,'/');
+/*		virtPath=virtPath.replace(File.separatorChar,'/');
 		if (!virtPath.endsWith("/")) virtPath += "/";
-
-		String cn;
+		String cn; */
 		try
 		{
 			CMFile f = new CMFile(actPath,null,false);
-
 			if (!f.exists())
 				throw new IOException("path '" + f.getLocalPathAndName() + "' does not exist!");
-
 			if (!f.isDirectory())
 				throw new IOException("path '" + f.getLocalPathAndName() + "' is not a directory!");
-
-			cn = CMFile.vfsifyFilename(f.getLocalPathAndName());
-
+/*			cn = CMFile.vfsifyFilename(f.getLocalPathAndName());
 			if (!cn.endsWith(sepStr))
 				cn += sep;
+*/
 		}
 		catch(Exception e)
 		{
@@ -110,48 +101,47 @@ public class FileGrabber
 			return false;
 		}
 
-		cn=cn.replace(File.separatorChar,'/');
-		virtualDirectories.put( virtPath, cn );
+		baseDir=actPath;
+//		cn=cn.replace(File.separatorChar,'/');
+//		virtualDirectories.put( virtPath, cn );
 		return true;
 	}
-
-
 
 	public boolean setBaseDirectory(String basePath)
 	{
 		return addPermittedDirectory("/",fixDirName(basePath));
 	}
 
-	public boolean addVirtualDirectory(String virtPath, String actPath)
+/*	public boolean addVirtualDirectory(String virtPath, String actPath)
 	{
 		return addPermittedDirectory(virtPath,fixDirName(actPath));
-	}
+	} */
 
 	public GrabbedFile grabFile(String fn)
 	{
 		GrabbedFile gf = new GrabbedFile();
-        fn=fn.replace(File.separatorChar,'/');
+		fn=fn.replace(File.separatorChar,'/');
 		if (!fn.startsWith("/")) fn = '/' + fn;
 
-		String baseDir = "";
+		//String baseDir = "";
 		String fn2="";
 		try
 		{
-			try
+/*			try
 			{
 
 				String searchPath = fn;
-                String ssp=null;
-                int x=0;
+				String ssp=null;
+				int x=0;
 				if (!searchPath.endsWith("/")) searchPath += '/';
 				while (searchPath.length() > 1 && !virtualDirectories.containsKey(searchPath))
 				{
-                    x=searchPath.lastIndexOf('/',searchPath.lastIndexOf('/')-1);
-                    ssp=searchPath.substring(x);
-                    if(fn2.startsWith("/")&&(ssp.endsWith("/")))
-    					fn2 = searchPath.substring(x) + fn2.substring(1);
-                    else
-                        fn2 = searchPath.substring(x) + fn2;
+					x=searchPath.lastIndexOf('/',searchPath.lastIndexOf('/')-1);
+					ssp=searchPath.substring(x);
+					if(fn2.startsWith("/")&&(ssp.endsWith("/")))
+						fn2 = searchPath.substring(x) + fn2.substring(1);
+					else
+						fn2 = searchPath.substring(x) + fn2;
 					searchPath = searchPath.substring(0,x+1);
 				}
 				baseDir = (String)virtualDirectories.get(searchPath);
@@ -166,19 +156,14 @@ public class FileGrabber
 				gf.file = null;
 				gf.state = GrabbedFile.STATE_INTERNAL_ERROR;
 				return gf;
-			}
+			} */
 
-
-			String filename = fn2.replace(File.separatorChar,'/');
+			//String filename = fn2.replace(File.separatorChar,'/');
 
 			try
 			{
-                String fullFilename=null;
-                if(filename.startsWith("/")&&baseDir.endsWith("/"))
-                    fullFilename = ( baseDir.substring( 0, baseDir.length() - 1 ) + filename );
-                else
-                    fullFilename=baseDir+filename;
-                if(fullFilename.endsWith("/")) fullFilename=fullFilename.substring(0,fullFilename.length()-1);
+				String fullFilename=baseDir+fn;
+				if(fullFilename.endsWith("/")) fullFilename=fullFilename.substring(0,fullFilename.length()-1);
 				gf.file = new CMFile(fullFilename,null,true);
 			}
 			catch (Exception e)
@@ -188,27 +173,12 @@ public class FileGrabber
 				return gf;
 			}
 
-			if (gf.file == null)	//?
-			{
-				gf.state = GrabbedFile.STATE_NOT_FOUND;
-				return gf;
-			}
-
-
-
 			String canonName = baseDir+CMFile.vfsifyFilename(gf.file.getLocalPathAndName());
 
 			if (gf.file.isDirectory())
 			{
 				if (!canonName.endsWith(sepStr))
 					canonName += sep;
-			}
-			if (!canonName.startsWith(baseDir))
-			{
-				Log.errOut(webServer.getName(), "ALERT: attempt to access '" + fn +"'");
-				gf.file = null;
-				gf.state = GrabbedFile.STATE_SECURITY_VIOLATION;
-				return gf;
 			}
 			if (!gf.file.exists())
 			{
@@ -217,13 +187,10 @@ public class FileGrabber
 				return gf;
 			}
 
-
-
 			if (gf.file.isDirectory())
 				gf.state = GrabbedFile.STATE_IS_DIRECTORY;
 			else
 				gf.state = GrabbedFile.STATE_OK;
-
 		}
 		catch (Exception e)
 		{

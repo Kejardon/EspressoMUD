@@ -1,8 +1,6 @@
 package com.planet_ink.coffee_mud.Libraries;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.core.database.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
@@ -11,11 +9,15 @@ import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
+import com.planet_ink.coffee_mud.core.database.*;
+
 import java.util.*;
 import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -27,12 +29,13 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class MiscLib extends StdLibrary implements MiscLibrary
 {
-	private ThreadEngine.SupportThread thread=null;
-	
-	public String ID(){return "MiscLib";}
-	public ThreadEngine.SupportThread getSupportThread() { return thread;}
+	//private ThreadEngine.SupportThread thread=null;
+	protected TimeClock globalClock=null;
 
-	public boolean activate() {
+	public String ID(){return "MiscLib";}
+	//public ThreadEngine.SupportThread getSupportThread() { return thread;}
+
+	/*public boolean activate() {
 		if(thread==null)
 			thread=new ThreadEngine.SupportThread("THMiscSaver"+Thread.currentThread().getThreadGroup().getName().charAt(0), 
 					DBManager.timeTillDoLast+2*DBManager.waitInterval, this, CMSecurity.isDebugging("SAVETHREAD"));
@@ -40,20 +43,25 @@ public class MiscLib extends StdLibrary implements MiscLibrary
 			thread.start();
 		return true;
 	}
-	public CMObject newInstance() {return this;}
+	public void run() { CMLib.database().saveObject(this); }*/
 
-	public void run()
-	{
-		CMLib.database().saveObject(this);
-	}
+	public void run(){}
+	public CMObject newInstance() {return this;}
 
 	public boolean shutdown()
 	{
 		CMLib.database().saveObject(this);
 		return true;
 	}
+	public TimeClock globalClock()
+	{
+		if(globalClock==null) synchronized(this){
+			if(globalClock==null) globalClock=(TimeClock)((Ownable)CMClass.COMMON.getNew("DefaultTimeClock")).setOwner(CMLib.misc());}
+		return globalClock;
+	}
 
 	public void destroy(){}//har
+	public boolean amDestroyed(){return false;}//no
 
 	public SaveEnum[] totalEnumS(){return SCode.values();}
 	public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]};}
@@ -62,6 +70,7 @@ public class MiscLib extends StdLibrary implements MiscLibrary
 	public boolean needLink(){return false;}
 	public void link(){}
 	public void saveThis(){CMLib.database().saveObject(this);}
+	public void prepDefault(){}
 
 	private static enum SCode implements SaveEnum{
 		SID() {
@@ -73,13 +82,13 @@ public class MiscLib extends StdLibrary implements MiscLibrary
 			public void load(MiscLib toThis, ByteBuffer s) {
 				SIDLib.Objects[] SIDs=SIDLib.Objects.values();
 				int[] values=CMLib.coffeeMaker().loadAInt(s);
-				for(int i=0;i<values.length;i++) SIDs[i].setNum(values[i]); }
+				for(int i=0;i<values.length&&i<SIDs.length;i++) SIDs[i].setNum(values[i]); }
 			public int size(){return 4*SIDLib.Objects.values().length;} },
 		GTC(){
-			public ByteBuffer save(MiscLib E){ return CMLib.coffeeMaker().savSubFull(CoffeeTime.globalClock); }
+			public ByteBuffer save(MiscLib E){ return CMLib.coffeeMaker().savSubFull(E.globalClock()); }
 			public int size(){return -1;}
-			public CMSavable subObject(CMSavable fromThis){return CoffeeTime.globalClock;}
-			public void load(MiscLib E, ByteBuffer S){ CoffeeTime.globalClock=(TimeClock)((Ownable)CMLib.coffeeMaker().loadSub(S, CMLib.time().globalClock())).setOwner(E); } },
+			public CMSavable subObject(CMSavable E){return ((MiscLib)E).globalClock();}
+			public void load(MiscLib E, ByteBuffer S){ E.globalClock=(TimeClock)((Ownable)CMLib.coffeeMaker().loadSub(S, E, this)).setOwner(E); } },
 		;
 		public abstract ByteBuffer save(MiscLib fromThis);
 		public abstract void load(MiscLib toThis, ByteBuffer S);

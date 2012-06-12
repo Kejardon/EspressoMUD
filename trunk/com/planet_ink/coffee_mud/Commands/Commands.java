@@ -24,12 +24,10 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Commands extends StdCommand
 {
-	public Commands(){}
+	public Commands(){access=new String[]{"COMMANDS"};}
 
-	private String[] access={"COMMANDS"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		Session S=mob.session();
 		if(S!=null)
@@ -37,9 +35,9 @@ public class Commands extends StdCommand
 			StringBuffer commandList=new StringBuffer("");
 			TreeSet<String> commandSet=new TreeSet<String>();
 			int col=0;
-			for(Iterator e=CMClass.Objects.COMMAND.all();e.hasNext();)
+			for(Iterator<Command> e=CMClass.COMMAND.all();e.hasNext();)
 			{
-				Command C=(Command)e.next();
+				Command C=e.next();
 				String[] access=C.getAccessWords();
 				if((access!=null)
 				&&(access.length>0)
@@ -47,17 +45,18 @@ public class Commands extends StdCommand
 				&&(C.securityCheck(mob)))
 					commandSet.add(access[0]);
 			}
-			for(Iterator i=commandSet.iterator();i.hasNext();)
+			for(Iterator<String> i=commandSet.iterator();i.hasNext();)
 			{
 				String s=(String)i.next();
-				if(++col>3){ commandList.append("\n\r"); col=0;}
+				if(++col>3){ commandList.append("\r\n"); col=0;}
 				commandList.append(CMStrings.padRight("^<HELP^>"+s+"^</HELP^>",19));
 			}
-			commandList.append("\n\r\n\rEnter HELP 'COMMAND' for more information on these commands.\n\r");
-			S.colorOnlyPrintln("^HComplete commands list:^?\n\r"+commandList.toString(),false);
+			commandList.append("\r\n\r\nEnter HELP 'COMMAND' for more information on these commands.\r\n");
+			S.colorOnlyPrintln("^HComplete commands list:^?\r\n"+commandList.toString(),false);
 		}
 		return false;
 	}
-	
+
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	public boolean canBeOrdered(){return true;}
 }

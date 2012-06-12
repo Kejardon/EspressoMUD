@@ -24,10 +24,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Stat  extends StdCommand
 {
-	public Stat(){}
-
-	private String[] access={"STAT"};
-	public String[] getAccessWords(){return access;}
+	public Stat(){access=new String[]{"STAT"};}
 
 	public static final int ABLETYPE_EQUIPMENT=0;
 	public static final int ABLETYPE_INVENTORY=1;
@@ -39,23 +36,21 @@ public class Stat  extends StdCommand
 		{"TITLES","TITLE"},
 	};
 
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		if(mob.isMonster()) return false;
 		commands.removeElementAt(0);
-		if((commands.size()>0)
-		&&((String)commands.firstElement()).equals("?"))
+		if((commands.size()>0)&&(commands.firstElement().equals("?")))
 		{
-			StringBuilder msg = new StringBuilder("STAT allows the following options: \n\r");
+			StringBuilder msg = new StringBuilder("STAT allows the following options: \r\n");
 			msg.append("[MOB/PLAYER NAME]");
 			for(int i=0;i<ABLETYPE_DESCS.length;i++)
 				msg.append(", "+ABLETYPE_DESCS[i][0]);
 			mob.tell(msg.toString());
 			return false;
 		}
-		String s1=(commands.size()>0)?((String)commands.elementAt(0)).toUpperCase():"";
-		String s2=(commands.size()>1)?((String)commands.elementAt(1)).toUpperCase():"";
+		String s1=(commands.size()>0)?commands.elementAt(0).toUpperCase():"";
+		String s2=(commands.size()>1)?commands.elementAt(1).toUpperCase():"";
 		
 		int ableTypes=-1;
 		if(commands.size()>1)
@@ -92,22 +87,20 @@ public class Stat  extends StdCommand
 			str.append("Titles:");
 			StringBuffer ttl=new StringBuffer("");
 			if(target.playerStats()!=null)
-				for(int t=0;t<target.getTitles().size();t++)
-				{
-					String title = (String)target.getTitles().elementAt(t);
+				for(String title : target.getTitles())
 					ttl.append(" "+title+",");
-				}
 			if(ttl.length()==0)
 				ttl.append(" None!");
 			ttl.deleteCharAt(ttl.length()-1);
 			str.append(ttl);
-			str.append("\n\r");
+			str.append("\r\n");
 		}
 		else
 			str=CMLib.commands().getScore(target);
 		mob.session().wraplessPrintln(str.toString());
 		return false;
 	}
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	public boolean canBeOrdered(){return true;}
-	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,mob.location(),"STAT");}
+	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,"STAT");}
 }

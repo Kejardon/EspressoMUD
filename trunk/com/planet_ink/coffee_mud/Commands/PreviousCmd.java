@@ -24,19 +24,16 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class PreviousCmd extends StdCommand
 {
-	public PreviousCmd(){}
+	public PreviousCmd(){access=new String[]{"!"};}
 
-	private String[] access={"!"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, MOB.QueuedCommand commands)
 	{
-		if(!mob.isMonster())
-		{
-			mob.enqueCommand(CMParms.copyVector(mob.session().previousCMD()),metaFlags,0);
-		}
+		Session S=mob.session();
+		if(S!=null)
+			mob.enqueCommand(S.previousCMD(), commands.metaFlags);
 		return false;
 	}
-	
+
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	public boolean canBeOrdered(){return true;}
 }

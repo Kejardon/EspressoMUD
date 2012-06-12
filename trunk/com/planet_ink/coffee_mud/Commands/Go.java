@@ -25,53 +25,41 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Go extends StdCommand
 {
-	public Go(){}
-
-	private String[] access={"GO","WALK"};
-	public String[] getAccessWords(){return access;}
+	public Go(){access=new String[]{"GO","WALK"};}
 
 	public boolean move(MOB mob,
-						Exit exit,
-						Room destRoom,
+						Room.REMap exit,
 						boolean nolook)
 	{
-		return move(mob,exit,destRoom,nolook,false);
+		return move(mob,exit,nolook,false);
 	}
 	public boolean move(MOB mob,
-						Exit exit,
-						Room destRoom,
+						Room.REMap exit,
 						boolean nolook,
 						boolean always)
 	{
 		if(mob==null) return false;
 		Room thisRoom=mob.location();
+		Room destRoom=(exit==null?null:exit.room);
 
-		EnumSet enterCode=EnumSet.of(CMMsg.MsgCode.ENTER);
-		EnumSet leaveCode=EnumSet.of(CMMsg.MsgCode.LEAVE);
-		if(always)
-		{
-			enterCode.add(CMMsg.MsgCode.ALWAYS);
-			leaveCode.add(CMMsg.MsgCode.ALWAYS);
-		}
+		always|=CMSecurity.isAllowed(mob,"GOTO");
+		//EnumSet enterCode=EnumSet.of(CMMsg.MsgCode.LEAVE);
+		//if(always)
+		//	enterCode.add(CMMsg.MsgCode.ALWAYS);
 		//TODO: Include specific Exit description. Also enterMsg should be a response to leaveMsg.
-		CMMsg enterMsg=CMClass.getMsg(mob,destRoom,exit,enterCode,null,enterCode,null,enterCode,"<S-NAME> enter(s).");
-		CMMsg leaveMsg=CMClass.getMsg(mob,thisRoom,exit,leaveCode,null,leaveCode,null,leaveCode,"<S-NAME> leave(s).");
-		boolean gotoAllowed=CMSecurity.isAllowed(mob,destRoom,"GOTO");
-		if((!exit.okMessage(destRoom,enterMsg))&&(!gotoAllowed))
-			return false;
-		else
-		if(!thisRoom.okMessage(thisRoom,leaveMsg)&&(!gotoAllowed))
-			return false;
-		else
-		if(!destRoom.okMessage(destRoom,enterMsg)&&(!gotoAllowed))
-			return false;
-
-		leaveMsg.handleResponses();
-		enterMsg.handleResponses();
-		thisRoom.send(leaveMsg);
-		destRoom.send(enterMsg);
-
-//		mob.charStats().expendEnergy(mob,true);
+		EnumSet<CMMsg.MsgCode> code=always?EnumSet.of(CMMsg.MsgCode.LEAVE,CMMsg.MsgCode.ALWAYS):EnumSet.of(CMMsg.MsgCode.LEAVE);
+		CMMsg leaveMsg=CMClass.getMsg(mob,null,exit,code,"<S-NAME> leave(s).");
+		
+		int gotDepart=thisRoom.getLock(0);
+		int gotEntrance=(destRoom==null?0:destRoom.getLock(0));
+		
+		try{
+			if((gotDepart!=2)&&(gotEntrance!=2))
+				nolook|=!thisRoom.doMessage(leaveMsg);
+		}finally{
+			if(gotEntrance==1) destRoom.returnLock();
+			if(gotDepart==1) thisRoom.returnLock();
+		}
 
 		if(!nolook)
 			CMLib.commands().postLook(mob);
@@ -79,19 +67,8 @@ public class Go extends StdCommand
 		return true;
 	}
 
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
-		if((commands.size()>3)
-		&&(commands.firstElement() instanceof Exit))
-		{
-			return move(mob,
-						(Exit)commands.elementAt(0),
-						(Room)commands.elementAt(1),
-						((Boolean)commands.elementAt(2)).booleanValue(),
-						((Boolean)commands.elementAt(3)).booleanValue());
-
-		}
 		String whereStr=CMParms.combine(commands,1);
 		Room R=mob.location();
 
@@ -107,20 +84,19 @@ public class Go extends StdCommand
 		}
 		if(E instanceof Exit)
 		{
-			for(int d=Directions.NUM_DIRECTIONS()-1;d>=0;d--)
+			for(int d=Directions.NUM_DIRECTIONS-1;d>=0;d--)
 				if(R.getExitInDir(d)==E)
 				{ direction=d; break;}
 		}
 */
 		Room.REMap map=R.getREMap(whereStr);
 		if(map!=null)
-			move(mob,map.exit,map.room,false,false);
+			move(mob,map,false,false);
 		else
 			mob.tell("There is no exit like that.");
 		return false;
 	}
-	public double actionsCost(MOB mob, Vector cmds){
-		return DEFAULT_NONCOMBATACTION;
-	}
+
+	public int commandType(MOB mob, String cmds){return CT_LOW_P_ACTION;}
 	public boolean canBeOrdered(){return true;}
 }

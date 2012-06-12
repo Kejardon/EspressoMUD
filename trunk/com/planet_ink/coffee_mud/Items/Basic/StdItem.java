@@ -15,6 +15,7 @@ import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
 import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -31,32 +32,35 @@ public class StdItem implements Item
 	protected String name="an ordinary item";
 	protected String display="a nondescript item sits here doing nothing.";
 	protected String desc="";
-	protected String miscText="";
-	protected boolean damagable=false;
+	protected String stackName="";
+	//protected String miscText="";
 	protected int baseGoldValue=0;
-	protected int wornOut=0;
-	protected int ridesNumber=0;
-	protected Rideable ride=null;
+	protected boolean damagable=false;	//Will probably move to environmental later
+	protected int wornOut=0;	//Will probably move to environmental later
 	protected EnumSet<ListenHolder.Flags> lFlags=EnumSet.of(ListenHolder.Flags.OK,ListenHolder.Flags.EXC);
-	protected Vector<OkChecker> okCheckers=null;
-	protected Vector<ExcChecker> excCheckers=null;
-	protected Vector<TickActer> tickActers=null;
-	protected Vector affects=new Vector(1);
-	protected Vector behaviors=new Vector(1);
-	protected long lastTick=0;
-//	protected int actTimer=0;
-	//Should this be ItemCollection? Meh.
-	protected CMObject container=null;
-//	protected int material=RawMaterial.RESOURCE_COTTON;
+	protected CopyOnWriteArrayList<OkChecker> okCheckers=new CopyOnWriteArrayList();
+	protected CopyOnWriteArrayList<ExcChecker> excCheckers=new CopyOnWriteArrayList();
+	protected CopyOnWriteArrayList<TickActer> tickActers=new CopyOnWriteArrayList();
+	protected CopyOnWriteArrayList<Effect> affects=new CopyOnWriteArrayList();
+	protected CopyOnWriteArrayList<Behavior> behaviors=new CopyOnWriteArrayList();
+	protected int tickCount=0;
 	protected Tickable.TickStat tickStatus=Tickable.TickStat.Not;
+	//Should this be ItemCollection? No.
+	protected CMObject container=null;
+	protected CMObject ride=null;
+//	protected int material=RawMaterial.RESOURCE_COTTON;	//Should be in environmental
 	protected boolean destroyed=false;
-	protected Environmental myEnvironmental=(Environmental)((Ownable)CMClass.Objects.COMMON.getNew("DefaultEnvironmental")).setOwner(this);
+	protected Environmental myEnvironmental=null;//(Environmental)((Ownable)CMClass.COMMON.getNew("DefaultEnvironmental")).setOwner(this);
 	protected int saveNum=0;
 	protected int[] effectsToLoad=null;
 	protected int[] behavesToLoad=null;
 	protected int rideToLoad=0;
 
-	public Environmental getEnvObject() {return myEnvironmental;}
+	public Environmental getEnvObject() {
+		if(myEnvironmental==null)
+			synchronized(this){if(myEnvironmental==null) myEnvironmental=(Environmental)((Ownable)CMClass.COMMON.getNew("DefaultEnvironmental")).setOwner(this);}
+		return myEnvironmental;
+	}
 
 	public int priority(ListenHolder L){return Integer.MAX_VALUE;}
 	public void registerListeners(ListenHolder here) { here.addListener(this, lFlags); }
@@ -78,11 +82,13 @@ public class StdItem implements Item
 	public void setDisplayText(String newDisplayText){display=newDisplayText; CMLib.database().saveObject(this);}
 	public String description(){return desc;}
 	public void setDescription(String newDescription){desc=newDescription; CMLib.database().saveObject(this);}
-	public void setMiscText(String newMiscText){miscText=newMiscText; CMLib.database().saveObject(this);}
-	public String text(){return miscText;}
-	public int ridesNumber(){return ridesNumber;}
-	public Rideable ride(){return ride;}
-	public void setRide(Rideable R){ride=R; CMLib.database().saveObject(this);}
+	public String stackableName(){return stackName;}
+	public void setStackableName(String newSN){stackName=newSN; CMLib.database().saveObject(this);}
+	//public void setMiscText(String newMiscText){miscText=newMiscText; CMLib.database().saveObject(this);}
+	//public String text(){return miscText;}
+	//public int ridesNumber(){return ridesNumber;}
+	public CMObject ride(){return ride;}
+	public void setRide(CMObject R){ride=R; CMLib.database().saveObject(this);}
 	public CMObject container(){return container;}
 	public void setContainer(CMObject E)
 	{
@@ -90,57 +96,59 @@ public class StdItem implements Item
 		clearAllListeners();
 		container=E;
 		registerAllListeners();
-//		CMLib.database().saveObject(this);
+		//CMLib.database().saveObject(this);
 	}
 
 	//Affectable
 	public void addEffect(Effect to)
 	{
-		if(to==null) return;
-		affects.addElement(to);
+		affects.add(to);
 		to.setAffectedOne(this);
 		CMLib.database().saveObject(this);
 	}
 	public void delEffect(Effect to)
 	{
-		if(affects.removeElement(to))
+		if(affects.remove(to))
 		{
 			to.setAffectedOne(null);
 			CMLib.database().saveObject(this);
 		}
 	}
+	public boolean hasEffect(Effect to)
+	{
+		return affects.contains(to);
+	}
 	public int numEffects(){return affects.size();}
 	public Effect fetchEffect(int index)
 	{
-		try { return (Effect)affects.elementAt(index); }
+		try { return affects.get(index); }
 		catch(java.lang.ArrayIndexOutOfBoundsException x){}
 		return null;
 	}
 	public Vector<Effect> fetchEffect(String ID)
 	{
-		Vector<Effect> V=new Vector<Effect>();
-		for(int a=0;a<affects.size();a++)
-		{
-			Effect A=fetchEffect(a);
-			if((A!=null)&&(A.ID().equals(ID)))
-				V.add(A);
-		}
+		Vector<Effect> V=new Vector(1);
+		for(Effect E : affects)
+			if(E.ID().equals(ID))
+				V.add(E);
 		return V;
 	}
-	public Vector<Effect> allEffects() { return (Vector<Effect>)affects.clone(); }
+	public Iterator<Effect> allEffects() { return affects.iterator(); }
 
 	//Behavable
 	public void addBehavior(Behavior to)
 	{
-		if(to==null) return;
-		if(fetchBehavior(to.ID())!=null) return;
-		to.startBehavior(this);
-		behaviors.addElement(to);
+		synchronized(behaviors)
+		{
+			if(fetchBehavior(to.ID())!=null) return;
+			to.startBehavior(this);
+			behaviors.add(to);
+		}
 		CMLib.database().saveObject(this);
 	}
 	public void delBehavior(Behavior to)
 	{
-		if(behaviors.removeElement(to))
+		if(behaviors.remove(to))
 		{
 			to.startBehavior(null);
 			CMLib.database().saveObject(this);
@@ -152,29 +160,32 @@ public class StdItem implements Item
 	}
 	public Behavior fetchBehavior(int index)
 	{
-		try { return (Behavior)behaviors.elementAt(index); }
+		try { return behaviors.get(index); }
 		catch(java.lang.ArrayIndexOutOfBoundsException x){}
 		return null;
 	}
-	public Vector<Behavior> fetchBehavior(String ID)
+	public Behavior fetchBehavior(String ID)
 	{
-		Vector<Behavior> V=new Vector<Behavior>();
-		for(int b=0;b<behaviors.size();b++)
-		{
-			Behavior B=fetchBehavior(b);
-			if((B!=null)&&(B.ID().equalsIgnoreCase(ID)))
-				V.add(B);
-		}
-		return V;
+		for(Behavior B : behaviors)
+			if(B.ID().equals(ID))
+				return B;
+		return null;
 	}
-	public Vector<Behavior> allBehaviors(){ return (Vector<Behavior>)behaviors.clone(); }
+	public boolean hasBehavior(String ID)
+	{
+		for(Behavior B : behaviors)
+			if(B.ID().equals(ID))
+				return true;
+		return false;
+	}
+	public Iterator<Behavior> allBehaviors() { return behaviors.iterator(); }
 
 	//Affectable/Behavable shared
-	public Vector<CharAffecter> charAffecters(){return null;}
-	public Vector<EnvAffecter> envAffecters(){return null;}	//TODO: Should this give the environmental's instead?
-	public Vector<OkChecker> okCheckers(){if(okCheckers==null) okCheckers=new Vector(); return okCheckers;}
-	public Vector<ExcChecker> excCheckers(){if(excCheckers==null) excCheckers=new Vector(); return excCheckers;}
-	public Vector<TickActer> tickActers(){if(tickActers==null) tickActers=new Vector(); return tickActers;}
+	public CopyOnWriteArrayList<CharAffecter> charAffecters(){return null;}
+	public CopyOnWriteArrayList<EnvAffecter> envAffecters(){return null;}	//TODO: Should this give the environmental's instead?
+	public CopyOnWriteArrayList<OkChecker> okCheckers(){return okCheckers;}
+	public CopyOnWriteArrayList<ExcChecker> excCheckers(){return excCheckers;}
+	public CopyOnWriteArrayList<TickActer> tickActers(){return tickActers;}
 	public void removeListener(Listener oldAffect, EnumSet flags)
 	{
 		ListenHolder.O.removeListener(this, oldAffect, flags);
@@ -192,23 +203,31 @@ public class StdItem implements Item
 	public EnumSet<ListenHolder.Flags> listenFlags() {return lFlags;}
 	//Tickable
 	public Tickable.TickStat getTickStatus(){return tickStatus;}
-	public boolean tick(Tickable ticking, Tickable.TickID tickID)
+	public int tickCounter(){return tickCount;}
+	public void tickAct(){}
+	public boolean tick(int tickTo)
 	{
-		if(tickID==Tickable.TickID.Action) return false;
-		tickStatus=Tickable.TickStat.Listener;
-		if(tickActers!=null)
-		for(int i=tickActers.size()-1;i>=0;i--)
+		if(tickCount==0) tickCount=tickTo-1;
+		else if(tickTo>tickCount+10)
+			tickTo=tickCount+10;
+		while(tickCount<tickTo)
 		{
-			TickActer T=tickActers.get(i);
-			if(!T.tick(ticking, tickID))
-				removeListener(T, EnumSet.of(ListenHolder.Flags.TICK));
+			tickCount++;
+			if(!doTick()) {tickCount=0; lFlags.remove(ListenHolder.Flags.TICK); return false;}	//Possibly also lFlags.remove(ListenHolder.Flags.TICK);
 		}
-		tickStatus=Tickable.TickStat.Not;
-		lastTick=System.currentTimeMillis();
 		return true;
 	}
-	public long lastAct(){return 0;}	//No Action ticks
-	public long lastTick(){return lastTick;}
+	protected boolean doTick()
+	{
+		tickStatus=Tickable.TickStat.Listener;
+		for(TickActer T : tickActers)
+			if(!T.tick(tickCount))
+				tickActers.remove(T);
+		tickStatus=Tickable.TickStat.Not;
+		return (!tickActers.isEmpty());
+	}
+	//public long lastAct(){return 0;}	//No Action ticks
+	//public long lastTick(){return lastTick;}
 
 	public CMObject newInstance()
 	{
@@ -222,35 +241,33 @@ public class StdItem implements Item
 		}
 		return new StdItem();
 	}
-	protected void cloneFix(Item E)
+	protected void cloneFix(StdItem E)
 	{
 //		destroyed=false;
-		saveNum=0;
-		myEnvironmental=(Environmental)E.getEnvObject().copyOf();
+		okCheckers=new CopyOnWriteArrayList();
+		excCheckers=new CopyOnWriteArrayList();
+		tickActers=new CopyOnWriteArrayList();
+		affects=new CopyOnWriteArrayList();
+		behaviors=new CopyOnWriteArrayList();
+		lFlags=lFlags.clone();
+		ride=null;
+		tickStatus=Tickable.TickStat.Not;
+		tickCount=0;
+		if(myEnvironmental!=null) myEnvironmental=(Environmental)((Ownable)myEnvironmental.copyOf()).setOwner(this);
 
-		affects=null;
-		behaviors=null;
-		for(int b=0;b<E.numBehaviors();b++)
-		{
-			Behavior B=E.fetchBehavior(b);
-			if(B!=null)	addBehavior((Behavior)B.copyOf());
-		}
-
-		for(int a=0;a<E.numEffects();a++)
-		{
-			Effect A=E.fetchEffect(a);
-			if(A!=null)
-				addEffect((Effect)A.copyOf());
-		}
+		for(Effect A : E.affects)
+			affects.add(A.copyOnto(this));
+		for(Behavior B : E.behaviors)
+			addBehavior((Behavior)B.copyOf());
 	}
 	public CMObject copyOf()
 	{
 		try
 		{
 			StdItem E=(StdItem)this.clone();
+			E.saveNum=0;
 			E.cloneFix(this);
 			return E;
-
 		}
 		catch(CloneNotSupportedException e)
 		{
@@ -280,61 +297,63 @@ public class StdItem implements Item
 
 	public boolean okMessage(ListenHolder.OkChecker myHost, CMMsg msg)
 	{
-		if(!myEnvironmental.okMessage(myHost, msg))
+		if(!getEnvObject().okMessage(myHost, msg))
 			return false;
-		if(okCheckers!=null)
-		for(int i=okCheckers.size();i>0;i--)
-			if(!okCheckers.get(i-1).okMessage(myHost,msg))
+		for(OkChecker O : okCheckers)
+			if(!O.okMessage(myHost,msg))
 				return false;
 		return true;
 	}
 	public boolean respondTo(CMMsg msg){return true;}
 	public void executeMsg(ListenHolder.ExcChecker myHost, CMMsg msg)
 	{
-		myEnvironmental.executeMsg(myHost, msg);
-		if(excCheckers!=null)
-		for(int i=excCheckers.size();i>0;i--)
-			excCheckers.get(i-1).executeMsg(myHost,msg);
+		getEnvObject().executeMsg(myHost, msg);
+		for(ExcChecker O : excCheckers)
+			O.executeMsg(myHost, msg);
 	}
 
 	public int recursiveWeight()
 	{
-		int weight=myEnvironmental.envStats().weight();
+		int weight=getEnvObject().envStats().weight();
 		ItemCollection subItems=ItemCollection.O.getFrom(this);
 		if(subItems!=null)
-		{
-			for(int i=0;i<subItems.numItems();i++)
-			{
-				Item thisItem=subItems.getItem(i);
-				if(thisItem!=null)
-					weight+=thisItem.recursiveWeight();
-			}
-		}
+		for(Iterator<Item> iter=subItems.allItems();iter.hasNext();)
+			weight+=iter.next().recursiveWeight();
 		return weight;
 	}
-	
+
 	public void destroy()
 	{
 		clearAllListeners();
-		myEnvironmental.destroy();
+		if(myEnvironmental!=null)
+			myEnvironmental.destroy();
 
 		destroyed=true;
 
+		for(Effect E : affects)
+			E.setAffectedOne(null);
+		affects.clear();
+		for(Behavior B : behaviors)
+			B.startBehavior(null);
+		behaviors.clear();
 		ItemCollection owner=ItemCollection.O.getFrom(container);
 		if(owner!=null)
 			owner.removeItem(this);
-		
+		Rideable rideable=Rideable.O.getFrom(ride);
+		if(rideable!=null)
+			rideable.removeRider(this);
 		ItemCollection inv=ItemCollection.O.getFrom(this);
 		if(inv!=null)
 		{
 			if(owner==null)
-				for(int i=inv.numItems()-1;i>=0;i--)
-					inv.getItem(i).destroy();
+				for(Iterator<Item> iter=inv.allItems();iter.hasNext();)
+					iter.next().destroy();
 			else
-				for(int i=owner.numItems()-1;i>=0;i--)
-					owner.addItem(inv.getItem(i));
+				for(Iterator<Item> iter=inv.allItems();iter.hasNext();)
+					owner.addItem(iter.next());
 		}
-		CMLib.database().deleteObject(this);
+		if(saveNum!=0)	//NOTE: I think this should be a standard destroy() check?
+			CMLib.database().deleteObject(this);
 	}
 	public boolean amDestroyed(){return destroyed;}
 
@@ -349,7 +368,7 @@ public class StdItem implements Item
 		synchronized(this)
 		{
 			if(saveNum==0)
-				saveNum=SIDLib.Objects.ITEM.getNumber(this);
+				saveNum=SIDLib.ITEM.getNumber(this);
 		}
 		return saveNum;
 	}
@@ -358,9 +377,9 @@ public class StdItem implements Item
 		synchronized(this)
 		{
 			if(saveNum!=0)
-				SIDLib.Objects.ITEM.removeNumber(saveNum);
+				SIDLib.ITEM.removeNumber(saveNum);
 			saveNum=num;
-			SIDLib.Objects.ITEM.assignNumber(num, this);
+			SIDLib.ITEM.assignNumber(num, this);
 		}
 	}
 	public boolean needLink(){return true;}
@@ -370,9 +389,9 @@ public class StdItem implements Item
 		{
 			for(int SID : effectsToLoad)
 			{
-				Effect to = (Effect)SIDLib.Objects.EFFECT.get(SID);
+				Effect to = SIDLib.EFFECT.get(SID);
 				if(to==null) continue;
-				affects.addElement(to);
+				affects.add(to);
 				to.setAffectedOne(this);
 			}
 			effectsToLoad=null;
@@ -381,21 +400,25 @@ public class StdItem implements Item
 		{
 			for(int SID : behavesToLoad)
 			{
-				Behavior to = (Behavior)SIDLib.Objects.BEHAVIOR.get(SID);
+				Behavior to = SIDLib.BEHAVIOR.get(SID);
 				if(to==null) continue;
 				to.startBehavior(this);
-				behaviors.addElement(to);
+				behaviors.add(to);
 			}
 			behavesToLoad=null;
 		}
 		if(rideToLoad!=0)
 		{
-			ride=(Rideable)SIDLib.Objects.RIDEABLE.get(rideToLoad);
-			if(ride!=null)
-				ride.addRider(this);
+			Rideable rideable=SIDLib.RIDEABLE.get(rideToLoad);
+			if(rideable!=null)
+			{
+				rideable.addRider(this);
+				ride=Ownable.O.getOwnerFrom(rideable);
+			}
 		}
 	}
 	public void saveThis(){CMLib.database().saveObject(this);}
+	public void prepDefault(){} //TODO: Env
 
 	private enum SCode implements CMSavable.SaveEnum{
 		VAL(){
@@ -403,10 +426,14 @@ public class StdItem implements Item
 			public int size(){return 4;}
 			public void load(StdItem E, ByteBuffer S){ E.baseGoldValue=S.getInt(); } },
 		ENV(){
-			public ByteBuffer save(StdItem E){ return CMLib.coffeeMaker().savSubFull(E.myEnvironmental); }
+			public ByteBuffer save(StdItem E){ return CMLib.coffeeMaker().savSubFull(E.getEnvObject()); }
 			public int size(){return -1;}
 			public CMSavable subObject(CMSavable fromThis){return ((StdItem)fromThis).myEnvironmental;}
-			public void load(StdItem E, ByteBuffer S){ E.myEnvironmental=(Environmental)CMLib.coffeeMaker().loadSub(S, E.myEnvironmental); } },
+			public void load(StdItem E, ByteBuffer S){
+				Environmental old=E.myEnvironmental;
+				E.myEnvironmental=(Environmental)CMLib.coffeeMaker().loadSub(S, E, this);
+				if(E.myEnvironmental!=null) ((Ownable)E.myEnvironmental).setOwner(E);
+				if((old!=null)&&(old!=E.myEnvironmental)) old.destroy(); } },
 		WRN(){
 			public ByteBuffer save(StdItem E){ return (ByteBuffer)ByteBuffer.wrap(new byte[4]).putInt(E.wornOut).rewind(); }
 			public int size(){return 4;}
@@ -423,26 +450,31 @@ public class StdItem implements Item
 			public ByteBuffer save(StdItem E){ return CMLib.coffeeMaker().savString(E.desc); }
 			public int size(){return 0;}
 			public void load(StdItem E, ByteBuffer S){ E.desc=CMLib.coffeeMaker().loadString(S); } },
-		TXT(){
+		STC(){
+			public ByteBuffer save(StdItem E){ return CMLib.coffeeMaker().savString(E.stackName); }
+			public int size(){return 0;}
+			public void load(StdItem E, ByteBuffer S){ E.stackName=CMLib.coffeeMaker().loadString(S); } },
+		/*TXT(){
 			public ByteBuffer save(StdItem E){ return CMLib.coffeeMaker().savString(E.miscText); }
 			public int size(){return 0;}
-			public void load(StdItem E, ByteBuffer S){ E.miscText=CMLib.coffeeMaker().loadString(S); } },
+			public void load(StdItem E, ByteBuffer S){ E.miscText=CMLib.coffeeMaker().loadString(S); } },*/
 		RNM(){	//NOTE: this may be more efficient as a var enum since it's not often used..
 			public ByteBuffer save(StdItem E){
-				if(E.ride!=null)
-					return (ByteBuffer)ByteBuffer.wrap(new byte[4]).putInt(E.ride.saveNum()).rewind();
+				Rideable ride=Rideable.O.getFrom(E.ride);
+				if(ride!=null)
+					return (ByteBuffer)ByteBuffer.wrap(new byte[4]).putInt(ride.saveNum()).rewind();
 				return (ByteBuffer)ByteBuffer.wrap(new byte[4]).putInt(0).rewind(); }
 			public int size(){return 4;}
 			public void load(StdItem E, ByteBuffer S){ E.rideToLoad=S.getInt(); } },
 		EFC(){
 			public ByteBuffer save(StdItem E){
-				if(E.affects.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.affects.toArray(new CMSavable[E.affects.size()]));
+				if(E.affects.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.affects.toArray(CMSavable.dummyCMSavableArray));
 				return GenericBuilder.emptyBuffer; }
 			public int size(){return 0;}
 			public void load(StdItem E, ByteBuffer S){ E.effectsToLoad=CMLib.coffeeMaker().loadAInt(S); } },
 		BHV(){
 			public ByteBuffer save(StdItem E){
-				if(E.behaviors.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.behaviors.toArray(new CMSavable[E.behaviors.size()]));
+				if(E.behaviors.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.behaviors.toArray(CMSavable.dummyCMSavableArray));
 				return GenericBuilder.emptyBuffer; }
 			public int size(){return 0;}
 			public void load(StdItem E, ByteBuffer S){ E.behavesToLoad=CMLib.coffeeMaker().loadAInt(S); } },
@@ -462,7 +494,7 @@ public class StdItem implements Item
 			public String prompt(StdItem E){return ""+E.baseGoldValue;}
 			public void mod(StdItem E, MOB M){E.setBaseValue(CMLib.genEd().intPrompt(M, ""+E.baseGoldValue));} },
 		ENVIRONMENTAL(){
-			public String brief(StdItem E){return E.myEnvironmental.ID();}
+			public String brief(StdItem E){return E.getEnvObject().ID();}
 			public String prompt(StdItem E){return "";}
 			public void mod(StdItem E, MOB M){CMLib.genEd().genMiscSet(M, E.myEnvironmental);} },
 		WORNOUT(){
@@ -481,10 +513,14 @@ public class StdItem implements Item
 			public String brief(StdItem E){return E.desc;}
 			public String prompt(StdItem E){return ""+E.desc;}
 			public void mod(StdItem E, MOB M){E.setDescription(CMLib.genEd().stringPrompt(M, ""+E.display, false));} },
-		TEXT(){
+		STACKNAME(){
+			public String brief(StdItem E){return E.stackName;}
+			public String prompt(StdItem E){return ""+E.stackName;}
+			public void mod(StdItem E, MOB M){E.setStackableName(CMLib.genEd().stringPrompt(M, ""+E.stackName, false));} },
+		/*TEXT(){
 			public String brief(StdItem E){return E.miscText;}
 			public String prompt(StdItem E){return ""+E.miscText;}
-			public void mod(StdItem E, MOB M){E.setMiscText(CMLib.genEd().stringPrompt(M, ""+E.miscText, false));} },
+			public void mod(StdItem E, MOB M){E.setMiscText(CMLib.genEd().stringPrompt(M, ""+E.miscText, false));} },*/
 		EFFECTS(){
 			public String brief(StdItem E){return ""+E.affects.size();}
 			public String prompt(StdItem E){return "";}

@@ -26,13 +26,9 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Create extends StdCommand
 {
-	public Create(){}
+	public Create(){access=new String[]{"CREATE"};}
 
-	private String[] access={"CREATE"};
-	public String[] getAccessWords(){return access;}
-
-	public void exits(MOB mob, Vector commands)
-		throws IOException
+	public void exits(MOB mob, Vector<String> commands)
 	{
 		Room here=mob.location();
 		if(here==null)
@@ -42,15 +38,15 @@ public class Create extends StdCommand
 		}
 		if(commands.size()<3)
 		{
-			mob.tell("You have failed to specify the proper fields.\n\rThe format is CREATE EXIT [EXIT TYPE]\n\r");
+			mob.tell("You have failed to specify the proper fields.\r\nThe format is CREATE EXIT [EXIT TYPE]\r\n");
 			return;
 		}
 
-		String Locale=(String)commands.elementAt(2);
-		Exit thisExit=(Exit)CMClass.Objects.EXIT.getNew(Locale);
+		String Locale=commands.elementAt(2);
+		Exit thisExit=CMClass.EXIT.getNew(Locale);
 		if(thisExit==null)
 		{
-			mob.tell("You have failed to specify a valid exit type '"+Locale+"'.\n\r");
+			mob.tell("You have failed to specify a valid exit type '"+Locale+"'.\r\n");
 			return;
 		}
 		Room R=null;
@@ -58,11 +54,11 @@ public class Create extends StdCommand
 		{
 			String roomID=mob.session().prompt("Connect this exit to what room? ","");
 			if(roomID.equals("")) break;
-			R=(Room)SIDLib.Objects.ROOM.get(CMath.s_int(roomID));
+			R=SIDLib.ROOM.get(CMath.s_int(roomID));
 		}
 		if(R==null)
 		{
-			mob.tell("You must have a valid room for the exit to go to.\n\r");
+			mob.tell("You must have a valid room for the exit to go to.\r\n");
 			return;
 		}
 		boolean returnExit=mob.session().prompt("Make a return exit? (Y/n)","Y").substring(0,1).equalsIgnoreCase("Y");
@@ -71,16 +67,15 @@ public class Create extends StdCommand
 		here.addExit(thisExit, R);
 		if(returnExit) R.addExit(thisExit, here);
 
-		here.showHappens(EnumSet.of(CMMsg.MsgCode.VISUAL),null,"Suddenly a passage opens up.\n\r");
+		here.show(null,"Suddenly a passage opens up.\r\n");
 		Log.sysOut("Exits",mob.location().saveNum()+" exits changed by "+mob.name()+".");
 	}
 
-	public void items(MOB mob, Vector commands)
-		throws IOException
+	public void items(MOB mob, Vector<String> commands)
 	{
 		if(commands.size()<3)
 		{
-			mob.tell("You have failed to specify the proper fields.\n\rThe format is CREATE ITEM [ITEM NAME](@ room/[MOB NAME])\n\r");
+			mob.tell("You have failed to specify the proper fields.\r\nThe format is CREATE ITEM [ITEM NAME](@ room/[MOB NAME])\r\n");
 			return;
 		}
 
@@ -108,44 +103,44 @@ public class Create extends StdCommand
 					dest=V.get(0).getItemCollection();
 			}
 		}
-		Item newItem=(Item)CMClass.Objects.ITEM.getNew(itemID);
+		Item newItem=CMClass.ITEM.getNew(itemID);
 
 		if(newItem==null)
 		{
-			mob.tell("There's no such thing as a '"+itemID+"'.\n\r");
+			mob.tell("There's no such thing as a '"+itemID+"'.\r\n");
 			return;
 		}
 
 		CMLib.genEd().genMiscSet(mob,newItem);
 		dest.addItem(newItem);
-		mob.location().showHappens(EnumSet.of(CMMsg.MsgCode.VISUAL),null,"Suddenly, "+newItem.name()+" drops from the sky.");
+		mob.location().show(null,"Suddenly, "+newItem.name()+" drops from the sky.");
 		Log.sysOut("Items",mob.name()+" created item "+newItem.ID()+".");
 	}
 
-	public void rooms(MOB mob, Vector commands)
+	public void rooms(MOB mob, Vector<String> commands)
 	{
 		if(commands.size()<3)
 		{
-			mob.tell("You have failed to specify the proper fields.\n\rThe format is CREATE ROOM [ROOM TYPE]\n\r");
+			mob.tell("You have failed to specify the proper fields.\r\nThe format is CREATE ROOM [ROOM TYPE]\r\n");
 			return;
 		}
 
 		Room thisRoom=null;
 		String str=(String)commands.get(2);
-		thisRoom=(Room)CMClass.Objects.LOCALE.getNew(str);
+		thisRoom=CMClass.LOCALE.getNew(str);
 		if(thisRoom==null)
 		{
-			mob.tell("You have failed to specify a valid room type '"+str+"'.\n\r");
+			mob.tell("You have failed to specify a valid room type '"+str+"'.\r\n");
 			return;
 		}
 		Area area=null;
-		if((commands.size()>=4)&&(((String)commands.get(3)).equalsIgnoreCase("HERE")))
+		if((commands.size()>=4)&&(commands.get(3).equalsIgnoreCase("HERE")))
 			area=mob.location().getArea();
 		else
 			area=CMLib.genEd().areaPrompt(mob);
 		if(area==null)
 		{
-			mob.tell("Without a valid area the room cannot function nor be saved.\n\r");
+			mob.tell("Without a valid area the room cannot function nor be saved.\r\n");
 			return;
 		}
 		thisRoom.setArea(area);
@@ -156,45 +151,43 @@ public class Create extends StdCommand
 		CMLib.genEd().genMiscSet(mob, thisRoom);
 	}
 
-	public void mobs(MOB mob, Vector commands)
-		throws IOException
+	public void mobs(MOB mob, Vector<String> commands)
 	{
 		if(commands.size()<3)
 		{
-			mob.tell("You have failed to specify the proper fields.\n\rThe format is CREATE MOB [MOB TYPE]\n\r");
+			mob.tell("You have failed to specify the proper fields.\r\nThe format is CREATE MOB [MOB TYPE]\r\n");
 			return;
 		}
 
 		String mobID=CMParms.combine(commands,2);
-		MOB newMOB=(MOB)CMClass.Objects.MOB.getNew(mobID);
+		MOB newMOB=CMClass.CREATURE.getNew(mobID);
 
 		if(newMOB==null)
 		{
-			mob.tell("There's no such thing as a '"+mobID+"'.\n\r");
+			mob.tell("There's no such thing as a '"+mobID+"'.\r\n");
 			return;
 		}
 
 		newMOB.setLocation(mob.location());
-		newMOB.setBody((Body)CMClass.Objects.ITEM.getNew("StdBody"));
+		newMOB.setBody((Body)CMClass.ITEM.getNew("StdBody"));
 		CMLib.genEd().genMiscSet(mob,newMOB.body());
 		newMOB.body().bringToLife(mob.location(),true);
-		mob.location().showHappens(EnumSet.of(CMMsg.MsgCode.VISUAL),null,"Suddenly, "+newMOB.name()+" instantiates from the Java plain.");
+		mob.location().show(null,"Suddenly, "+newMOB.name()+" instantiates from the Java plain.");
 		Log.sysOut("Mobs",mob.name()+" created mob "+newMOB.name()+".");
 	}
 
-	public void areas(MOB mob, Vector commands)
-		throws IOException
+	public void areas(MOB mob, Vector<String> commands)
 	{
 		if(commands.size()<3)
 		{
-			mob.tell("You have failed to specify the proper fields.\n\rThe format is CREATE AREA [AREA TYPE]\n\r");
+			mob.tell("You have failed to specify the proper fields.\r\nThe format is CREATE AREA [AREA TYPE]\r\n");
 			return;
 		}
-		String str=(String)commands.get(2);
-		Area thisArea=(Area)CMClass.Objects.AREA.getNew(str);
+		String str=commands.get(2);
+		Area thisArea=CMClass.AREA.getNew(str);
 		if(thisArea==null)
 		{
-			mob.tell("'"+str+"' is not a valid area type.\n\r");
+			mob.tell("'"+str+"' is not a valid area type.\r\n");
 			return;
 		}
 		
@@ -202,7 +195,7 @@ public class Create extends StdCommand
 		String areaName="";
 		while(areaName.length()==0)
 		{
-			areaName=mob.session().prompt("Enter an area type to create (default=StdArea): ","StdArea");
+			areaName=mob.session().prompt("Enter a name for the new area: ");
 			if(areaName.length()==0) return;
 			if(CMLib.map().getArea(areaName)!=null)
 			{
@@ -220,47 +213,48 @@ public class Create extends StdCommand
 		return false;
 	}
 	
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		String commandType="";
 		if(commands.size()>1)
-			commandType=((String)commands.elementAt(1)).toUpperCase();
+			commandType=commands.elementAt(1).toUpperCase();
 
 		if(commandType.equals("EXIT"))
 		{
-			if(!CMSecurity.isAllowed(mob,mob.location(),"CMDEXITS")) return errorOut(mob);
+			if(!CMSecurity.isAllowed(mob,"CMDEXITS")) return errorOut(mob);
 			exits(mob,commands);
 		}
 		else
 		if(commandType.equals("AREA"))
 		{
-			if(!CMSecurity.isAllowed(mob,mob.location(),"CMDAREAS")) return errorOut(mob);
+			if(!CMSecurity.isAllowed(mob,"CMDAREAS")) return errorOut(mob);
 			areas(mob,commands);
 		}
 		else
 		if(commandType.equals("ITEM"))
 		{
-			if(!CMSecurity.isAllowed(mob,mob.location(),"CMDITEMS")) return errorOut(mob);
+			if(!CMSecurity.isAllowed(mob,"CMDITEMS")) return errorOut(mob);
 			items(mob,commands);
 		}
 		else
 		if(commandType.equals("ROOM"))
 		{
-			if(!CMSecurity.isAllowed(mob,mob.location(),"CMDROOMS")) return errorOut(mob);
+			if(!CMSecurity.isAllowed(mob,"CMDROOMS")) return errorOut(mob);
 			rooms(mob,commands);
 		}
 		else
 		if(commandType.equals("MOB"))
 		{
-			if(!CMSecurity.isAllowed(mob,mob.location(),"CMDMOBS")) return errorOut(mob);
+			if(!CMSecurity.isAllowed(mob,"CMDMOBS")) return errorOut(mob);
 			mobs(mob,commands);
 		}
 		else
-			mob.tell("\n\rYou cannot create a '"+commandType+"'. However, you might try an EXIT, ITEM, MOB, AREA, or ROOM.");
+			mob.tell("\r\nYou cannot create a '"+commandType+"'. However, you might try an EXIT, ITEM, MOB, AREA, or ROOM.");
 		return false;
 	}
 
+	public int commandType(MOB mob, String cmds){return CT_NON_ACTION;}
+	public boolean prompter(){return true;}
 	public boolean canBeOrdered(){return true;}
-	public boolean securityCheck(MOB mob){return CMSecurity.isAllowedStartsWith(mob,mob.location(),"CMD");}
+	public boolean securityCheck(MOB mob){return CMSecurity.isAllowedStartsWith(mob,"CMD");}
 }

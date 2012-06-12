@@ -11,7 +11,10 @@ import com.planet_ink.coffee_mud.Items.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
+
 import java.util.*;
+import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -36,6 +39,10 @@ public interface PlayerLibrary extends CMLibrary, Runnable
 	public void obliterateAccountOnly(PlayerAccount deadAccount);
 	public boolean playerExists(String name);
 	public void forceTick();
+	public void unqueuePlayers();
+	public void queueAccount(PlayerAccount newOne);
+	public void queuePlayer(MOB newOne);
+	public boolean swapPlayer(MOB mob, String oldName);
 //	public int savePlayers();
 //	public Enumeration thinPlayers(String sort, Hashtable cache);
 //	public int getCharThinSortCode(String codeName, boolean loose);

@@ -24,12 +24,9 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Ban extends StdCommand
 {
-	public Ban(){}
+	public Ban(){access=new String[]{"BAN"};}
 
-	private String[] access={"BAN"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		commands.removeElementAt(0);
 		String banMe=CMParms.combine(commands,0);
@@ -49,7 +46,8 @@ public class Ban extends StdCommand
 		}
 		return true;
 	}
-	
+
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	public boolean canBeOrdered(){return true;}
-	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,mob.location(),"BAN");}
+	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,"BAN");}
 }

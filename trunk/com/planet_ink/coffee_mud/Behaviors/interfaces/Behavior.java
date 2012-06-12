@@ -28,5 +28,4 @@ public interface Behavior extends ListenHolder.AllListener, CMModifiable, CMSava
 
 	public String getParms();
 	public void setParms(String parameters);
-
 }

@@ -1,5 +1,4 @@
 package com.planet_ink.coffee_mud.Libraries.interfaces;
-import com.planet_ink.coffee_mud.core.exceptions.CMException;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
@@ -12,7 +11,12 @@ import com.planet_ink.coffee_mud.Items.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
+
+import com.planet_ink.coffee_mud.core.exceptions.CMException;
+
 import java.util.*;
+import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -45,8 +49,9 @@ public interface GenericEditor extends CMLibrary
 
 	public void modBehavable(Behavable E, MOB M);
 	public void modAffectable(Affectable E, MOB M);
-	public void modExits(Vector<Room.REMap> exits, MOB M);
+	public void modExits(CopyOnWriteArrayList<Room.REMap> exits, MOB M);
 	public int promptVector(MOB mob, Vector V, boolean newOption);
+	public int promptVector(MOB mob, Object[] V, boolean newOption);
 	public int promptWVector(MOB mob, WVector V, boolean newOption);
 	public Area areaPrompt(MOB M);
 	public Race racePrompt(MOB M);

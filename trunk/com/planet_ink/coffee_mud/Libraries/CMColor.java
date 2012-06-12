@@ -1,7 +1,6 @@
 package com.planet_ink.coffee_mud.Libraries;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
@@ -10,10 +9,13 @@ import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
+import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -22,66 +24,15 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
+//TODO later. Need to revamp this
 @SuppressWarnings("unchecked")
 public class CMColor extends StdLibrary implements ColorLibrary
 {
 	public String ID(){return "CMColor";}
 	
-	public String[] clookup=null;
+	//public String[] clookup=null;
 	public String[] htlookup=null;
-	
-	public int translateSingleCMCodeToANSIOffSet(String code)
-	{
-		if(code.length()==0) return -1;
-		if(!code.startsWith("^")) return -1;
-		int i=code.length()-1;
-		while(i>=0)
-			if(Character.isLetter(code.charAt(i)))
-				return "krgybpcw".indexOf(Character.toLowerCase(code.charAt(i)));
-		return 3;
-	}
-	
-	public String translateCMCodeToANSI(String code)
-	{
-		if(code.length()==0) return code;
-		if(!code.startsWith("^")) return code;
-		int background=code.indexOf("|");
-		int bold=0;
-		for(int i=0;i<code.length();i++)
-			if(Character.isLowerCase(code.charAt(i)))
-				bold=1;
-		if(background>0)
-			return "\033["+(40+translateSingleCMCodeToANSIOffSet(code.substring(0,background)))+";"+bold+";"+(30+translateSingleCMCodeToANSIOffSet(code.substring(background+1)))+"m";
-		return "\033["+bold+";"+(30+translateSingleCMCodeToANSIOffSet(code))+"m";
-	}
-	
-	public String translateANSItoCMCode(String code)
-	{
-		if(code.length()==0) return code;
-		if(code.indexOf("^")==0) return code;
-		if(code.indexOf("|")>0) return code;
-		String code1=null;
-		String code2=null;
-		boolean bold=(code.indexOf(";1;")>0)||(code.indexOf("[1;")>0);
-		for(int i=0;i<COLOR_CODELETTERSINCARDINALORDER.length;i++)
-		{
-			if((code1==null)&&(code.indexOf(""+(40+i))>0))
-				code1="^"+Character.toUpperCase(COLOR_CODELETTERSINCARDINALORDER[i].charAt(0));
-			if((code2==null)&&(code.indexOf(""+(30+i))>0))
-				code2="^"+(bold?COLOR_CODELETTERSINCARDINALORDER[i]:(""+Character.toUpperCase(COLOR_CODELETTERSINCARDINALORDER[i].charAt(0))));
-		}
-		if((code1!=null)&&(code2!=null))
-			return code1+"|"+code2;
-		else
-		if((code1==null)&&(code2!=null))
-			return code2;
-		else
-		if((code1!=null)&&(code2==null))
-			return code1;
-		else
-			return "^W";
-	}
-	
+
 	public String mixHTMLCodes(String code1, String code2)
 	{
 		String html=null;
@@ -122,13 +73,13 @@ public class CMColor extends StdLibrary implements ColorLibrary
 	public CMMsg fixSourceFightColor(CMMsg msg)
 	{
 		if(msg.sourceMessage()!=null)
-			msg.setSourceMessage(CMStrings.replaceAll(msg.sourceMessage(),"^F","^f"));
+			msg.setSourceMessage(msg.sourceMessage().replace("^F","^f"));
 		if(msg.targetMessage()!=null)
-			msg.setTargetMessage(CMStrings.replaceAll(msg.targetMessage(),"^F","^e"));
+			msg.setTargetMessage(msg.targetMessage().replace("^F","^e"));
 		return msg;
 	}
 	
-	public String[] standardHTMLlookups()
+	/*public String[] standardHTMLlookups()
 	{
 		if(htlookup==null)
 		{
@@ -176,7 +127,7 @@ public class CMColor extends StdLibrary implements ColorLibrary
 			Vector schemeSettings=CMParms.parseCommas(CMProps.Strings.COLORSCHEME.property(),true);
 			for(int i=0;i<schemeSettings.size();i++)
 			{
-				String s=(String)schemeSettings.elementAt(i);
+				String s=(String)schemeSettings.get(i);
 				int x=s.indexOf("=");
 				if(x>0)
 				{
@@ -232,7 +183,6 @@ public class CMColor extends StdLibrary implements ColorLibrary
 		}
 		return htlookup;
 	}
-	
 	public void clearLookups(){clookup=null;}
 	public String[] standardColorLookups()
 	{
@@ -283,7 +233,7 @@ public class CMColor extends StdLibrary implements ColorLibrary
 			Vector schemeSettings=CMParms.parseCommas(CMProps.Strings.COLORSCHEME.property(),true);
 			for(int i=0;i<schemeSettings.size();i++)
 			{
-				String s=(String)schemeSettings.elementAt(i);
+				String s=(String)schemeSettings.get(i);
 				int x=s.indexOf("=");
 				if(x>0)
 				{
@@ -340,4 +290,50 @@ public class CMColor extends StdLibrary implements ColorLibrary
 		}
 		return clookup;
 	}
+	public int translateSingleCMCodeToANSIOffSet(char code)
+	{
+		return "krgybpcw".indexOf(code);
+	}
+	public String translateCMCodeToANSI(String code)
+	{
+		if(code.length()==0) return code;
+		if(!code.startsWith("^")) return code;
+		int background=code.indexOf("|");
+		int bold=0;
+		for(int i=0;i<code.length();i++)
+			if(Character.isLowerCase(code.charAt(i)))
+			{
+				bold=1;
+				break;
+			}
+		if(background>0)
+			return "\033["+(40+translateSingleCMCodeToANSIOffSet(code.charAt(1)))+";"+bold+";"+(30+translateSingleCMCodeToANSIOffSet(code.substring(background+1)))+"m";
+		return "\033["+bold+";"+(30+translateSingleCMCodeToANSIOffSet(code.charAt(1)))+"m";
+	}
+	public String translateANSItoCMCode(String code)
+	{
+		if(code.length()==0) return code;
+		if(code.indexOf("^")==0) return code;
+		if(code.indexOf("|")>0) return code;
+		String code1=null;
+		String code2=null;
+		boolean bold=(code.indexOf(";1;")>0)||(code.indexOf("[1;")>0);
+		for(int i=0;i<COLOR_CODELETTERSINCARDINALORDER.length;i++)
+		{
+			if((code1==null)&&(code.indexOf(""+(40+i))>0))
+				code1="^"+Character.toUpperCase(COLOR_CODELETTERSINCARDINALORDER[i].charAt(0));
+			if((code2==null)&&(code.indexOf(""+(30+i))>0))
+				code2="^"+(bold?COLOR_CODELETTERSINCARDINALORDER[i]:(""+Character.toUpperCase(COLOR_CODELETTERSINCARDINALORDER[i].charAt(0))));
+		}
+		if((code1!=null)&&(code2!=null))
+			return code1+"|"+code2;
+		else
+		if((code1==null)&&(code2!=null))
+			return code2;
+		else
+		if((code1!=null)&&(code2==null))
+			return code1;
+		else
+			return "^W";
+	}*/
 }

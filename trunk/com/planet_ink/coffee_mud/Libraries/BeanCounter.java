@@ -1,9 +1,6 @@
 package com.planet_ink.coffee_mud.Libraries;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
-//import com.planet_ink.coffee_mud.Libraries.interfaces.DatabaseEngine.PlayerData;
-import com.planet_ink.coffee_mud.Libraries.interfaces.MoneyLibrary.MoneyDenomination;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
@@ -12,10 +9,15 @@ import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
+import com.planet_ink.coffee_mud.Libraries.interfaces.MoneyLibrary.MoneyDenomination;
+
 import java.util.*;
+import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -29,7 +31,7 @@ public class BeanCounter extends StdLibrary implements MoneyLibrary
 {
 	public String ID(){return "BeanCounter";}
 	public Hashtable<String,CMCurrency> currencies=new Hashtable<String,CMCurrency>();
-	public Vector<String> allCurrencyNames=new Vector<String>();
+	public HashSet<String> allCurrencyNames=new HashSet<String>();
 
 	public void initializeClass()
 	{
@@ -41,11 +43,8 @@ public class BeanCounter extends StdLibrary implements MoneyLibrary
 		String code=currency.toUpperCase().trim();
 		int x=code.indexOf("=");
 		if(x>=0) code=code.substring(0,x).trim();
-		if((code.length()>0)&&(currencies.containsKey(code)))
-		{
-			allCurrencyNames.removeElement(code);
-			currencies.remove(code);
-		}
+		if((code.length()>0)&&(currencies.remove(code)!=null))
+			synchronized(allCurrencyNames){ allCurrencyNames.remove(code); }
 	}
 
 	public CMCurrency createCurrencySet(String currency)
@@ -53,17 +52,18 @@ public class BeanCounter extends StdLibrary implements MoneyLibrary
 		int x=currency.indexOf("=");
 		if(x<0) return null;
 		String code=currency.substring(0,x).trim().toUpperCase();
-		if(currencies.containsKey(code))
-			return currencies.get(code);
+		CMCurrency result=currencies.get(code);
+		if(result!=null)
+			return result;
 		currency=currency.substring(x+1).trim();
 		Vector<String> CV=CMParms.parseSemicolons(currency,true);
-		Vector<MoneyDenomination> DV=new Vector<MoneyDenomination>();
+		ArrayList<MoneyDenomination> DV=new ArrayList<MoneyDenomination>();
 		String s=null;
 		String num=null;
 		long d=0;
 		for(int v=0;v<CV.size();v++)
 		{
-			s=(String)CV.elementAt(v);
+			s=CV.get(v);
 			x=s.indexOf(" ");
 			if(x<0) continue;
 			num=s.substring(0,x).trim();
@@ -85,18 +85,18 @@ public class BeanCounter extends StdLibrary implements MoneyLibrary
 			{
 				int insertAt=-1;
 				for(int i=0;i<DV.size();i++)
-					if(DV.elementAt(i).value()>d)
+					if(DV.get(i).value()>d)
 					{ insertAt=i; break;}
 				if(insertAt<0)
-					DV.addElement(new MoneyDenomination(d,s,shortName));
+					DV.add(new MoneyDenomination(d,s,shortName));
 				else
-					DV.insertElementAt(new MoneyDenomination(d,s,shortName),insertAt);
+					DV.add(insertAt, new MoneyDenomination(d,s,shortName));
 			}
 		}
-		CMCurrency DVs=new CMCurrency((MoneyDenomination[])DV.toArray(new MoneyDenomination[0]), code);
-		currencies.put(code, DVs);
-		allCurrencyNames.addElement(code);
-		return DVs;
+		result=new CMCurrency((MoneyDenomination[])DV.toArray(MoneyLibrary.dummyMDArray), code);
+		currencies.put(code, result);
+		synchronized(allCurrencyNames) {allCurrencyNames.add(code);}
+		return result;
 	}
 	public CMCurrency getCurrencySet(String currency)
 	{
@@ -108,9 +108,9 @@ public class BeanCounter extends StdLibrary implements MoneyLibrary
 		return currencies.get(code);
 	}
 
-	public Vector getAllCurrencies()
+	public String[] getAllCurrencies()
 	{ 
-		return allCurrencyNames;
+		synchronized(allCurrencyNames) {return (String[])allCurrencyNames.toArray(CMClass.dummyStringArray);}
 	}
 /*
 	public int getDenominationIndex(String currency, double value)
@@ -495,7 +495,7 @@ public class BeanCounter extends StdLibrary implements MoneyLibrary
 	{
 		if(numberOfCoins>0)
 		{
-			Coins C=(Coins)CMClass.Objects.ITEM.getNew("StdCoins");
+			Coins C=(Coins)CMClass.ITEM.getNew("StdCoins");
 			C.setCurrency(currency);
 			C.setDenomination(denomination);
 			C.setNumberOfCoins(numberOfCoins);

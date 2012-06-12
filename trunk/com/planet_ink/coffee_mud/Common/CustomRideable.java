@@ -8,14 +8,15 @@ import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
-import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.io.IOException;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -27,7 +28,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 public class CustomRideable implements Rideable, Ownable
 {
 
-	protected Vector<Item> riders=new Vector<Item>(1);
+	protected CopyOnWriteArrayList<Item> riders=new CopyOnWriteArrayList();
 	protected CMSavable parent=null;
 	protected int saveNum=0;
 	protected boolean mobile=false;
@@ -36,6 +37,7 @@ public class CustomRideable implements Rideable, Ownable
 	protected String mountString="sit(s) on";
 	protected String dismountString="stand(s) from";
 	protected String stateStringSubject="sat on by";
+	protected boolean amDestroyed=false;
 
 
 	//CMObject
@@ -52,7 +54,15 @@ public class CustomRideable implements Rideable, Ownable
 	public void destroy()
 	{
 		//TODO
-		CMLib.database().deleteObject(this);
+		amDestroyed=true;
+		if(saveNum!=0)
+			CMLib.database().deleteObject(this);
+	}
+	public boolean amDestroyed()
+	{
+/*		if(parent!=null)
+			amDestroyed=parent.amDestroyed();	*/
+		return amDestroyed;
 	}
 
 	//CMModifiable and CMSavable
@@ -62,11 +72,11 @@ public class CustomRideable implements Rideable, Ownable
 	public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
 	public int saveNum()
 	{
-		if(saveNum==0)
+		if((saveNum==0)&&(!amDestroyed))
 		synchronized(this)
 		{
 			if(saveNum==0)
-				saveNum=SIDLib.Objects.RIDEABLE.getNumber(this);
+				saveNum=SIDLib.RIDEABLE.getNumber(this);
 		}
 		return saveNum;
 	}
@@ -75,14 +85,15 @@ public class CustomRideable implements Rideable, Ownable
 		synchronized(this)
 		{
 			if(saveNum!=0)
-				SIDLib.Objects.RIDEABLE.removeNumber(saveNum);
+				SIDLib.RIDEABLE.removeNumber(saveNum);
 			saveNum=num;
-			SIDLib.Objects.RIDEABLE.assignNumber(num, this);
+			SIDLib.RIDEABLE.assignNumber(num, this);
 		}
 	}
 	public boolean needLink(){return false;}
 	public void link(){}
 	public void saveThis(){CMLib.database().saveObject(this);}
+	public void prepDefault(){}
 
 	//Rideable
 	public boolean isMobileRide(){return mobile;}
@@ -91,13 +102,13 @@ public class CustomRideable implements Rideable, Ownable
 	public boolean hasRider(Item E) { return riders.contains(E); }
 	public void addRider(Item E)
 	{
-		E.setRide(this);
-		riders.addElement(E);
+		E.setRide(parent);
+		riders.add(E);
 //		E.getEnvObject().recoverEnvStats();
 	}
 	public void removeRider(Item E)
 	{
-		riders.removeElement(E);
+		riders.remove(E);
 		E.setRide(null);
 //		E.getEnvObject().recoverEnvStats();
 	}
@@ -110,11 +121,11 @@ public class CustomRideable implements Rideable, Ownable
 	}
 	public Item getRider(int index)
 	{
-		try { return riders.elementAt(index); }
+		try { return riders.get(index); }
 		catch(java.lang.ArrayIndexOutOfBoundsException x){}
 		return null;
 	}
-	public Vector<Item> allRiders(){return (Vector<Item>)riders.clone();}
+	public Iterator<Item> allRiders(){return riders.iterator();}
 	public int numRiders() { return riders.size(); }
 	public String putString(Item R) { return putString; }
 	public String stateString(Item R) { return stateString; }
@@ -133,31 +144,31 @@ public class CustomRideable implements Rideable, Ownable
 			public void load(CustomRideable E, ByteBuffer S){E.mobile=(S.get()!=0);} },
 		PUT(){
 			public ByteBuffer save(CustomRideable E){
-				if(E.putString=="on") return GenericBuilder.emptyBuffer;
+				if(E.putString.equals("on")) return GenericBuilder.emptyBuffer;
 				return CMLib.coffeeMaker().savString(E.putString); }
 			public int size(){return 0;}
 			public void load(CustomRideable E, ByteBuffer S){ E.putString=CMLib.coffeeMaker().loadString(S); } },
 		STA(){
 			public ByteBuffer save(CustomRideable E){
-				if(E.stateString=="sitting on") return GenericBuilder.emptyBuffer;
+				if(E.stateString.equals("sitting on")) return GenericBuilder.emptyBuffer;
 				return CMLib.coffeeMaker().savString(E.stateString); }
 			public int size(){return 0;}
 			public void load(CustomRideable E, ByteBuffer S){ E.stateString=CMLib.coffeeMaker().loadString(S); } },
 		MNT(){
 			public ByteBuffer save(CustomRideable E){
-				if(E.mountString=="sit(s) on") return GenericBuilder.emptyBuffer;
+				if(E.mountString.equals("sit(s) on")) return GenericBuilder.emptyBuffer;
 				return CMLib.coffeeMaker().savString(E.mountString); }
 			public int size(){return 0;}
 			public void load(CustomRideable E, ByteBuffer S){ E.mountString=CMLib.coffeeMaker().loadString(S); } },
 		DIS(){
 			public ByteBuffer save(CustomRideable E){
-				if(E.dismountString=="stand(s) from") return GenericBuilder.emptyBuffer;
+				if(E.dismountString.equals("stand(s) from")) return GenericBuilder.emptyBuffer;
 				return CMLib.coffeeMaker().savString(E.dismountString); }
 			public int size(){return 0;}
 			public void load(CustomRideable E, ByteBuffer S){ E.dismountString=CMLib.coffeeMaker().loadString(S); } },
 		SUB(){
 			public ByteBuffer save(CustomRideable E){
-				if(E.putString=="sat on by") return GenericBuilder.emptyBuffer;
+				if(E.putString.equals("sat on by")) return GenericBuilder.emptyBuffer;
 				return CMLib.coffeeMaker().savString(E.stateStringSubject); }
 			public int size(){return 0;}
 			public void load(CustomRideable E, ByteBuffer S){ E.stateStringSubject=CMLib.coffeeMaker().loadString(S); } },
@@ -175,7 +186,7 @@ public class CustomRideable implements Rideable, Ownable
 				boolean done=false;
 				while((M.session()!=null)&&(!M.session().killFlag())&&(!done))
 				{
-					Vector<Item> V=E.allRiders();
+					Vector<Item> V=new Vector(E.riders);
 					int i=CMLib.genEd().promptVector(M, V, false);
 					if(--i<0) done=true;
 					else if(i<V.size())

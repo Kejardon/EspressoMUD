@@ -24,16 +24,13 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Who extends StdCommand
 {
-	public Who(){}
+	public Who(){access=new String[]{"WHO","WH"};}
 
-	private String[] access={"WHO","WH"};
-	public String[] getAccessWords(){return access;}
-	
 	protected static final String shortHead=
 		 "^x["
 		+CMStrings.padRight("Race",12)+" "
 //		+CMStrings.padRight("Level",7)
-		+"] Character name^.^N\n\r";
+		+"] Character name^.^N\r\n";
 		 
 	
 	public StringBuffer showWhoShort(MOB who)
@@ -67,42 +64,41 @@ public class Who extends StdCommand
 			name=name+(" (idle: "+s+")");
 		}
 		msg.append("] "+CMStrings.padRight(name,40));
-		msg.append("\n\r");
+		msg.append("\r\n");
 		return msg;
 	}
 	
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		String mobName=CMParms.combine(commands,1);
-		HashSet<MOB> friends=null;
+		AccountStats friendsOf=null;
 		if((mobName!=null)
 		&&(mob!=null)
 		&&(mobName.equalsIgnoreCase("friends"))
 		&&(mob.playerStats()!=null))
 		{
-			friends=mob.playerStats().getFriends();
+			friendsOf=mob.playerStats();
 			mobName=null;
 		}
 		
 		StringBuffer msg=new StringBuffer("");
-		for(int s=0;s<CMLib.sessions().size();s++)
+		for(Session thisSession : CMLib.sessions().toArray())
 		{
-			Session thisSession=CMLib.sessions().elementAt(s);
 			MOB mob2=thisSession.mob();
 
 			if((mob2!=null)
 			&&(!thisSession.killFlag())
-			&&((friends==null)||(friends.contains(mob2)))
+			&&((friendsOf==null)||(friendsOf.hasFriend(mob2.playerStats())))
 			&&(CMLib.flags().isInTheGame(mob2,true)))
 				msg.append(showWhoShort(mob2));
 		}
 		if((mobName!=null)&&(msg.length()==0))
-			msg.append("That person doesn't appear to be online.\n\r");
+			msg.append("That person doesn't appear to be online.\r\n");
 		else
 			mob.tell(shortHead+msg.toString());
 		return false;
 	}
-	
+
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	public boolean canBeOrdered(){return true;}
 }

@@ -24,12 +24,9 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Sit extends StdCommand
 {
-	public Sit(){}
+	public Sit(){access=new String[]{"SIT","REST","R"};}
 
-	private String[] access={"SIT","REST","R"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 /*
 		if(CMLib.flags().isSitting(mob))
@@ -40,7 +37,9 @@ public class Sit extends StdCommand
 */
 		if(commands.size()<=1)
 		{
-			mob.location().doMessage(CMClass.getMsg(mob,null,null,EnumSet.of(CMMsg.MsgCode.SIT),"<S-NAME> sit(s) down and take(s) a rest."));
+			CMMsg msg=CMClass.getMsg(mob,null,null,EnumSet.of(CMMsg.MsgCode.SIT),"<S-NAME> sit(s) down and take(s) a rest.");
+			mob.location().doMessage(msg);
+			msg.returnMsg();
 			return false;
 		}
 		if("ON".equalsIgnoreCase((String)commands.get(1)))
@@ -55,8 +54,10 @@ public class Sit extends StdCommand
 		String mountStr="<S-NAME> sit(s) on <T-NAME>.";
 		CMMsg msg=CMClass.getMsg(mob,I,null,EnumSet.of(CMMsg.MsgCode.SIT),mountStr);
 		mob.location().doMessage(msg);
+		msg.returnMsg();
 		return false;
 	}
-	public double actionsCost(MOB mob, Vector cmds){return DEFAULT_NONCOMBATACTION;}
+
+	public int commandType(MOB mob, String cmds){return CT_LOW_P_ACTION;}
 	public boolean canBeOrdered(){return true;}
 }

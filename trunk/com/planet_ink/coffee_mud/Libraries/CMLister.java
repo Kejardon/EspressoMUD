@@ -1,7 +1,6 @@
 package com.planet_ink.coffee_mud.Libraries;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
@@ -10,10 +9,13 @@ import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
+import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -26,52 +28,46 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 public class CMLister extends StdLibrary implements ListingLibrary
 {
 	public String ID(){return "CMLister";}
-	public String itemSeenString(MOB viewer, 
-								 Interactable item, 
-								 boolean useName, 
-								 boolean longLook,
-								 boolean sysmsgs)
+	public String itemSeenString(MOB viewer,
+								 Interactable item,
+								 boolean useName
+								 //boolean longLook,
+								 //boolean sysmsgs
+								 )
 	{
-		if(useName)
-			return CMStrings.capitalizeFirstLetter(item.name())+(sysmsgs?" ("+item.ID()+")":"");
+		if((useName)||(item.displayText().length()==0))
+			return CMStrings.capitalizeFirstLetter(item.name());
 		else
-		if((longLook)&&(item instanceof Item)&&(((Item)item).container()!=null))
-			return CMStrings.capitalizeFirstLetter("	 "+item.name())+(sysmsgs?" ("+item.ID()+")":"");
-//		else
-//		if(item instanceof MOB)
-//			return CMStrings.capitalizeFirstLetter(((MOB)item).displayText(viewer))+(sysmsgs?" ("+item.ID()+")":"");
-		else
-		if(item.displayText().length()>0)
-			return CMStrings.capitalizeFirstLetter(item.displayText())+(sysmsgs?" ("+item.ID()+")":"");
-		else
-			return CMStrings.capitalizeFirstLetter(item.name())+(sysmsgs?" ("+item.ID()+")":"");
+			return CMStrings.capitalizeFirstLetter(item.displayText());
 	}
 	
-	public int getReps(Interactable item, 
-					   Vector theRest, 
+	public int getReps(Item item, 
+					   ArrayList<Item> theRest, 
 					   MOB mob, 
-					   boolean useName, 
-					   boolean longLook)
+					   boolean useName)
 	{
-		String str=itemSeenString(mob,item,useName,longLook,false);
-		String str2=null;
+		String stackName;
+		if(useName)
+			stackName=item.name();
+		else
+			stackName=item.stackableName();
+		if(stackName.length()<=0) return 0;
 		int reps=0;
-		int here=0;
-		Interactable item2=null;
-		while(here<theRest.size())
+		if(useName) for(int here=theRest.size()-1;here>=0;here--)
 		{
-			item2=(Interactable)theRest.elementAt(here);
-			str2=itemSeenString(mob,item2,useName,longLook,false);
-			if(str2.length()==0)
-				theRest.removeElement(item2);
-			else
-			if(str.equals(str2))
+			if(stackName.equals(theRest.get(here).name()))
 			{
 				reps++;
-				theRest.removeElement(item2);
+				theRest.remove(here);
 			}
-			else
-				here++;
+		}
+		else for(int here=theRest.size()-1;here>=0;here--)
+		{
+			if(stackName.equals(theRest.get(here).stackableName()))
+			{
+				reps++;
+				theRest.remove(here);
+			}
 		}
 		return reps;
 	}
@@ -87,53 +83,47 @@ public class CMLister extends StdLibrary implements ListingLibrary
 			say.append(" ("+CMStrings.padLeftPreserve(""+(reps+1),2)+") ");
 	}
 	
-	public String summarizeTheRest(MOB mob, Vector things) 
+	public String summarizeTheRest(MOB mob, ArrayList<Item> things) 
 	{
-		Vector restV=new Vector();
+		ArrayList restV=new ArrayList();
 		Item I=null;
 		String name="";
 		boolean otherItemsHere=false;
 		for(int v=0;v<things.size();v++)
 		{
-			I=(Item)things.elementAt(v);
-			if(I.displayText().length()>0)
-			{
-				name=CMLib.materials().genericType(I).toLowerCase();
-				if(name.startsWith("item"))
-				{
-					if(!otherItemsHere)
-						otherItemsHere=true;
-				}
-				else
-				if(!restV.contains(name))
-					restV.addElement(name);
-			}
+			I=things.get(v);
+			name=CMLib.materials().genericType(I).toLowerCase();
+			if(name.startsWith("item"))
+				otherItemsHere=true;
+			else if(!restV.contains(name))
+				restV.add(name);
 		}
 		if((restV.size()==0)&&(!otherItemsHere)) return "";
-		if(otherItemsHere) restV.addElement("other");
+		if(otherItemsHere) restV.add("other");
 		StringBuilder theRest=new StringBuilder("");
-		for(int o=0;o<restV.size();o++)
+		int size=restV.size();
+		for(int o=0;o<size;o++)
 		{
-			theRest.append(restV.elementAt(o));
-			if(o<restV.size()-1)
+			theRest.append(restV.get(o));
+			if(o<size-1)
 				theRest.append(", ");
-			if((restV.size()>1)&&(o==(restV.size()-2)))
+			if((size>1)&&(o==(size-2)))
 				theRest.append("and ");
 		}
-		return "^IThere are also "+theRest.toString()+" items here.^N\n\r";
+		return "There are also "+theRest.toString()+" items here.\r\n";
 	}
 	
 	public StringBuilder lister(MOB mob, 
-							   Vector things,
+							   ArrayList<Item> things,
 							   boolean useName, 
 							   String tag,
 							   String tagParm,
 							   boolean longLook)
 	{
-		boolean nameTagParm=((tagParm!=null)&&(tagParm.indexOf("*")>=0));
+		//boolean nameTagParm=((tagParm!=null)&&(tagParm.indexOf("*")>=0));
 		StringBuilder say=new StringBuilder("");
-		Interactable item=null;
-		boolean sysmsgs=(mob!=null)?((mob.playerStats().getBitmap()&PlayerStats.ATT_SYSOPMSGS)!=0):false;
+		Item item=null;
+		boolean sysmsgs=(mob!=null)?mob.playerStats().hasBits(PlayerStats.ATT_SYSOPMSGS):false;
 		int numShown=0;
 		int maxToShow=CMProps.Ints.MAXITEMSHOWN.property();
 		while(things.size()>0)
@@ -144,28 +134,35 @@ public class CMLister extends StdLibrary implements ListingLibrary
 				things.clear();
 				break;
 			}
-			item=(Interactable)things.elementAt(0);
-			things.removeElement(item);
-			int reps=getReps(item,things,mob,useName,longLook);
+			item=things.remove(0);
+			int reps=getReps(item,things,mob,(useName||longLook));
 			if((item.displayText().length()>0)||sysmsgs||useName)
 			{
 				numShown++;
 				appendReps(reps,say);
 				if(sysmsgs)
-					say.append("^H("+CMClass.classID(item)+")^N ");
-				say.append("^I");
+					say.append("("+item.ID()+") ");
+				say.append("");
 				
-				if(tag!=null)
+				/*if(tag!=null)
 				{
 					if(nameTagParm)
-						say.append("^<"+tag+CMStrings.replaceAll(tagParm,"*",item.name())+"^>");
+						say.append("^<"+tag+tagParm.replace("*",item.name())+"^>");
 					else
 						say.append("^<"+tag+tagParm+"^>");
+				}*/
+				if(reps>0)
+				{
+					if(!(useName||longLook))
+						say.append(CMStrings.endWithAPeriod(item.stackableName()));
+					else
+						say.append(CMStrings.endWithAPeriod(item.name()));
 				}
-				say.append(CMStrings.endWithAPeriod(itemSeenString(mob,item,useName,longLook,sysmsgs)));
-				if(tag!=null)
-					say.append("^</"+tag+"^>");
-//				say.append(CMLib.flags().colorCodes(item,mob)+"^N\n\r");
+				else
+					say.append(CMStrings.endWithAPeriod(itemSeenString(mob,item,useName)));
+				/*if(tag!=null)
+					say.append("^</"+tag+"^>");*/
+//				say.append(CMLib.flags().colorCodes(item,mob)+"\r\n");
 
 				//This should be in Container's class, not here.
 /*				if((longLook)
@@ -191,9 +188,8 @@ public class CMLister extends StdLibrary implements ListingLibrary
 							appendReps(reps2,say);
 							if((mob!=null)&&(!mob.isMonster())&&(mob.session().clientTelnetMode(Session.TELNET_MXP)))
 								say.append(CMProps.mxpImage(item," H=10 W=10",""," "));
-							say.append("^I");
-							say.append(CMStrings.endWithAPeriod(itemSeenString(mob,item2,useName,longLook,sysmsgs)));
-							say.append(CMLib.flags().colorCodes(item2,mob)+"^N\n\r");
+							say.append(CMStrings.endWithAPeriod(itemSeenString(mob,item2,useName)));
+							say.append(CMLib.flags().colorCodes(item2,mob)+"\r\n");
 						}
 					}
 				}
@@ -203,47 +199,30 @@ public class CMLister extends StdLibrary implements ListingLibrary
 		return say;
 	}
 	
-	public StringBuilder reallyList(Hashtable these, int ofType)
-	{
-		return reallyList(these,ofType,null);
-	}
 	public StringBuilder reallyList(Hashtable these)
 	{
-		return reallyList(these,-1,null);
-	}
-	public StringBuilder reallyList(Hashtable these, Room likeRoom)
-	{
-		return reallyList(these,-1,likeRoom);
-	}
-	public StringBuilder reallyList(Vector these, int ofType)
-	{
-		return reallyList(these.elements(),ofType,null);
-	}
-	public StringBuilder reallyList(Enumeration these, int ofType)
-	{
-		return reallyList(these,ofType,null);
+		return reallyList(these,null);
 	}
 	public StringBuilder reallyList(Vector these)
 	{
-		return reallyList(these.elements(),-1,null);
+		return reallyList(these.elements(),null);
 	}
 	public StringBuilder reallyList(Enumeration these)
 	{
-		return reallyList(these,-1,null);
+		return reallyList(these,null);
 	}
 	public StringBuilder reallyList(Vector these, Room likeRoom)
 	{
-		return reallyList(these.elements(),-1,likeRoom);
+		return reallyList(these.elements(),likeRoom);
 	}
-	public StringBuilder reallyList(Hashtable these, int ofType, Room likeRoom)
+	public StringBuilder reallyList(Hashtable these, Room likeRoom)
 	{
 		StringBuilder lines=new StringBuilder("");
 		if(these.size()==0) return lines;
 		int column=0;
-		for(Enumeration e=these.keys();e.hasMoreElements();)
+		for(Enumeration e=these.elements();e.hasMoreElements();)
 		{
-			String thisOne=(String)e.nextElement();
-			Object thisThang=these.get(thisOne);
+			Object thisThang=e.nextElement();
 			String list=null;
 			if(thisThang instanceof String)
 				list=(String)thisThang;
@@ -252,30 +231,23 @@ public class CMLister extends StdLibrary implements ListingLibrary
 				list=((CMObject)thisThang).ID();
 			else
 				list=CMClass.classID(thisThang);
-			if((likeRoom!=null)&&(thisThang instanceof Room))
-			{
-				if((((Room)thisThang).saveNum()!=0)&&(!((Room)thisThang).getArea().name().equals(likeRoom.getArea().name())))
-				   list=null;
-			}
+			if(((likeRoom!=null)&&(thisThang instanceof Room))
+			  &&((((Room)thisThang).saveNum()!=0)&&(!((Room)thisThang).getArea().name().equals(likeRoom.getArea().name()))))
+				list=null;
 			if(list!=null)
 			{
 				if(++column>3)
 				{
-					lines.append("\n\r");
+					lines.append("\r\n");
 					column=1;
 				}
 				lines.append(CMStrings.padRight(list,24)+" ");
 			}
 		}
-		lines.append("\n\r");
+		lines.append("\r\n");
 		return lines;
 	}
-
-	public StringBuilder reallyList(Vector these, int ofType, Room likeRoom)
-	{ return reallyList(these.elements(),ofType,likeRoom);}
 	public StringBuilder reallyList(Enumeration these, Room likeRoom)
-	{ return reallyList(these,-1,likeRoom);}
-	public StringBuilder reallyList(Enumeration these, int ofType, Room likeRoom)
 	{
 		StringBuilder lines=new StringBuilder("");
 		if(!these.hasMoreElements()) return lines;
@@ -291,22 +263,20 @@ public class CMLister extends StdLibrary implements ListingLibrary
 				list=((CMObject)thisThang).ID();
 			else
 				list=CMClass.classID(thisThang);
-			if((likeRoom!=null)&&(thisThang instanceof Room))
-			{
-				if((((Room)thisThang).saveNum()!=0)&&(!((Room)thisThang).getArea().name().equals(likeRoom.getArea().name())))
-				   list=null;
-			}
+			if(((likeRoom!=null)&&(thisThang instanceof Room))
+			  &&((((Room)thisThang).saveNum()!=0)&&(!((Room)thisThang).getArea().name().equals(likeRoom.getArea().name()))))
+				list=null;
 			if(list!=null)
 			{
 				if(++column>3)
 				{
-					lines.append("\n\r");
+					lines.append("\r\n");
 					column=1;
 				}
 				lines.append(CMStrings.padRight(list,24)+" ");
 			}
 		}
-		lines.append("\n\r");
+		lines.append("\r\n");
 		return lines;
 	}
 	public StringBuilder reallyList(Iterator these)
@@ -329,16 +299,16 @@ public class CMLister extends StdLibrary implements ListingLibrary
 			{
 				if(++column>3)
 				{
-					lines.append("\n\r");
+					lines.append("\r\n");
 					column=1;
 				}
 				lines.append(CMStrings.padRight(list,24)+" ");
 			}
 		}
-		lines.append("\n\r");
+		lines.append("\r\n");
 		return lines;
 	}
-	public StringBuilder reallyList2Cols(Enumeration these, int ofType, Room likeRoom)
+	public StringBuilder reallyList2Cols(Enumeration these, Room likeRoom)
 	{
 		StringBuilder lines=new StringBuilder("");
 		if(!these.hasMoreElements()) return lines;
@@ -349,33 +319,61 @@ public class CMLister extends StdLibrary implements ListingLibrary
 			String list=null;
 			if(thisThang instanceof String)
 				list=(String)thisThang;
-			else
-			if(thisThang instanceof CMObject)
+			else if(thisThang instanceof CMObject)
 				list=((CMObject)thisThang).ID();
 			else
 				list=CMClass.classID(thisThang);
-			if((likeRoom!=null)&&(thisThang instanceof Room))
-			{
-				if((((Room)thisThang).saveNum()!=0)&&(!((Room)thisThang).getArea().name().equals(likeRoom.getArea().name())))
-				   list=null;
-			}
+			if(((likeRoom!=null)&&(thisThang instanceof Room))
+			  &&((((Room)thisThang).saveNum()!=0)&&(!((Room)thisThang).getArea().name().equals(likeRoom.getArea().name()))))
+				list=null;
 			if(list!=null)
 			{
 				if(++column>2)
 				{
-					lines.append("\n\r");
+					lines.append("\r\n");
 					column=1;
 				}
 				lines.append(CMStrings.padRight(list,37)+" ");
 			}
 		}
-		lines.append("\n\r");
+		lines.append("\r\n");
+		return lines;
+	}
+	public StringBuilder reallyList2Cols(Iterator these, Room likeRoom)
+	{
+		StringBuilder lines=new StringBuilder("");
+		if(!these.hasNext()) return lines;
+		int column=0;
+		while(these.hasNext())
+		{
+			Object thisThang=these.next();
+			String list=null;
+			if(thisThang instanceof String)
+				list=(String)thisThang;
+			else if(thisThang instanceof CMObject)
+				list=((CMObject)thisThang).ID();
+			else
+				list=CMClass.classID(thisThang);
+			if(((likeRoom!=null)&&(thisThang instanceof Room))
+			  &&((((Room)thisThang).saveNum()!=0)&&(!((Room)thisThang).getArea().name().equals(likeRoom.getArea().name()))))
+				list=null;
+			if(list!=null)
+			{
+				if(++column>2)
+				{
+					lines.append("\r\n");
+					column=1;
+				}
+				lines.append(CMStrings.padRight(list,37)+" ");
+			}
+		}
+		lines.append("\r\n");
 		return lines;
 	}
 	
-	public StringBuilder fourColumns(Vector reverseList)
+	public StringBuilder fourColumns(Vector<String> reverseList)
 	{ return fourColumns(reverseList,null);}
-	public StringBuilder fourColumns(Vector reverseList, String tag)
+	public StringBuilder fourColumns(Vector<String> reverseList, String tag)
 	{
 		StringBuilder topicBuffer=new StringBuilder("");
 		int col=0;
@@ -384,12 +382,12 @@ public class CMLister extends StdLibrary implements ListingLibrary
 		{
 			if((++col)>4)
 			{
-				topicBuffer.append("\n\r");
+				topicBuffer.append("\r\n");
 				col=1;
 			}
-			s=(String)reverseList.elementAt(i);
-			if((tag!=null)&&(tag.length()>0))
-				s="^<"+tag+"^>"+s+"^</"+tag+"^>";
+			s=reverseList.get(i);
+			/*if((tag!=null)&&(tag.length()>0))
+				s="^<"+tag+"^>"+s+"^</"+tag+"^>";*/
 			if(s.length()>18)
 			{
 				topicBuffer.append(CMStrings.padRight(s,(18*2)+1)+" ");

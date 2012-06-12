@@ -21,16 +21,13 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
+//Note: This is not a prompter command, it must be responded to immediately by the player
 @SuppressWarnings("unchecked")
 public class Quit extends StdCommand
 {
-	public Quit(){}
+	public Quit(){access=new String[]{"QUIT","QUI","Q"};}
 
-	private String[] access={"QUIT","QUI","Q"};
-	public String[] getAccessWords(){return access;}
-
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 /*
 		if(mob.soulMate()!=null)
@@ -53,31 +50,34 @@ public class Quit extends StdCommand
 				String reason=session.prompt("Since your character is brand new, please leave a short"
 						 						  +" message as to why you are leaving so soon."
 												  +" Your answers will be kept confidential,"
-												  +" and are for administrative purposes only.\n\r: ","",120000);
+												  +" and are for administrative purposes only.\r\n: ","",120000);
 				Log.sysOut("Quit",mob.Name()+" L.W.O.: "+reason);
 			}
 */
 			try
 			{
-				if ((session!=null)&&(session.confirm("\n\rQuit -- are you sure (y/N)?","N")))
+				if ((session!=null)&&(session.confirm("\r\nQuit -- are you sure (y/N)?","N")))
 				{
 					CMMsg msg=CMClass.getMsg(mob,null,null,EnumSet.of(CMMsg.MsgCode.QUIT),null);
 					Room R=mob.location();
 					if((R!=null)&&(R.okMessage(mob,msg))) 
 					{
 						CMLib.map().sendGlobalMessage(mob,EnumSet.of(CMMsg.MsgCode.QUIT), msg);
-						session.kill(false,false, false);
+						//TODO: Won't this interfere with itself? Oh nevermind it just sets its killFlag
+						session.kill(false);
 					}
+					msg.returnMsg();
 				}
 			}
 			catch(Exception e)
 			{
 				if(mob.session()!=null)
-					mob.session().kill(false,false,false);
+					mob.session().kill(false);
 			}
 		}
 		return false;
 	}
-	
+
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	public boolean canBeOrdered(){return false;}
 }

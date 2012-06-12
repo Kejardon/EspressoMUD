@@ -25,22 +25,21 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Stand extends StdCommand
 {
-	public Stand(){}
+	public Stand(){access=new String[]{"STAND","ST","STA","STAN"};}
 
-	private String[] access={"STAND","ST","STA","STAN"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
-		boolean ifnecessary=((commands.size()>1)&&(((String)commands.lastElement()).equalsIgnoreCase("IFNECESSARY")));
 /*
+		boolean ifnecessary=((commands.size()>1)&&(commands.lastElement().equalsIgnoreCase("IFNECESSARY")));
 		if(CMLib.flags().isStanding(mob))
 			mob.tell("You are already standing!");
 		else
 */
-			mob.location().doMessage(CMClass.getMsg(mob,null,null,EnumSet.of(CMMsg.MsgCode.STAND),"<S-NAME> stand(s) up."));
+		CMMsg msg=CMClass.getMsg(mob,null,null,EnumSet.of(CMMsg.MsgCode.STAND),"<S-NAME> stand(s) up.");
+		mob.location().doMessage(msg);
+		msg.returnMsg();
 		return false;
 	}
-	public double actionsCost(MOB mob, Vector cmds){return DEFAULT_NONCOMBATACTION;}
+	public int commandType(MOB mob, String cmds){return CT_LOW_P_ACTION;}
 	public boolean canBeOrdered(){return true;}
 }

@@ -24,13 +24,9 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class PageBreak extends StdCommand
 {
-	public PageBreak(){}
+	public PageBreak(){access=new String[]{"PAGEBREAK"};}
 
-	private String[] access={"PAGEBREAK"};
-	public String[] getAccessWords(){return access;}
-	
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		if((mob==null)||(mob.playerStats()==null))
 			return false;
@@ -58,6 +54,6 @@ public class PageBreak extends StdCommand
 		mob.tell("Your new page break setting is: "+pageBreak+".");
 		return false;
 	}
-	
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	public boolean canBeOrdered(){return true;}
 }

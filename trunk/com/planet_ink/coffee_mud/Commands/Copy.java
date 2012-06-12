@@ -21,21 +21,18 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
+//TODO: I want to rework how Copy works eventually and make a paste option as well
 @SuppressWarnings("unchecked")
 public class Copy extends StdCommand
 {
-	public Copy(){}
+	public Copy(){access=new String[]{"COPY"};}
 
-	private String[] access={"COPY"};
-	public String[] getAccessWords(){return access;}
-	
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		commands.removeElementAt(0); // copy
 		if(commands.size()<1)
 		{
-			mob.tell("You have failed to specify the proper fields.\n\rThe format is COPY (NUMBER) ([ITEM NAME]/[MOB NAME][ROOM ID] [DIRECTIONS]/[DIRECTIONS])\n\r");
+			mob.tell("You have failed to specify the proper fields.\r\nThe format is COPY (NUMBER) ([ITEM NAME]/[MOB NAME][ROOM ID] [DIRECTIONS]/[DIRECTIONS])\r\n");
 			return false;
 		}
 		int number=1;
@@ -109,19 +106,19 @@ public class Copy extends StdCommand
 		{
 			try
 			{
-				E=CMLib.map().findFirstInhabitant(mob.location().getArea().getMetroMap(), mob, name, 50);
+				E=CMLib.map().findFirstInhabitant(mob.location().getArea().getMetroMap(), mob, name, 500);
 				if(E==null) 
-					E=CMLib.map().findFirstRoomItem(mob.location().getArea().getMetroMap(), mob, name, true, 50);
+					E=CMLib.map().findFirstRoomItem(mob.location().getArea().getMetroMap(), mob, name, true, 500);
 				if(E==null) 
-					E=CMLib.map().findFirstInventory(null, mob, name, 50);
+					E=CMLib.map().findFirstInventory(null, mob, name, 500);
 				if(E==null) 
-					E=CMLib.map().findFirstInventory(CMLib.map().rooms(), mob, name, 50);
+					E=CMLib.map().findFirstInventory(CMLib.map().rooms(), mob, name, 500);
 			}catch(NoSuchElementException e){}
 		}
 */
 		if(E==null)
 		{
-			mob.tell("There's no such thing as '"+name+"' here.\n\r");
+			mob.tell("There's no such thing as '"+name+"' here.\r\n");
 			return false;
 		}
 		Room room=mob.location();
@@ -129,7 +126,7 @@ public class Copy extends StdCommand
 		{
 			if(E instanceof Body)
 			{
-				if(!CMSecurity.isAllowed(mob,mob.location(),"COPYMOBS"))
+				if(!CMSecurity.isAllowed(mob,"COPYMOBS"))
 				{
 					mob.tell("You are not allowed to copy "+E.name());
 					return false;
@@ -141,16 +138,16 @@ public class Copy extends StdCommand
 				if(i==0)
 				{
 					if(number>1)
-						room.showHappens(EnumSet.of(CMMsg.MsgCode.VISUAL),null,"Suddenly, "+number+" "+newMOB.name()+"s instantiate from the Java plain.");
+						room.show(null,"Suddenly, "+number+" "+newMOB.name()+"s instantiate from the Java plain.");
 					else
-						room.showHappens(EnumSet.of(CMMsg.MsgCode.VISUAL),null,"Suddenly, "+newMOB.name()+" instantiates from the Java plain.");
+						room.show(null,"Suddenly, "+newMOB.name()+" instantiates from the Java plain.");
 					Log.sysOut("SysopUtils",mob.name()+" copied "+number+" mob "+newMOB.name()+".");
 				}
 			}
 			else
 			if(E instanceof Item)
 			{
-				if(!CMSecurity.isAllowed(mob,mob.location(),"COPYITEMS"))
+				if(!CMSecurity.isAllowed(mob,"COPYITEMS"))
 				{
 					mob.tell("You are not allowed to copy "+E.name());
 					return false;
@@ -165,19 +162,19 @@ public class Copy extends StdCommand
 					if(number>1)
 					{
 						if(newItem.name().toLowerCase().endsWith("s"))
-							room.showHappens(EnumSet.of(CMMsg.MsgCode.VISUAL),null,"Suddenly, "+number+" "+newItem.name()+" falls "+end+".");
+							room.show(null,"Suddenly, "+number+" "+newItem.name()+" falls "+end+".");
 						else
-							room.showHappens(EnumSet.of(CMMsg.MsgCode.VISUAL),null,"Suddenly, "+number+" "+newItem.name()+"s falls "+end+".");
+							room.show(null,"Suddenly, "+number+" "+newItem.name()+"s falls "+end+".");
 					}
 					else
-						room.showHappens(EnumSet.of(CMMsg.MsgCode.VISUAL),null,"Suddenly, "+newItem.name()+" fall "+end+".");
+						room.show(null,"Suddenly, "+newItem.name()+" fall "+end+".");
 					Log.sysOut("SysopUtils",mob.name()+" "+number+" copied "+newItem.ID()+" item.");
 				}
 			}
 /*			else
 			if((E instanceof Room)&&(dirCode>=0))
 			{
-				if(!CMSecurity.isAllowed(mob,mob.location(),"COPYROOMS"))
+				if(!CMSecurity.isAllowed(mob,"COPYROOMS"))
 				{
 					mob.tell("You are not allowed to copy "+E.name());
 					return false;
@@ -190,7 +187,7 @@ public class Copy extends StdCommand
 				synchronized(("SYNC"+room.roomID()).intern())
 				{
 					Room newRoom=(Room)E.copyOf();
-					for(int d=Directions.NUM_DIRECTIONS()-1;d>=0;d--)
+					for(int d=Directions.NUM_DIRECTIONS-1;d>=0;d--)
 					{
 						newRoom.rawDoors()[d]=null;
 						newRoom.setRawExit(d,null);
@@ -232,13 +229,14 @@ public class Copy extends StdCommand
 */
 			else
 			{
-				mob.tell("I can't just make a copy of a '"+E.name()+"'.\n\r");
+				mob.tell("I can't just make a copy of a '"+E.name()+"'.\r\n");
 				break;
 			}
 		}
 		return false;
 	}
 	
+	public int commandType(MOB mob, String cmds){return CT_NON_ACTION;}
 	public boolean canBeOrdered(){return true;}
-	public boolean securityCheck(MOB mob){return CMSecurity.isAllowedStartsWith(mob,mob.location(),"COPY");}
+	public boolean securityCheck(MOB mob){return CMSecurity.isAllowedStartsWith(mob,"COPY");}
 }

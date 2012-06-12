@@ -24,13 +24,9 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Get extends StdCommand
 {
-	public Get(){}
+	public Get(){access=new String[]{"GET","G"};}
 
-	private String[] access={"GET","G"};
-	public String[] getAccessWords(){return access;}
-
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		Room R=mob.location();
 
@@ -96,7 +92,7 @@ public class Get extends StdCommand
 			whatToGet=CMParms.combine(commands,0,partition);
 		}
 
-		int maxToGet=CMLib.english().calculateMaxToGive(mob,commands,false,R,true);
+		int maxToGet=CMLib.english().calculateMaxToGive(mob,commands,R,true);
 		if(maxToGet<0) return false;
 
 		String unmodifiedWhatToGet=whatToGet;
@@ -116,24 +112,38 @@ public class Get extends StdCommand
 					mob.tell("You don't see '"+unmodifiedWhatToGet+"' here.");
 					return false;
 				}
-				for(Item I : (Item[])getThese.toArray(new Item[0]))
-					if(!R.doMessage(CMClass.getMsg(mob,I,null,EnumSet.of(CMMsg.MsgCode.GET),"<S-NAME> get(s) <T-NAME>.")))
+				for(Item I : (Item[])getThese.toArray(Item.dummyItemArray))
+				{
+					CMMsg msg=CMClass.getMsg(mob,I,null,EnumSet.of(CMMsg.MsgCode.GET),"<S-NAME> get(s) <T-NAME>.");
+					if(!R.doMessage(msg))
+					{
+						msg.returnMsg();
 						break;
+					}
+					msg.returnMsg();
+				}
 			}
 			else
 			{
 				getThese=new Vector();
 				//NOTE: Loops like these won't entirely work how I like with stuff like '6.potion'
-				for(Container C : (Container[])containers.toArray(new Container[0]))
+				for(Container C : (Container[])containers.toArray(Container.dummyContainerArray))
 				{
 					Vector<Interactable> subGetThese=CMLib.english().fetchInteractables(whatToGet,false,1,maxToGet,C.getItemCollection());
 					getThese.addAll(subGetThese);
 					maxToGet-=subGetThese.size();
 					if(maxToGet==0) break;
 				}
-				for(Item I : (Item[])getThese.toArray(new Item[0]))
-					if(!R.doMessage(CMClass.getMsg(mob,I,I.container(),EnumSet.of(CMMsg.MsgCode.GET),"<S-NAME> get(s) <T-NAME> from <O-NAME>.")))
+				for(Item I : (Item[])getThese.toArray(Item.dummyItemArray))
+				{
+					CMMsg msg=CMClass.getMsg(mob,I,I.container(),EnumSet.of(CMMsg.MsgCode.GET),"<S-NAME> get(s) <T-NAME> from <O-NAME>.");
+					if(!R.doMessage(msg))
+					{
+						msg.returnMsg();
 						break;
+					}
+					msg.returnMsg();
+				}
 			}
 		}
 		else
@@ -147,16 +157,20 @@ public class Get extends StdCommand
 					mob.tell("You don't see '"+unmodifiedWhatToGet+"' here.");
 					return false;
 				}
-				R.doMessage(CMClass.getMsg(mob,getThis,null,EnumSet.of(CMMsg.MsgCode.GET),"<S-NAME> get(s) <T-NAME>."));
+				CMMsg msg=CMClass.getMsg(mob,getThis,null,EnumSet.of(CMMsg.MsgCode.GET),"<S-NAME> get(s) <T-NAME>.");
+				R.doMessage(msg);
+				msg.returnMsg();
 			}
 			else
 			{
-				for(Container C : (Container[])containers.toArray(new Container[0]))
+				for(Container C : (Container[])containers.toArray(Container.dummyContainerArray))
 				{
 					getThis=CMLib.english().fetchInteractable(whatToGet,false,1,C.getItemCollection());
 					if(getThis!=null)
 					{
-						R.doMessage(CMClass.getMsg(mob,getThis,null,EnumSet.of(CMMsg.MsgCode.GET),"<S-NAME> get(s) <T-NAME>."));
+						CMMsg msg=CMClass.getMsg(mob,getThis,null,EnumSet.of(CMMsg.MsgCode.GET),"<S-NAME> get(s) <T-NAME>.");
+						R.doMessage(msg);
+						msg.returnMsg();
 						break done;
 					}
 				}
@@ -166,6 +180,6 @@ public class Get extends StdCommand
 		}
 		return false;
 	}
-	public double actionsCost(MOB mob, Vector cmds){return DEFAULT_NONCOMBATACTION;}
+	public int commandType(MOB mob, String cmds){return CT_LOW_P_ACTION;}
 	public boolean canBeOrdered(){return true;}
 }

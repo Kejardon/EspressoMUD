@@ -11,7 +11,10 @@ import com.planet_ink.coffee_mud.Items.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
+
 import java.util.*;
+import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -27,11 +30,13 @@ public interface MoneyLibrary extends CMLibrary
 		"=1 gold coin(s);100 golden note(s);10000 whole note(s);1000000 Archon note(s)";
 	public static final String copperStandard=
 		"COPPER=1 copper bit(s) (cc);10 silver bit(s) (sc);100 gold bit(s) (gc);500 platinum bit(s) (pc)";
+	public static final MoneyDenomination[] dummyMDArray=new MoneyDenomination[0];
 
 	public void unloadCurrencySet(String currency);
 	public CMCurrency createCurrencySet(String currency);
 	public CMCurrency getCurrencySet(String currency);
-	public Vector getAllCurrencies();
+	public String[] getAllCurrencies();
+
 
 	public static class MoneyDenomination
 	{

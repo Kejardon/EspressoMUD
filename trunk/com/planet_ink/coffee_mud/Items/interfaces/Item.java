@@ -16,6 +16,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
  */
 public interface Item extends Interactable, CMSavable, CMModifiable
 {
+	public static final Item[] dummyItemArray=new Item[0];
 	public boolean damagable();
 	public void setDamagable(boolean bool);
 	public int wornOut();	//Start at 0 and go up to 10000. At 10000 destroy, at say 2000 or so it shouldn't really be usable anyways
@@ -24,12 +25,14 @@ public interface Item extends Interactable, CMSavable, CMModifiable
 	public int baseGoldValue();
 	public void setBaseValue(int newValue);
 	public int recursiveWeight();
+	public String stackableName();
+	public void setStackableName(String S);
 	
-	public void setMiscText(String newMiscText);
-	public String text();
+	//public void setMiscText(String newMiscText);
+	//public String text();
 	public CMObject container();
 	public void setContainer(CMObject E);
-	public int ridesNumber();
-	public Rideable ride();
-	public void setRide(Rideable R);
+	//public int ridesNumber();
+	public CMObject ride();
+	public void setRide(CMObject R);
 }

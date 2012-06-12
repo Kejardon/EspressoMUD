@@ -24,13 +24,11 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class MXP extends StdCommand
 {
-	public MXP(){}
+	public MXP(){access=new String[]{"MXP"};}
 
-	private String[] access={"MXP"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
+/*
 		PlayerStats ps=mob.playerStats();
 		if(ps==null) return false;
 		PlayerAccount acct = ps.getAccount();
@@ -53,14 +51,14 @@ public class MXP extends StdCommand
 						mob.playerStats().setBitmap(mob.playerStats().getBitmap()|PlayerStats.ATT_MXP);
 						StringBuffer mxpText=Resources.getFileResource("text/mxp.txt",true);
 						if(mxpText!=null)
-							mob.session().rawOut("\033[6z\n\r"+mxpText.toString()+"\n\r");
-						mob.tell("MXP codes enabled.\n\r");
+							mob.session().rawOut("\033[6z\r\n"+mxpText.toString()+"\r\n");
+						mob.tell("MXP codes enabled.\r\n");
 					}
 					else
 						mob.tell("Your client does not appear to support MXP.");
 				}
 				else
-					mob.tell("MXP codes are already enabled.\n\r");
+					mob.tell("MXP codes are already enabled.\r\n");
 			}
 			else if(((String)commands.get(1)).equalsIgnoreCase("off"))
 			{
@@ -71,17 +69,20 @@ public class MXP extends StdCommand
 					mob.playerStats().setBitmap(mob.playerStats().getBitmap()&~PlayerStats.ATT_MXP);
 					mob.session().changeTelnetMode(Session.TELNET_MXP,false);
 					mob.session().setClientTelnetMode(Session.TELNET_MXP,false);
-					mob.tell("MXP codes are disabled.\n\r");
+					mob.tell("MXP codes are disabled.\r\n");
 				}
 				else
-					mob.tell("MXP codes are already disabled.\n\r");
+					mob.tell("MXP codes are already disabled.\r\n");
 			}
 		}
-		mob.tell(((ps.getBitmap()&PlayerStats.ATT_MXP)>0)?("MXP codes are currently enabled.\n\r"):("MXP codes are currently disabled.\n\r"));
-		mob.tell("Use 'mxp on' or 'mxp off' to set codes.\n\r");
+		mob.tell(((ps.getBitmap()&PlayerStats.ATT_MXP)>0)?("MXP codes are currently enabled.\r\n"):("MXP codes are currently disabled.\r\n"));
+		mob.tell("Use 'mxp on' or 'mxp off' to set codes.\r\n");
+*/
+		mob.tell("MXP is currently disabled in this MUD");
 		return false;
 	}
 
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	public boolean canBeOrdered(){return true;}
 	public boolean securityCheck(MOB mob){return super.securityCheck(mob)&&(!CMSecurity.isDisabled("MXP"));}
 }

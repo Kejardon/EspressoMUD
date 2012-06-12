@@ -25,19 +25,15 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Modify extends StdCommand
 {
-	public Modify(){}
+	public Modify(){access=new String[]{"MODIFY","MOD"};}
 
-	private String[] access={"MODIFY","MOD"};
-	public String[] getAccessWords(){return access;}
-
-	public void rooms(MOB mob, Vector commands)
-		throws IOException
+	public void rooms(MOB mob, Vector<String> commands)
 	{
 		Room R=null;
 		if(commands.size()>2)
 		{
 			String restStr=CMParms.combine(commands,2);
-			R=(Room)SIDLib.Objects.ROOM.get(CMath.s_int(restStr));
+			R=SIDLib.ROOM.get(CMath.s_int(restStr));
 			if(R==null)
 			{
 				mob.tell("Room '"+restStr+"' not found.");
@@ -54,8 +50,7 @@ public class Modify extends StdCommand
 		return;
 	}
 
-	public void accounts(MOB mob, Vector commands)
-		throws IOException
+	public void accounts(MOB mob, Vector<String> commands)
 	{
 		PlayerAccount theAccount = null;
 		String oldName = null;
@@ -70,7 +65,7 @@ public class Modify extends StdCommand
 			theAccount = CMLib.players().getAccount(accountName);
 			if(theAccount==null)
 			{
-				mob.tell("There is no account called '"+accountName+"'!\n\r");
+				mob.tell("There is no account called '"+accountName+"'!\r\n");
 				return;
 			}
 			oldName=theAccount.accountName();
@@ -97,8 +92,7 @@ public class Modify extends StdCommand
 		CMLib.database().DBUpdateAccount(theAccount);
 */	}
 
-	public void areas(MOB mob, Vector commands)
-		throws IOException
+	public void areas(MOB mob, Vector<String> commands)
 	{
 		Area myArea=null;
 
@@ -119,7 +113,11 @@ public class Modify extends StdCommand
 
 		if(!myArea.name().equals(oldName))
 		{
+			String newName=myArea.name();
 			myArea.setName(oldName);
+			CMLib.map().delArea(myArea);
+			myArea.setName(newName);
+			CMLib.map().addArea(myArea);
 		}
 /*		if(!myArea.name().equals(oldName))
 			CMLib.map().renameRooms(myArea,oldName,allMyDamnRooms);
@@ -127,19 +125,18 @@ public class Modify extends StdCommand
 		Log.sysOut("Rooms",mob.Name()+" modified area "+myArea.Name()+".");
 */	}
 
-	public void exits(MOB mob, Vector commands)
-		throws IOException
+	public void exits(MOB mob, Vector<String> commands)
 	{
 		if(commands.size()<3)
 		{
-			mob.tell("This command also needs an exit to modify.\n\r");
+			mob.tell("This command also needs an exit to modify.\r\n");
 			return;
 		}
 		String exitName=CMParms.combine(commands,2);
 
 		Exit exit=mob.location().getExit(exitName);
 		if(exit==null)
-			exit=(Exit)SIDLib.Objects.EXIT.get(CMath.s_int(exitName));
+			exit=SIDLib.EXIT.get(CMath.s_int(exitName));
 		if(exit==null)
 		{
 			mob.tell("No exit called '"+exitName+"' was found.");
@@ -149,12 +146,11 @@ public class Modify extends StdCommand
 		return;
 	}
 
-	public void players(MOB mob, Vector commands)
-		throws IOException
+	public void players(MOB mob, Vector<String> commands)
 	{
 		if(commands.size()<3)
 		{
-			mob.tell("You have failed to specify the proper fields.\n\rThe format is MODIFY USER [PLAYER NAME]\n\r");
+			mob.tell("You have failed to specify the proper fields.\r\nThe format is MODIFY USER [PLAYER NAME]\r\n");
 			return;
 		}
 
@@ -180,39 +176,38 @@ public class Modify extends StdCommand
 		return false;
 	}
 	
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		String commandType="";
 		if(commands.size()>1)
 			commandType=((String)commands.elementAt(1)).toUpperCase();
 		if(commandType.equals("ROOM"))
 		{
-			if(!CMSecurity.isAllowed(mob,mob.location(),"CMDROOMS")) return errorOut(mob);
+			if(!CMSecurity.isAllowed(mob,"CMDROOMS")) return errorOut(mob);
 			rooms(mob,commands);
 		}
 		else
 		if((commandType.equals("ACCOUNT"))&&(CMProps.Ints.COMMONACCOUNTSYSTEM.property()>1))
 		{
-			if(!CMSecurity.isAllowed(mob,mob.location(),"CMDPLAYERS")) return errorOut(mob);
+			if(!CMSecurity.isAllowed(mob,"CMDPLAYERS")) return errorOut(mob);
 			accounts(mob,commands);
 		}
 		else
 		if(commandType.equals("AREA"))
 		{
-			if(!CMSecurity.isAllowed(mob,mob.location(),"CMDAREAS")) return errorOut(mob);
+			if(!CMSecurity.isAllowed(mob,"CMDAREAS")) return errorOut(mob);
 			areas(mob,commands);
 		}
 		else
 		if(commandType.equals("EXIT"))
 		{
-			if(!CMSecurity.isAllowed(mob,mob.location(),"CMDEXITS")) return errorOut(mob);
+			if(!CMSecurity.isAllowed(mob,"CMDEXITS")) return errorOut(mob);
 			exits(mob,commands);
 		}
 		else
 		if(commandType.equals("USER"))
 		{
-			if(!CMSecurity.isAllowed(mob,mob.location(),"CMDPLAYERS")) return errorOut(mob);
+			if(!CMSecurity.isAllowed(mob,"CMDPLAYERS")) return errorOut(mob);
 			players(mob,commands);
 		}
 		else
@@ -252,7 +247,7 @@ public class Modify extends StdCommand
 			}
 			if(target instanceof Item)
 			{
-				if(!CMSecurity.isAllowed(mob,mob.location(),"CMDITEMS")) 
+				if(!CMSecurity.isAllowed(mob,"CMDITEMS")) 
 					return errorOut(mob);
 //				Item copyItem=(Item)thang.copyOf();
 				CMLib.genEd().genMiscSet(mob,(Item)target);
@@ -263,7 +258,7 @@ public class Modify extends StdCommand
 			else
 			if(target instanceof MOB)
 			{
-				if(!CMSecurity.isAllowed(mob,mob.location(),"CMDMOBS")) 
+				if(!CMSecurity.isAllowed(mob,"CMDMOBS")) 
 					return errorOut(mob);
 				if(((MOB)target).isMonster())
 				{
@@ -275,14 +270,14 @@ public class Modify extends StdCommand
 				}
 				else
 				{
-					if(!CMSecurity.isAllowed(mob,mob.location(),"CMDPLAYERS")) return errorOut(mob);
+					if(!CMSecurity.isAllowed(mob,"CMDPLAYERS")) return errorOut(mob);
 					players(mob,CMParms.parse("MODIFY USER \""+target.name()+"\""));
 				}
 			}
 			else
 			if(target instanceof Exit)
 			{
-				if(!CMSecurity.isAllowed(mob,mob.location(),"CMDEXITS")) return errorOut(mob);
+				if(!CMSecurity.isAllowed(mob,"CMDEXITS")) return errorOut(mob);
 //				Exit copyExit=(Exit)thang.copyOf();
 				CMLib.genEd().genMiscSet(mob,(Exit)target);
 //				if(!copyExit.sameAs(thang))
@@ -290,11 +285,13 @@ public class Modify extends StdCommand
 //				copyExit.destroy();
 			}
 			else
-				mob.tell("\n\rYou cannot modify a '"+commandType+"'. However, you might try an ITEM, AREA, EXIT, MOB, USER, ACCOUNT, or ROOM.");
+				mob.tell("\r\nYou cannot modify a '"+commandType+"'. However, you might try an ITEM, AREA, EXIT, MOB, USER, ACCOUNT, or ROOM.");
 		}
 		return false;
 	}
 
+	public int commandType(MOB mob, String cmds){return CT_NON_ACTION;}
+	public boolean prompter(){return true;}
 	public boolean canBeOrdered(){return true;}
-	public boolean securityCheck(MOB mob){return CMSecurity.isAllowedStartsWith(mob,mob.location(),"CMD");}
+	public boolean securityCheck(MOB mob){return CMSecurity.isAllowedStartsWith(mob,"CMD");}
 }

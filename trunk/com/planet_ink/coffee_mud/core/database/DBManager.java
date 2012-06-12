@@ -56,8 +56,8 @@ public class DBManager implements DatabaseEngine	//extends Thread
 	public static final int timeTillDoLast=30000;
 	public static final int numBackups=2;
 	public static final long waitInterval=timeTillDoLast/2+2000;
-	public static final long finalWaitInterval=1000;
-	public static final java.nio.charset.Charset charFormat=java.nio.charset.Charset.forName("UTF-8");	//This should probably not be changed. Mainly, 1-byte chars will be assumed.
+//	public static final long finalWaitInterval=1000;
+	public static final java.nio.charset.Charset charFormat=java.nio.charset.Charset.forName("ISO-8859-1");	//This should probably not be changed. Mainly, 1-byte chars and ASCII printable char equivalent will be assumed.
 
 	//Internal variables
 //	private static Thread myThread;
@@ -90,7 +90,7 @@ public class DBManager implements DatabaseEngine	//extends Thread
 //		public ListNode firstLast(){return firstLast;}
 		public void add(CMSavable object)	//Make this return true if the first was changed?
 		{
-			if((object==null)||(object.saveNum()==0)) return;
+			if((object==null)||(object.amDestroyed())||(object.saveNum()==0)) return;
 			
 			ListNode newNode=set.get(object);
 			if(newNode!=null)
@@ -175,7 +175,6 @@ public class DBManager implements DatabaseEngine	//extends Thread
 			return O;
 		}
 
-
 		public void remove(CMSavable object)
 		{
 			ListNode oldEntry=set.remove(object);
@@ -231,7 +230,7 @@ public class DBManager implements DatabaseEngine	//extends Thread
 		public WVector<SimpleInt> freeSpaces=new WVector();
 			//entry is position(unique!), weight is size(num bytes available), for variableData.
 			//First entry is always end-of-KNOWN-data and is 0 weight! After loading, data past this point may be overwritten!
-		public Vector<SimpleInt> freeEntries=new Vector();	//Values not in fileMap. Again, first entry is end-of-known-data.
+		public ArrayList<SimpleInt> freeEntries=new ArrayList();	//Values not in fileMap. Again, first entry is end-of-known-data.
 		protected FileChannel fixedChannel;
 		protected FileChannel variableChannel;
 		public SaveFormat(CMSavable o, WVector<CMSavable.SaveEnum> h, int size, HashMap<CMSavable.SaveEnum,String> s, boolean c, File[] f)
@@ -421,9 +420,9 @@ public class DBManager implements DatabaseEngine	//extends Thread
 					fixedVals[index]=thisEnum.save(O);
 			}
 			//IN CASE THERE ARE MISSING FIXEDVALS. Ideally this code shouldn't actually be necessary though...
-			if(!confirmedGood)
+			//if(!confirmedGood)
 			for(int i=1;i<fixedVals.length;i++)
-				if(fixedVals[i]==null)
+				if((fixedVals[i]==null)||(fixedVals[i].remaining()!=enums.weight(i-1)))
 					fixedVals[i]=ByteBuffer.wrap(new byte[enums.weight(i)]);
 			return fixedVals;
 		}
@@ -447,9 +446,9 @@ public class DBManager implements DatabaseEngine	//extends Thread
 					fixedVals[index]=thisEnum.save(O);
 			}
 			//IN CASE THERE ARE MISSING FIXEDVALS. Ideally this code shouldn't actually be necessary though...
-			if(!confirmedGood)
+			//if(!confirmedGood)
 			for(int i=0;i<fixedVals.length;i++)
-				if(fixedVals[i]==null)
+				if((fixedVals[i]==null)||(fixedVals[i].remaining()!=enums.weight(i)))
 					fixedVals[i]=ByteBuffer.wrap(new byte[enums.weight(i)]);
 			ByteBuffer partVal=ByteBuffer.wrap(new byte[size-15]);	//size meaning this format's size
 			partVal.put((byte)3);
@@ -460,7 +459,7 @@ public class DBManager implements DatabaseEngine	//extends Thread
 		}
 		public ByteBuffer[] getVarVals(CMSavable O, int[] totalVarSize)
 		{
-			Vector<ByteBuffer> variableVals=new Vector();
+			ArrayList<ByteBuffer> variableVals=new ArrayList();
 			for(CMSavable.SaveEnum thisEnum : O.totalEnumS())
 			{
 				int index=enums.index(thisEnum);
@@ -509,7 +508,7 @@ public class DBManager implements DatabaseEngine	//extends Thread
 			}
 			return (ByteBuffer[])variableVals.toArray(new ByteBuffer[variableVals.size()]);
 		}
-		public int getSubVarVal(CMSavable O, Vector<ByteBuffer> variableVals)
+		public int getSubVarVal(CMSavable O, ArrayList<ByteBuffer> variableVals)
 		{
 			int totalSize=1;
 			for(CMSavable.SaveEnum thisEnum : O.totalEnumS())
@@ -663,38 +662,18 @@ public class DBManager implements DatabaseEngine	//extends Thread
 			currentBackup=previousBackup;
 			if(mainInfo.get(1)==1)
 				Log.errOut("DBManager","Warning: MUD was not properly shutdown, data may be corrupted!");
-			input=new RandomAccessFile(subFile(), "rw").getChannel();
-			ByteBuffer formatInfo=ByteBuffer.wrap(new byte[(int)input.size()]);
-			input.read(formatInfo);
-			input.close();
-			subFile=null;
-			if(numBackups>0)
-			{
-				currentBackup++;
-				if(currentBackup>numBackups) currentBackup=0;
-				File newDir=new File(saveDirectoryName+currentBackup);
-				newDir.mkdirs();
-				File[] oldFiles=newDir.listFiles();
-				if(oldFiles!=null)
-				for(File oldFile : oldFiles)
-					oldFile.delete();
-//				formats.clear();
-//				for(SIDLib.Objects type : SIDLib.Objects.values())
-//					type.save();
-//				HashSet tempQueueRef=publicQueue;
-//				publicQueue=processingQueue;
-//				processingQueue=tempQueueRef;
-//				for(Iterator<CMSavable> e=processingQueue.iterator();e.hasNext();)
-//				{ updateList.add(e.next()); }
-//				processingQueue.clear();
-//				while(updateList.firstFirst!=null)
-//					writeToFile(updateList.removeFirst());
-			}
+				//TODO: Increment currentBackup here. Maybe also an option to not and stick to older data?
 			{
 				File newDir=new File(saveDirectoryName+currentBackup);
 				if(!newDir.exists())
 					newDir.mkdirs();
 			}
+			input=new RandomAccessFile(subFile(), "rw").getChannel();
+			ByteBuffer formatInfo=ByteBuffer.wrap(new byte[(int)input.size()]);
+			input.read(formatInfo);
+			input.close();
+			subFile=null;
+			formatInfo.rewind();
 			while(formatInfo.remaining()>0)
 			{
 				int end=formatInfo.getInt()+formatInfo.position();
@@ -764,9 +743,8 @@ public class DBManager implements DatabaseEngine	//extends Thread
 				formats.put(ID, f);
 			}
 			byte[] enumName=new byte[3];
-			for(Iterator<SaveFormat> e=formats.values().iterator();e.hasNext();)
+			for(SaveFormat format : formats.values().toArray(new SaveFormat[0]))
 			{
-				SaveFormat format=e.next();
 				if(format.fixedData==null) continue;
 
 				CMSavable.SaveEnum[] parsers=new CMSavable.SaveEnum[format.enums.size()];
@@ -804,7 +782,8 @@ public class DBManager implements DatabaseEngine	//extends Thread
 						ByteBuffer saveBuffer=thisBuf.slice();
 						thisBuf.position(thisBuf.position()+weights[parserNum]);
 						saveBuffer.limit(weights[parserNum]);
-						parsers[parserNum].load(thisObj, saveBuffer);
+						try{ parsers[parserNum].load(thisObj, saveBuffer); }
+						catch(Exception exc){Log.errOut("Database",exc);}
 					}
 					int position=thisBuf.getInt();
 					int cap=thisBuf.getInt();	//Needed for space claiming
@@ -845,26 +824,30 @@ public class DBManager implements DatabaseEngine	//extends Thread
 				}
 			}
 //			SIDLib.linkSIDs();	//Should be done here, SIDLib doesn't know about classes
-			for(Iterator<SaveFormat> e=formats.values().iterator();e.hasNext();)
+			for(SaveFormat format : formats.values().toArray(new SaveFormat[0]))
 			{
-				SaveFormat format=e.next();
 				if(!format.myObject.needLink()) continue;	//Owner objects that do not need links themselves should check subobjects' needLink
 				SIDLib.Objects type=SIDLib.getType(format.myObject);
 				if(type==null) continue;	//Happens for subobjects that need links. Their owner object should call their link.
 				for(Iterator<SimpleInt> ee=format.fileMap.keySet().iterator();ee.hasNext();)
 				{
-					CMSavable obj=type.get(ee.next().Int);
-					if(obj!=null) obj.link();
+					try{
+						CMSavable obj=type.get(ee.next().Int);
+						if(obj!=null) obj.link();
+					}catch(Exception exc){Log.errOut("Database", exc);}
 				}
 			}
 			
 			if(numBackups>0)
 			{
-//				currentBackup++;
-//				if(currentBackup>numBackups) currentBackup=0;
-//				File newDir=new File(saveDirectoryName+currentBackup);
-//				newDir.delete();
-//				newDir.mkdirs();
+				currentBackup++;
+				if(currentBackup>numBackups) currentBackup=0;
+				File newDir=new File(saveDirectoryName+currentBackup);
+				newDir.mkdirs();
+				File[] oldFiles=newDir.listFiles();
+				if(oldFiles!=null)
+				for(File oldFile : oldFiles)
+					oldFile.delete();
 				formats.clear();
 				for(SIDLib.Objects type : SIDLib.Objects.values())
 					type.save();
@@ -916,15 +899,30 @@ public class DBManager implements DatabaseEngine	//extends Thread
 				try{ synchronized(this){wait(waitInterval);} } catch(Exception e){Log.errOut("DBManager",e);}
 			}
 		}
-		for(Iterator<CMSavable> e=processingQueue.iterator();e.hasNext();)
-		{ updateList.add(e.next()); }
-		processingQueue=publicQueue;
-		if(finalWaitInterval>0)
-			try{ Thread.sleep(finalWaitInterval); } catch(Exception e){Log.errOut("DBManager",e);}
-		for(Iterator<CMSavable> e=processingQueue.iterator();e.hasNext();)
-		{ updateList.add(e.next()); }
-		while(updateList.firstFirst!=null)
-			writeToFile(updateList.removeFirst());
+		while((processingQueue.size()!=0)||(publicQueue.size()!=0))
+		{
+			for(Iterator<CMSavable> e=processingQueue.iterator();e.hasNext();)
+				updateList.add(e.next());
+/*
+			{
+				CMSavable obj=e.next();
+				Log.sysOut("DBStuff",obj.ID()+" "+obj.saveNum());
+				updateList.add(obj);
+			}
+*/
+			processingQueue.clear();
+			HashSet tempQueueRef=publicQueue;
+			publicQueue=processingQueue;
+			processingQueue=tempQueueRef;
+			while(updateList.firstFirst!=null)
+				writeToFile(updateList.removeFirst());
+//		if(finalWaitInterval>0)
+//			try{ Thread.sleep(finalWaitInterval); } catch(Exception e){Log.errOut("DBManager",e);}
+		}
+//		for(Iterator<CMSavable> e=processingQueue.iterator();e.hasNext();)
+//		{ updateList.add(e.next()); }
+//		while(updateList.firstFirst!=null)
+//			writeToFile(updateList.removeFirst());
 		byte[] mainFlags=new byte[2];
 		mainFlags[0]=(byte)currentBackup;
 		mainFlags[1]=(byte)0;
@@ -972,6 +970,7 @@ public class DBManager implements DatabaseEngine	//extends Thread
 		{
 			CMClass.Objects type=CMClass.getType(obj);
 			obj=(CMSavable)type.get(obj.ID());	//Get a clean instance with default types
+			obj.prepDefault();	//Ask it to have the expected most-common values. Mainly setting up subobjects
 			WVector<CMSavable.SaveEnum> fixedVars=new WVector();
 			int totalSize=16;
 			byte[] IDBytes=ID.getBytes(charFormat);
@@ -1045,6 +1044,7 @@ public class DBManager implements DatabaseEngine	//extends Thread
 	}
 	protected static void writeToFile(CMSavable O)
 	{
+		if(O.amDestroyed()) return;	//Quick safety check, convulated thread shenanigans MIGHT be able to cause this..
 		try
 		{
 			SaveFormat format=getFormat(O);
@@ -1098,6 +1098,6 @@ public class DBManager implements DatabaseEngine	//extends Thread
 			fChan.write(input, varIntsPos);
 			format.vChan().position(position).write(varVals);
 		}
-		catch(Exception e){Log.errOut("DBManager",e); int x=1; int y=x-1; System.out.println(x/y);}
+		catch(Exception e){Log.errOut("DBManager",e);}
 	}
 }

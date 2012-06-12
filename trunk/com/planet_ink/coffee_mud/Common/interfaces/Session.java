@@ -31,6 +31,9 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public interface Session extends CMCommon
 {
+	public static final Session[] dummySessionArray=new Session[0];
+
+	public void handlePromptFor(CommandCallWrap command);
 	/**
 	 * Negotiates various telnet options (or attempts to), and 
 	 * prints the introTextStr to the user.
@@ -39,6 +42,9 @@ public interface Session extends CMCommon
 	 */
 	public void initializeSession(Socket s, String introTextStr);
 
+	public void setOther(int otherCode, boolean onOff);
+	public void setMSDPNew(String S);
+	public void setMSDPNew(int i);
 	/**
 	 * There is no interface for Thread, so since DefaultSession
 	 * implements thread, and this fact needs to be externatized,
@@ -53,7 +59,7 @@ public interface Session extends CMCommon
 	 * player records for a customized list.
 	 * @return telnet coded color strings.
 	 */
-	public String[] clookup();
+	//public String[] clookup();
 
 	/**
 	 * Low level text output method.
@@ -291,14 +297,6 @@ public interface Session extends CMCommon
 	public void colorOnlyPrint(String msg);
 	
 	/**
-	 * Waits the given milliseconds for a key to be pressed, after which
-	 * it returns that key, or \0 if nothing pressed.
-	 * @param maxWait the maximum milliseconds to wait
-	 * @return the key pressed, or \0
-	 */
-	public char hotkey(long maxWait);
-	
-	/**
 	 * Prompts the user to enter a string, and then returns what
 	 * the enter.  Does not time out, but may throw an exception
 	 * on disconnnect.
@@ -420,6 +418,8 @@ public interface Session extends CMCommon
 	 * @param S the session to snoop on me.
 	 */
 	public void startBeingSnoopedBy(Session S);
+	public void startSnoopingOn(Session S);
+	public boolean stopSnoopingOn(Session S);
 	
 	/**
 	 * Notifies this session that the given session is no longer snooping it.
@@ -442,19 +442,8 @@ public interface Session extends CMCommon
 	 * @return true if the given session is snooping on me, false otherwise
 	 */
 	public boolean amBeingSnoopedBy(Session S);
-	
-	/**
-	 * Increments or decrements the snoop suspension counter
-	 * by the given amount.  Only when the counter is 0 does
-	 * snooping of this session actually occur.
-	 * @see com.planet_ink.coffee_mud.Common.interfaces.Session#startBeingSnoopedBy(Session)
-	 * @see com.planet_ink.coffee_mud.Common.interfaces.Session#stopBeingSnoopedBy(Session)
-	 * @see com.planet_ink.coffee_mud.Common.interfaces.Session#amBeingSnoopedBy(Session)
-	 * @see com.planet_ink.coffee_mud.Common.interfaces.Session#snoopSuspension(int)
-	 * @param change the amount to change the snoop suspension counter by
-	 * @return the current value of the snoop suspension counter after the change
-	 */
-	public int snoopSuspension(int change);
+	public void copySnoops(Session S);
+	public Iterator<Session> snoopTargets();
 	
 	/**
 	 * Force the current player to logoff.
@@ -463,7 +452,7 @@ public interface Session extends CMCommon
 	 * @param killThread true to force a thread death, and false to be more lenient
 	 * @see com.planet_ink.coffee_mud.Common.interfaces.Session#killFlag()
 	 */
-	public void kill(boolean removeMOB, boolean dropSession, boolean killThread);
+	public void kill(boolean killThread);
 	
 	/**
 	 * Returns whether this session is done, or slated to be done.
@@ -478,7 +467,7 @@ public interface Session extends CMCommon
 	 * prompt, or to the account character listing screen, whichever is appropriate.
 	 * @param removeMOB true to remove the mob from the game
 	 */
-	public void logout(boolean removeMOB);
+	public void logout();
 	
 	/**
 	 * Returns whether this mob/session is currently Away From Keyboard
@@ -518,25 +507,16 @@ public interface Session extends CMCommon
 	 * @return the string entered by the user
 	 * @throws IOException any exception generated during input
 	 */
-	public String blockingIn()
-		throws IOException;
-	
-	/**
-	 * Blocks for a short amount of time, returning an input
-	 * string only if the user happens to have hit enter. 
-	 * @return a string entered by the user
-	 * @throws IOException exceptions thrown, typically a timeout
-	 */
-	public String readlineContinue()
-		throws IOException, SocketException;
-	
+	//public String blockingIn()
+	//	throws IOException;
 	/**
 	 * Returns a pre-parsed, pre-filtered Vector of strings
 	 * representing the last command entered by the user 
 	 * through this session.
 	 * @return a vector of strings
 	 */
-	public Vector previousCMD();
+	public String previousCMD();
+	public void setPreviousCmd(String cmds);
 	
 	/**
 	 * Returns the player MOB attached to this session object.
@@ -568,7 +548,7 @@ public interface Session extends CMCommon
 	 * @param c the ^ character code
 	 * @return telnet escape sequence string for output
 	 */
-	public String makeEscape(int c);
+	//public String makeEscape(int c);
 	
 	/**
 	 * Returns the given color code, unless it is one that translates
@@ -579,7 +559,8 @@ public interface Session extends CMCommon
 	 * @param c the color code
 	 * @return the color code again
 	 */
-	public int getColor(char c);
+	public String getColor(char c);
+	public String getColor(String newCol, String oldCol);
 	
 	/**
 	 * Returns the current color code.
@@ -588,7 +569,7 @@ public interface Session extends CMCommon
 	 * @see com.planet_ink.coffee_mud.Common.interfaces.Session#lastColor()
 	 * @return the current color code.
 	 */
-	public int currentColor();
+	//public int currentColor();
 	
 	/**
 	 * Returns the previous current color code.
@@ -597,7 +578,7 @@ public interface Session extends CMCommon
 	 * @see com.planet_ink.coffee_mud.Common.interfaces.Session#makeEscape(int)
 	 * @return the previous current color code.
 	 */
-	public int lastColor();
+	//public int lastColor();
 	
 	/**
 	 * Gets the column number for engine word-wrapping. 
@@ -635,7 +616,7 @@ public interface Session extends CMCommon
 	 * 
 	 * @return the total ticks consumed
 	 */
-	public long getTotalTicks();
+	//public long getTotalTicks();
 	
 	/**
 	 * Gets the number of milliseconds since a user entry was registered by this session
@@ -709,7 +690,7 @@ public interface Session extends CMCommon
 	 * 
 	 * @return a vector of string message strings
 	 */
-	public Vector getLastMsgs();
+	public LinkedList<String> getLastMsgs();
 	
 	/**
 	 * Gets the terminal type the user has
@@ -725,7 +706,7 @@ public interface Session extends CMCommon
 	 * @param telnetCode the telnet code
 	 * @param onOff true to turn on, false to turn off the flag
 	 */
-	public void setServerTelnetMode(int telnetCode, boolean onOff);
+	//public void setServerTelnetMode(int telnetCode, boolean onOff);
 	
 	/**
 	 * Gets a server telnet mode flag.
@@ -736,7 +717,7 @@ public interface Session extends CMCommon
 	 * 
 	 * @return true, if server telnet mode is on, false otherwise
 	 */
-	public boolean serverTelnetMode(int telnetCode);
+	//public boolean serverTelnetMode(int telnetCode);
 	
 	/**
 	 * Sets a client telnet mode flag.
@@ -803,14 +784,17 @@ public interface Session extends CMCommon
 	public static final int TELNET_NAWS=31;
 	public static final int TELNET_TOGGLE_FLOW_CONTROL=33;
 	public static final int TELNET_LINEMODE=34;
+	public static final int TELNET_MSDP=69;
 	public static final int TELNET_MSSP=70;
-	public static final int TELNET_COMPRESS=85;
-	public static final int TELNET_COMPRESS2=86;
+	public static final int TELNET_MCCPOLD=85;
+	public static final int TELNET_MCCP=86;
 	public static final int TELNET_MSP=90;
 	public static final int TELNET_MXP=91;
+	public static final int TELNET_ATCP=200;
 	public static final int TELNET_SE=240;
 	public static final int TELNET_AYT=246;
 	public static final int TELNET_EC=247;
+	public static final int TELNET_GA=249;
 	public static final int TELNET_SB=250;
 	public static final int TELNET_WILL=251;
 	public static final int TELNET_WONT=252;
@@ -819,6 +803,7 @@ public interface Session extends CMCommon
 	public static final int TELNET_DONT=254;
 	public static final int TELNET_IAC=255;
 	// Array String-friendly descriptions of the various telnet codes.  Indexed by code id 0-255
+	// Only used by debugging.
 	public static final String[] TELNET_DESCS=
 	{ 
 		"BINARY","ECHO","2","SUPRESS GO AHEAD","4","5","6","7","8","9", //0-9
@@ -827,9 +812,9 @@ public interface Session extends CMCommon
 		"30","NAWS","32","FLOWCONTROL","LINEMODE","35","36","37","38","39", //30-39
 		"40","41","42","43","44","45","46","47","48","49", //40-49
 		"50","51","52","53","54","55","56","57","58","59", //50-59
-		"60","61","62","63","64","65","66","67","68","69", //60-69
+		"60","61","62","63","64","65","66","67","68","MSDP", //60-69
 		"MSSP","71","72","73","74","75","76","77","78","79", //70-79
-		"","","","","","COMPRESS","COMPRESS2","","","", //80-89
+		"","","","","","MCCPOLD","MCCP","","","", //80-89
 		"MSP","MXP","","","","","","","","", //90-99
 		"","","","","","","","","","", //100-109
 		"","","","","","","","","","", //110-119
@@ -841,11 +826,11 @@ public interface Session extends CMCommon
 		"","","","","","","","","","", //170-179
 		"","","","","","","","","","", //180-189
 		"","","","","","","","","","", //190-199
-		"","","","","","","","","","", //200-209
+		"ATCP","","","","","","","","","", //200-209
 		"","","","","","","","","","", //210-219
 		"","","","","","","","","","", //220-229
 		"","","","","","","","","","", //230-239
-		"SE","","","","","","AYT","EC","","", //240-249
+		"SE","","","","","","AYT","EC","","GA", //240-249
 		"SB","","","ANSI","",""			  //250-255
 	};
 	
@@ -870,27 +855,42 @@ public interface Session extends CMCommon
 	public static final int TELNET_LINEMODE_SLC_AYT=5;
 	public static final int TELNET_LINEMODE_SLC_EOR=6;
 	public static final int STATUS_OK=0;
-	public static final int STATUS_LOGIN=1;
-	public static final int STATUS_ACCOUNTMENU=2;
-	public static final int STATUS_LOGIN1=3;
-	public static final int STATUS_LOGIN2=4;
-	public static final int STATUS_LOGOUT=5;
-	public static final int STATUS_LOGOUT1=6;
-	public static final int STATUS_LOGOUT2=7;
-	public static final int STATUS_LOGOUT3=8;
-	public static final int STATUS_LOGOUT4=9;
-	public static final int STATUS_LOGOUT5=10;
-	public static final int STATUS_LOGOUT6=11;
-	public static final int STATUS_LOGOUT7=12;
-	public static final int STATUS_LOGOUT8=13;
-	public static final int STATUS_LOGOUT9=14;
-	public static final int STATUS_LOGOUT10=15;
-	public static final int STATUS_LOGOUT11=16;
-	public static final int STATUS_LOGOUT12=17;
-	public static final int STATUS_LOGOUTFINAL=18;
-	public static final String[] STATUS_STR={"OPEN","LOGIN-S","ACCOUNTMENU","LOGIN-1","LOGIN-2",
-											"LOGOUT-S","LOGOUT-1","LOGOUT-2","LOGOUT-3",
-											"LOGOUT-4","LOGOUT-5","LOGOUT-6","LOGOUT-7",
-											"LOGOUT-8","LOGOUT-9","LOGOUT-10","LOGOUT-11",
-											"LOGOUT-12","CLOSED"};
+	public static final int STATUS_LOGIN=STATUS_OK+1;
+	public static final int STATUS_ACCOUNTMENU=STATUS_LOGIN+1;
+	public static final int STATUS_LOGIN1=STATUS_ACCOUNTMENU+1;
+	public static final int STATUS_LOGIN2=STATUS_LOGIN1+1;
+	public static final int STATUS_LOGOUT=STATUS_LOGIN2+1;
+	public static final int STATUS_LOGOUT1=STATUS_LOGOUT+1;
+	public static final int STATUS_LOGOUT2=STATUS_LOGOUT1+1;
+	public static final int STATUS_LOGOUT3=STATUS_LOGOUT2+1;
+	public static final int STATUS_LOGOUT4=STATUS_LOGOUT3+1;
+	public static final int STATUS_LOGOUT5=STATUS_LOGOUT4+1;
+	public static final int STATUS_LOGOUT6=STATUS_LOGOUT5+1;
+	public static final int STATUS_LOGOUT7=STATUS_LOGOUT6+1;
+	public static final int STATUS_LOGOUT8=STATUS_LOGOUT7+1;
+	public static final int STATUS_LOGOUT9=STATUS_LOGOUT8+1;
+	public static final int STATUS_LOGOUT10=STATUS_LOGOUT9+1;
+	public static final int STATUS_LOGOUT11=STATUS_LOGOUT10+1;
+	public static final int STATUS_LOGOUT12=STATUS_LOGOUT11+1;
+	public static final int STATUS_LOGOUTFINAL=STATUS_LOGOUT12+1;
+	public static final String[] STATUS_STR={"OPEN",
+											 "LOGIN-S",
+											 "ACCOUNTMENU",
+											 "LOGIN-1",
+											 "LOGIN-2",
+											 "LOGOUT-S",
+											 "LOGOUT-1",
+											 "LOGOUT-2",
+											 "LOGOUT-3",
+											 "LOGOUT-4",
+											 "LOGOUT-5",
+											 "LOGOUT-6",
+											 "LOGOUT-7",
+											 "LOGOUT-8",
+											 "LOGOUT-9",
+											 "LOGOUT-10",
+											 "LOGOUT-11",
+											 "LOGOUT-12",
+											 "CLOSED"
+											 };
 }

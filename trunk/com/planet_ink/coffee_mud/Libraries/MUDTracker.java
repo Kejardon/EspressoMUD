@@ -9,11 +9,13 @@ import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
-import java.util.*;
 
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import java.util.*;
+import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -83,7 +85,7 @@ public class MUDTracker extends StdLibrary implements TrackingLibrary
 				for(int i=index;i>=0;i--)
 				{
 					R=(Room)radiant.elementAt(i);
-					for(int d=Directions.NUM_DIRECTIONS()-1;d>=0;d--)
+					for(int d=Directions.NUM_DIRECTIONS-1;d>=0;d--)
 					{
 						if((R.getRoomInDir(d)==thisTrail.lastElement())
 						&&(R.getExitInDir(d)!=null)
@@ -163,7 +165,7 @@ public class MUDTracker extends StdLibrary implements TrackingLibrary
 		Exit E=null;
 		int x=0;
 		int winningDirection=-1;
-		for(int d=Directions.NUM_DIRECTIONS()-1;d>=0;d--)
+		for(int d=Directions.NUM_DIRECTIONS-1;d>=0;d--)
 		{
 			R=location.getRoomInDir(d);
 			E=location.getExitInDir(d);
@@ -190,7 +192,7 @@ public class MUDTracker extends StdLibrary implements TrackingLibrary
 			R=(Room)rooms.elementAt(i);
 
 			if(R==room) return -1;
-			for(int d=Directions.NUM_DIRECTIONS()-1;d>=0;d--)
+			for(int d=Directions.NUM_DIRECTIONS-1;d>=0;d--)
 				if(R.getRoomInDir(d)==room)
 					return Directions.getOpDirectionCode(d);
 		}
@@ -240,7 +242,7 @@ public class MUDTracker extends StdLibrary implements TrackingLibrary
 			for(r=min;r<size;r++)
 			{
 				R1=(Room)rooms.elementAt(r);
-				for(d=Directions.NUM_DIRECTIONS()-1;d>=0;d--)
+				for(d=Directions.NUM_DIRECTIONS-1;d>=0;d--)
 				{
 					R=R1.getRoomInDir(d);
 					E=R1.getExitInDir(d);
@@ -312,8 +314,8 @@ public class MUDTracker extends StdLibrary implements TrackingLibrary
 			MOB inhab=oldRoom.fetchInhabitant(m);
 			if((inhab!=null)
 			&&(!inhab.isMonster())
-			&&(CMSecurity.isAllowed(inhab,oldRoom,"CMDMOBS")
-			   ||CMSecurity.isAllowed(inhab,oldRoom,"CMDROOMS")))
+			&&(CMSecurity.isAllowed(inhab,"CMDMOBS")
+			   ||CMSecurity.isAllowed(inhab,"CMDROOMS")))
 			{
 				if(status!=null)status[0]=Tickable.STATUS_NOT;
 				return false;
@@ -329,7 +331,7 @@ public class MUDTracker extends StdLibrary implements TrackingLibrary
 		while(((tries++)<10)&&(direction<0))
 		{
 			if(status!=null)status[0]=Tickable.STATUS_MISC7+5;
-			direction=CMLib.dice().roll(1,Directions.NUM_DIRECTIONS(),-1);
+			direction=CMLib.dice().roll(1,Directions.NUM_DIRECTIONS,-1);
 			Room nextRoom=oldRoom.getRoomInDir(direction);
 			Exit nextExit=oldRoom.getExitInDir(direction);
 			if((nextRoom!=null)&&(nextExit!=null))
@@ -481,7 +483,7 @@ public class MUDTracker extends StdLibrary implements TrackingLibrary
 		int dir=-1;
 		while((dir<0)&&((++tries)<100))
 		{
-			dir=CMLib.dice().roll(1,Directions.NUM_DIRECTIONS(),-1);
+			dir=CMLib.dice().roll(1,Directions.NUM_DIRECTIONS,-1);
 			Room R=toHere.getRoomInDir(dir);
 			if(R!=null)
 			{
@@ -536,7 +538,7 @@ public class MUDTracker extends StdLibrary implements TrackingLibrary
 	{
 		int dir=Directions.getGoodDirectionCode(desc);
 		if(dir<0)
-		for(int d=Directions.NUM_DIRECTIONS()-1;d>=0;d--)
+		for(int d=Directions.NUM_DIRECTIONS-1;d>=0;d--)
 		{
 			Exit e=R.getExitInDir(d);
 			Room r=R.getRoomInDir(d);
@@ -553,7 +555,7 @@ public class MUDTracker extends StdLibrary implements TrackingLibrary
 			}
 		}
 		if(dir<0)
-		for(int d=Directions.NUM_DIRECTIONS()-1;d>=0;d--)
+		for(int d=Directions.NUM_DIRECTIONS-1;d>=0;d--)
 		{
 			Exit e=R.getExitInDir(d);
 			Room r=R.getRoomInDir(d);
@@ -579,7 +581,7 @@ public class MUDTracker extends StdLibrary implements TrackingLibrary
 		if(R2==null)
 			return -1;
 		int dir=-1;
-		for(int d=Directions.NUM_DIRECTIONS()-1;d>=0;d--)
+		for(int d=Directions.NUM_DIRECTIONS-1;d>=0;d--)
 			if(R2.getRoomInDir(d)==R)
 				return d;
 		return dir;
@@ -592,7 +594,7 @@ public class MUDTracker extends StdLibrary implements TrackingLibrary
 		int index=radiantTrail.indexOf(to);
 		if(index<0) return finalSets;
 		Room R=null;
-		for(int d=Directions.NUM_DIRECTIONS()-1;d>=0;d--)
+		for(int d=Directions.NUM_DIRECTIONS-1;d>=0;d--)
 		{
 			R=to.getRoomInDir(d);
 			if(R!=null)
@@ -633,7 +635,7 @@ public class MUDTracker extends StdLibrary implements TrackingLibrary
 	
 	protected int getRoomDirection(Room R, Room toRoom, Vector<Room> ignore)
 	{
-		for(int d=Directions.NUM_DIRECTIONS()-1;d>=0;d--)
+		for(int d=Directions.NUM_DIRECTIONS-1;d>=0;d--)
 			if((R.getRoomInDir(d)==toRoom)
 			&&(R!=toRoom)
 			&&(!ignore.contains(R)))
@@ -728,7 +730,7 @@ public class MUDTracker extends StdLibrary implements TrackingLibrary
 			theDirTrail.addElement(Character.toString(Directions.getDirectionName(getRoomDirection(R,RA,empty)).charAt(0))+" ");
 		}
 		StringBuffer theTrail=new StringBuffer("");
-		if(confirm)	theTrail.append("\n\r"+CMStrings.padRight("Trail",30)+": ");
+		if(confirm)	theTrail.append("\r\n"+CMStrings.padRight("Trail",30)+": ");
 		char lastDir='\0';
 		int lastNum=0;
 		while(theDirTrail.size()>0)
@@ -771,13 +773,13 @@ public class MUDTracker extends StdLibrary implements TrackingLibrary
 				}
 			}
 			Room R=(Room)trailV.elementAt(1);
-			theTrail.append("\n\r"+CMStrings.padRight("From",30)+": "+Directions.getDirectionName(getRoomDirection(R,R2,empty))+" <- "+R.roomID());
-			theTrail.append("\n\r"+CMStrings.padRight("Room",30)+": "+R.displayText()+"/"+R.description());
-			theTrail.append("\n\r\n\r");
+			theTrail.append("\r\n"+CMStrings.padRight("From",30)+": "+Directions.getDirectionName(getRoomDirection(R,R2,empty))+" <- "+R.roomID());
+			theTrail.append("\r\n"+CMStrings.padRight("Room",30)+": "+R.displayText()+"/"+R.description());
+			theTrail.append("\r\n\r\n");
 		}
 		if((areaNames)&&(areasDone.size()>0))
 		{
-			theTrail.append("\n\r"+CMStrings.padRight("Areas",30)+":");
+			theTrail.append("\r\n"+CMStrings.padRight("Areas",30)+":");
 			for(Iterator i=areasDone.iterator();i.hasNext();)
 			{
 				Area A=(Area)i.next();

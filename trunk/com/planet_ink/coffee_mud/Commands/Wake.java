@@ -24,12 +24,9 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Wake extends StdCommand
 {
-	public Wake(){}
+	public Wake(){access=new String[]{"WAKE"};}
 
-	private String[] access={"WAKE"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		commands.removeElementAt(0);
 		if(commands.size()==0)
@@ -37,7 +34,9 @@ public class Wake extends StdCommand
 //			if(!CMLib.flags().isSleeping(mob))
 //				mob.tell("You aren't sleeping!?");
 //			else
-				mob.location().doMessage(CMClass.getMsg(mob,null,null,EnumSet.of(CMMsg.MsgCode.STAND),"<S-NAME> awake(s) and stand(s) up."));
+			CMMsg msg=CMClass.getMsg(mob,null,null,EnumSet.of(CMMsg.MsgCode.STAND),"<S-NAME> awake(s) and stand(s) up.");
+			mob.location().doMessage(msg);
+			msg.returnMsg();
 		}
 		else
 		{
@@ -60,8 +59,7 @@ public class Wake extends StdCommand
 		}
 		return false;
 	}
-	public double actionsCost(MOB mob, Vector cmds){return DEFAULT_NONCOMBATACTION;}
-	public boolean canBeOrdered(){return true;}
 
-	
+	public int commandType(MOB mob, String cmds){return CT_LOW_P_ACTION;}
+	public boolean canBeOrdered(){return true;}
 }

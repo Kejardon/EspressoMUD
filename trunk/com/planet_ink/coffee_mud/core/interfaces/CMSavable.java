@@ -35,6 +35,8 @@ public interface CMSavable extends CMObject
 {
 	//IMPORTANT NOTE: ALL SAVEENUMS MUST HAVE 3-LETTER NAMES
 	//ALL BYTEBUFFERS MUST BE REWOUND BEFORE BEING RETURNED OR SENT
+	public static final CMSavable[] dummyCMSavableArray=new CMSavable[0];
+	public static final SaveEnum[] dummySEArray=new SaveEnum[0];
 	public static interface SaveEnum
 	{
 		//save() will be called on CMSubSavables (SaveEnums with size==-1) iff they have no fixed data;
@@ -65,12 +67,18 @@ public interface CMSavable extends CMObject
 	public boolean needLink();	//True if this object saves references to other objects via SIDs
 	public void link();	//Parse saved SID references and find other objects
 	public void saveThis();
+	//This should do its best to delete ALL references to the object other than the database's.
+	//Ownable objects' destroy should be called only by their owner's destroy - hence it's ok to leave references between the ownable and its owner.
+	//If an ownable is destroyed but not its owner, it should still be handled by the owner, and the owner should clean up the ownable's references.
 	public void destroy();
+	public boolean amDestroyed();
+	public void prepDefault();	//For the database; initialize subobjects to most common/expected default value
+
 
 /*
 	//Non-saving class
-	public SaveEnum[] totalEnumS(){return new SaveEnum[0];}
-	public Enum[] headerEnumS(){return new Enum[0];}
+	public SaveEnum[] totalEnumS(){return CMSavable.dummySEArray;}
+	public Enum[] headerEnumS(){return CMClass.dummyEnumArray;}
 
 	//Typical non-extended CMSavable class
 	public SaveEnum[] totalEnumS(){return SCode.values();}

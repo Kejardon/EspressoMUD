@@ -9,13 +9,13 @@ import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.MoneyLibrary;
-
 
 import java.util.*;
 import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -62,6 +62,7 @@ public class StdCoins extends StdItem implements Coins
 		if(number<=Long.MAX_VALUE/2)
 			number=Long.MAX_VALUE/2-1;
 		amount=number;
+		CMLib.database().saveObject(this);
 	}
 	public long getDenomination(){return denomination;}
 	public void setDenomination(long valuePerCoin) { denomination=valuePerCoin; CMLib.database().saveObject(this);}
@@ -75,17 +76,16 @@ public class StdCoins extends StdItem implements Coins
 		ItemCollection O=ItemCollection.O.getFrom(container);
 		if(O!=null)
 		{
-			for(int i=0;i<O.numItems();i++)
+			for(Iterator<Item> iter=O.allItems();iter.hasNext();)
 			{
-				Item I=O.getItem(i);
-				if((I!=null)
-				&&(I!=this)
+				Item I=iter.next();
+				if((I!=this)
 				&&(I instanceof Coins)
 				&&(((Coins)I).getDenomination()==denomination)
 				&&(((Coins)I).getCurrency().equals(currency)))
 				{
 					((Coins)I).setNumberOfCoins(alternative.getNumberOfCoins()+amount);
-					CMLib.database().saveObject(I);
+					//CMLib.database().saveObject(I);
 					destroy();
 					return true;
 				}
@@ -103,10 +103,7 @@ public class StdCoins extends StdItem implements Coins
 		{
 			ModEnum[] arrA=MCode.values();
 			ModEnum[] arrB=super.totalEnumM();
-			ModEnum[] total=new ModEnum[arrA.length+arrB.length];
-			System.arraycopy(arrA, 0, total, 0, arrA.length);
-			System.arraycopy(arrB, 0, total, arrA.length, arrB.length);
-			totalEnumM=total;
+			totalEnumM=CMParms.appendToArray(arrA, arrB, ModEnum[].class);
 		}
 		return totalEnumM;
 	}
@@ -116,10 +113,7 @@ public class StdCoins extends StdItem implements Coins
 		{
 			Enum[] arrA=new Enum[] {MCode.values()[0]};
 			Enum[] arrB=super.headerEnumM();
-			Enum[] total=new Enum[arrA.length+arrB.length];
-			System.arraycopy(arrA, 0, total, 0, arrA.length);
-			System.arraycopy(arrB, 0, total, arrA.length, arrB.length);
-			headerEnumM=total;
+			headerEnumM=CMParms.appendToArray(arrA, arrB, Enum[].class);
 		}
 		return headerEnumM;
 	}
@@ -131,10 +125,7 @@ public class StdCoins extends StdItem implements Coins
 		{
 			SaveEnum[] arrA=SCode.values();
 			SaveEnum[] arrB=super.totalEnumS();
-			SaveEnum[] total=new SaveEnum[arrA.length+arrB.length];
-			System.arraycopy(arrA, 0, total, 0, arrA.length);
-			System.arraycopy(arrB, 0, total, arrA.length, arrB.length);
-			totalEnumS=total;
+			totalEnumS=CMParms.appendToArray(arrA, arrB, SaveEnum[].class);
 		}
 		return totalEnumS;
 	}
@@ -144,10 +135,7 @@ public class StdCoins extends StdItem implements Coins
 		{
 			Enum[] arrA=new Enum[] {SCode.values()[0]};
 			Enum[] arrB=super.headerEnumS();
-			Enum[] total=new Enum[arrA.length+arrB.length];
-			System.arraycopy(arrA, 0, total, 0, arrA.length);
-			System.arraycopy(arrB, 0, total, arrA.length, arrB.length);
-			headerEnumS=total;
+			headerEnumS=CMParms.appendToArray(arrA, arrB, Enum[].class);
 		}
 		return headerEnumS;
 	}

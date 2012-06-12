@@ -18,15 +18,18 @@ public interface ItemCollection extends CMObject, CMModifiable, CMSavable, CMCom
 	public Item removeItem(int i);
 	public Item getItem(int i);
 	public int numItems();
-	public Vector<Item> allItems();
+	public Iterator<Item> allItems();
 
 	public static class O
 	{
 		public static ItemCollection getFrom(CMObject O)
 		{
 			if(O instanceof ItemCollection) return (ItemCollection)O;
-			while((O instanceof Ownable)&&((Ownable)O).owner()!=O) O=((Ownable)O).owner();
 			if(O instanceof ItemHolder) return ((ItemHolder)O).getItemCollection();
+			while((O instanceof Ownable)&&((Ownable)O).owner()!=O){
+				O=((Ownable)O).owner();
+				if(O instanceof ItemCollection) return (ItemCollection)O;
+				if(O instanceof ItemHolder) return ((ItemHolder)O).getItemCollection(); }
 			return null;
 		}
 	}

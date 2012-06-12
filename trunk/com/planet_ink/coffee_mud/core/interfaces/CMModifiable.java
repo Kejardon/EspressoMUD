@@ -24,6 +24,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public interface CMModifiable extends CMObject
 {
+	public static final ModEnum[] dummyMEArray=new ModEnum[0];
 
 	public static interface ModEnum
 	{
@@ -37,8 +38,8 @@ public interface CMModifiable extends CMObject
 
 /*
 	//Non-modifiable class
-	public ModEnum[] totalEnumM(){return new ModEnum[0];}
-	public Enum[] headerEnumM(){return new Enum[0];}
+	public ModEnum[] totalEnumM(){return CMModifiable.dummyMEArray;}
+	public Enum[] headerEnumM(){return CMClass.dummyEnumArray;}
 
 	//Typical non-extended CMModifiable class
 	public ModEnum[] totalEnumM(){return MCode.values();}

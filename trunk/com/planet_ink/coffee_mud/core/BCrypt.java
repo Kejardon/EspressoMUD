@@ -690,7 +690,7 @@ public class BCrypt {
 		rs.append("$");
 		rs.append(encode_base64(saltb, saltb.length));
 		rs.append(encode_base64(hashed,
-		    bf_crypt_ciphertext.length * 4 - 1));
+			bf_crypt_ciphertext.length * 4 - 1));
 		return rs.toString();
 	}
 

@@ -1,9 +1,6 @@
 package com.planet_ink.coffee_mud.Libraries;
 import com.planet_ink.coffee_mud.core.interfaces.*;
-import com.planet_ink.coffee_mud.core.exceptions.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.MoneyLibrary.MoneyDenomination;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
@@ -12,12 +9,17 @@ import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
+import com.planet_ink.coffee_mud.core.exceptions.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.MoneyLibrary.MoneyDenomination;
 
-import java.io.IOException;
 import java.util.*;
+import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.io.IOException;
 import java.util.regex.*;
 
 /*
@@ -32,24 +34,26 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 {
 	public String ID(){return "EnglishParser";}
 	private final static String[] articles={"a","an","all of","some one","a pair of","one of","all","the","some"};
+	private final static String[] basicArticles={"a","an","some one","all","the","some"};
 	public static boolean[] PUNCTUATION_TABLE=null;
-	public final static char[] ALL_CHRS="ALL".toCharArray();
+	public final static char[] ALL_CHRS=new char[]{'A', 'L', 'L'};
 	
 	public boolean isAnArticle(String s)
 	{
+		s=s.toLowerCase();
 		for(int a=0;a<articles.length;a++)
-			if(s.toLowerCase().equals(articles[a]))
+			if(s.equals(articles[a]))
 				return true;
 		return false;
 	}
 
 	public String cleanArticles(String s)
 	{
+		String lowStr=s.toLowerCase();
 		boolean didSomething=true;
 		while(didSomething)
 		{
 			didSomething=false;
-			String lowStr=s.toLowerCase();
 			for(int a=0;a<articles.length;a++)
 				if(lowStr.startsWith(articles[a]+" "))
 					return s.substring(articles[a].length()+1);
@@ -57,7 +61,6 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 		return s;
 	}
 
-	
 	public String startWithAorAn(String str)
 	{
 		if((str==null)||(str.length()==0)) return str;
@@ -74,24 +77,23 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 		return str;
 	}
 	
-	
 	public String insertUnColoredAdjective(String str, String adjective)
 	{
 		if(str.length()==0) 
 			return str;
 		str=CMStrings.removeColors(str.trim());
-		String uppStr=str.toUpperCase();
+		String uppStr=((str.length()<6)?(str.toUpperCase()):(str.substring(0,5).toUpperCase()));
 		if((uppStr.startsWith("A "))
 		||(uppStr.startsWith("AN ")))
 		{
-			if("aeiouAEIOU".indexOf(adjective.charAt(0))>=0) 
+			if("aeiouAEIOU".indexOf(adjective.charAt(0))>=0)
 				return "an "+adjective+" "+str.substring(2).trim();
 			return "a "+adjective+" "+str.substring(2).trim();
 		}
 		if((!uppStr.startsWith("THE "))
 		&&(!uppStr.startsWith("SOME ")))
 		{
-			if("aeiouAEIOU".indexOf(adjective.charAt(0))>=0) 
+			if("aeiouAEIOU".indexOf(adjective.charAt(0))>=0)
 				return "an "+adjective+" "+str.trim();
 			return "a "+adjective+" "+str.trim();
 		}
@@ -99,15 +101,83 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 		return str.substring(0,x)+" "+adjective+" "+str.substring(x+1);
 	}
 	
-	public Command findCommand(MOB mob, Vector commands)
+	public Command findCommand(MOB mob, String commands)
 	{
-		if((mob==null)
+		int i=commands.indexOf(' ');
+		return findCommand(mob, commands, (i<0?commands:commands.substring(0,i)));
+	}
+	public Command findCommand(MOB mob, String commands, String firstWord)
+	{
+		/*if((mob==null)
+		||(commands==null)
+		||(mob.location()==null)
+		||(commands.length()==0))
+			return null;*/
+
+		firstWord=firstWord.trim().toUpperCase();
+
+		if((firstWord.length()>1)&&(!Character.isLetterOrDigit(firstWord.charAt(0))))
+		{
+			firstWord=firstWord.substring(0, 1);
+			//commands.insertElementAt(((String)commands.elementAt(0)).substring(1),1);
+			//commands.setElementAt(""+firstWord.charAt(0),0);
+		}
+
+		// first, exacting pass
+		Command C=CMClass.COMMAND.getCommand(firstWord,true,mob);
+		if((C!=null)
+		&&(C.securityCheck(mob))
+		&&(!CMSecurity.isDisabled("COMMAND_"+CMClass.classID(C).toUpperCase())))
+			return C;
+
+		for(int c=0;c<CMLib.channels().getNumChannels();c++)
+		{
+			if(CMLib.channels().getChannelName(c).equalsIgnoreCase(firstWord))
+			{
+				C=CMClass.COMMAND.getCommand("CHANNEL", true, mob);
+				if((C!=null)&&(C.securityCheck(mob))) return C;
+			}
+			else
+			if(("NO"+CMLib.channels().getChannelName(c)).equalsIgnoreCase(firstWord))
+			{
+				C=CMClass.COMMAND.getCommand("NOCHANNEL", true, mob);
+				if((C!=null)&&(C.securityCheck(mob))) return C;
+			}
+		}
+
+		// second, inexacting pass
+		//commands comes inexactly after ables
+		//because of CA, PR, etc..
+		C=CMClass.COMMAND.getCommand(firstWord,false, mob);
+		if((C!=null)
+		&&(C.securityCheck(mob))
+		&&(!CMSecurity.isDisabled("COMMAND_"+CMClass.classID(C).toUpperCase())))
+			return C;
+
+		for(int c=0;c<CMLib.channels().getNumChannels();c++)
+		{
+			if(CMLib.channels().getChannelName(c).startsWith(firstWord))
+			{
+				//commands.setElementAt(CMLib.channels().getChannelName(c),0);
+				C=CMClass.COMMAND.getCommand("CHANNEL", true, mob);
+				if((C!=null)&&(C.securityCheck(mob))) return C;
+			}
+			else
+			if(("NO"+CMLib.channels().getChannelName(c)).startsWith(firstWord))
+			{
+				//commands.setElementAt("NO"+CMLib.channels().getChannelName(c),0);
+				C=CMClass.COMMAND.getCommand("NOCHANNEL", true, mob);
+				if((C!=null)&&(C.securityCheck(mob))) return C;
+			}
+		}
+		return null;
+		/*if((mob==null)
 		||(commands==null)
 		||(mob.location()==null)
 		||(commands.size()==0))
 			return null;
 
-		String firstWord=((String)commands.elementAt(0)).toUpperCase();
+		String firstWord=commands.get(0).toUpperCase();
 
 		if((firstWord.length()>1)&&(!Character.isLetterOrDigit(firstWord.charAt(0))))
 		{
@@ -117,34 +187,23 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 		}
 
 		// first, exacting pass
-		Command C=CMClass.Objects.COMMAND.getCommand(firstWord,true);
+		Command C=CMClass.COMMAND.getCommand(firstWord,true,mob);
 		if((C!=null)
 		&&(C.securityCheck(mob))
 		&&(!CMSecurity.isDisabled("COMMAND_"+CMClass.classID(C).toUpperCase())))
 			return C;
-/*
-		Ability A=getToEvoke(mob,(Vector)commands.clone());
-		if((A!=null)
-		&&(!CMSecurity.isDisabled("ABILITY_"+A.ID().toUpperCase())))
-			return A;
-
-		if(getAnEvokeWord(mob,firstWord)!=null)
-			return null;
-		Social social=CMLib.socials().fetchSocial(commands,true,true);
-		if(social!=null) return social;
-*/
 
 		for(int c=0;c<CMLib.channels().getNumChannels();c++)
 		{
 			if(CMLib.channels().getChannelName(c).equalsIgnoreCase(firstWord))
 			{
-				C=CMClass.Objects.COMMAND.getCommand("CHANNEL", true);
+				C=CMClass.COMMAND.getCommand("CHANNEL", true, mob);
 				if((C!=null)&&(C.securityCheck(mob))) return C;
 			}
 			else
 			if(("NO"+CMLib.channels().getChannelName(c)).equalsIgnoreCase(firstWord))
 			{
-				C=CMClass.Objects.COMMAND.getCommand("NOCHANNEL", true);
+				C=CMClass.COMMAND.getCommand("NOCHANNEL", true, mob);
 				if((C!=null)&&(C.securityCheck(mob))) return C;
 			}
 		}
@@ -152,62 +211,73 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 		// second, inexacting pass
 		//commands comes inexactly after ables
 		//because of CA, PR, etc..
-		C=CMClass.Objects.COMMAND.getCommand(firstWord,false);
+		C=CMClass.COMMAND.getCommand(firstWord,false, mob);
 		if((C!=null)
 		&&(C.securityCheck(mob))
 		&&(!CMSecurity.isDisabled("COMMAND_"+CMClass.classID(C).toUpperCase())))
 			return C;
 
-/*		social=CMLib.socials().fetchSocial(commands,false,true);
-		if(social!=null)
-		{
-			commands.setElementAt(social.baseName(),0);
-			return social;
-		}
-*/
 		for(int c=0;c<CMLib.channels().getNumChannels();c++)
 		{
 			if(CMLib.channels().getChannelName(c).startsWith(firstWord))
 			{
 				commands.setElementAt(CMLib.channels().getChannelName(c),0);
-				C=CMClass.Objects.COMMAND.getCommand("Channel", true);
+				C=CMClass.COMMAND.getCommand("Channel", true, mob);
 				if((C!=null)&&(C.securityCheck(mob))) return C;
 			}
 			else
 			if(("NO"+CMLib.channels().getChannelName(c)).startsWith(firstWord))
 			{
 				commands.setElementAt("NO"+CMLib.channels().getChannelName(c),0);
-				C=CMClass.Objects.COMMAND.getCommand("NoChannel", true);
+				C=CMClass.COMMAND.getCommand("NoChannel", true, mob);
 				if((C!=null)&&(C.securityCheck(mob))) return C;
 			}
 		}
-
-		return null;
+		return null;*/
 	}
 
 
 	public boolean[] PUNCTUATION_TABLE() {
 		if(PUNCTUATION_TABLE==null)
 		{
-			boolean[] PUNCTUATION_TEMP_TABLE=new boolean[255];
-			for(int c=0;c<255;c++)
-				switch(c)
-				{
-				case '`': case '~': case '!': case '@': case '#': case '$': case '%':
-				case '^': case '&': case '*': case '(': case ')': case '_': case '-':
-				case '+': case '=': case '[': case ']': case '{': case '}': case '\\':
-				case '|': case ';': case ':': case '\'': case '\"': case ',': case '<':
-				case '.': case '>': case '/': case '?':
-					PUNCTUATION_TEMP_TABLE[c]=true;
-					break;
-				default:
-					PUNCTUATION_TEMP_TABLE[c]=false;
-				}
-			PUNCTUATION_TABLE=PUNCTUATION_TEMP_TABLE;
+			synchronized(this)
+			{
+				if(PUNCTUATION_TABLE!=null) return PUNCTUATION_TABLE;
+				boolean[] PUNCTUATION_TEMP_TABLE=new boolean[255];
+				for(int c=0;c<256;c++)
+					switch(c)
+					{
+					case '!':  case '\"': case '#':  case '$':  case '%':  case '&':  case '\'':
+					case '(':  case ')':  case '*':  case '+':  case ',':  case '-':  case '.':
+					case '/':  case ':':  case ';':  case '<':  case '=':  case '>':  case '?':
+					case '@':  case '[':  case '\\': case ']':  case '^':  case '_':  case '`':
+					case '{':  case '|':  case '}':  case '~':
+					case 161: //upside down !
+					case 162: //cent
+					case 163: //pound
+					case 164: //currency
+					case 165: //Yen
+					case 166: //broken |
+					case 171: //<<
+					case 176: //degree symbol
+					case 177: //plusminus
+					case 183: //middle dot
+					case 187: //>>
+					case 191: //upside down ?
+					case 215: //multiplication
+					case 247: //division
+						PUNCTUATION_TEMP_TABLE[c]=true;
+						break;
+					default:
+						PUNCTUATION_TEMP_TABLE[c]=false;
+					}
+				PUNCTUATION_TABLE=PUNCTUATION_TEMP_TABLE;
+			}
 		}
 		return PUNCTUATION_TABLE;
 	}
 	
+	//TODO: This is a bit inefficient
 	public String stripPunctuation(String str)
 	{
 		if((str==null)||(str.length()==0)) return str;
@@ -233,8 +303,7 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 	}
 	
 	private boolean isPunctuation(byte b) {
-		if((b<0)||(b>255)) return false;
-		return PUNCTUATION_TABLE[b];
+		return PUNCTUATION_TABLE[b&0xFF];
 	}
 	
 	public boolean equalsPunctuationless(char[] strC, char[] str2C)
@@ -243,39 +312,33 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 		PUNCTUATION_TABLE();
 		int s1=0;
 		int s2=0;
-		int s1len=strC.length;
+		/*int s1len=strC.length;
 		while((s1len>0)&&(Character.isWhitespace(strC[s1len-1])||isPunctuation((byte)strC[s1len-1])))
 			s1len--;
 		int s2len=str2C.length;
 		while((s2len>0)&&(Character.isWhitespace(str2C[s2len-1])||isPunctuation((byte)str2C[s2len-1])))
-			s2len--;
-		while(s1<s1len)
+			s2len--;*/
+		while(true)
 		{
-			while((s1<s1len)&&(isPunctuation((byte)strC[s1])))
+			while((s1<strC.length)&&(isPunctuation((byte)strC[s1])))
 				s1++;
-			while((s2<s2len)&&(isPunctuation((byte)str2C[s2])))
+			while((s2<str2C.length)&&(isPunctuation((byte)str2C[s2])))
 				s2++;
-			if(s1==s1len)
-			{
-				if(s2==s2len)
-					return true;
-				return false;
-			}
-			if(s2==s2len)
+			if(s1==strC.length) return (s2==str2C.length);
+			if(s2==str2C.length)
 				return false;
 			if(strC[s1]!=str2C[s2])
 				return false;
 			s1++;
 			s2++;
 		}
-		if(s2==s2len)
-			return true;
-		return false;
 	}
 	
 	public boolean containsString(String toSrchStr, String srchStr)
 	{
-		if((toSrchStr==null)||(srchStr==null)) return false;
+		return CMLib.coffeeFilter().toRawString(toSrchStr).toLowerCase().contains(srchStr.toLowerCase());
+
+		/*if((toSrchStr==null)||(srchStr==null)) return false;
 		if((toSrchStr.length()==0)&&(srchStr.length()>0)) return false;
 		char[] srchC=srchStr.toCharArray();
 		char[] toSrchC=toSrchStr.toCharArray();
@@ -359,10 +422,10 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 				tos++;
 			tos++;
 		}
-		return found;
+		return found;*/
 	}
 
-	public String bumpDotNumber(String srchStr)
+	/*public String bumpDotNumber(String srchStr)
 	{
 		Object[] flags=fetchFlags(srchStr);
 		if(flags==null) return srchStr;
@@ -372,24 +435,29 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 			return "1."+((String)flags[FLAG_STR]);
 		return (((Integer)flags[FLAG_DOT]).intValue()+1)+"."+((String)flags[FLAG_STR]);
 	}
-
-	public Object[] fetchFlags(String srchStr)
+	protected class StringFlags
+	{
+		public boolean allFlag;
+		public String srchStr;
+		public int occurrance;
+	}*/
+	public EnglishParsing.StringFlags fetchFlags(String srchStr)
 	{
 		if(srchStr.length()==0) return null;
 		srchStr=srchStr.toUpperCase();
 		if((srchStr.length()<2)||(srchStr.equals("THE")))
 		   return null;
-		Object[] flags=new Object[3];
+		EnglishParsing.StringFlags flags=new EnglishParsing.StringFlags();
 
-		boolean allFlag=false;
 		if(srchStr.startsWith("ALL "))
 		{
 			srchStr=srchStr.substring(4);
-			allFlag=true;
+			flags.allFlag=true;
 		}
+		else if(srchStr.equals("ALL"))
+			flags.allFlag=true;
 		else
-		if(srchStr.equals("ALL"))
-			allFlag=true;
+			flags.allFlag=false;
 
 		int dot=srchStr.lastIndexOf(".");
 		int occurrance=0;
@@ -410,86 +478,105 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 					occurrance=0;
 			}
 		}
-		flags[0]=srchStr;
-		flags[1]=Integer.valueOf(occurrance);
-		flags[2]=Boolean.valueOf(allFlag);
+		flags.srchStr=srchStr;
+		flags.occurrance=occurrance;
 		return flags;
 	}
 
 	public CMObject fetchObject(Vector<? extends CMObject> list, String srchStr, boolean exactOnly)
 	{
-		Object[] flags=fetchFlags(srchStr);
+		EnglishParsing.StringFlags flags=fetchFlags(srchStr);
 		if(flags==null) return null;
-
-		srchStr=(String)flags[FLAG_STR];
-		int myOccurrance=((Integer)flags[FLAG_DOT]).intValue();
-		boolean allFlag=((Boolean)flags[FLAG_ALL]).booleanValue();
-		CMObject thisThang=null;
+		//srchStr=(String)flags[FLAG_STR];
+		//int myOccurrance=((Integer)flags[FLAG_DOT]).intValue();
+		//boolean allFlag=((Boolean)flags[FLAG_ALL]).booleanValue();
 		if(exactOnly)
 		{
-			if(srchStr.startsWith("$")) srchStr=srchStr.substring(1);
-			if(srchStr.endsWith("$")) srchStr=srchStr.substring(0,srchStr.length()-1);
-			try
+			//if(flags.srchStr.startsWith("$")) flags.srchStr=flags.srchStr.substring(1);
+			//if(flags.srchStr.endsWith("$")) flags.srchStr=flags.srchStr.substring(0,flags.srchStr.length()-1);
+			for(int i=0;i<list.size();i++)
 			{
-				for(int i=0;i<list.size();i++)
-				{
-					thisThang=list.elementAt(i);
-					if(thisThang.ID().equalsIgnoreCase(srchStr))
-						if((--myOccurrance)<=0)
-							return thisThang;
-				}
+				CMObject thisThang=list.get(i);
+				if(thisThang.ID().equalsIgnoreCase(flags.srchStr))
+					if((--flags.occurrance)<=0)
+						return thisThang;
 			}
-			catch(java.lang.ArrayIndexOutOfBoundsException x){}
 		}
 		else
 		{
-			myOccurrance=((Integer)flags[FLAG_DOT]).intValue();
-			try
+			//myOccurrance=((Integer)flags[FLAG_DOT]).intValue();
+			for(int i=0;i<list.size();i++)
 			{
-				for(int i=0;i<list.size();i++)
-				{
-					thisThang=list.elementAt(i);
-					if(containsString(thisThang.ID(),srchStr))
-						if((--myOccurrance)<=0)
-							return thisThang;
-				}
+				CMObject thisThang=list.get(i);
+				if(containsString(thisThang.ID(),flags.srchStr))
+					if((--flags.occurrance)<=0)
+						return thisThang;
 			}
-			catch(java.lang.ArrayIndexOutOfBoundsException x){}
+		}
+		return null;
+	}
+	public CMObject fetchObject(Iterator<? extends CMObject> list, String srchStr, boolean exactOnly)
+	{
+		EnglishParsing.StringFlags flags=fetchFlags(srchStr);
+		if(flags==null) return null;
+		if(exactOnly)
+		{
+			//if(flags.srchStr.startsWith("$")) flags.srchStr=flags.srchStr.substring(1);
+			//if(flags.srchStr.endsWith("$")) flags.srchStr=flags.srchStr.substring(0,flags.srchStr.length()-1);
+			while(list.hasNext())
+			{
+				CMObject thisThang=list.next();
+				if(thisThang.ID().equalsIgnoreCase(flags.srchStr))
+					if((--flags.occurrance)<=0)
+						return thisThang;
+			}
+		}
+		else
+		{
+			while(list.hasNext())
+			{
+				CMObject thisThang=list.next();
+				if(containsString(thisThang.ID(),flags.srchStr))
+					if((--flags.occurrance)<=0)
+						return thisThang;
+			}
 		}
 		return null;
 	}
 
 	public Interactable fetchInteractable(Vector<? extends Interactable> list, String srchStr, boolean exactOnly)
-	{ return fetchInteractable((Interactable[])list.toArray(new Interactable[0]), srchStr, exactOnly); }
-	protected boolean thingCheck(Vector<Interactable> V, Interactable thisThang, String srchStr, boolean allFlag, boolean exact, int maxDepth, int[] numLeft)
+	{ return fetchInteractable((Interactable[])list.toArray(Interactable.dummyInteractableArray), srchStr, exactOnly); }
+	public Interactable fetchInteractable(Iterator<? extends Interactable> list, String srchStr, boolean exactOnly)
+	{ return fetchInteractable((Interactable[])CMParms.toArrayList(list).toArray(Interactable.dummyInteractableArray), srchStr, exactOnly); }
+	protected boolean thingCheck(Vector<Interactable> V, Interactable thisThang, EnglishParsing.StringFlags flags, boolean exact, int maxDepth)
 	{
 		if(exact)
 		{
-			if((thisThang.ID().equalsIgnoreCase(srchStr)||thisThang.name().equalsIgnoreCase(srchStr))
-				&&((!allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0))))
+			if((thisThang.ID().equalsIgnoreCase(flags.srchStr)||thisThang.name().equalsIgnoreCase(flags.srchStr))
+				&&((!flags.allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0))))
 			{
 				V.add(thisThang);
-				if((--numLeft[0])<=0) return true;
+				if((--flags.occurrance)<=0) return true;
 			}
 		}
 		else
 		{
-			if(containsString(thisThang.name(),srchStr)
-			   &&((!allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0))))
+			if(containsString(thisThang.name(),flags.srchStr)
+			   &&((!flags.allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0))))
 			{
 				V.add(thisThang);
-				if((--numLeft[0])<=0) return true;
+				if((--flags.occurrance)<=0) return true;
 			}
 		}
 		//NOTE: Not sure if this line is a good idea!
 		if((thisThang instanceof Body)&&(((Body)thisThang).mob()!=null))
-			if(thingCheck(V, ((Body)thisThang).mob(), srchStr, allFlag, exact, 0, numLeft))
+			if(thingCheck(V, ((Body)thisThang).mob(), flags, exact, 0))
 				return true;
 		if(maxDepth>0)
 		{
 			ItemCollection col=ItemCollection.O.getFrom(thisThang);
 			if(col!=null)
-				if(thingArrayCheck(V, (Item[])col.allItems().toArray(new Item[0]), srchStr, allFlag, exact, maxDepth-1, numLeft))
+				if(thingArrayCheck(V, col.allItems(), flags, exact, maxDepth-1))
 					return true;
 			if(thisThang instanceof Room)
 			{
@@ -497,66 +584,74 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 				for(int i=0;i<R.numExits();i++)
 				{
 					Exit E=R.getExit(i);
-					if((E!=null)&&(thingCheck(V, E, srchStr, allFlag, exact, maxDepth-1, numLeft)))
+					if((E!=null)&&(thingCheck(V, E, flags, exact, maxDepth-1)))
 						return true;
 				}
 			}
 		}
 		return false;
 	}
-	protected boolean thingArrayCheck(Vector<Interactable> V, Interactable[] stuff, String srchStr, boolean allFlag, boolean exact, int maxDepth, int[] numLeft)
+	protected boolean thingArrayCheck(Vector<Interactable> V, Interactable[] stuff, EnglishParsing.StringFlags flags, boolean exact, int maxDepth)
 	{
 		for(Interactable I : stuff)
 		{
 			if(I==null) continue;
-			if(thingCheck(V, I, srchStr, allFlag, exact, maxDepth, numLeft)) return true;
+			if(thingCheck(V, I, flags, exact, maxDepth)) return true;
 		}
+		return false;
+	}
+	protected boolean thingArrayCheck(Vector<Interactable> V, Iterator<? extends Interactable> stuff, EnglishParsing.StringFlags flags, boolean exact, int maxDepth)
+	{
+		while(stuff.hasNext())
+			if(thingCheck(V, stuff.next(), flags, exact, maxDepth)) return true;
 		return false;
 	}
 	public Vector<Interactable> fetchInteractables(String srchStr, boolean exactOnly, int maxDepth, int toFind, Object... list)
 	{
 		Vector<Interactable> V=new Vector();
-		Object[] flags=fetchFlags(srchStr);
+		EnglishParsing.StringFlags flags=fetchFlags(srchStr);
 		if(flags==null) return null;
-		srchStr=(String)flags[FLAG_STR];
-		boolean allFlag=((Boolean)flags[FLAG_ALL]).booleanValue();
-		int[] numLeft={toFind};
-		if(srchStr.startsWith("$")) srchStr=srchStr.substring(1);
-		if(srchStr.endsWith("$")) srchStr=srchStr.substring(0,srchStr.length()-1);
+		//int toSkip=flags.occurance;
+		flags.occurrance=toFind;	//It wasn't used at all before so... hmm.
+		//if(srchStr.startsWith("$")) srchStr=srchStr.substring(1);
+		//if(srchStr.endsWith("$")) srchStr=srchStr.substring(0,srchStr.length()-1);
 		for(Object O : list)
 		{
 			if(O instanceof Interactable)
-				{ if(thingCheck(V, (Interactable)O, srchStr, allFlag, exactOnly, maxDepth, numLeft)) return V; }
-			else if((maxDepth>0)&&(O instanceof ItemCollection))
-				{ if(thingArrayCheck(V, (Interactable[])((ItemCollection)O).allItems().toArray(new Interactable[0]), srchStr, allFlag, exactOnly, maxDepth-1, numLeft)) return V; }
+				{ if(thingCheck(V, (Interactable)O, flags, exactOnly, maxDepth)) return V; }
+			if((maxDepth>0)&&(O instanceof ItemCollection))
+				{ if(thingArrayCheck(V, ((ItemCollection)O).allItems(), flags, exactOnly, maxDepth-1)) return V; }
 			else if((maxDepth>0)&&(O instanceof ItemCollection.ItemHolder))
-				{ if(thingArrayCheck(V, (Interactable[])((ItemCollection.ItemHolder)O).getItemCollection().allItems().toArray(new Interactable[0]), srchStr, allFlag, exactOnly, maxDepth-1, numLeft)) return V; }
+				{ if(thingArrayCheck(V, ((ItemCollection.ItemHolder)O).getItemCollection().allItems(), flags, exactOnly, maxDepth-1)) return V; }
 			else if(O instanceof Vector)
-				{ if(thingArrayCheck(V, (Interactable[])((Vector)O).toArray(new Interactable[0]), srchStr, allFlag, exactOnly, maxDepth, numLeft)) return V; }
+				{ if(thingArrayCheck(V, (Interactable[])((Vector)O).toArray(Interactable.dummyInteractableArray), flags, exactOnly, maxDepth)) return V; }
 		}
+		/*for(toSkip-=2;toSkip>=0;toSkip--)
+			V.remove(toSkip);*/
 		return V;
 	}
 	public Interactable fetchInteractable(String srchStr, boolean exactOnly, int maxDepth, Object... list)
 	{
-		Object[] flags=fetchFlags(srchStr);
+		EnglishParsing.StringFlags flags=fetchFlags(srchStr);
 		if(flags==null) return null;
 
-		srchStr=(String)flags[FLAG_STR];
-		int[] myOccurrance={((Integer)flags[FLAG_DOT]).intValue()};
-		boolean allFlag=((Boolean)flags[FLAG_ALL]).booleanValue();
+		//srchStr=(String)flags[FLAG_STR];
+		//int[] myOccurrance={((Integer)flags[FLAG_DOT]).intValue()};
+		//boolean allFlag=((Boolean)flags[FLAG_ALL]).booleanValue();
 		Interactable thisThang=null;
-		if(srchStr.startsWith("$")) srchStr=srchStr.substring(1);
-		if(srchStr.endsWith("$")) srchStr=srchStr.substring(0,srchStr.length()-1);
+		//if(srchStr.startsWith("$")) srchStr=srchStr.substring(1);
+		//if(srchStr.endsWith("$")) srchStr=srchStr.substring(0,srchStr.length()-1);
 		for(Object O : list)
 		{
 			if(O instanceof Interactable)
-				thisThang=thingCheck((Interactable)O, srchStr, allFlag, exactOnly, myOccurrance, maxDepth);
-			else if((maxDepth>0)&&(O instanceof ItemCollection))
-				thisThang=thingArrayCheck((Interactable[])((ItemCollection)O).allItems().toArray(new Interactable[0]), srchStr, allFlag, exactOnly, myOccurrance, maxDepth-1);
+				thisThang=thingCheck((Interactable)O, flags, exactOnly, maxDepth);
+			if(thisThang!=null) return thisThang;
+			if((maxDepth>0)&&(O instanceof ItemCollection))
+				thisThang=thingArrayCheck(((ItemCollection)O).allItems(), flags, exactOnly, maxDepth-1);
 			else if((maxDepth>0)&&(O instanceof ItemCollection.ItemHolder))
-				thisThang=thingArrayCheck((Interactable[])((ItemCollection.ItemHolder)O).getItemCollection().allItems().toArray(new Interactable[0]), srchStr, allFlag, exactOnly, myOccurrance, maxDepth-1);
+				thisThang=thingArrayCheck(((ItemCollection.ItemHolder)O).getItemCollection().allItems(), flags, exactOnly, maxDepth-1);
 			else if(O instanceof Vector)
-				thisThang=thingArrayCheck((Interactable[])((Vector)O).toArray(new Interactable[0]), srchStr, allFlag, exactOnly, myOccurrance, maxDepth);
+				thisThang=thingArrayCheck((Interactable[])((Vector)O).toArray(Interactable.dummyInteractableArray), flags, exactOnly, maxDepth);
 			if(thisThang!=null) return thisThang;
 		}
 		return null;
@@ -568,32 +663,32 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 		else
 			return (containsString(thing.name(),name));
 	}
-	protected Interactable thingCheck(Interactable thisThang, String srchStr, boolean allFlag, boolean exact, int[] myOccurrance, int maxDepth)
+	protected Interactable thingCheck(Interactable thisThang, EnglishParsing.StringFlags flags, boolean exact, int maxDepth)
 	{
 		if(exact)
 		{
-			if(thisThang.ID().equalsIgnoreCase(srchStr)||thisThang.name().equalsIgnoreCase(srchStr))
-				if((!allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0)))
-					if((--myOccurrance[0])<=0)
+			if(thisThang.ID().equalsIgnoreCase(flags.srchStr)||thisThang.name().equalsIgnoreCase(flags.srchStr))
+				if((!flags.allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0)))
+					if((--flags.occurrance)<=0)
 						return thisThang;
 		}
 		else
 		{
-			if(containsString(thisThang.name(),srchStr)
-			   &&((!allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0))))
-				if((--myOccurrance[0])<=0)
+			if(containsString(thisThang.name(),flags.srchStr)
+			   &&((!flags.allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0))))
+				if((--flags.occurrance)<=0)
 					return thisThang;
 		}
 		//NOTE: Not sure if this line is a good idea! Will check mobs instead of just bodys, but not mobs inventories
 		if((thisThang instanceof Body)&&(((Body)thisThang).mob()!=null))
-			return thingCheck(((Body)thisThang).mob(), srchStr, allFlag, exact, myOccurrance, 0);
+			return thingCheck(((Body)thisThang).mob(), flags, exact, 0);
 		if(maxDepth>0)
 		{
 			Interactable found=null;
 			ItemCollection col=ItemCollection.O.getFrom(thisThang);
 			if(col!=null)
 			{
-				found=thingArrayCheck((Item[])col.allItems().toArray(new Item[0]), srchStr, allFlag, exact, myOccurrance, maxDepth-1);
+				found=thingArrayCheck(col.allItems(), flags, exact, maxDepth-1);
 				if(found!=null) return found;
 			}
 			if(thisThang instanceof Room)
@@ -602,223 +697,113 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 				for(int i=0;i<R.numExits();i++)
 				{
 					Exit E=R.getExit(i);
-					if(E!=null) found=thingCheck(E, srchStr, allFlag, exact, myOccurrance, maxDepth-1);
+					if(E!=null) found=thingCheck(E, flags, exact, maxDepth-1);
 					if(found!=null) return found;
 				}
 			}
 		}
 		return null;
 	}
-	protected Interactable thingArrayCheck(Interactable[] stuff, String srchStr, boolean allFlag, boolean exact, int[] myOccurrance, int maxDepth)
+	protected Interactable thingArrayCheck(Interactable[] stuff, EnglishParsing.StringFlags flags, boolean exact, int maxDepth)
 	{
 		Interactable thing=null;
 		for(Interactable I : stuff)
 		{
 			if(I==null) continue;
-			if((thing=thingCheck(I, srchStr, allFlag, exact, myOccurrance, maxDepth))!=null)
+			if((thing=thingCheck(I, flags, exact, maxDepth))!=null)
 				break;
 		}
 		return thing;
 	}
-
-	public Vector<Interactable> fetchInteractables(Vector<? extends Interactable> list, String srchStr, boolean exactOnly)
+	protected Interactable thingArrayCheck(Iterator<? extends Interactable> stuff, EnglishParsing.StringFlags flags, boolean exact, int maxDepth)
 	{
-		Object[] flags=fetchFlags(srchStr);
-		Vector matches=new Vector(1);
+		Interactable thing=null;
+		while(stuff.hasNext())
+			if((thing=thingCheck(stuff.next(), flags, exact, maxDepth))!=null)
+				break;
+		return thing;
+	}
+
+	//Probably unused now
+	//FUTURE PLANS: Make this sort of code have an extra parameter for a check-sort-of-class that may do additional checks
+	//Also, extend EnglishParsing.StringFlags to have seperate skipXOccurance and numberToFind
+	public Vector<Interactable> fetchInteractables(Vector<? extends Interactable> list, String srchStr, boolean exactOnly) {
+		return fetchInteractables((Interactable[])list.toArray(Interactable.dummyInteractableArray), srchStr, exactOnly); }
+	public Vector<Interactable> fetchInteractables(Iterator<? extends Interactable> list, String srchStr, boolean exactOnly) {
+		return fetchInteractables((Interactable[])CMParms.toArrayList(list).toArray(Interactable.dummyInteractableArray), srchStr, exactOnly); }
+	public Vector<Interactable> fetchInteractables(Interactable[] list, String srchStr, boolean exactOnly)
+	{
+		EnglishParsing.StringFlags flags=fetchFlags(srchStr);
+		Vector<Interactable> matches=new Vector(1);
 		if(flags==null) return matches;
 		
-		srchStr=(String)flags[FLAG_STR];
-		int myOccurrance=((Integer)flags[FLAG_DOT]).intValue();
-		boolean allFlag=((Boolean)flags[FLAG_ALL]).booleanValue();
-		Interactable thisThang=null;
 		if(exactOnly)
 		{
-			if(srchStr.startsWith("$")) srchStr=srchStr.substring(1);
-			if(srchStr.endsWith("$")) srchStr=srchStr.substring(0,srchStr.length()-1);
-			try
-			{
-				for(int i=0;i<list.size();i++)
-				{
-					thisThang=list.elementAt(i);
-					if(thisThang.ID().equalsIgnoreCase(srchStr)
-					   ||thisThang.name().equalsIgnoreCase(srchStr))
-						if((!allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0)))
-							if((--myOccurrance)<=0)
-								matches.addElement(thisThang);
-				}
-			}
-			catch(java.lang.ArrayIndexOutOfBoundsException x){}
+			for(Interactable thisThang : list)
+				if(thisThang.ID().equalsIgnoreCase(flags.srchStr)
+				   ||thisThang.name().equalsIgnoreCase(flags.srchStr))
+					if((!flags.allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0)))
+						if((--flags.occurrance)<=0)
+							matches.add(thisThang);
 		}
 		else
 		{
-			myOccurrance=((Integer)flags[FLAG_DOT]).intValue();
-			try
-			{
-				for(int i=0;i<list.size();i++)
-				{
-					thisThang=list.elementAt(i);
-					if(containsString(thisThang.name(),srchStr)
-					   &&((!allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0))))
-						if((--myOccurrance)<=0)
-							matches.addElement(thisThang);
-				}
-			}
-			catch(java.lang.ArrayIndexOutOfBoundsException x){}
+			int oldOccurrance=flags.occurrance;
+			for(Interactable thisThang : list)
+				if(containsString(thisThang.name(),flags.srchStr)
+				   &&((!flags.allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0))))
+					if((--flags.occurrance)<=0)
+						matches.add(thisThang);
 			if(matches.size()==0)
 			{
-				myOccurrance=((Integer)flags[FLAG_DOT]).intValue();
-				try
-				{
-					for(int i=0;i<list.size();i++)
-					{
-						thisThang=list.elementAt(i);
-						if((containsString(thisThang.displayText(),srchStr)
-							||((thisThang instanceof MOB)&&containsString(((MOB)thisThang).genericName(),srchStr))))
-								if((--myOccurrance)<=0)
-									matches.addElement(thisThang);
-					}
-				}
-				catch(java.lang.ArrayIndexOutOfBoundsException x){}
+				flags.occurrance=oldOccurrance;
+				for(Interactable thisThang : list)
+					if((containsString(thisThang.displayText(),flags.srchStr)
+						||((thisThang instanceof MOB)&&containsString(((MOB)thisThang).genericName(),flags.srchStr))))
+							if((--flags.occurrance)<=0)
+								matches.add(thisThang);
 			}
 		}
 		return matches;
 	}
-	public int getContextNumber(Object[] list, Interactable E){ return getContextNumber(CMParms.makeVector(list),E);}
-	public int getContextNumber(Vector<? extends Interactable> list, Interactable E)
-	{
-		if(list==null) return 0;
-		Vector<? extends Interactable> V=(Vector)list.clone();
-		int context=1;
-		for(int v=0;v<V.size();v++)
-			if(V.elementAt(v).name().equalsIgnoreCase(E.name()))
-			{
-				if(V.elementAt(v)==E)
-					return context<2?0:context;
-				if((!(V.elementAt(v) instanceof Item))
-				||(!(E instanceof Item))
-				||(((Item)E).container()==((Item)V.elementAt(v)).container()))
-					context++;
-			}
-		return -1;
-	}
-	public int getContextSameNumber(Object[] list, Interactable E){ return getContextSameNumber(CMParms.makeVector(list),E);}
-	public int getContextSameNumber(Vector<? extends Interactable> list, Interactable E)
-	{
-		if(list==null) return 0;
-		Vector<? extends Interactable> V=(Vector)list.clone();
-		int context=1;
-		for(int v=0;v<V.size();v++)
-			if(V.elementAt(v).name().equalsIgnoreCase(E.name()))
-			{
-				if(E.sameAs(V.elementAt(v)))
-					return context<2?0:context;
-				if((!(V.elementAt(v) instanceof Item))
-				||(!(E instanceof Item))
-				||(((Item)E).container()==((Item)V.elementAt(v)).container()))
-					context++;
-			}
-		return -1;
-	}
-	public String getContextName(Object[] list, Interactable E){ return getContextName(CMParms.makeVector(list),E);}
-	public String getContextName(Vector<? extends Interactable> list, Interactable E)
-	{
-		if(list==null) return E.name();
-		int number=getContextNumber(list,E);
-		if(number<0) return null;
-		if(number<2) return E.name();
-		return E.name()+"."+number;
-	}
-
-	public String getContextSameName(Object[] list, Interactable E){ return getContextName(CMParms.makeVector(list),E);}
-	public String getContextSameName(Vector list, Interactable E)
-	{
-		if(list==null) return E.name();
-		int number=getContextSameNumber(list,E);
-		if(number<0) return null;
-		if(number<2) return E.name();
-		return E.name()+"."+number;
-	}
-
+	
 	public Interactable fetchInteractable(Interactable[] list, String srchStr, boolean exactOnly)
 	{
-		Object[] flags=fetchFlags(srchStr);
+		EnglishParsing.StringFlags flags=fetchFlags(srchStr);
 		if(flags==null) return null;
 
-		srchStr=(String)flags[FLAG_STR];
-		int myOccurrance=((Integer)flags[FLAG_DOT]).intValue();
-		boolean allFlag=((Boolean)flags[FLAG_ALL]).booleanValue();
+		//srchStr=(String)flags[FLAG_STR];
+		//int myOccurrance=((Integer)flags[FLAG_DOT]).intValue();
+		//boolean allFlag=((Boolean)flags[FLAG_ALL]).booleanValue();
 		if(exactOnly)
 		{
-			if(srchStr.startsWith("$")) srchStr=srchStr.substring(1);
-			if(srchStr.endsWith("$")) srchStr=srchStr.substring(0,srchStr.length()-1);
+			//if(srchStr.startsWith("$")) srchStr=srchStr.substring(1);
+			//if(srchStr.endsWith("$")) srchStr=srchStr.substring(0,srchStr.length()-1);
 			for(Interactable thisThang : list)
 				if(   (thisThang!=null)
-					&&(thisThang.ID().equalsIgnoreCase(srchStr)||thisThang.name().equalsIgnoreCase(srchStr))
-					&&((!allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0)))
-					&&((--myOccurrance)<=0) )
+					&&(thisThang.ID().equalsIgnoreCase(flags.srchStr)||thisThang.name().equalsIgnoreCase(flags.srchStr))
+					&&((!flags.allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0)))
+					&&((--flags.occurrance)<=0) )
 					return thisThang;
 		}
 		else
 		{
+			int oldOccurrance=flags.occurrance;
 			for(Interactable thisThang : list)
 				if(   (thisThang!=null)
-					&&(containsString(thisThang.name(),srchStr))
-					&&((!allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0)))
-					&&((--myOccurrance)<=0) )
+					&&(containsString(thisThang.name(),flags.srchStr))
+					&&((!flags.allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0)))
+					&&((--flags.occurrance)<=0) )
 					return thisThang;
-			myOccurrance=((Integer)flags[FLAG_DOT]).intValue();
+			flags.occurrance=oldOccurrance;
 			for(Interactable thisThang : list)
 				if(   (thisThang!=null)
-					&&((containsString(thisThang.displayText(),srchStr))
-						||((thisThang instanceof MOB)&&containsString(((MOB)thisThang).genericName(),srchStr)))
-					&&((--myOccurrance)<=0) )
+					&&((containsString(thisThang.displayText(),flags.srchStr))
+						||((thisThang instanceof MOB)&&containsString(((MOB)thisThang).genericName(),flags.srchStr)))
+					&&((--flags.occurrance)<=0) )
 					return thisThang;
 		}
 		return null;
-	}
-
-	//TODO: In general this routine should be improved, lots of potential problems from it
-	public Vector fetchItemList(Interactable from,
-								MOB mob,
-								Item container,
-								Vector commands,
-								boolean visionMatters)	//Currently this is ignored!
-	{
-		int addendum=1;
-		String addendumStr="";
-		Vector V=new Vector();
-
-		int maxToItem=Integer.MAX_VALUE;
-		if((commands.size()>1)
-		&&(CMath.s_int((String)commands.firstElement())>0))
-		{
-			maxToItem=CMath.s_int((String)commands.firstElement());
-			commands.setElementAt("all",0);
-		}
-
-		String name=CMParms.combine(commands,0);
-		boolean allFlag=(commands.size()>0)?((String)commands.elementAt(0)).equalsIgnoreCase("all"):false;
-		if(name.toUpperCase().startsWith("ALL.")){ allFlag=true; name="ALL "+name.substring(4);}
-		if(name.toUpperCase().endsWith(".ALL")){ allFlag=true; name="ALL "+name.substring(0,name.length()-4);}
-		boolean doBugFix = true;
-		while(doBugFix || ((allFlag)&&(addendum<=maxToItem)))
-		{
-			doBugFix=false;
-			Interactable item=null;
-			if(from instanceof MOB)
-				item=((MOB)from).fetchInventory(name+addendumStr);
-			else
-			if(from instanceof Room)	//TODO: This should check room exits too.
-				item=((Room)from).fetchItem(name+addendumStr);
-			if((item!=null)
-			&&(item instanceof Item)
-//			&&((!visionMatters)||(CMLib.flags().canBeSeenBy(item.getEnvObject(),mob)))
-			&&(!V.contains(item)))
-				V.addElement(item);
-			if(item==null) break;
-			addendumStr="."+(++addendum);
-		}
-		return V;
 	}
 
 	public int getPartitionIndex(Vector<String> commands, String partitionName)
@@ -842,6 +827,77 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 		return defaultTo;
 	}
 
+	public String returnTime(long millis, long ticks)
+	{
+		String avg="";
+		if(ticks>0)
+			avg=", Average="+(millis/ticks)+"ms";
+		if(millis<1000) return millis+"ms"+avg;
+		long seconds=millis/1000;
+		millis-=(seconds*1000);
+		if(seconds<60) return seconds+"s "+millis+"ms"+avg;
+		long minutes=seconds/60;
+		seconds-=(minutes*60);
+		if(minutes<60) return minutes+"m "+seconds+"s "+millis+"ms"+avg;
+		long hours=minutes/60;
+		minutes-=(hours*60);
+		if(hours<24) return hours+"h "+minutes+"m "+seconds+"s "+millis+"ms"+avg;
+		long days=hours/24;
+		hours-=(days*24);
+		return days+"d "+hours+"h "+minutes+"m "+seconds+"s "+millis+"ms"+avg;
+	}
+
+	//Return max_value if not specified. Return a value + command "all" if specified. Return -1 if fail.
+	//TODO: Reprogram this and make it sensible.
+	public int calculateMaxToGive(MOB mob, Vector<String> commands, Interactable checkWhat, boolean getOnly)	//boolean breakPackages, 
+	{
+		int maxToGive=Integer.MAX_VALUE;
+		if((commands.size()>1)
+//		&&(numPossibleGold(mob,CMParms.combine(commands,0))==0)
+		&&(CMath.s_int(commands.firstElement())>0))
+		{
+			maxToGive=CMath.s_int(commands.firstElement());
+			commands.add(0, "all");
+			/*if(breakPackages)
+			{
+				String packCheckName=CMParms.combine(commands,1);
+				Interactable fromWhat=null;
+				if(checkWhat instanceof MOB)
+					fromWhat=mob.fetchInventory(packCheckName);
+				else
+				if(checkWhat instanceof Room)
+					fromWhat=((Room)checkWhat).fetchItem(packCheckName);
+				if(fromWhat instanceof Item)
+				{
+					int max=3000;
+					if(maxToGive>max)
+					{
+						mob.tell("You can only handle "+max+" at a time.");
+						return -1;
+					}
+					/*Interactable toWhat=CMLib.materials().unbundle((Item)fromWhat,maxToGive);
+					if(getOnly&&mob.isMine(fromWhat)&&mob.isMine(toWhat))
+					{
+						mob.tell("Ok");
+						return -1;
+					}
+					else
+					if(commands.size()==1)
+						commands.addElement(toWhat.name());
+					else
+					{
+						Object o=commands.firstElement();
+						commands.clear();
+						commands.addElement(o);
+						commands.addElement(toWhat.name());
+					} //*
+				}
+			}*/
+		}
+		return maxToGive;
+	}
+
+/*
 	public Vector<Container> possibleContainers(MOB mob, Vector commands, boolean withContentOnly)
 	{
 		Vector<Container> V=new Vector();
@@ -941,78 +997,105 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 		}
 		return null;
 	}
-
-	public String returnTime(long millis, long ticks)
+	//TODO: In general this routine should be improved, lots of potential problems from it
+	public Vector fetchItemList(Interactable from,
+								MOB mob,
+								Item container,
+								Vector commands,
+								boolean visionMatters)	//Currently this is ignored!
 	{
-		String avg="";
-		if(ticks>0)
-			avg=", Average="+(millis/ticks)+"ms";
-		if(millis<1000) return millis+"ms"+avg;
-		long seconds=millis/1000;
-		millis-=(seconds*1000);
-		if(seconds<60) return seconds+"s "+millis+"ms"+avg;
-		long minutes=seconds/60;
-		seconds-=(minutes*60);
-		if(minutes<60) return minutes+"m "+seconds+"s "+millis+"ms"+avg;
-		long hours=minutes/60;
-		minutes-=(hours*60);
-		if(hours<24) return hours+"h "+minutes+"m "+seconds+"s "+millis+"ms"+avg;
-		long days=hours/24;
-		hours-=(days*24);
-		return days+"d "+hours+"h "+minutes+"m "+seconds+"s "+millis+"ms"+avg;
-	}
+		int addendum=1;
+		String addendumStr="";
+		Vector V=new Vector();
 
-	//Return max_value if not specified. Return a value + command "all" if specified. Return -1 if fail.
-	//TODO: Reprogram this and make it sensible.
-	public int calculateMaxToGive(MOB mob, Vector commands, boolean breakPackages, Interactable checkWhat, boolean getOnly)
-	{
-		int maxToGive=Integer.MAX_VALUE;
+		int maxToItem=Integer.MAX_VALUE;
 		if((commands.size()>1)
-//		&&(numPossibleGold(mob,CMParms.combine(commands,0))==0)
 		&&(CMath.s_int((String)commands.firstElement())>0))
 		{
-			maxToGive=CMath.s_int((String)commands.firstElement());
+			maxToItem=CMath.s_int((String)commands.firstElement());
 			commands.setElementAt("all",0);
-			if(breakPackages)
-			{
-				String packCheckName=CMParms.combine(commands,1);
-				Interactable fromWhat=null;
-				if(checkWhat instanceof MOB)
-					fromWhat=mob.fetchInventory(packCheckName);
-				else
-				if(checkWhat instanceof Room)
-					fromWhat=((Room)checkWhat).fetchItem(packCheckName);
-				if(fromWhat instanceof Item)
-				{
-					int max=3000;
-					if(maxToGive>max)
-					{
-						mob.tell("You can only handle "+max+" at a time.");
-						return -1;
-					}
-/*					Interactable toWhat=CMLib.materials().unbundle((Item)fromWhat,maxToGive);
-					if(getOnly&&mob.isMine(fromWhat)&&mob.isMine(toWhat))
-					{
-						mob.tell("Ok");
-						return -1;
-					}
-					else
-					if(commands.size()==1)
-						commands.addElement(toWhat.name());
-					else
-					{
-						Object o=commands.firstElement();
-						commands.clear();
-						commands.addElement(o);
-						commands.addElement(toWhat.name());
-					}
-*/				}
-			}
 		}
-		return maxToGive;
+
+		String name=CMParms.combine(commands,0);
+		boolean allFlag=(commands.size()>0)?((String)commands.elementAt(0)).equalsIgnoreCase("all"):false;
+		if(name.toUpperCase().startsWith("ALL.")){ allFlag=true; name="ALL "+name.substring(4);}
+		if(name.toUpperCase().endsWith(".ALL")){ allFlag=true; name="ALL "+name.substring(0,name.length()-4);}
+		boolean doBugFix = true;
+		while(doBugFix || ((allFlag)&&(addendum<=maxToItem)))
+		{
+			doBugFix=false;
+			Interactable item=null;
+			if(from instanceof MOB)
+				item=((MOB)from).fetchInventory(name+addendumStr);
+			else
+			if(from instanceof Room)	//TODO: This should check room exits too.
+				item=((Room)from).fetchItem(name+addendumStr);
+			if((item!=null)
+			&&(item instanceof Item)
+//			&&((!visionMatters)||(CMLib.flags().canBeSeenBy(item.getEnvObject(),mob)))
+			&&(!V.contains(item)))
+				V.addElement(item);
+			if(item==null) break;
+			addendumStr="."+(++addendum);
+		}
+		return V;
+	}
+	public int getContextNumber(Object[] list, Interactable E){ return getContextNumber(CMParms.makeVector(list),E);}
+	public int getContextNumber(Vector<? extends Interactable> list, Interactable E)
+	{
+		if(list==null) return 0;
+		Vector<? extends Interactable> V=(Vector)list.clone();
+		int context=1;
+		for(int v=0;v<V.size();v++)
+			if(V.elementAt(v).name().equalsIgnoreCase(E.name()))
+			{
+				if(V.elementAt(v)==E)
+					return context<2?0:context;
+				if((!(V.elementAt(v) instanceof Item))
+				||(!(E instanceof Item))
+				||(((Item)E).container()==((Item)V.elementAt(v)).container()))
+					context++;
+			}
+		return -1;
+	}
+	public int getContextSameNumber(Object[] list, Interactable E){ return getContextSameNumber(CMParms.makeVector(list),E);}
+	public int getContextSameNumber(Vector<? extends Interactable> list, Interactable E)
+	{
+		if(list==null) return 0;
+		Vector<? extends Interactable> V=(Vector)list.clone();
+		int context=1;
+		for(int v=0;v<V.size();v++)
+			if(V.elementAt(v).name().equalsIgnoreCase(E.name()))
+			{
+				if(E.sameAs(V.elementAt(v)))
+					return context<2?0:context;
+				if((!(V.elementAt(v) instanceof Item))
+				||(!(E instanceof Item))
+				||(((Item)E).container()==((Item)V.elementAt(v)).container()))
+					context++;
+			}
+		return -1;
+	}
+	public String getContextName(Object[] list, Interactable E){ return getContextName(CMParms.makeVector(list),E);}
+	public String getContextName(Vector<? extends Interactable> list, Interactable E)
+	{
+		if(list==null) return E.name();
+		int number=getContextNumber(list,E);
+		if(number<0) return null;
+		if(number<2) return E.name();
+		return E.name()+"."+number;
 	}
 
-/*
+	public String getContextSameName(Object[] list, Interactable E){ return getContextName(CMParms.makeVector(list),E);}
+	public String getContextSameName(Vector list, Interactable E)
+	{
+		if(list==null) return E.name();
+		int number=getContextSameNumber(list,E);
+		if(number<0) return null;
+		if(number<2) return E.name();
+		return E.name()+"."+number;
+	}
+
 	public boolean evokedBy(Ability thisAbility, String thisWord)
 	{
 		for(int i=0;i<thisAbility.triggerStrings().length;i++)
@@ -1026,7 +1109,7 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 	{
 		int x=thisAbility.name().indexOf(" ");
 		if(x>=0)
-			return CMStrings.replaceAll(thisAbility.name()," ","");
+			return thisAbility.name().replace(" ","");
 		return thisAbility.Name();
 	}
 	public boolean evokedBy(Ability thisAbility, String thisWord, String secondWord)
@@ -1332,7 +1415,7 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 					if(((Coins)I).getNumberOfCoins()<=gold)
 						return I;
 					((Coins)I).setNumberOfCoins(((Coins)I).getNumberOfCoins()-gold);
-					Coins C=(Coins)CMClass.Objects.ITEM.getNew("StdCoins");
+					Coins C=(Coins)CMClass.ITEM.getNew("StdCoins");
 					C.setCurrency(((Coins)I).getCurrency());
 					C.setNumberOfCoins(gold);
 					C.setDenomination(((Coins)I).getDenomination());

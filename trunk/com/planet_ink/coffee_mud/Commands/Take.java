@@ -24,16 +24,13 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Take extends StdCommand
 {
-	public Take(){}
+	public Take(){access=new String[]{"TAKE"};}
 
-	private String[] access={"TAKE"};
-	public String[] getAccessWords(){return access;}
-	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,mob.location(),"ORDER")
-		||CMSecurity.isAllowed(mob,mob.location(),"CMDMOBS")
-		||CMSecurity.isAllowed(mob,mob.location(),"CMDROOMS");}
+	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,"ORDER")
+		||CMSecurity.isAllowed(mob,"CMDMOBS")
+		||CMSecurity.isAllowed(mob,"CMDROOMS");}
 	
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		if(commands.size()<3)
 		{
@@ -50,18 +47,18 @@ public class Take extends StdCommand
 			mob.tell("I don't see anyone called "+victimName+" here.");
 			return false;
 		}
-		if((!victim.isMonster())&&(!CMSecurity.isAllowedEverywhere(mob,"ORDER")))
+		if((!victim.isMonster())&&(!CMSecurity.isAllowed(mob,"ORDER")))
 		{
 			mob.tell(victim.name()+" is a player!");
 			return false;
 		}
 
-		int maxToGive=CMLib.english().calculateMaxToGive(mob,commands,true,victim,false);
+		int maxToGive=CMLib.english().calculateMaxToGive(mob,commands,victim,false);
 		if(maxToGive<0) return false;
 
 		String thingToGive=CMParms.combine(commands,0,partition);
 		Vector V=new Vector();
-		boolean allFlag=((String)commands.elementAt(0)).equalsIgnoreCase("all");
+		boolean allFlag=commands.elementAt(0).equalsIgnoreCase("all");
 		if(thingToGive.toUpperCase().startsWith("ALL.")){ allFlag=true; thingToGive="ALL "+thingToGive.substring(4);}
 		if(thingToGive.toUpperCase().endsWith(".ALL")){ allFlag=true; thingToGive="ALL "+thingToGive.substring(0,thingToGive.length()-4);}
 		if(allFlag)
@@ -77,9 +74,16 @@ public class Take extends StdCommand
 			}
 			//Random musings: If ALWAYS is truly always, it's somewhat plausible for an archon to pick themself up. This would be a horrible thing and so even always should have exceptions.
 			//Also it's possible to 'take Someguy from Someguy'. This is silly but probably ok.
-			for(Item I : (Item[])getThese.toArray(new Item[0]))
-				if(!R.doMessage(CMClass.getMsg(mob,I,null,EnumSet.of(CMMsg.MsgCode.GET,CMMsg.MsgCode.ALWAYS),"<S-NAME> take(s) <T-NAME> from "+victim.name()+".")))
+			for(Item I : (Item[])getThese.toArray(Item.dummyItemArray))
+			{
+				CMMsg msg=CMClass.getMsg(mob,I,null,EnumSet.of(CMMsg.MsgCode.GET,CMMsg.MsgCode.ALWAYS),"<S-NAME> take(s) <T-NAME> from "+victim.name()+".");
+				if(!R.doMessage(msg))
+				{
+					msg.returnMsg();
 					break;
+				}
+				msg.returnMsg();
+			}
 		}
 		else
 		{
@@ -89,9 +93,12 @@ public class Take extends StdCommand
 				mob.tell("You don't see '"+thingToGive+"' on "+victim.name()+".");
 				return false;
 			}
-			R.doMessage(CMClass.getMsg(mob,getThis,null,EnumSet.of(CMMsg.MsgCode.GET,CMMsg.MsgCode.ALWAYS),"<S-NAME> take(s) <T-NAME> from "+victim.name()+"."));
+			CMMsg msg=CMClass.getMsg(mob,getThis,null,EnumSet.of(CMMsg.MsgCode.GET,CMMsg.MsgCode.ALWAYS),"<S-NAME> take(s) <T-NAME> from "+victim.name()+".");
+			R.doMessage(msg);
+			msg.returnMsg();
 		}
 		return false;
 	}
+	public int commandType(MOB mob, String cmds){return CT_NON_ACTION;}
 	public boolean canBeOrdered(){return true;}
 }

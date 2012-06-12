@@ -24,7 +24,9 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public interface Room extends ItemCollection.ItemHolder, Interactable, CMSavable, CMModifiable //ContainableRoom will extend Item.
 {
-	public static class REMap
+	//public static final EnumSet<CMMsg.MsgCode> showHappensSet=EnumSet.of(CMMsg.MsgCode.SHOWHAPPEN);
+	public static Room[] dummyRoomArray=new Room[0];
+	public static class REMap implements CMObject
 	{
 		public final Room room;
 		public final Exit exit;
@@ -35,6 +37,11 @@ public interface Room extends ItemCollection.ItemHolder, Interactable, CMSavable
 				return (((REMap)O).exit==exit)&&(((REMap)O).room==room);
 			return false;
 		}
+		public String ID(){return "REMap";}
+		public CMObject newInstance(){return null;}
+		public CMObject copyOf(){return new REMap(room, exit);}
+		public void initializeClass(){}
+		public int compareTo(CMObject O){return -1;}
 	}
 	public enum Domain
 	{
@@ -82,6 +89,8 @@ public interface Room extends ItemCollection.ItemHolder, Interactable, CMSavable
 	public Room getExitDestination(Exit E);
 	public REMap getREMap(int i);
 	public REMap getREMap(String target);
+	//public REMap hasREMap(REMap M);
+	public Iterator<REMap> getAllExits();
 	public boolean changeExit(REMap M, Exit newE);
 	public boolean changeExit(REMap M, Room newR);
 	public boolean changeExit(REMap M, REMap newM);
@@ -89,22 +98,22 @@ public interface Room extends ItemCollection.ItemHolder, Interactable, CMSavable
 //	public int getExitIndex(Exit E, Room R);
 //	public void initExits();
 
+	public int getLock(long time);
+	public void returnLock();
+	
 	public boolean doMessage(CMMsg msg);
+	public boolean doAndReturnMsg(CMMsg msg);
 	public void send(CMMsg msg);
-	public void showHappens(EnumSet<CMMsg.MsgCode> allCode, Object like, String allMessage);
-	public boolean show(Object source,
+	public void show(Interactable like, String allMessage);
+	public void show(Interactable source,
 						Interactable target,
-						Object tool,
-						EnumSet<CMMsg.MsgCode> allCode,
+						CMObject tool,
 						String allMessage);
-	public boolean show(Object source,
+	public void show(Interactable source,
 						Interactable target,
-						Object tool,
-						EnumSet<CMMsg.MsgCode> srcCode,
+						CMObject tool,
 						String srcMessage,
-						EnumSet<CMMsg.MsgCode> tarCode,
 						String tarMessage,
-						EnumSet<CMMsg.MsgCode> othCode,
 						String othMessage);
 
 	public void bringHere(Item I, boolean andRiders);

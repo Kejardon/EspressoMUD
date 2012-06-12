@@ -25,12 +25,9 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class TickTock extends StdCommand
 {
-	public TickTock(){}
+	public TickTock(){access=new String[]{"TICKTOCK"};}
 
-	private String[] access={"TICKTOCK"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		String s=CMParms.combine(commands,1).toLowerCase();
 		try
@@ -44,9 +41,9 @@ public class TickTock extends StdCommand
 			}
 			else
 			{
-				for(Enumeration e=CMLib.libraries();e.hasMoreElements();)
+				for(Iterator<CMLibrary> e=CMLib.libraries();e.hasNext();)
 				{
-					CMLibrary lib=(CMLibrary)e.nextElement();
+					CMLibrary lib=e.next();
 					if((lib.getSupportThread()!=null)&&(s.equalsIgnoreCase(lib.getSupportThread().getName())))
 					{
 						if(lib instanceof Runnable)
@@ -67,7 +64,8 @@ public class TickTock extends StdCommand
 		
 		return false;
 	}
-	
+
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	public boolean canBeOrdered(){return true;}
-	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,mob.location(),"TICKTOCK");}
+	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,"TICKTOCK");}
 }

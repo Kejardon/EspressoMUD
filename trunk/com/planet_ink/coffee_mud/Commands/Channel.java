@@ -25,8 +25,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Channel extends StdCommand
 {
-	public Channel(){}
-	public static String[] access=null;
+	public Channel(){access=null;}
 	public String[] getAccessWords()
 	{
 		if(access!=null) return access;
@@ -34,9 +33,9 @@ public class Channel extends StdCommand
 		return access;
 	}
 
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
+/*
 		if((commands.size()>2)&&(commands.firstElement() instanceof Boolean))
 		{
 			boolean systemMsg=((Boolean)commands.firstElement()).booleanValue();
@@ -45,14 +44,14 @@ public class Channel extends StdCommand
 			CMLib.channels().reallyChannel(mob,channelName,message,systemMsg);
 			return true;
 		}
+*/
 		return channel(mob, commands, false);
 	}
 
-	public boolean channel(MOB mob, Vector commands, boolean systemMsg)
+	public boolean channel(MOB mob, Vector<String> commands, boolean systemMsg)
 	{
 		PlayerStats pstats=mob.playerStats();
-		String channelName=((String)commands.elementAt(0)).toUpperCase().trim();
-		commands.removeElementAt(0);
+		String channelName=commands.remove(0).toUpperCase().trim();
 		int channelInt=CMLib.channels().getChannelIndex(channelName);
 		int channelNum=CMLib.channels().getChannelCodeNumber(channelName);
 
@@ -68,13 +67,14 @@ public class Channel extends StdCommand
 			mob.tell(channelName+" what?");
 			return false;
 		}
-
+/*
 		for(int i=0;i<commands.size();i++)
 		{
-			String s=(String)commands.elementAt(i);
+			String s=commands.elementAt(i);
 			if(s.indexOf(" ")>=0)
 				commands.setElementAt("\""+s+"\"",i);
 		}
+*/
 		if(!CMLib.masking().maskCheck(CMLib.channels().getChannelMask(channelInt),mob,true))
 		{
 			mob.tell("This channel is not available to you.");
@@ -85,21 +85,19 @@ public class Channel extends StdCommand
 		
 		if((commands.size()==2)
 		&&(mob.session()!=null)
-		&&(((String)commands.firstElement()).equalsIgnoreCase("last"))
-		&&(CMath.isNumber((String)commands.lastElement())))
+		&&(commands.firstElement().equalsIgnoreCase("last"))
+		&&(CMath.isNumber(commands.lastElement())))
 		{
-			int num=CMath.s_int((String)commands.lastElement());
-			Vector que=CMLib.channels().getChannelQue(channelInt);
+			int num=CMath.s_int(commands.lastElement());
+			Vector<String> que=CMLib.channels().getChannelQue(channelInt);
 			boolean showedAny=false;
 			if(que.size()>0)
 			{
 				if(num>que.size()) num=que.size();
-				boolean areareq=flags.contains(ChannelsLibrary.ChannelFlag.SAMEAREA);
 				for(int i=que.size()-num;i<que.size();i++)
 				{
-					CMMsg msg=(CMMsg)que.elementAt(i);
-					MOB target=(msg.firstSource() instanceof MOB)?(MOB)msg.firstSource():null;
-					showedAny=CMLib.channels().channelTo(mob.session(),areareq,channelInt,msg,target)||showedAny;
+					String msg=que.get(i);
+					showedAny=CMLib.channels().channelTo(mob.session(),channelInt,msg)||showedAny;
 				}
 			}
 			if(!showedAny)
@@ -124,5 +122,7 @@ public class Channel extends StdCommand
 			CMLib.channels().reallyChannel(mob,channelName,CMParms.combine(commands,0),systemMsg);
 		return false;
 	}
+
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	public boolean canBeOrdered(){return true;}
 }

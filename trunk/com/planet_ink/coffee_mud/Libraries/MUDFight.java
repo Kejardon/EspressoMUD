@@ -9,11 +9,13 @@ import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 
 import java.util.*;
+import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -27,12 +29,6 @@ public class MUDFight extends StdLibrary implements CombatLibrary
 {
 	public String ID(){return "MUDFight";}
 
-	public boolean activate()
-	{
-		return true; 
-	}
-
-	public void propertiesLoaded() { activate(); }
 /*
 	public String lastStr="";
 	public long lastRes=0;
@@ -60,14 +56,14 @@ public class MUDFight extends StdLibrary implements CombatLibrary
 		CMMsg msg=null;
 		if(isKnockedOutUponDeath(deadM,killerM))
 			msg=CMClass.getMsg(deadM,null,killerM,
-					CMMsg.MSG_OK_VISUAL,"^f^*^<FIGHT^>!!!!!!!!!YOU ARE DEFEATED!!!!!!!!!!^</FIGHT^>^?^.\n\r"+msp,
+					CMMsg.MSG_OK_VISUAL,"^f^*^<FIGHT^>!!!!!!!!!YOU ARE DEFEATED!!!!!!!!!!^</FIGHT^>^?^.\r\n"+msp,
 					CMMsg.MSG_OK_VISUAL,null,
-					CMMsg.MSG_DEATH,"^F^<FIGHT^><S-NAME> is DEFEATED!!!^</FIGHT^>^?\n\r"+msp);
+					CMMsg.MSG_DEATH,"^F^<FIGHT^><S-NAME> is DEFEATED!!!^</FIGHT^>^?\r\n"+msp);
 		else
 			msg=CMClass.getMsg(deadM,null,killerM,
-				CMMsg.MSG_OK_VISUAL,"^f^*^<FIGHT^>!!!!!!!!!!!!!!YOU ARE DEAD!!!!!!!!!!!!!!^</FIGHT^>^?^.\n\r"+msp,
+				CMMsg.MSG_OK_VISUAL,"^f^*^<FIGHT^>!!!!!!!!!!!!!!YOU ARE DEAD!!!!!!!!!!!!!!^</FIGHT^>^?^.\r\n"+msp,
 				CMMsg.MSG_OK_VISUAL,null,
-				CMMsg.MSG_DEATH,"^F^<FIGHT^><S-NAME> is DEAD!!!^</FIGHT^>^?\n\r"+msp);
+				CMMsg.MSG_DEATH,"^F^<FIGHT^><S-NAME> is DEAD!!!^</FIGHT^>^?\r\n"+msp);
 		CMMsg msg2=CMClass.getMsg(deadM,null,killerM,
 			CMMsg.MSG_DEATH,null,
 			CMMsg.MSG_DEATH,null,
@@ -137,8 +133,8 @@ public class MUDFight extends StdLibrary implements CombatLibrary
 		if(replace>=0)
 		{
 			String hitWord=standardHitWord(damageType,damage);
-			hitWord=CMStrings.replaceAll(hitWord,"(","");
-			hitWord=CMStrings.replaceAll(hitWord,")","");
+			hitWord=hitWord.replace("(","");
+			hitWord=hitWord.replace(")","");
 			if(!CMProps.getVar(CMProps.SYSTEM_SHOWDAMAGE).equalsIgnoreCase("YES"))
 				return str.substring(0,replace)+hitWord+str.substring(replace+9);
 			return str.substring(0,replace)+hitWord+" ("+damage+")"+ str.substring(replace+9);
@@ -344,7 +340,7 @@ public class MUDFight extends StdLibrary implements CombatLibrary
 				s.setMob(target.soulMate());
 				target.soulMate().setSession(s);
 				target.setSession(null);
-				target.soulMate().tell("^HYour spirit has returned to your body...\n\r\n\r^N");
+				target.soulMate().tell("^HYour spirit has returned to your body...\r\n\r\n^N");
 				CMLib.commands().postLook(target.soulMate(),true);
 				target.setSoulMate(null);
 			}
@@ -458,7 +454,7 @@ public class MUDFight extends StdLibrary implements CombatLibrary
 			break;
 		}
 		if(!useExtendedMissString) return missDescs()[dex];
-		return CMStrings.replaceAll(missWeaponDescs()[dex],"<TOOLNAME>",weaponName)+CMProps.msp("missed.wav",20);
+		return missWeaponDescs()[dex].replace("<TOOLNAME>",weaponName)+CMProps.msp("missed.wav",20);
 	}
 
 
@@ -483,7 +479,7 @@ public class MUDFight extends StdLibrary implements CombatLibrary
 		int pct=(int)Math.round(Math.floor((CMath.div(mob.charStats().getPoints(CharStats.STAT_HITPOINTS),mob.charStats().getMaxPoints(CharStats.STAT_HITPOINTS)))*10));
 		if(pct<0) pct=0;
 		if(pct>=healthDescs().length) pct=healthDescs().length-1;
-		return CMStrings.replaceAll(healthDescs()[pct],"<MOB>",mob.displayName(viewer));
+		return healthDescs()[pct].replace("<MOB>",mob.displayName(viewer));
 	}
 
 	public void resistanceMsgs(CMMsg msg, MOB source, MOB target)

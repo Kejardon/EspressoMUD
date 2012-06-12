@@ -11,7 +11,10 @@ import com.planet_ink.coffee_mud.Items.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
+
 import java.util.*;
+import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -20,8 +23,102 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
+//TODO in general
 public interface ColorLibrary extends CMLibrary
 {
+	public static final String[] ASCI_COLORS={
+		"\033[22;49;30m","\033[22;49;31m","\033[22;49;32m","\033[22;49;33m",
+		"\033[22;49;34m","\033[22;49;35m","\033[22;49;36m","\033[22;49;37m",
+		"\033[1;49;30m","\033[1;49;31m","\033[1;49;32m","\033[1;49;33m",
+		"\033[1;49;34m","\033[1;49;35m","\033[1;49;36m","\033[1;49;37m",
+	};
+	public static final String[] xTermToANSI=new String[]{
+		"0","1","2","3","4","5","6","7","0;1","1;1","2;1","3;1","4;1","5;1","6;1","7;1",
+		"0",  "4",  "4",  "4",  "4",  "4",
+		"2",  "6",  "4;1","4;1","4;1","4;1",
+		"2",  "6",  "6",  "4;1","4;1","4;1",
+		"2",  "6",  "6",  "6",  "6",  "6",
+		"2",  "2;1","6",  "6",  "6",  "6",
+		"2;1","2;1","6;1","6;1","6;1","6;1",
+		"1",  "5",  "5",  "5",  "5",  "5",
+		"3",  "0;1","7",  "4;1","4;1","4;1",
+		"3",  "0;1","6",  "4;1","4;1","4;1",
+		"3",  "0;1","6",  "4;1","4;1","4;1",
+		"3",  "2;1","6;1","6;1","6;1","6;1",
+		"2;1","2;1","2;1","6;1","6;1","6;1",
+		"1",  "5",  "5",  "5",  "5",  "5",
+		"3",  "5",  "5",  "5",  "5",  "5",
+		"3",  "7",  "0;1","4;1","4;1","4;1",
+		"3",  "2;1","7",  "6;1","6;1","6;1",
+		"3",  "2;1","2;1","6;1","6;1","6;1",
+		"3",  "2;1","2;1","2;1","6;1","6;1",
+		"1",  "5",  "5",  "5",  "5",  "5",
+		"3",  "5",  "5",  "5",  "5",  "5",
+		"3",  "3",  "5",  "5",  "5",  "5",
+		"3",  "2;1","7",  "7",  "4;1","4;1",
+		"3",  "2;1","2;1","6;1","6;1","6;1",
+		"3;1","2;1","2;1","2;1","6;1","6;1",
+		"1",  "5",  "5",  "5",  "5",  "5",
+		"1",  "1;1","1;1","5",  "5",  "5",
+		"3",  "1;1","5",  "5",  "5",  "5",
+		"3",  "3",  "7",  "5;1","5;1","5;1",
+		"3",  "3",  "7",  "7",  "7",  "7",
+		"3;1","3;1","2;1","2;1","6;1","6;1",
+		"1",  "5;1","5;1","5;1","5;1","5;1",
+		"1",  "1;1","1;1","5;1","5;1","5;1",
+		"3",  "1;1","1;1","5;1","5;1","5;1",
+		"3",  "1;1","1;1","5;1","5;1","5;1",
+		"3;1","3;1","3;1","1;1","7;1","7;1",
+		"3;1","3;1","3;1","3;1","7;1","7;1",
+		"0","0","0","0","0","0","0;1","0;1","0;1","0;1","0;1","0;1",
+		"7","7","7","7","7","7","7;1","7;1","7;1","7;1","7;1","7;1"};
+	public static final char[] xTermToANSINoBold=new char[]{
+		'0','1','2','3','4','5','6','7','7','1','2','3','4','5','6','7',
+		'0','4','4','4','4','4',
+		'2','6','6','4','4','4',
+		'2','6','6','6','4','4',
+		'2','6','6','6','6','6',
+		'2','2','6','6','6','6',
+		'2','2','6','6','6','6',
+		'1','5','5','5','5','5',
+		'3','7','7','4','4','4',
+		'3','7','6','4','4','4',
+		'3','2','6','6','6','6',
+		'3','2','2','6','6','6',
+		'2','2','2','6','6','6',
+		'1','5','5','5','5','5',
+		'3','5','5','5','5','5',
+		'3','7','7','5','5','5',
+		'3','2','7','6','6','6',
+		'3','2','2','6','6','6',
+		'3','2','2','2','6','6',
+		'1','5','5','5','5','5',
+		'3','5','5','5','5','5',
+		'3','3','5','5','5','5',
+		'3','2','7','7','6','6',
+		'3','3','2','6','6','6',
+		'3','2','2','6','6','6',
+		'1','5','5','5','5','5',
+		'1','1','5','5','5','5',
+		'3','1','5','5','5','5',
+		'3','3','7','5','5','5',
+		'3','3','7','7','7','7',
+		'3','3','3','6','6','6',
+		'1','5','5','5','5','5',
+		'1','1','1','5','5','5',
+		'3','1','1','5','5','5',
+		'3','1','1','5','5','5',
+		'3','3','3','1','7','7',
+		'3','3','3','3','7','7',
+		'0','0','0','0','0','0','0','0','7','7','7','7',
+		'7','7','7','7','7','7','7','7','7','7','7','7'};
+
+	public static final String COLOR_NONE="\033[0m";
+	public static final String COLOR_ITALIC="\033[3m";
+	public static final String COLOR_UNDERLINE="\033[4m";
+	public static final String COLOR_ENDITALIC="\033[23m";
+	public static final String COLOR_ENDUNDERLINE="\033[24m";
+	/*
 	public static final String COLOR_WHITE="\033[1;37m";
 	public static final String COLOR_LIGHTGREEN="\033[1;32m";
 	public static final String COLOR_LIGHTBLUE="\033[1;34m";
@@ -38,7 +135,6 @@ public interface ColorLibrary extends CMLibrary
 	public static final String COLOR_PURPLE="\033[0;35m";
 	public static final String COLOR_DARKGREY="\033[1;30m";
 	public static final String COLOR_BLACK="\033[0;30m";
-	public static final String COLOR_NONE="\033[0;0m";
 	public static final String COLOR_BOLD="\033[1m";
 	public static final String COLOR_UNDERLINE="\033[4m";
 	public static final String COLOR_BLINK="\033[5m";
@@ -179,15 +275,15 @@ public interface ColorLibrary extends CMLibrary
 
 	public static final String COLOR_FR0G3B5="\033[38;5;"+(16+(0*36)+(3*6)+5)+"m";
 	public static final String COLOR_BR0G3B5="\033[48;5;"+(16+(0*36)+(3*6)+5)+"m";
-	
-	public void clearLookups();
-	public int translateSingleCMCodeToANSIOffSet(String code);
-	public String translateCMCodeToANSI(String code);
-	public String translateANSItoCMCode(String code);
+	*/
+	//public void clearLookups();
+	//public int translateSingleCMCodeToANSIOffSet(String code);
+	//public String translateCMCodeToANSI(String code);
+	//public String translateANSItoCMCode(String code);
 	public String mixHTMLCodes(String code1, String code2);
 	public String mixColorCodes(String code1, String code2);
 	public CMMsg fixSourceFightColor(CMMsg msg);
-	public String[] standardHTMLlookups();
-	public String[] standardColorLookups();
+	//public String[] standardHTMLlookups();
+	//public String[] standardColorLookups();
 	
 }

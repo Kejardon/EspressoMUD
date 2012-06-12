@@ -24,24 +24,21 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Password extends StdCommand
 {
-	public Password(){}
+	public Password(){access=new String[]{"PASSWORD"};}
 
-	private String[] access={"PASSWORD"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		PlayerStats pstats=mob.playerStats();
 		if(pstats==null) return false;
 		if(mob.isMonster()) return false;
 		String old=mob.session().prompt("Enter your old password : ");
-		String nep=mob.session().prompt("Enter a new password    : ");
-		String ne2=mob.session().prompt("Enter new password again: ");
 		if(!BCrypt.checkpw(old,pstats.password()))
 		{
 			mob.tell("Your old password was not entered correctly.");
 			return false;
 		}
+		String nep=mob.session().prompt("Enter a new password    : ");
+		String ne2=mob.session().prompt("Enter new password again: ");
 		if(!nep.equals(ne2))
 		{
 			mob.tell("Your new password was not entered the same way twice!");
@@ -54,6 +51,7 @@ public class Password extends StdCommand
 //		CMLib.database().DBUpdatePassword(mob.Name(),nep);
 		return false;
 	}
-	
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
+	public boolean prompter(){return true;}
 	public boolean canBeOrdered(){return false;}
 }

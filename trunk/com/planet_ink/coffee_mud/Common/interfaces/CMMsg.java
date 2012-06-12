@@ -49,11 +49,26 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
  * Add a dedicated 'obviousness' value for how close/observant people have to be to see/hear it (maybe 2 if seperate visual/audio messages).
  * Add a HashSet of previously called entities, if they've already been called (okMessage/executeMsg) do not call it again. Just prevent infinite loops of listeners. This miiiight not be necessary with careful design...
  * 
+ 	Alt senses stuff.
+ 	Sight	Hearing	Touch	Sense
+ 			Smell			Psionic/whatever
+ 
+ 	Response speed stuff.
+ 	10: Entrance msg due to Leave msg
  */
 @SuppressWarnings("unchecked")
 public interface CMMsg extends CMCommon
 {
 	public static final EnumSet<MsgCode> NO_EFFECT=EnumSet.noneOf(MsgCode.class);
+	public static final CMMsg[] dummyCMMsgArray=new CMMsg[0];
+	public static class TrailMessage
+	{
+		public final CMMsg msg;
+		public final Room room;
+		public TrailMessage(Room R, CMMsg m){room=R;msg=m;}
+	}
+
+	public void returnMsg();
 	
 	public EnumSet<MsgCode> targetCode();
 	public void setTargetCode(EnumSet<MsgCode> codes);
@@ -103,14 +118,25 @@ public interface CMMsg extends CMCommon
 	public int value();
 	public void setValue(int amount);
 
+	public int obvious(int type);
+	public void setObvious(int type, int value);
+
+	public static final int SenseFlags_SIGHT=0;
+	public static final int SenseFlags_HEARING=SenseFlags_SIGHT+1;
+	public static final int SenseFlags_SMELL=SenseFlags_HEARING+1;
+	public static final int SenseFlags_TOUCH=SenseFlags_SMELL+1;
+	public static final int SenseFlags_SENSE=SenseFlags_TOUCH+1;
+	public static final int SenseFlags_SIZE=SenseFlags_SENSE+1;
 	//<ListenHolder.OKChecker> ? Probably.
 	//Also probably have an internal sorted list with a container object holding the OKChecker and priority.
 	public Vector<ListenHolder.MsgListener> responders();
 	public void addResponse(ListenHolder.MsgListener E, int priority);
 	public boolean handleResponses();
 
-	public Vector<CMMsg> trailerMsgs();
-	public void addTrailerMsg(CMMsg msg);
+	public Vector<TrailMessage> trailerMsgs();
+	public void addTrailerMsg(Room forHere, CMMsg msg);
+	public Vector<TrailMessage> trailerHappens();
+	public void addTrailerHappens(Room forHere, CMMsg msg);
 
 	public enum MsgCode
 	{
@@ -121,13 +147,15 @@ public interface CMMsg extends CMCommon
 		//OPTIMIZE
 		
 		//'Major' codes. More flags than message definitions
+		ALWAYS, 
+		//SHOWHAPPEN,
 		HANDS, MOVE, EYES, MOUTH,
 		SOUND, SNIFF, VISUAL,
-		ALWAYS, MAGIC, DELICATE, MALICIOUS, CHANNEL,
+		MAGIC, DELICATE, MALICIOUS, CHANNEL,
 		//'Minor' codes. Kinda grouped together and organized
 		//Give might be same as Put? probably not.
 		UNLOCK, LOCK, OPEN, CLOSE, PUSH, PULL, THROW, DROP, PUT, GET, GIVE,
-		ENTER, LEAVE, SLEEP, CRAWL, SIT, LAYDOWN, STAND, MOUNT, DISMOUNT, ADVANCE, RETREAT,
+		LEAVE, ENTER, SLEEP, CRAWL, SIT, LAYDOWN, STAND, MOUNT, DISMOUNT, ADVANCE, RETREAT, 
 		WEAR, REMOVE, ACTIVATE, DEACTIVATE, RELOAD, KNOCK, EXTINGUISH,
 		FILL, EAT, DRINK,
 		LOOK, EXAMINE, READ, WRITE, SPEAK, CAST, EMOTE, ORDER,
@@ -150,7 +178,9 @@ FILL: Same as THROW (tool is what it is filled with/by) but value is an optional
 DROP: Same as THROW but optional target.
 EAT/DRINK: Basically same as THROW, value* specifies amount to eat/drink.
 WEAR/REMOVE: Basically same as THROW. Target(optional for remove) is the limb it's worn on (or if mob, find best-fit limb to put it on), tool is what's being put on (first is first handled(inmost for wear, outmost for remove)).
-ENTER/LEAVE: Source is the thing(s) moving, target is the thing being entered/left, tool* is the spell used/object ridden. Value is obviousness.
+//ENTER/LEAVE: Source is the thing(s) moving, target is the thing being entered/left, tool* is the spell used/object ridden. Value is obviousness.
+LEAVE: Source is the thing(s) moving, target is the REMap being entered, tool* is the spell used/object ridden. Value is obviousness.
+ENTER: Source is the thing(s) moving, target is the REMap this room is being entered through, tool* is the spell used/object ridden. Value is obviousness.
 SLEEP/CRAWL/SIT/LAYDOWN/STAND: Source is the thing(s) sleeping, target* is the location/object being slept on. Tool is always empty I guess, value* is obviousness.
 : Source* is providing power/action, target is what is being mounted, tool is what is mounting. Value* is obviousness.
 ADVANCE/RETREAT: Source is the thing(s) moving, target is what is being approached. Tool* would be a list of waypoints? Probably not. Distance calculated on the fly.

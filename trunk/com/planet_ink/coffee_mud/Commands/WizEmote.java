@@ -24,65 +24,58 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class WizEmote extends StdCommand
 {
-	public WizEmote(){}
+	public WizEmote(){access=new String[]{"WIZEMOTE"};}
 
-	private String[] access={"WIZEMOTE"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		if(commands.size()>2)
 		{
-			String who=(String)commands.elementAt(1);
+			String who=commands.elementAt(1);
 			String msg=CMParms.combineWithQuotes(commands,2);
-			Room R=(Room)SIDLib.Objects.ROOM.get(CMath.s_int(who));
+			Room R=SIDLib.ROOM.get(CMath.s_int(who));
 			if(who.toUpperCase().equals("HERE")) R=mob.location();
 			Area A=CMLib.map().findAreaStartsWith(who);
 			if(who.toUpperCase().equals("ALL"))
 			{
-				for(int s=0;s<CMLib.sessions().size();s++)
+				for(Session S : CMLib.sessions().toArray())
 				{
-					Session S=CMLib.sessions().elementAt(s);
 					if((S.mob()!=null)
 					&&(S.mob().location()!=null)
-					&&(CMSecurity.isAllowed(mob,S.mob().location(),"WIZEMOTE")))
+					&&(CMSecurity.isAllowed(mob,"WIZEMOTE")))
 	  					S.stdPrintln("^w"+msg+"^?");
 				}
 			}
 			else
 			if(R!=null)
 			{
-				for(int s=0;s<CMLib.sessions().size();s++)
+				for(Session S : CMLib.sessions().toArray())
 				{
-					Session S=CMLib.sessions().elementAt(s);
 					if((S.mob()!=null)
 					&&(S.mob().location()==R)
-					&&(CMSecurity.isAllowed(mob,R,"WIZEMOTE")))
+					&&(CMSecurity.isAllowed(mob,"WIZEMOTE")))
 						S.stdPrintln("^w"+msg+"^?");
 				}
 			}
 			else
 			if(A!=null)
 			{
-				for(int s=0;s<CMLib.sessions().size();s++)
+				for(Session S : CMLib.sessions().toArray())
 				{
-					Session S=CMLib.sessions().elementAt(s);
 					if((S.mob()!=null)
 					&&(S.mob().location()!=null)
 					&&(A.inMyMetroArea(S.mob().location().getArea()))
-					&&(CMSecurity.isAllowed(mob,S.mob().location(),"WIZEMOTE")))
+					&&(CMSecurity.isAllowed(mob,"WIZEMOTE")))
 						S.stdPrintln("^w"+msg+"^?");
 				}
 			}
 			else
 			{
 				boolean found=false;
-				for(int s=0;s<CMLib.sessions().size();s++)
+				for(Session S : CMLib.sessions().toArray())
 				{
-					Session S=CMLib.sessions().elementAt(s);
 					if((S.mob()!=null)
 					&&(S.mob().location()!=null)
-					&&(CMSecurity.isAllowed(mob,S.mob().location(),"WIZEMOTE"))
+					&&(CMSecurity.isAllowed(mob,"WIZEMOTE"))
 					&&(CMLib.english().containsString(S.mob().name(),who)
 						||CMLib.english().containsString(S.mob().location().getArea().name(),who)))
 					{
@@ -99,9 +92,8 @@ public class WizEmote extends StdCommand
 			mob.tell("You must specify either all, or an area/mob name, and an message.");
 		return false;
 	}
-	
-	public boolean canBeOrdered(){return true;}
-	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,mob.location(),"WIZEMOTE");}
 
-	
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
+	public boolean canBeOrdered(){return true;}
+	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,"WIZEMOTE");}
 }

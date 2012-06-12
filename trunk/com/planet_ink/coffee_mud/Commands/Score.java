@@ -25,25 +25,20 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Score extends StdCommand
 {
-	public Score(){}
+	public Score(){access=new String[]{"SCORE","SC"};}
 
-	private String[] access={"SCORE","SC"};
-	public String[] getAccessWords(){return access;}
-
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		if(mob.isMonster()) return false;
 		StringBuilder msg=null;
 		if(commands.size()>1)	//First command is the score command, not interesting.
-			msg=CMLib.commands().getScore(mob,(String)commands.get(1));
+			msg=CMLib.commands().getScore(mob,commands.get(1));
 		else
 			msg=CMLib.commands().getScore(mob);
 		mob.session().wraplessPrintln(msg.toString());
 		return false;
 	}
-	
-	public boolean canBeOrdered(){return true;}
 
-	
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
+	public boolean canBeOrdered(){return true;}
 }

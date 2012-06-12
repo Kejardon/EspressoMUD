@@ -8,6 +8,7 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
+//Most of this file is still TODO because of colors. Also String expressions are for what?
 @SuppressWarnings("unchecked")
 public class CMStrings
 {
@@ -16,10 +17,51 @@ public class CMStrings
 	public static CMStrings instance(){return inst;}
 	
 	public final static String SPACES="                                                                     ";
+
+	//return index to next line after provided line
+	public static int skipNextLine(CharSequence buf, int index)
+	{
+		if((buf==null)||(index>=buf.length())) return index;
+		for(int stop=buf.length();index<stop;index++)
+		{
+			if((index<stop-1)&&
+			   (((buf.charAt(index)=='\n')&&(buf.charAt(index+1)=='\r'))||((buf.charAt(index)=='\r')&&(buf.charAt(index+1)=='\n'))))
+				return index+2;
+			else if((buf.charAt(index)=='\r')||(buf.charAt(index)=='\n'))
+				return index+1;
+		}
+		return index;
+	}
+	//Get the next line starting at index[0], set index[0] to the start of the next line, return the string
+	public static String getNextLine(StringBuffer buf, int[] index)
+	{
+		if((buf==null)||(index[0]>=buf.length())) return null;
+		int stop=buf.length();
+		for(int i=index[0];i<stop;i++)
+		{
+			if((i<stop-1)&&
+			   (((buf.charAt(i)=='\n')&&(buf.charAt(i+1)=='\r'))||((buf.charAt(i)=='\r')&&(buf.charAt(i+1)=='\n'))))
+			{
+				String S=buf.substring(index[0], i);
+				index[0]=i+2;
+				return S;
+			}
+			else
+			if((buf.charAt(i)=='\r')||(buf.charAt(i)=='\n'))
+			{
+				String S=buf.substring(index[0], i);
+				index[0]=i+1;
+				return S;
+			}
+		}
+		String S=buf.substring(index[0]);
+		index[0]=buf.length();
+		return S;
+	}
 	public static String repeat(String str1, int times)
 	{
 		if(times<=0) return "";
-		StringBuffer str=new StringBuffer("");
+		StringBuffer str=new StringBuffer(str1.length()*times);
 		for(int i=0;i<times;i++)
 			str.append(str1);
 		return str.toString();
@@ -58,7 +100,8 @@ public class CMStrings
 	public static boolean isVowel(char c)
 	{ return (("aeiou").indexOf(Character.toLowerCase(c))>=0);}
 	
-	public static String replaceAll(String str, String thisStr, String withThisStr)
+	//Scratch this. There is a String method that does it, no need to reinvent it (str.replaceAll(thisStr, withThisStr))
+/*	public static String replaceAll(String str, String thisStr, String withThisStr)
 	{
 		if((str==null)
 		||(thisStr==null)
@@ -66,15 +109,16 @@ public class CMStrings
 		||(str.length()==0)
 		||(thisStr.length()==0))
 			return str;
-		for(int i=str.length()-1;i>=0;i--)
+		int i=str.lastIndexOf(thisStr);
+		if(i<0) return str;
+		StringBuilder newStr=new StringBuilder(str);
+		while(i>=0)
 		{
-			if(str.charAt(i)==thisStr.charAt(0))
-				if(str.substring(i).startsWith(thisStr))
-					str=str.substring(0,i)+withThisStr+str.substring(i+thisStr.length());
+			newStr.
 		}
 		return str;
-	}
-	
+	} */
+	//Nothing uses this thankfully. That's probably for the best.
 	public static String replaceWord(String str, String thisStr, String withThisStr)
 	{
 		if((str==null)
@@ -106,7 +150,7 @@ public class CMStrings
 		}
 		return str;
 	}
-	
+	//Not used
 	public static String replaceFirstWord(String str, String thisStr, String withThisStr)
 	{
 		if((str==null)
@@ -138,7 +182,7 @@ public class CMStrings
 		}
 		return str;
 	}
-	
+	//Not used
 	public static String replaceFirst(String str, String thisStr, String withThisStr)
 	{
 		if((str==null)
@@ -158,6 +202,7 @@ public class CMStrings
 		}
 		return str;
 	}
+	//Debated for use in CharCreation. Not entirely safe for all Strings.
 	public static String titleCase(String name)
 	{
 		if((name==null)||(name.length()==0)) return "";
@@ -174,7 +219,7 @@ public class CMStrings
 			}
 			else if(Character.isWhitespace(c[i]))
 				cap=true;
-		return new String(c).trim();
+		return new String(c);
 	}
 	public static String capitalizeAndLower(String name)
 	{
@@ -193,7 +238,7 @@ public class CMStrings
 		for(;i<c.length;i++)
 			if(!Character.isLowerCase(c[i]))
 				c[i]=Character.toLowerCase(c[i]);
-		return new String(c).trim();
+		return new String(c);
 	}
 	public static String capitalizeFirstLetter(String name)
 	{
@@ -247,6 +292,8 @@ public class CMStrings
 		return false;
 	}
 	
+	//True if A2 has every element in A1 and is the same size.
+	//This might want a flag for ignorecase, and duplicate values in A1 allow different values in A2
 	public static boolean compareStringArrays(String[] A1, String[] A2)
 	{
 		if(((A1==null)||(A1.length==0))
@@ -265,6 +312,7 @@ public class CMStrings
 		return true;
 	}
 	
+	//May want a flag for ignore case
 	public static boolean contains(String[] strs, String str)
 	{
 		if((str==null)||(strs==null)) return false;
@@ -274,111 +322,177 @@ public class CMStrings
 		return false;
 	}
 	
-	public static String removeColors(String s)
+	public static String removeColors(String str)
 	{
-		if(s==null) return "";
-		StringBuffer str=new StringBuffer(s);
-		int colorStart=-1;
+		if(str==null) return "";
+		StringBuilder buf=new StringBuilder(str.length());
+		//int colorStart=-1;
 		for(int i=0;i<str.length();i++)
 		{
-			switch(str.charAt(i))
+			char nextChar=str.charAt(i);
+			if((nextChar=='\033')&&(i+1<str.length())&&(str.charAt(i+1)=='['))
 			{
-			case 'm':
-				if(colorStart>=0)
-				{
-					str.delete(colorStart,i+1);
-					colorStart=-1;
-				}
-				break;
-			case (char)27: colorStart=i; break;
-			case '^':
-				if((i+1)<str.length())
-				{
-					int tagStart=i;
-					char c=str.charAt(i+1);
-					if((c=='<')||(c=='&'))
-					{
-						i+=2;
-						while(i<(str.length()-1))
-						{
-							if(((c=='<')&&((str.charAt(i)!='^')||(str.charAt(i+1)!='>')))
-							||((c=='&')&&(str.charAt(i)!=';')))
-							{
-								i++;
-								if(i>=(str.length()-1))
-								{
-									i=tagStart;
-									str.delete(i,i+2); 
-									i--;
-									break;
-								}
-							}
-							else
-							{
-								if(c=='<')
-									str.delete(tagStart,i+2);
-								else
-									str.delete(tagStart,i+1);
-								i=tagStart-1;
-								break;
-							}
-						}
-					}
-					else
-					{
-						str.delete(i,i+2); 
-						i--;
-					}
-				}
-				else
-				{
-					str.delete(i,i+2); 
-					i--;
-				}
-				break;
+				int j=str.indexOf('m', i+2);
+				if(j>0) {i=j; nextChar=(char)0;}
 			}
-		}
-		return str.toString();
-	}
-	
-	public static int lengthMinusColors(String thisStr)
-	{
-		if(thisStr==null) return 0;
-		int size=0;
-		for(int i=0;i<thisStr.length();i++)
-		{
-			if(thisStr.charAt(i)=='^')
+			else if((nextChar=='^')&&(i+1<str.length()))
 			{
 				i++;
-				if((i+1)<thisStr.length())
+				switch(str.charAt(i))
 				{
-					int tagStart=i;
-					char c=thisStr.charAt(i);
-					if((c=='<')||(c=='&'))
-					while(i<(thisStr.length()-1))
+				case '.':
+				case '0': case '1': case '2': case '3':
+				case '4': case '5': case '6': case '7':
+				case 'I': case 'i': case 'U': case 'u':
+				case '?':
+					nextChar=(char)0;
+					break;
+				case '[':
+					int j=str.indexOf(']', i+2);
+					if(j>0)
 					{
-						if(((c=='<')&&((thisStr.charAt(i)!='^')||(thisStr.charAt(i+1)!='>')))
-						||((c=='&')&&(thisStr.charAt(i)!=';')))
+						char subChar=str.charAt(i+1);
+						if((subChar=='F')||(subChar=='f')||(subChar=='B')||(subChar=='b'))
 						{
-							i++;
-							if(i>=(thisStr.length()-1))
-							{
-								i=tagStart+1;
-								break;
-							}
-						}
-						else
-						{
-							i++;
-							break;
+							i=j;
+							nextChar=(char)0;
 						}
 					}
+					break;
+				case '^':
+					buf.append('^');
 				}
 			}
-			else
+			if(nextChar!=(char)0)
+				buf.append(nextChar);
+		}
+		return buf.toString();
+	}
+	public static int lengthMinusColors(String str)
+	{
+		if(str==null) return 0;
+		int size=0;
+		for(int i=0;i+1<str.length();i++)
+		{
+			char nextChar=str.charAt(i);
+			if((nextChar=='\033')&&(i+1<str.length())&&(str.charAt(i+1)=='['))
+			{
+				int j=str.indexOf('m', i+2);
+				if(j>0) {i=j; nextChar=(char)0;}
+			}
+			else if((nextChar=='^')&&(i+1<str.length()))
+			{
+				i++;
+				switch(str.charAt(i))
+				{
+				case '.':
+				case '0': case '1': case '2': case '3':
+				case '4': case '5': case '6': case '7':
+				case 'I': case 'i': case 'U': case 'u':
+				case '?':
+					nextChar=(char)0;
+					break;
+				case '[':
+					int j=str.indexOf(']', i+2);
+					if(j>0)
+					{
+						char subChar=str.charAt(i+1);
+						if((subChar=='F')||(subChar=='f')||(subChar=='B')||(subChar=='b'))
+						{
+							i=j;
+							nextChar=(char)0;
+						}
+					}
+					break;
+				}
+			}
+			if(nextChar!=(char)0)
 				size++;
 		}
 		return size;
+	}
+	public static String clipToIgnoreColors(String str, int clipTo, boolean keepEndColors)
+	{
+		if(str==null) return "";
+		if(str.length()<clipTo) return str;
+		int i=0;
+		for(;i<str.length();i++)
+		{
+			char nextChar=str.charAt(i);
+			if((nextChar=='\033')&&(i+1<str.length())&&(str.charAt(i+1)=='['))
+			{
+				int j=str.indexOf('m', i+2);
+				if(j>0) {i=j; nextChar=(char)0;}
+			}
+			else if((nextChar=='^')&&(i+1<str.length()))
+			{
+				i++;
+				switch(str.charAt(i))
+				{
+				case '.':
+				case '0': case '1': case '2': case '3':
+				case '4': case '5': case '6': case '7':
+				case 'I': case 'i': case 'U': case 'u':
+				case '?':
+					nextChar=(char)0;
+					break;
+				case '[':
+					int j=str.indexOf(']', i+2);
+					if(j>0)
+					{
+						char subChar=str.charAt(i+1);
+						if((subChar=='F')||(subChar=='f')||(subChar=='B')||(subChar=='b'))
+						{
+							i=j;
+							nextChar=(char)0;
+						}
+					}
+					break;
+				}
+			}
+			if((nextChar!=(char)0)&&(--clipTo<=0))
+			{
+				if(keepEndColors)
+				{
+					StringBuilder buf=new StringBuilder(str.length());
+					buf.append(str, 0, i);
+					for(;i<str.length();i++)
+					{
+						nextChar=str.charAt(i);
+						if((nextChar=='\033')&&(i+1<str.length())&&(str.charAt(i+1)=='['))
+						{
+							int j=str.indexOf('m', i+2);
+							if(j>0) {buf.append(str, i, j+1); i=j;}
+						}
+						else if((nextChar=='^')&&(i+1<str.length()))
+						{
+							i++;
+							switch(str.charAt(i))
+							{
+							case '.':
+							case '0': case '1': case '2': case '3':
+							case '4': case '5': case '6': case '7':
+							case 'I': case 'i': case 'U': case 'u':
+							case '?':
+								buf.append(str, i-1, i+1);
+								break;
+							case '[':
+								int j=str.indexOf(']', i+2);
+								if(j>0)
+								{
+									i=j;
+									buf.append(str, i-1, j+1);
+								}
+								break;
+							}
+						}
+					}
+				}
+				else
+					return str.substring(0, i);
+			}
+		}
+		return str;
 	}
 	
 	public static Hashtable makeNumericHash(Object[] obj)
@@ -393,7 +507,7 @@ public class CMStrings
 	{
 		int lenMinusColors=lengthMinusColors(thisStr);
 		if(lenMinusColors>thisMuch)
-			return removeColors(thisStr).substring(0,thisMuch);
+			return clipToIgnoreColors(thisStr, thisMuch, false);
 		int size=(thisMuch-lenMinusColors)/2;
 		int rest=thisMuch-lenMinusColors-size;
 		if(rest<0) rest=0;
@@ -403,35 +517,35 @@ public class CMStrings
 	{
 		int lenMinusColors=lengthMinusColors(thisStr);
 		if(lenMinusColors>thisMuch)
-			return removeColors(thisStr).substring(0,thisMuch);
+			return clipToIgnoreColors(thisStr, thisMuch, false);
 		return SPACES.substring(0,thisMuch-lenMinusColors)+thisStr;
 	}
 	public static String padLeft(String thisStr, String colorPrefix, int thisMuch)
 	{
 		int lenMinusColors=lengthMinusColors(thisStr);
 		if(lenMinusColors>thisMuch)
-			return colorPrefix+removeColors(thisStr).substring(0,thisMuch);
+			return colorPrefix+clipToIgnoreColors(thisStr, thisMuch, false);
 		return SPACES.substring(0,thisMuch-lenMinusColors)+colorPrefix+thisStr;
 	}
 	public static String padRight(String thisStr, int thisMuch)
 	{
 		int lenMinusColors=lengthMinusColors(thisStr);
 		if(lenMinusColors>thisMuch)
-			return removeColors(thisStr).substring(0,thisMuch);
+			return clipToIgnoreColors(thisStr, thisMuch, false);
 		return thisStr+SPACES.substring(0,thisMuch-lenMinusColors);
 	}
 	public static String limit(String thisStr, int thisMuch)
 	{
 		int lenMinusColors=lengthMinusColors(thisStr);
 		if(lenMinusColors>thisMuch)
-			return removeColors(thisStr).substring(0,thisMuch);
+			return clipToIgnoreColors(thisStr, thisMuch, false);
 		return thisStr;
 	}
 	public static String padRight(String thisStr, String colorSuffix, int thisMuch)
 	{
 		int lenMinusColors=lengthMinusColors(thisStr);
 		if(lenMinusColors>thisMuch)
-			return removeColors(thisStr).substring(0,thisMuch)+colorSuffix;
+			return clipToIgnoreColors(thisStr, thisMuch, false)+colorSuffix;
 		return thisStr+colorSuffix+SPACES.substring(0,thisMuch-lenMinusColors);
 	}
 	public static String padRightPreserve(String thisStr, int thisMuch)
@@ -972,6 +1086,22 @@ public class CMStrings
 			throw new Exception("Parse Exception: Illegal expression evaluation combiner: " + token.value);
 		index[0] = i[0];
 		return result;
+	}
+
+	public static int versionCheck(String currentVer, int[] targetVer)
+	{
+		for(int i=0;i<targetVer.length;i++)
+		{
+			int index=currentVer.indexOf(".");
+			if(index==-1) index=currentVer.length();
+			int comp=targetVer[i]-CMath.s_int(currentVer.substring(0,index));
+			if(comp>0) return -1;
+			else if(comp<0) return 1;
+			if(index==currentVer.length()) return (i+1==targetVer.length?0:-1);
+			currentVer=currentVer.substring(index+1);
+			if(currentVer.length()==0) return (i+1==targetVer.length?0:-1);
+		}
+		return -1;
 	}
 
 	public static boolean parseStringExpression(String expression, Hashtable variables, boolean emptyVarsOK) throws Exception

@@ -24,12 +24,9 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Pour extends StdCommand
 {
-	public Pour(){}
+	public Pour(){access=new String[]{"POUR"};}
 
-	private String[] access={"POUR"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		if(commands.size()<3)
 		{
@@ -43,9 +40,9 @@ public class Pour extends StdCommand
 		Vector<Item> V=null;	//fillFromThese
 		String thingToFillFrom=CMParms.combine(commands,0,partition);
 		String thingToFill=CMParms.combine(commands,partition);
-		int maxToFill=CMLib.english().calculateMaxToGive(mob,commands,true,mob,false);
+		int maxToFill=CMLib.english().calculateMaxToGive(mob,commands,mob,false);
 		if(maxToFill<0) return false;
-		boolean allFlag=(commands.size()>0)?((String)commands.elementAt(0)).equalsIgnoreCase("all"):false;
+		boolean allFlag=(commands.size()>0)?commands.elementAt(0).equalsIgnoreCase("all"):false;
 		if(thingToFillFrom.toUpperCase().startsWith("ALL.")){ allFlag=true; thingToFillFrom="ALL "+thingToFillFrom.substring(4);}
 		if(thingToFillFrom.toUpperCase().endsWith(".ALL")){ allFlag=true; thingToFillFrom="ALL "+thingToFillFrom.substring(0,thingToFillFrom.length()-4);}
 		if(allFlag)
@@ -113,13 +110,24 @@ public class Pour extends StdCommand
 			}
 		}
 		if(allFlag)
-			for(Item fillFromThisThing : (Item[])V.toArray(new Item[0]))
-				if(!mob.location().doMessage(CMClass.getMsg(mob,fillThis,fillFromThisThing,EnumSet.of(CMMsg.MsgCode.FILL),(fillThis!=null)?"<S-NAME> pour(s) <O-NAME> into <T-NAME>.":"<S-NAME> pour(s) <O-NAME> out.")))
+			for(Item fillFromThisThing : (Item[])V.toArray(Item.dummyItemArray))
+			{
+				CMMsg msg=CMClass.getMsg(mob,fillThis,fillFromThisThing,EnumSet.of(CMMsg.MsgCode.FILL),(fillThis!=null)?"<S-NAME> pour(s) <O-NAME> into <T-NAME>.":"<S-NAME> pour(s) <O-NAME> out.");
+				if(!mob.location().doMessage(msg))
+				{
+					msg.returnMsg();
 					break;
+				}
+				msg.returnMsg();
+			}
 		else
-			mob.location().doMessage(CMClass.getMsg(mob,fillThis,fillFromThis,EnumSet.of(CMMsg.MsgCode.FILL),(fillThis!=null)?"<S-NAME> pour(s) <O-NAME> into <T-NAME>.":"<S-NAME> pour(s) <O-NAME> out."));
+		{
+			CMMsg msg=CMClass.getMsg(mob,fillThis,fillFromThis,EnumSet.of(CMMsg.MsgCode.FILL),(fillThis!=null)?"<S-NAME> pour(s) <O-NAME> into <T-NAME>.":"<S-NAME> pour(s) <O-NAME> out.");
+			mob.location().doMessage(msg);
+			msg.returnMsg();
+		}
 		return false;
 	}
-	public double actionsCost(MOB mob, Vector cmds){return DEFAULT_NONCOMBATACTION;}
+	public int commandType(MOB mob, String cmds){return CT_LOW_P_ACTION;}
 	public boolean canBeOrdered(){return true;}
 }

@@ -24,27 +24,24 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Snoop extends StdCommand
 {
-	public Snoop(){}
+	public Snoop(){access=new String[]{"SNOOP"};}
 
-	private String[] access={"SNOOP"};
-	public String[] getAccessWords(){return access;}
-	
-	protected Vector snoopingOn(Session S)
+	protected boolean canHear(Session S, Session S2)
 	{
-		Vector V=new Vector();
-		for(int s=0;s<CMLib.sessions().size();s++)
-			if(CMLib.sessions().elementAt(s).amBeingSnoopedBy(S))
-				V.addElement(CMLib.sessions().elementAt(s));
-		return V;
+		if(S==S2) return false;
+		for(Iterator<Session> iter=S2.snoopTargets();iter.hasNext();)
+			if(canHear(S, iter.next()))
+				return true;
+		return false;
 	}
 	
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		commands.removeElementAt(0);
-		if(mob.session()==null) return false;
-		boolean doneSomething=false;
-		for(int s=0;s<CMLib.sessions().size();s++)
+		Session snooper=mob.session();
+		if(snooper==null) return false;
+		//boolean doneSomething=false;
+		/* for(int s=0;s<CMLib.sessions().size();s++)
 		{
 			Session S=CMLib.sessions().elementAt(s);
 			if(S.amBeingSnoopedBy(mob.session()))
@@ -56,67 +53,50 @@ public class Snoop extends StdCommand
 				doneSomething=true;
 				S.stopBeingSnoopedBy(mob.session());
 			}
-		}
+		} */
 		if(commands.size()==0)
 		{
-			if(!doneSomething)
+			//if(!doneSomething)
 				mob.tell("Snoop on whom?");
 			return false;
 		}
 		String whom=CMParms.combine(commands,0);
-		Session SnoopOn=null;
-		for(int s=0;s<CMLib.sessions().size();s++)
+		Session snoopOn=null;
+		MOB M=CMLib.players().getPlayer(whom);
+		if(M!=null) snoopOn=M.session();
+		else for(Session S : CMLib.sessions().toArray())
 		{
-			Session S=CMLib.sessions().elementAt(s);
-			if((S.mob()!=null)
-		    &&((CMLib.english().containsString(S.mob().name(),whom))
-				   ||(CMLib.english().containsString(S.mob().name(),whom))))
+			if((S.mob()!=null)&&(CMLib.english().containsString(S.mob().name(),whom)))
 			{
-				if(S==mob.session())
-				{
-					mob.tell("no.");
-					return false;
-				}
-				else
-				if(CMSecurity.isAllowed(mob,S.mob().location(),"SNOOP"))
-					SnoopOn=S;
+				snoopOn=S;
+				if(S.mob().name().equalsIgnoreCase(whom)) break;
 			}
 		}
-		if(SnoopOn==null)
+		if(snoopOn==null)
 			mob.tell("You can't find anyone to snoop on by that name.");
-		else
-        if(!CMLib.flags().isInTheGame(SnoopOn.mob(),true))
-            mob.tell(SnoopOn.mob().name()+" is not yet fully in the game.");
-        else
-		if(CMSecurity.isASysOp(SnoopOn.mob())&&(!CMSecurity.isASysOp(mob)))
-		    mob.tell("Only another Archon can snoop on "+SnoopOn.mob().name()+".");
+		else if(!CMLib.flags().isInTheGame(snoopOn.mob(),true))
+			mob.tell(snoopOn.mob().name()+" is not yet fully in the game.");
+		else if(CMSecurity.isASysOp(snoopOn.mob())&&(!CMSecurity.isASysOp(mob)))
+			mob.tell("Only another Archon can snoop on "+snoopOn.mob().name()+".");
 		else
 		{
-			Vector snoop=new Vector();
-			snoop.addElement(SnoopOn);
-			for(int v=0;v<snoop.size();v++)
+			if(snooper.stopSnoopingOn(snoopOn))
 			{
-				if(snoop.elementAt(v)==mob.session())
-				{
-					mob.tell("This would create a snoop loop!");
-					return false;
-				}
-				Vector V=snoopingOn((Session)snoop.elementAt(v));
-				for(int v2=0;v2<V.size();v2++)
-				{
-					Session S2=(Session)V.elementAt(v2);
-					if(!snoop.contains(S2))
-						snoop.addElement(S2);
-				}
+				mob.tell("You stop snooping on "+snoopOn.mob().name()+".");
+				return false;
 			}
-			mob.tell("You start snooping on "+SnoopOn.mob().name()+".");
-			SnoopOn.startBeingSnoopedBy(mob.session());
+			if(canHear(snooper, snoopOn))
+			{
+				mob.tell("This would create a snoop loop!");
+				return false;
+			}
+			snoopOn.startSnoopingOn(mob.session());
+			mob.tell("You start snooping on "+snoopOn.mob().name()+".");
 		}
 		return false;
 	}
-	
-	public boolean canBeOrdered(){return true;}
-	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,mob.location(),"SNOOP");}
 
-	
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
+	public boolean canBeOrdered(){return true;}
+	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,"SNOOP");}
 }

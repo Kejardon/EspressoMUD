@@ -8,11 +8,15 @@ import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
-import com.planet_ink.coffee_mud.Libraries.Sense;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
+
+import com.planet_ink.coffee_mud.Libraries.Sense;
+
 import java.util.*;
+import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -26,30 +30,30 @@ public interface TelnetFilter extends CMLibrary
 {
 	public final static String hexStr="0123456789ABCDEF";
 	public final static int HISHER=0;
-	public final static int HIMHER=1;
-	public final static int NAME=2;
-	public final static int NAMESELF=3;
-	public final static int HESHE=4;
-	public final static int ISARE=5;
-	public final static int HASHAVE=6;
-	public final static int YOUPOSS=7;
-	public final static int HIMHERSELF=8;
-	public final static int HISHERSELF=9;
-	public final static int SIRMADAM=10;
-	public final static int ISARE2=11;
-	public final static int NAMENOART=12;
+	public final static int HIMHER=HISHER+1;
+	public final static int NAME=HIMHER+1;
+	public final static int NAMESELF=NAME+1;
+	public final static int HESHE=NAMESELF+1;
+	public final static int ISARE=HESHE+1;
+	public final static int HASHAVE=ISARE+1;
+	public final static int YOUPOSS=HASHAVE+1;
+	public final static int HIMHERSELF=YOUPOSS+1;
+	public final static int HISHERSELF=HIMHERSELF+1;
+	public final static int SIRMADAM=HISHERSELF+1;
+	public final static int NAMENOART=SIRMADAM+1;
 	public final static String[] FILTER_DESCS={"-HIS-HER","-HIM-HER","-NAME","-NAMESELF",
 											   "-HE-SHE","-IS-ARE","-HAS-HAVE","-YOUPOSS",
 											   "-HIM-HERSELF","-HIS-HERSELF",
-											   "-SIRMADAM","IS-ARE","-NAMENOART"};
+											   "-SIRMADAM","-NAMENOART"};
 	
-	public Hashtable getTagTable();
-	public String simpleOutFilter(String msg);
+	public Hashtable<String, Integer> getTagTable();
+	public String toRawString(String str);
+	//public String simpleOutFilter(String msg);
 	// no word-wrapping, text filtering or ('\','n') -> '\n' translations
 	// (it's not a member of the interface either so probably shouldn't be public)
 	public String colorOnlyFilter(String msg, Session S);
 	public String[] wrapOnlyFilter(String msg, int wrap);
-	public String getLastWord(StringBuffer buf, int lastSp, int lastSpace);
+	public String getLastWord(StringBuilder buf, int lastSp, int lastSpace);
 	public String fullOutFilter(Session S,
 								MOB mob,
 								Interactable source,
@@ -57,7 +61,7 @@ public interface TelnetFilter extends CMLibrary
 								CMObject tool,
 								String msg,
 								boolean wrapOnly);
-	public StringBuffer simpleInFilter(StringBuffer input, boolean allowMXP);
-	public String fullInFilter(String input, boolean allowMXP);
-	public String safetyFilter(String s);
+	//public StringBuffer simpleInFilter(StringBuffer input, boolean allowMXP);
+	//public String fullInFilter(String input, boolean allowMXP);
+	//public String safetyFilter(String s);
 }

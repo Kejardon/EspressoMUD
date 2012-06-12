@@ -25,12 +25,9 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class ChanWho extends StdCommand
 {
-	public ChanWho(){}
+	public ChanWho(){access=new String[]{"CHANWHO"};}
 
-	private String[] access={"CHANWHO"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		String channel=CMParms.combine(commands,1);
 		if((channel==null)||(channel.length()==0))
@@ -59,17 +56,15 @@ public class ChanWho extends StdCommand
 			mob.tell("You must specify a valid channel name. Try CHANNELS for a list.");
 			return false;
 		}
-		String head="^x\n\rListening on "+channel+":^?^.^N\n\r";
+		String head="^x\r\nListening on "+channel+":^?^.^N\r\n";
 		StringBuffer buf=new StringBuffer("");
-        boolean areareq=CMLib.channels().getChannelFlags(channelInt).contains(ChannelsLibrary.ChannelFlag.SAMEAREA);
-		for(int s=0;s<CMLib.sessions().size();s++)
+		for(Session ses : CMLib.sessions().toArray())
 		{
-			Session ses=CMLib.sessions().elementAt(s);
 			MOB mob2=ses.mob();
-			if((CMLib.channels().mayReadThisChannel(mob,areareq,ses,channelInt))
-			&&(mob2!=null)
+			if((CMLib.channels().mayReadThisChannel(mob2,channelInt))
+			&&((!ses.killFlag())&&(!mob2.playerStats().hasIgnored(mob)))
 			&&(CMLib.flags().isInTheGame(mob2,true)))
-					buf.append("^x[^?^.^N"+CMStrings.padRight(mob2.name(),20)+"^x]^?^.^N\n\r");
+				buf.append("^x[^?^.^N"+CMStrings.padRight(mob2.name(),20)+"^x]^?^.^N\r\n");
 		}
 		if(buf.length()==0)
 			mob.tell(head+"Nobody!");
@@ -77,6 +72,7 @@ public class ChanWho extends StdCommand
 			mob.tell(head+buf.toString());
 		return false;
 	}
-	
+
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	public boolean canBeOrdered(){return true;}
 }

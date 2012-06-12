@@ -16,7 +16,7 @@ import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
 import com.planet_ink.coffee_mud.Libraries.interfaces.*;
-
+import java.util.concurrent.*;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -29,57 +29,156 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 public class ServiceEngine implements ThreadEngine
 {
 	public String ID(){return "ServiceEngine";}
+	private ThreadEngine.SupportThread thread=null;
+	//protected HashedList<Tick> ticks=new HashedList<Tick>();
+	protected HashedList<TickArea> areas=new HashedList<TickArea>();
+	protected HashedList<Exit> exits=new HashedList<Exit>();
+	protected HashedList<TimeClock> clocks=new HashedList<TimeClock>();
+	protected static boolean isSuspended=false;
+	protected GlobalTicker mainTime=new GlobalTicker();	//Also handles globalTickCount
+
 	public CMObject newInstance(){try{return (CMObject)getClass().newInstance();}catch(Exception e){return new ServiceEngine();}}
 	public void initializeClass(){}
 	public CMObject copyOf(){try{return (CMObject)this.clone();}catch(Exception e){return newInstance();}}
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
-	private ThreadEngine.SupportThread thread=null;
 	public void propertiesLoaded(){}
-	protected LinkedList<Tick> ticks=new LinkedList<Tick>();
-	public Iterator<Tick> tickGroups(){return ticks.iterator();}
-	protected LinkedList<TickArea> areas=new LinkedList<TickArea>();
+	//public Iterator<Tick> tickGroups(){return ticks.iterator();}
 	public Iterator<TickArea> areaGroups(){return areas.iterator();}
-	private boolean isSuspended=false;
-
 	public ThreadEngine.SupportThread getSupportThread() { return thread;}
-
-	public void delTickGroup(Tick tock)
+	protected class GlobalTicker extends Thread //implements Tickable
 	{
-		synchronized(ticks)
+		protected boolean dead=false;
+		public int globalTickCount=1;
+		//public int globalTickCount(){return globalTickCount;}
+		public void interrupt(){dead=true; super.interrupt();}
+		public void run(){
+			long nextStart=System.currentTimeMillis();
+			try {
+				while(!dead) {
+					long timeToSleep=nextStart-System.currentTimeMillis();
+					if(timeToSleep>10) Thread.sleep(timeToSleep);
+					nextStart+=Tickable.TIME_TICK;
+					if((CMProps.Bools.MUDSTARTED.property())
+					&&(!CMLib.threads().isAllSuspended())) {
+						globalTickCount++;
+						for(Iterator<Exit> iter=exits.iterator();iter.hasNext();) {
+							Exit exit=iter.next();
+							try{ if(!exit.tick(globalTickCount)) exits.remove(exit); }
+							catch(Exception e){Log.errOut("ServiceEngine",e.toString());} }
+						for(Iterator<TimeClock> iter=clocks.iterator();iter.hasNext();) {
+							TimeClock clock=iter.next();
+							try{ if(!clock.tick(globalTickCount)) clocks.remove(clock); }
+							catch(Exception e){Log.errOut("ServiceEngine",e.toString());} } } } }
+			catch(InterruptedException e){} }
+	}
+	
+	protected ConcurrentSkipListSet<TickActer> tickActQueue=new ConcurrentSkipListSet(new Comparator<TickActer>()
+	{
+		public int compare(TickActer a, TickActer b)
 		{
-			ticks.remove(tock);
+			if(a==b) return 0;
+			int i=(int)(a.nextAct()-b.nextAct());	//lower value == lower time to go == lower in queue == higher priority
+			return (i==0?1:i);
 		}
+		public boolean equals(TickActer a, TickActer b)
+		{
+			return a==b;
+		}
+	});
+	public void startTickDown(TickActer E)
+	{
+		if(E.nextAct()<=System.currentTimeMillis())
+		{
+			CMClass.threadPool.execute(E);
+			return;
+		}
+		tickActQueue.add(E);
+		if(tickActQueue.first()==E) tickActThread.interrupt();
+	}
+	public boolean deleteTick(TickActer E)
+	{
+		boolean interruptLater=(tickActQueue.first()==E);
+		boolean found=tickActQueue.remove(E);
+		if(interruptLater&&found) tickActThread.interrupt();
+		return found;
+	}
+	protected Thread tickActThread=new TickActThread();
+	protected class TickActThread extends Thread
+	{
+		protected boolean awake=false;
+		protected boolean dead=false;
+		public void shutdown() {
+			tickActQueue.clear();
+			dead=true;
+			CMLib.killThread(this,10,1); }
+		public boolean dead(){return dead;}
+		public boolean awake(){return awake;}
+		public void run() {
+			while(true){
+				try {
+					while(!tickActQueue.isEmpty()) {
+						awake=false;
+						TickActer next=tickActQueue.first();
+						long timeToSleep=next.nextAct()-System.currentTimeMillis();
+						if(timeToSleep>0) Thread.sleep(timeToSleep);
+						awake=true;
+						nextTicker:
+						if((CMProps.Bools.MUDSTARTED.property())&&(!isSuspended)) {
+							if(!tickActQueue.remove(next)) break nextTicker;
+							CMClass.threadPool.execute(next); } } }
+							/*try { next.tickAct(); }
+							catch(Exception t) { Log.errOut("ServiceEngine",t); }*/
+				catch(InterruptedException ioe) { }
+				//If it was interrupted, it is most likely because we need to wake up for a new early ticker, or the previous new ticker got baleeted.
+				//Interruptions will only come if the thread is sleeping though.
+				//NOTE: tickAct() should NEVER call a sleep (nor take any significant amount of time anyways)!
+				if(dead) {
+					awake=false;
+					break; }
+				synchronized(tickActQueue) {
+					while(tickActQueue.isEmpty()) try{tickActQueue.wait();}catch(InterruptedException ioe){} } } }
+	};
+	public int globalTickCount(){return mainTime.globalTickCount;}
+	/*public void delTickGroup(Tick tock)
+	{
+		synchronized(ticks) { ticks.remove(tock); }
 	}
 	public void addTickGroup(Tick tock)
 	{
-		synchronized(ticks)
-		{
-			ticks.add(tock);
-		}
-	}
+		synchronized(ticks) { ticks.add(tock); }
+	}*/
 	public void delArea(TickArea tock)
 	{
-		synchronized(areas)
-		{
-			areas.remove(tock);
-		}
+		synchronized(areas) { areas.remove(tock); }
 	}
 	public void addArea(TickArea tock)
 	{
-		synchronized(areas)
-		{
-			areas.add(tock);
-		}
+		synchronized(areas) { areas.add(tock); }
 	}
-	public Tick getAvailTickThread()
+	public void delExit(Exit exit)
+	{
+		synchronized(exits) { exits.remove(exit); }
+	}
+	public void addExit(Exit exit)
+	{
+		synchronized(exits) { exits.add(exit); }
+	}
+	public void delClock(TimeClock clock)
+	{
+		synchronized(clocks) { clocks.remove(clock); }
+	}
+	public void addClock(TimeClock clock)
+	{
+		synchronized(clocks) { clocks.add(clock); }
+	}
+	/*public Tick getAvailTickThread()
 	{
 		Tick tock=null;
 		Tick almostTock=null;
-		for(Iterator<Tick> e=tickGroups();e.hasNext();)
+		for(Iterator<Tick> e=ticks.iterator();e.hasNext();)
 		{
 			almostTock=e.next();
-			if((almostTock!=null)&&
-				(almostTock.numTickers()<TickableGroup.MAX_TICK_CLIENTS)&&(almostTock.getThreadGroup()!=null))
+			if((almostTock.numTickers()<TickableGroup.MAX_TICK_CLIENTS)&&(!almostTock.dead()))
 			{
 				tock=almostTock;
 				break;
@@ -91,31 +190,30 @@ public class ServiceEngine implements ThreadEngine
 			addTickGroup(tock);
 		}
 		return tock;
-	}
+	}*/
 
-	public void startTickDown(Tickable E, long TICK_TIME)
+	/*public void startTickDown(TickActer E, long TICK_TIME)
 	{
-		TockClient client=new TockClient(E,TICK_TIME);
-		getAvailTickThread().addTicker(client);
+		//TockClient client=new TockClient(E,TICK_TIME);
+		getAvailTickThread().addTicker(E);
 		return;
-	}
+	}*/
 	public void startArea(Tickable E){startArea(E, Tickable.TIME_TICK);}
 	public void startArea(Tickable E, long TICK_TIME)
 	{
 		addArea(new TickArea(TICK_TIME,E));
 	}
 
-	public boolean deleteTick(Tickable E)
+	/*public boolean deleteTick(TickActer E)
 	{
-		TockClient equiv=new TockClient(E, 0);
-		Iterator set=null;
-		for(Iterator<Tick> e=tickGroups();e.hasNext();)
+		//TockClient equiv=new TockClient(E, 0);
+		for(Iterator<Tick> e=ticks.iterator();e.hasNext();)
 		{
-			if(e.next().delTicker(equiv))
+			if(e.next().delTicker(E))
 				return true;
 		}
 		return false;
-	}
+	}*/
 	public boolean deleteArea(Tickable E)
 	{
 		TickArea almostTock=null;
@@ -126,6 +224,8 @@ public class ServiceEngine implements ThreadEngine
 			if(almostTock.clientObject==E)
 			{
 				delArea(almostTock);
+				almostTock.dead=true;
+				if(Thread.currentThread()!=almostTock) almostTock.shutdown();
 				return true;
 			}
 		}
@@ -133,61 +233,98 @@ public class ServiceEngine implements ThreadEngine
 	}
 
 	public boolean isAllSuspended(){return isSuspended;}
-	public void suspendAll(){isSuspended=true;}
-	public void resumeAll(){isSuspended=false;}
+	public void setSuspended(boolean b){isSuspended=b;}
+	//public void suspendAll(){isSuspended=true;}
+	//public void resumeAll(){isSuspended=false;}
 
+	public String[] mobTimes()
+	{
+		long totalMOBMillis=0;
+		long topMOBMillis=0;
+		String topMOBClient="";
+		for(Session S : CMLib.sessions().toArray())
+		{
+			totalMOBMillis+=S.getTotalMillis();
+			if(S.getTotalMillis()>topMOBMillis)
+			{
+				topMOBMillis=S.getTotalMillis();
+				MOB M=S.mob();
+				topMOBClient=(M==null)?S.getAddress():M.name();
+			}
+		}
+		return new String[]{CMLib.english().returnTime(totalMOBMillis,0), CMLib.english().returnTime(topMOBMillis,0), topMOBClient};
+	}
+	public long[] memoryUse()
+	{
+		return new long[]{Runtime.getRuntime().freeMemory(), Runtime.getRuntime().totalMemory()};
+	}
+	/*public int numTickGroups()
+	{
+		return ticks.size();
+	}*/
+	public String[][] threadInfo()
+	{
+		ArrayList<String[]> V=new ArrayList();
+		for(Iterator<CMLibrary> e=CMLib.libraries();e.hasNext();)
+		{
+			CMLibrary lib=e.next();
+			ThreadEngine.SupportThread thread=lib.getSupportThread();
+			if(thread!=null) {
+				String[] S=new String[3];
+				S[0]=thread.getName();
+				S[1]=CMLib.english().returnTime(thread.milliTotal, thread.tickTotal);
+				S[2]=thread.status;
+				V.add(S);
+			}
+		}
+		return V.toArray(new String[V.size()][]);
+	}
+	
+/*	//This is a stupid method, it needs to be recoded/removed
 	public String systemReport(String itemCode)
 	{
 		long totalMOBMillis=0;
-		long totalMOBTicks=0;
+		//long totalMOBTicks=0;
 		long topMOBMillis=0;
-		long topMOBTicks=0;
+		//long topMOBTicks=0;
 		MOB topMOBClient=null;
 		for(int s=0;s<CMLib.sessions().size();s++)
 		{
 			Session S=CMLib.sessions().elementAt(s);
 			totalMOBMillis+=S.getTotalMillis();
-			totalMOBTicks+=S.getTotalTicks();
+			//totalMOBTicks+=S.getTotalTicks();
 			if(S.getTotalMillis()>topMOBMillis)
 			{
 				topMOBMillis=S.getTotalMillis();
-				topMOBTicks=S.getTotalTicks();
+				//topMOBTicks=S.getTotalTicks();
 				topMOBClient=S.mob();
 			}
 		}
 
 		if(itemCode.equalsIgnoreCase("totalMOBMillis"))
 			return ""+totalMOBMillis;
-		else
-		if(itemCode.equalsIgnoreCase("totalMOBMillisTime"))
+		else if(itemCode.equalsIgnoreCase("totalMOBMillisTime"))
 			return CMLib.english().returnTime(totalMOBMillis,0);
-		else
-		if(itemCode.equalsIgnoreCase("totalMOBMillisTimePlusAverage"))
+/*		else if(itemCode.equalsIgnoreCase("totalMOBMillisTimePlusAverage"))
 			return CMLib.english().returnTime(totalMOBMillis,totalMOBTicks);
-		else
-		if(itemCode.equalsIgnoreCase("totalMOBTicks"))
-			return ""+totalMOBTicks;
-		else
-		if(itemCode.equalsIgnoreCase("topMOBMillis"))
+		else if(itemCode.equalsIgnoreCase("totalMOBTicks"))
+			return ""+totalMOBTicks; //*
+		else if(itemCode.equalsIgnoreCase("topMOBMillis"))
 			return ""+topMOBMillis;
-		else
-		if(itemCode.equalsIgnoreCase("topMOBMillisTime"))
+		else if(itemCode.equalsIgnoreCase("topMOBMillisTime"))
 			return CMLib.english().returnTime(topMOBMillis,0);
-		else
-		if(itemCode.equalsIgnoreCase("topMOBMillisTimePlusAverage"))
+/*		else if(itemCode.equalsIgnoreCase("topMOBMillisTimePlusAverage"))
 			return CMLib.english().returnTime(topMOBMillis,topMOBTicks);
-		else
-		if(itemCode.equalsIgnoreCase("topMOBTicks"))
-			return ""+topMOBTicks;
-		else
-		if(itemCode.equalsIgnoreCase("topMOBClient"))
+		else if(itemCode.equalsIgnoreCase("topMOBTicks"))
+			return ""+topMOBTicks; //*
+		else if(itemCode.equalsIgnoreCase("topMOBClient"))
 		{
 			if(topMOBClient!=null)
 				return topMOBClient.name();
 			return "";
 		}
 
-		int totalTickers=0;
+/*		int totalTickers=0;
 		long totalMillis=0;
 		long totalTicks=0;
 		int topGroupNumber=-1;
@@ -208,58 +345,42 @@ public class ServiceEngine implements ThreadEngine
 				topGroupNumber=num;
 			}
 			num++;
-		}
+		} //*
 		if(itemCode.equalsIgnoreCase("freeMemory"))
 			return ""+(Runtime.getRuntime().freeMemory()/1000);
-		else
-		if(itemCode.equalsIgnoreCase("totalMemory"))
+		else if(itemCode.equalsIgnoreCase("totalMemory"))
 			return ""+(Runtime.getRuntime().totalMemory()/1000);
-		else
-		if(itemCode.equalsIgnoreCase("totalTime"))
+		else if(itemCode.equalsIgnoreCase("totalTime"))
 			return ""+CMLib.english().returnTime(System.currentTimeMillis()-CMSecurity.getStartTime(),0);
-		else
-		if(itemCode.equalsIgnoreCase("startTime"))
+		else if(itemCode.equalsIgnoreCase("startTime"))
 			return CMLib.time().date2String(CMSecurity.getStartTime());
-		else
-		if(itemCode.equalsIgnoreCase("currentTime"))
+		else if(itemCode.equalsIgnoreCase("currentTime"))
 			return CMLib.time().date2String(System.currentTimeMillis());
-		else
-		if(itemCode.equalsIgnoreCase("totalTickers"))
+/*		else if(itemCode.equalsIgnoreCase("totalTickers"))
 			return ""+totalTickers;
-		else
-		if(itemCode.equalsIgnoreCase("totalMillis"))
+		else if(itemCode.equalsIgnoreCase("totalMillis"))
 			return ""+totalMillis;
-		else
-		if(itemCode.equalsIgnoreCase("totalMillisTime"))
+		else if(itemCode.equalsIgnoreCase("totalMillisTime"))
 			return CMLib.english().returnTime(totalMillis,0);
-		else
-		if(itemCode.equalsIgnoreCase("totalMillisTimePlusAverage"))
+		else if(itemCode.equalsIgnoreCase("totalMillisTimePlusAverage"))
 			return CMLib.english().returnTime(totalMillis,totalTicks);
-		else
-		if(itemCode.equalsIgnoreCase("totalTicks"))
-			return ""+totalTicks;
-		else
-		if(itemCode.equalsIgnoreCase("tickgroupsize"))
+		else if(itemCode.equalsIgnoreCase("totalTicks"))
+			return ""+totalTicks; //*
+		else if(itemCode.equalsIgnoreCase("tickgroupsize")) 
 			return ""+ticks.size();
-		else
-		if(itemCode.equalsIgnoreCase("topGroupNumber"))
+/*		else if(itemCode.equalsIgnoreCase("topGroupNumber"))
 			return ""+topGroupNumber;
-		else
-		if(itemCode.equalsIgnoreCase("topGroupMillis"))
+		else if(itemCode.equalsIgnoreCase("topGroupMillis"))
 			return ""+topGroupMillis;
-		else
-		if(itemCode.equalsIgnoreCase("topGroupMillisTime"))
+		else if(itemCode.equalsIgnoreCase("topGroupMillisTime"))
 			return CMLib.english().returnTime(topGroupMillis,0);
-		else
-		if(itemCode.equalsIgnoreCase("topGroupMillisTimePlusAverage"))
+		else if(itemCode.equalsIgnoreCase("topGroupMillisTimePlusAverage"))
 			return CMLib.english().returnTime(topGroupMillis,topGroupTicks);
-		else
-		if(itemCode.equalsIgnoreCase("topGroupTicks"))
-			return ""+topGroupTicks;
-		else
-		if(itemCode.toLowerCase().startsWith("thread"))
+		else if(itemCode.equalsIgnoreCase("topGroupTicks"))
+			return ""+topGroupTicks; //*
+		else if(itemCode.toLowerCase().startsWith("thread"))
 		{
-			int xstart="thread".length();
+			int xstart=6;//"thread".length();
 			int xend=xstart;
 			while((xend<itemCode.length())&&(Character.isDigit(itemCode.charAt(xend))))
 				xend++;
@@ -272,21 +393,15 @@ public class ServiceEngine implements ThreadEngine
 				if(thread!=null) {
 					if(curThreadNum==threadNum) {
 						String instrCode=itemCode.substring(xend);
-						if(instrCode.equalsIgnoreCase("miliTotal"))
-							return ""+thread.milliTotal;
-						if(instrCode.equalsIgnoreCase("milliTotal"))
+						if(instrCode.equalsIgnoreCase("miliTotal")||instrCode.equalsIgnoreCase("milliTotal"))
 							return ""+thread.milliTotal;
 						if(instrCode.equalsIgnoreCase("status"))
 							return ""+thread.status;
 						if(instrCode.equalsIgnoreCase("name"))
 							return ""+thread.getName();
-						if(instrCode.equalsIgnoreCase("MilliTotalTime"))
+						if(instrCode.equalsIgnoreCase("MilliTotalTime")||instrCode.equalsIgnoreCase("MiliTotalTime"))
 							return CMLib.english().returnTime(thread.milliTotal,0);
-						if(instrCode.equalsIgnoreCase("MiliTotalTime"))
-							return CMLib.english().returnTime(thread.milliTotal,0);
-						if(instrCode.equalsIgnoreCase("MilliTotalTimePlusAverage"))
-							return CMLib.english().returnTime(thread.milliTotal,thread.tickTotal);
-						if(instrCode.equalsIgnoreCase("MiliTotalTimePlusAverage"))
+						if(instrCode.equalsIgnoreCase("MilliTotalTimePlusAverage")||instrCode.equalsIgnoreCase("MiliTotalTimePlusAverage"))
 							return CMLib.english().returnTime(thread.milliTotal,thread.tickTotal);
 						if(instrCode.equalsIgnoreCase("TickTotal"))
 							return ""+thread.tickTotal;
@@ -297,8 +412,60 @@ public class ServiceEngine implements ThreadEngine
 			}
 		}
 		return "";
-	}
+	} */
 
+	/*public String tickReport(String request)
+	{
+		StringBuffer msg=new StringBuffer("\r\n");
+		boolean activeOnly=false;
+		String mask=null;
+		if("ACTIVE".startsWith(request.toUpperCase())&&(request.length()>0))
+		{
+			activeOnly=true;
+			request="";
+		}
+		msg.append("Grp Client ID             Due Status\r\n");
+//		msg.append("Grp Client               ID Status  \r\n");
+//		msg.append(CMStrings.padRight("Grp",4)+CMStrings.padRight("Client",20)+" "+CMStrings.padRight("ID",3)+CMStrings.padRight("Status",8)+"\r\n");
+		int col=0;
+		int whichTick=-1;
+		if(CMath.isInteger(request)&&(request.length()>0))
+			whichTick=CMath.s_int(request);
+		else if(request.length()>0)
+		{
+			mask=request.toUpperCase().trim();
+			if(mask.length()==0) mask=null;
+		}
+		int tickGroupCount=0;
+		for(Iterator<Tick> e=ticks.iterator();e.hasNext();tickGroupCount++)
+		{
+			Tick group=e.next();
+			if((whichTick<0)||(whichTick==tickGroupCount))
+			for(TickActer E : group.tickers())
+			{
+				//long due=E.nextAct()-System.currentTimeMillis();
+				if((!activeOnly)||(E.getActStatus()!=Tickable.TickStat.Not))
+				{
+					String name=(E instanceof CMSavable)?(E.ID()+((CMSavable)E).saveNum()):(E.ID());
+					if((mask==null)||(name.toUpperCase().indexOf(mask)>=0))
+					{
+						if(((col++)>=2)||(activeOnly))
+						{
+							msg.append("\r\n");
+							col=1;
+						}
+						msg.append(CMStrings.padRight(""+tickGroupCount,4)+
+								   CMStrings.padRight(name,20)+
+								   CMStrings.padRight("",6)+
+								   CMStrings.padRight(""+E.getTickStatus(),6));
+					}
+				}
+			}
+			if(whichTick==tickGroupCount) break;
+		}
+		return msg.toString();
+	}*/
+/*
 	public String tickInfo(String which)
 	{
 		int grpstart=-1;
@@ -310,8 +477,7 @@ public class ServiceEngine implements ThreadEngine
 			}
 		if(which.equalsIgnoreCase("tickGroupSize"))
 			return ""+ticks.size();
-		else
-		if(which.toLowerCase().startsWith("tickerssize"))
+		else if(which.toLowerCase().startsWith("tickerssize"))
 		{
 			if(grpstart<0) return"";
 			int group=CMath.s_int(which.substring(grpstart));
@@ -332,7 +498,8 @@ public class ServiceEngine implements ThreadEngine
 		Tick almostTock=(Tick)ticks.get(group);
 
 		if(client>=almostTock.numTickers()) return "";
-		TockClient C=almostTock.fetchTickerByIndex(client);
+		TockClient C=null;
+		almostTock.fetchTickerByIndex(client);
 		if(C==null) return "";
 
 		if(which.toLowerCase().startsWith("tickername"))
@@ -348,35 +515,43 @@ public class ServiceEngine implements ThreadEngine
 			return ((C.clientObject==null)?"":(""+C.clientObject.getTickStatus()));
 		return "";
 	}
-
+*/
 	public boolean shutdown() {
 		//int numTicks=tickGroup.size();
-		int which=0;
-		while(ticks.size()>0)
+		/*while(ticks.size()>0)
 		{
 			//Log.sysOut("ServiceEngine","Shutting down all tick "+which+"/"+numTicks+"...");
-			Tick tock=ticks.getFirst();
+			Tick tock=ticks.first();
 			if(tock!=null)
 			{
-				CMProps.Strings.MUDSTATUS.setProperty("Shutting down...shutting down Service Engine: killing Tick#" + tock.getCounter()+": "+tock.getStatus());
+				CMProps.Strings.MUDSTATUS.setProperty("Shutting down...shutting down Service Engine: killing Tick#" + tock.tickObjectCounter+": "+tock.getStatus());
 				tock.shutdown();
 			}
 			try{Thread.sleep(100);}catch(Exception e){}
-			which++;
+		}*/
+		while(areas.size()>0)
+		{
+			TickArea tock=areas.first();
+			if(tock!=null)
+			{
+				CMProps.Strings.MUDSTATUS.setProperty("Shutting down...shutting down Service Engine: killing Area#" + tock.tickObjectCounter+": "+tock.clientObject.getTickStatus());
+				tock.shutdown();
+			}
+			try{Thread.sleep(100);}catch(Exception e){}
 		}
 		CMProps.Strings.MUDSTATUS.setProperty("Shutting down...shutting down Service Engine: "+ID()+": thread shutdown");
 		thread.shutdown();
 		Log.sysOut("ServiceEngine","Shutdown complete.");
 		return true;
 	}
-
+/*
 	public Vector getNamedTickingObjects(String name)
 	{
 		Vector V=new Vector();
 		Tick almostTock=null;
 		TockClient C=null;
 		name=name.toUpperCase().trim();
-		for(Iterator<Tick> e=tickGroups();e.hasNext();)
+		for(Iterator<Tick> e=ticks.iterator();e.hasNext();)
 		{
 			almostTock=e.next();
 			for(Iterator i=almostTock.tickers();i.hasNext();)
@@ -390,12 +565,12 @@ public class ServiceEngine implements ThreadEngine
 		}
 		return V;
 	}
-
 	public String getTickStatusSummary(Tickable obj)
 	{
 		if(obj==null) return "";
 		return obj.getTickStatus().toString();
 	}
+*/
 	public String getServiceThreadSummary(Thread T)
 	{
 		if(T instanceof ThreadEngine.SupportThread)
@@ -409,67 +584,79 @@ public class ServiceEngine implements ThreadEngine
 		return "";
 
 	}
-
+/*
 	public void insertOrderDeathInOrder(DVector DV, long lastStart, String msg, Tick tock)
 	{
 		if(DV.size()>0)
 		for(int i=0;i<DV.size();i++)
 		{
-			if(((Long)DV.elementAt(i,1)).longValue()>lastStart)
+			if(((Long)DV.elementAt(i,0)).longValue()>lastStart)
 			{
-				DV.insertElementAt(i,Long.valueOf(lastStart),msg,tock);
+				DV.insertRowAt(i,Long.valueOf(lastStart),msg,tock);
 				return;
 			}
 		}
-		DV.addElement(Long.valueOf(lastStart),msg,tock);
+		DV.addRow(Long.valueOf(lastStart),msg,tock);
 	}
-
+*/
 	public void checkHealth()
 	{
 		long lastDateTime=System.currentTimeMillis()-(5*TimeManager.MILI_MINUTE);
-		long longerDateTime=System.currentTimeMillis()-(120*TimeManager.MILI_MINUTE);
-		thread.status("checking");
+		//long longerDateTime=System.currentTimeMillis()-(120*TimeManager.MILI_MINUTE);
+		//thread.status("checking");
 
+		ArrayList<TickArea> orderedDeaths=new ArrayList();
 		thread.status("checking tick groups.");
-		DVector orderedDeaths=new DVector(3);
-		try
+		/*for(Iterator<Tick> e=ticks.iterator();e.hasNext();)
 		{
-			Tick almostTock = null;
-			for(Iterator<Tick> e=tickGroups();e.hasNext();)
+			Tick almostTock=e.next();
+			if((almostTock.awake)
+			&&(almostTock.lastStop<lastDateTime))
 			{
-				almostTock=e.next();
-				if((almostTock.awake)
-				&&(almostTock.lastStop<lastDateTime))
-				{
-					insertOrderDeathInOrder(orderedDeaths,0,"LOCKED GROUP "+almostTock.getCounter()+"! No further information.",almostTock);
-					// no isDEBUGGING check -- just always let her rip.
-					thread.debugDumpStack(almostTock);
-				}
+				//insertOrderDeathInOrder(orderedDeaths,0,"LOCKED GROUP "+almostTock.tickObjectCounter+"! No further information.",almostTock);
+				delTickGroup(almostTock);
+				orderedDeaths.add(almostTock);	//"LOCKED GROUP "+almostTock.tickObjectCounter+"! No further information."
+				// no isDEBUGGING check -- just always let her rip.
+				Log.errOut(thread.getName(),"LOCKED TICK GROUP "+almostTock.tickObjectCounter);
+				thread.debugDumpStack(almostTock);
 			}
 		}
-		catch(java.util.NoSuchElementException e){}
-		for(int i=0;i<orderedDeaths.size();i++)
-			Log.errOut(thread.getName(),(String)orderedDeaths.elementAt(i,2));
-
-		thread.status("killing tick groups.");
-		for(int x=0;x<orderedDeaths.size();x++)
+		if(orderedDeaths.size()>0)
 		{
-			Tick almostTock=(Tick)orderedDeaths.elementAt(x,3);
-			Vector objs=new Vector();
-			try{
-				for(Iterator e=almostTock.tickers();e.hasNext();)
-					objs.addElement(e.next());
-			}catch(NoSuchElementException e){}
-			almostTock.shutdown();
-			if(CMLib.threads() instanceof ServiceEngine)
-				((ServiceEngine)CMLib.threads()).delTickGroup(almostTock);
-			for(int i=0;i<objs.size();i++)
+			thread.status("killing tick groups.");
+			for(int x=0;x<orderedDeaths.size();x++)
 			{
-				TockClient c=(TockClient)objs.elementAt(i);
-				CMLib.threads().startTickDown(c.clientObject,c.nextAction);
+				Tick almostTock=orderedDeaths.get(x);
+				ArrayList<TickActer> objs=new ArrayList();
+				try{
+					for(TickActer E : almostTock.tickers())
+						objs.add(E);
+				}catch(NoSuchElementException e){}
+				almostTock.shutdown();
+				//if(CMLib.threads() instanceof ServiceEngine)
+				//	((ServiceEngine)CMLib.threads()).
+				//delTickGroup(almostTock);
+				for(int i=0;i<objs.size();i++)
+					startTickDown(objs.get(i));
+			}
+			orderedDeaths.clear();
+		}*/
+		thread.status("checking areas.");
+		for(Iterator<TickArea> e=areas.iterator();e.hasNext();)
+		{
+			TickArea almostTock=e.next();
+			if((almostTock.awake)
+			&&(almostTock.lastStop<lastDateTime))
+			{
+				delArea(almostTock);
+				//orderedDeaths.add(almostTock);	//"LOCKED GROUP "+almostTock.tickObjectCounter+"! No further information."
+				almostTock.shutdown();
+				Log.errOut(thread.getName(),"LOCKED TICK GROUP "+almostTock.tickObjectCounter);
+				thread.debugDumpStack(almostTock);
+				startArea(almostTock.clientObject, almostTock.TICK_TIME);
 			}
 		}
-
+/*
 		thread.status("Checking mud threads");
 		for(int m=0;m<CMLib.hosts().size();m++)
 		{
@@ -489,18 +676,20 @@ public class ServiceEngine implements ThreadEngine
 			}
 		}
 		thread.status("Done checking threads");
+*/
 	}
 
 	public void run()
 	{
-		while(isAllSuspended())
+		while(isSuspended)
 			try{Thread.sleep(2000);}catch(Exception e){}
 
 		if((!CMSecurity.isDisabled("UTILITHREAD"))
 		&&(!CMSecurity.isDisabled("THREADTHREAD")))
 		{
 			checkHealth();
-			Resources.removeResource("SYSTEM_HASHED_MASKS");
+			//Resources.removeResource("SYSTEM_HASHED_MASKS");
+			//NOTE: Could use a ReferenceQueue to clean up gced references in the SYSTEM_HASHED_MASKS hashtable still.
 		}
 	}
 
@@ -510,6 +699,12 @@ public class ServiceEngine implements ThreadEngine
 					MudHost.TIME_UTILTHREAD_SLEEP, this, CMSecurity.isDebugging("UTILITHREAD"));
 		if(!thread.started)
 			thread.start();
+		mainTime.start();
+		/* if(exitThread==null)
+		{
+			exitThread=
+			exitThread.start();
+		} */
 		return true;
 	}
 }

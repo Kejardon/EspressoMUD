@@ -232,9 +232,9 @@ public class StdLanguage extends StdEffect implements Language
 				if(!(I instanceof MOB)) continue;
 				MOB source = (MOB)I;
 				if((msg.hasTargetCode(CMMsg.MsgCode.SPEAK, CMMsg.MsgCode.ORDER))
-					&&((!CMSecurity.isAllowed(source,source.location(),"ORDER"))
-					&&((!CMSecurity.isAllowed(source,source.location(),"CMDMOBS"))||(!((MOB)affected).isMonster()))
-					&&((!CMSecurity.isAllowed(source,source.location(),"CMDROOMS"))||(!((MOB)affected).isMonster()))))
+					&&((!CMSecurity.isAllowed(source,"ORDER"))
+					&&((!CMSecurity.isAllowed(source,"CMDMOBS"))||(!((MOB)affected).isMonster()))
+					&&((!CMSecurity.isAllowed(source,"CMDROOMS"))||(!((MOB)affected).isMonster()))))
 				{
 					Language L=getMyTranslator(ID(),source);
 					if((L==null)||(!L.beingSpoken(ID()))||((CMLib.dice().rollPercentage()*2)>(L.getProficiency(ID())+getProficiency(ID()))))
@@ -247,7 +247,7 @@ public class StdLanguage extends StdEffect implements Language
 							reply="<S-NAME> <S-IS-ARE> speaking "+name()+" and do(es) not appear to understand <T-YOUPOSS> words.";
 						else
 							reply="<S-NAME> <S-IS-ARE> having trouble understanding <T-YOUPOSS> pronunciation.";
-						msg.addTrailerMsg(CMClass.getMsg((MOB)affected,source,null,EnumSet.of(CMMsg.MsgCode.VISUAL),reply));
+						msg.addTrailerMsg(source.location(), CMClass.getMsg((MOB)affected,source,null,EnumSet.of(CMMsg.MsgCode.VISUAL),reply));
 					}
 					break;
 				}
@@ -287,9 +287,10 @@ public class StdLanguage extends StdEffect implements Language
 		{
 			String otherMes=msg.othersMessage();
 			//TODO: This looks wrong. It should probably be handled differently, whatever it's doing.
+			//For starters, this is passing a null session to fullOutFilter, which I do not want
 			if(msg.target()!=null)
 				otherMes=CMLib.coffeeFilter().fullOutFilter(null,(MOB)affected,msg.firstSource(),msg.target(),msg.firstTool(),otherMes,false);
-			msg.addTrailerMsg(CMClass.getMsg(msg.source(),(Interactable)affected,null,EnumSet.noneOf(CMMsg.MsgCode.class),null,msg.othersCode(),CMStrings.substituteSayInMessage(otherMes,sourceWords)+" (translated from "+name()+")",CMMsg.NO_EFFECT,null));
+			msg.addTrailerMsg(((MOB)affected).location(), CMClass.getMsg(msg.source(),(Interactable)affected,null,EnumSet.noneOf(CMMsg.MsgCode.class),null,msg.othersCode(),CMStrings.substituteSayInMessage(otherMes,sourceWords)+" (translated from "+name()+")",CMMsg.NO_EFFECT,null));
 			return true;
 		}
 		return false;
@@ -302,7 +303,7 @@ public class StdLanguage extends StdEffect implements Language
 			String otherMes=msg.targetMessage();
 			if(msg.target()!=null)
 				otherMes=CMLib.coffeeFilter().fullOutFilter(null,(MOB)affected,msg.firstSource(),msg.target(),msg.firstTool(),otherMes,false);
-			msg.addTrailerMsg(CMClass.getMsg(msg.source(),(Interactable)affected,null,CMMsg.NO_EFFECT,null,msg.targetCode(),CMStrings.substituteSayInMessage(otherMes,sourceWords)+" (translated from "+name()+")",CMMsg.NO_EFFECT,null));
+			msg.addTrailerMsg(((MOB)affected).location(), CMClass.getMsg(msg.source(),(Interactable)affected,null,CMMsg.NO_EFFECT,null,msg.targetCode(),CMStrings.substituteSayInMessage(otherMes,sourceWords)+" (translated from "+name()+")",CMMsg.NO_EFFECT,null));
 			return true;
 		}
 		return false;
@@ -312,7 +313,7 @@ public class StdLanguage extends StdEffect implements Language
 	{
 		if(msg.hasSourceCode(CMMsg.MsgCode.CHANNEL))
 		{
-			msg.addTrailerMsg(CMClass.getMsg(msg.source(),null,null,CMMsg.NO_EFFECT,null,CMMsg.NO_EFFECT,null,msg.othersCode(),CMStrings.substituteSayInMessage(msg.othersMessage(),sourceWords)+" (translated from "+name()+")"));
+			msg.addTrailerMsg(((MOB)affected).location(), CMClass.getMsg(msg.source(),null,null,CMMsg.NO_EFFECT,null,CMMsg.NO_EFFECT,null,msg.othersCode(),CMStrings.substituteSayInMessage(msg.othersMessage(),sourceWords)+" (translated from "+name()+")"));
 			return true;
 		}
 		return false;

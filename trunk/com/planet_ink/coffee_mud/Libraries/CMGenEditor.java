@@ -1,9 +1,6 @@
 package com.planet_ink.coffee_mud.Libraries;
 import com.planet_ink.coffee_mud.core.interfaces.*;
-import com.planet_ink.coffee_mud.core.exceptions.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.MoneyLibrary.MoneyDenomination;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
@@ -12,11 +9,17 @@ import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
-import java.io.IOException;
+import com.planet_ink.coffee_mud.core.exceptions.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.MoneyLibrary.MoneyDenomination;
+
 import java.util.*;
+import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.io.IOException;
 import java.util.regex.*;
 
 /*
@@ -222,6 +225,20 @@ public class CMGenEditor extends StdLibrary implements GenericEditor
 			mob.session().rawPrintln((1+i)+". New Element");
 		return CMath.s_int(mob.session().prompt("Edit which? ",""));
 	}
+	public int promptVector(MOB mob, Object[] V, boolean newOption)
+	{
+		int i=0;
+		for(;i<V.length;i++)
+		{
+			Object O=V[i];
+			boolean str=(O instanceof String);
+			boolean inter=(O instanceof Interactable);
+			mob.session().rawPrintln((1+i)+". "+(str?(String)O:(((CMObject)O).ID()+(inter?" "+((Interactable)O).name():""))));
+		}
+		if(newOption)
+			mob.session().rawPrintln((1+i)+". New Element");
+		return CMath.s_int(mob.session().prompt("Edit which? ",""));
+	}
 	public int promptWVector(MOB mob, WVector V, boolean newOption)
 	{
 		int i=0;
@@ -241,15 +258,15 @@ public class CMGenEditor extends StdLibrary implements GenericEditor
 	{
 		while((mob.session()!=null)&&(!mob.session().killFlag()))
 		{
-			String behave=mob.session().prompt("Enter an effect to add (?)\n\r:","");
+			String behave=mob.session().prompt("Enter an effect to add (?)\r\n:","");
 			if(behave.length()>0)
 			{
 				if(behave.equalsIgnoreCase("?"))
-					mob.tell(CMLib.lister().reallyList(CMClass.Objects.EFFECT.all()).toString());
+					mob.tell(CMLib.lister().reallyList(CMClass.EFFECT.all()).toString());
 				else
 				{
 					Effect chosenOne=null;
-					chosenOne=(Effect)CMClass.Objects.EFFECT.getNew(behave);
+					chosenOne=CMClass.EFFECT.getNew(behave);
 					if(chosenOne!=null)
 					{
 						boolean alreadyHasIt=false;
@@ -281,15 +298,15 @@ public class CMGenEditor extends StdLibrary implements GenericEditor
 	{
 		while((mob.session()!=null)&&(!mob.session().killFlag()))
 		{
-			String behave=mob.session().prompt("Enter a behavior to add (?)\n\r:","");
+			String behave=mob.session().prompt("Enter a behavior to add (?)\r\n:","");
 			if(behave.length()>0)
 			{
 				if(behave.equalsIgnoreCase("?"))
-					mob.tell(CMLib.lister().reallyList(CMClass.Objects.BEHAVIOR.all()).toString());
+					mob.tell(CMLib.lister().reallyList(CMClass.BEHAVIOR.all()).toString());
 				else
 				{
 					Behavior chosenOne=null;
-					chosenOne=(Behavior)CMClass.Objects.BEHAVIOR.getNew(behave);
+					chosenOne=CMClass.BEHAVIOR.getNew(behave);
 					if(chosenOne!=null)
 					{
 						boolean alreadyHasIt=false;
@@ -320,20 +337,20 @@ public class CMGenEditor extends StdLibrary implements GenericEditor
 	{
 		while((mob.session()!=null)&&(!mob.session().killFlag()))
 		{
-			String behave=mob.session().prompt("Enter an item to add (?)\n\r:","");
+			String behave=mob.session().prompt("Enter an item to add (?)\r\n:","");
 			if(behave.length()>0)
 			{
 				if(behave.equalsIgnoreCase("?"))
 				{
-//					mob.tell(CMLib.lister().reallyList(CMClass.Objects.WEARABLE.all()).toString());
-					mob.tell(CMLib.lister().reallyList(CMClass.Objects.WEAPON.all()).toString());
-					mob.tell(CMLib.lister().reallyList(CMClass.Objects.ITEM.all()).toString());
+//					mob.tell(CMLib.lister().reallyList(CMClass.WEARABLE.all()).toString());
+					mob.tell(CMLib.lister().reallyList(CMClass.WEAPON.all()).toString());
+					mob.tell(CMLib.lister().reallyList(CMClass.ITEM.all()).toString());
 				}
 				else
 				{
 					Item chosenOne=null;
-					chosenOne=(Item)CMClass.Objects.ITEM.getNew(behave);
-					if(chosenOne==null) chosenOne=(Item)CMClass.Objects.WEAPON.getNew(behave);
+					chosenOne=CMClass.ITEM.getNew(behave);
+					if(chosenOne==null) chosenOne=CMClass.WEAPON.getNew(behave);
 					if(chosenOne!=null)
 					{
 						mob.tell("Adding "+chosenOne.ID());
@@ -354,15 +371,15 @@ public class CMGenEditor extends StdLibrary implements GenericEditor
 	{
 		while((mob.session()!=null)&&(!mob.session().killFlag()))
 		{
-			String exit=mob.session().prompt("Enter an exit ID (?)\n\r:","");
+			String exit=mob.session().prompt("Enter an exit ID (?)\r\n:","");
 			if(exit.length()>0)
 			{
 				if(exit.equalsIgnoreCase("?"))
-					mob.tell(CMLib.lister().reallyList(CMClass.Objects.EXIT.all()).toString());
+					mob.tell(CMLib.lister().reallyList(CMClass.EXIT.all()).toString());
 				else
 				{
 					Exit chosenOne=null;
-					chosenOne=(Exit)CMClass.Objects.EXIT.getNew(exit);
+					chosenOne=CMClass.EXIT.getNew(exit);
 					if(chosenOne!=null)
 					{
 						mob.tell("Adding "+chosenOne.ID());
@@ -381,15 +398,15 @@ public class CMGenEditor extends StdLibrary implements GenericEditor
 	{
 		while((mob.session()!=null)&&(!mob.session().killFlag()))
 		{
-			String exit=mob.session().prompt("Enter a closeable ID (?)\n\r:","");
+			String exit=mob.session().prompt("Enter a closeable ID (?)\r\n:","");
 			if(exit.length()>0)
 			{
 				if(exit.equalsIgnoreCase("?"))
-					mob.tell(CMLib.lister().reallyList(CMClass.Objects.CLOSEABLE.all()).toString());
+					mob.tell(CMLib.lister().reallyList(CMClass.CLOSEABLE.all()).toString());
 				else
 				{
 					Closeable chosenOne=null;
-					chosenOne=(Closeable)CMClass.Objects.CLOSEABLE.getNew(exit);
+					chosenOne=CMClass.CLOSEABLE.getNew(exit);
 					if(chosenOne!=null)
 					{
 						mob.tell("Adding "+chosenOne.ID());
@@ -405,12 +422,12 @@ public class CMGenEditor extends StdLibrary implements GenericEditor
 		return null;
 	}
 
-	public void modExits(Vector<Room.REMap> exits, MOB M)
+	public void modExits(CopyOnWriteArrayList<Room.REMap> exits, MOB M)
 	{
 		boolean done=false;
 		while((M.session()!=null)&&(!M.session().killFlag())&&(!done))
 		{
-			Vector<Room.REMap> V=(Vector)exits.clone();
+			Vector<Room.REMap> V=new Vector(exits);
 			int i=0;
 			for(;i<V.size();i++)
 			{
@@ -431,7 +448,7 @@ public class CMGenEditor extends StdLibrary implements GenericEditor
 					{
 						String roomID=M.session().prompt("Connect this exit to what room? ","");
 						if(roomID.equals("")) break;
-						R=(Room)SIDLib.Objects.ROOM.get(CMath.s_int(roomID));
+						R=SIDLib.ROOM.get(CMath.s_int(roomID));
 					}
 					if(R!=null)
 						exits.add(new Room.REMap(R, e));
@@ -449,16 +466,15 @@ public class CMGenEditor extends StdLibrary implements GenericEditor
 					{
 						String roomID=M.session().prompt("Connect this exit to what room? ","");
 						if(roomID.equals("")) break;
-						R=(Room)SIDLib.Objects.ROOM.get(CMath.s_int(roomID));
+						R=SIDLib.ROOM.get(CMath.s_int(roomID));
 					}
-					if(R!=null) synchronized(exits)
+					if(R!=null)
 					{
 						Room.REMap old=V.get(i);
-						i=exits.indexOf(old);
-						if(i<0)
-							M.tell("Whoops, that exit disappeared when I wasn't looking!");
+						if(exits.remove(old))
+							exits.add(new Room.REMap(R, old.exit));
 						else
-							exits.set(i, new Room.REMap(R, old.exit));
+							M.tell("Whoops, that exit disappeared when I wasn't looking!");
 					}
 				}
 			}
@@ -469,7 +485,7 @@ public class CMGenEditor extends StdLibrary implements GenericEditor
 		boolean done=false;
 		while((M.session()!=null)&&(!M.session().killFlag())&&(!done))
 		{
-			Vector<Effect> V=E.allEffects();
+			Vector<Effect> V=CMParms.denumerate(E.allEffects());
 			int i=CMLib.genEd().promptVector(M, V, true);
 			if(--i<0) done=true;
 			else if(i==V.size())
@@ -491,7 +507,7 @@ public class CMGenEditor extends StdLibrary implements GenericEditor
 		boolean done=false;
 		while((M.session()!=null)&&(!M.session().killFlag())&&(!done))
 		{
-			Vector<Behavior> V=E.allBehaviors();
+			Vector<Behavior> V=CMParms.denumerate(E.allBehaviors());
 			int i=CMLib.genEd().promptVector(M, V, true);
 			if(--i<0) done=true;
 			else if(i==V.size())
@@ -518,7 +534,7 @@ public class CMGenEditor extends StdLibrary implements GenericEditor
 				S.append(E.toString());
 			M.session().rawPrintln(S.toString());
 			S=new StringBuilder("Current: ");
-			for(Enum E : (Enum[])set.toArray(new Enum[0]))
+			for(Enum E : (Enum[])set.toArray(CMClass.dummyEnumArray))
 				S.append(E.toString());
 			M.session().rawPrintln(S.toString());
 			String newString=M.session().prompt("Enter an option to toggle: ","");
@@ -538,8 +554,8 @@ public class CMGenEditor extends StdLibrary implements GenericEditor
 			if(areaName.equals("")) return null;
 			if(areaName.equals("?"))
 			{
-				for(Enumeration<Area> e=CMLib.map().areas();e.hasMoreElements();)
-					M.session().rawPrintln(e.nextElement().name());
+				for(Iterator<Area> e=CMLib.map().areas();e.hasNext();)
+					M.session().rawPrintln(e.next().name());
 				
 				continue;
 			}
@@ -566,12 +582,12 @@ public class CMGenEditor extends StdLibrary implements GenericEditor
 			if(raceName.equals("")) return null;
 			if(raceName.equals("?"))
 			{
-				for(Iterator<Race> e=(Iterator)CMClass.Objects.RACE.all();e.hasNext();)
+				for(Iterator<Race> e=CMClass.RACE.all();e.hasNext();)
 					M.session().rawPrintln(e.next().ID());
 				
 				continue;
 			}
-			Race R=(Race)CMClass.Objects.RACE.get(raceName);
+			Race R=CMClass.RACE.get(raceName);
 			if(R==null)
 			{
 				M.session().rawPrintln("No race with that name found.");

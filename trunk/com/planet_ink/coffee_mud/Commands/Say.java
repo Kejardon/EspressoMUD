@@ -24,24 +24,14 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Say extends StdCommand
 {
-	public Say(){}
+	public Say(){access=new String[]{"SAY", "`", "SAYTO", "ASK", "ASKTO", "YELL", "YELLTO"};}
 
-	private String[] access={"SAY",
-							 "`",
-							 "SAYTO",
-							 "ASK",
-							 "ASKTO",
-							 "YELL",
-							 "YELLTO"};
-	public String[] getAccessWords(){return access;}
-
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		String theWord="Say";
 		boolean toFlag=false;
 		{
-			String firstWord=((String)commands.get(0)).toUpperCase();
+			String firstWord=commands.get(0).toUpperCase();
 			if(firstWord.startsWith("A"))
 				theWord="Ask";
 			else
@@ -64,7 +54,7 @@ public class Say extends StdCommand
 		Interactable target=null;
 		if(toFlag)
 		{
-			String whom=(String)commands.get(0);
+			String whom=commands.get(0);
 			if(commands.size()<2)
 			{
 				mob.tell(theWord+" what to them?");
@@ -95,8 +85,12 @@ public class Say extends StdCommand
 		}
 		else
 			toTarget="^T^<SAY \""+mob.name()+"\"^><S-NAME> "+theWord.toLowerCase()+"(s) '"+combinedCommands+"'^</SAY^>^?";
-		R.doMessage(CMClass.getMsg(mob,target,null,EnumSet.of(CMMsg.MsgCode.SPEAK),toTarget));
+		CMMsg msg=CMClass.getMsg(mob,target,null,EnumSet.of(CMMsg.MsgCode.SPEAK),toTarget);
+		R.doMessage(msg);
+		msg.returnMsg();
 		return false;
 	}
+
+	public int commandType(MOB mob, String cmds){return CT_NON_ACTION;}	//TALKING IS A FREE ACTION, LENGTH BE DAMNED
 	public boolean canBeOrdered(){return true;}
 }

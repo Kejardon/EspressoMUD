@@ -24,22 +24,19 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Inventory extends StdCommand
 {
-	public Inventory(){}
+	public Inventory(){access=new String[]{"INVENTORY","INV","I"};}
 
-	private String[] access={"INVENTORY","INV","I"};
-	public String[] getAccessWords(){return access;}
-
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		if(mob.isMonster()) return false;
 		StringBuilder msg=CMLib.commands().getInventory(mob,mob,CMParms.combine(commands,1));
 		if(msg.length()==0)
-			mob.tell("^HYou are carrying:\n\r^!Nothing!^?\n\r");
+			mob.tell("^HYou are carrying:\r\n^!Nothing!^?\r\n");
 		else
-			mob.session().wraplessPrintln("^HYou are carrying:^?\n\r"+msg.toString());
+			mob.session().wraplessPrintln("^HYou are carrying:^?\r\n"+msg.toString());
 		return false;
 	}
-	
+
+	public int commandType(MOB mob, String cmds){return CT_NON_ACTION;}
 	public boolean canBeOrdered(){return true;}
 }

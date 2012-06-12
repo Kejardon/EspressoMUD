@@ -9,12 +9,13 @@ import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
 import java.nio.ByteBuffer;
-
+import java.util.concurrent.CopyOnWriteArrayList;
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
 EspressoMUD copyright 2011 Kejardon
@@ -27,20 +28,29 @@ public class StdTimeZone extends StdArea
 {
 	public String ID(){	return "StdTimeZone";}
 
-	public StdTimeZone()
+	public CMObject newInstance() { return new StdTimeZone(); }
+	public StdTimeZone(){}
+	public void destroy()
 	{
-		super();
-		myClock = (TimeClock)CMClass.Objects.COMMON.getNew("DefaultTimeClock");
+		amDestroyed=true;
+		if(myClock!=null) myClock.destroy();
+		super.destroy();
 	}
 
-	public CMObject copyOf()
+	public void cloneFix(StdArea E)
 	{
-		CMObject O=super.copyOf();
-		if(O instanceof Area) ((Area)O).setTimeObj((TimeClock)CMClass.Objects.COMMON.getNew("DefaultTimeClock"));
-		return O;
+		super.cloneFix(E);
+		if(E.myClock!=null)
+			myClock=(TimeClock)E.myClock.copyOf();
 	}
 
-	public TimeClock getTimeObj(){return myClock;}
+	public void setTimeObj(TimeClock obj){myClock=obj; CMLib.database().saveObject(this);}
+	public TimeClock getTimeObj()
+	{
+		if(myClock==null)
+			synchronized(this){if(myClock==null) myClock=(TimeClock)((Ownable)CMClass.COMMON.getNew("DefaultTimeClock")).setOwner(this);}
+		return myClock;
+	}
 
 	public void addChild(Area Adopted) {
 		super.addChild(Adopted);
@@ -55,10 +65,7 @@ public class StdTimeZone extends StdArea
 		{
 			ModEnum[] arrA=MCode.values();
 			ModEnum[] arrB=super.totalEnumM();
-			ModEnum[] total=new ModEnum[arrA.length+arrB.length];
-			System.arraycopy(arrA, 0, total, 0, arrA.length);
-			System.arraycopy(arrB, 0, total, arrA.length, arrB.length);
-			totalEnumM=total;
+			totalEnumM=CMParms.appendToArray(arrA, arrB, ModEnum[].class);
 		}
 		return totalEnumM;
 	}
@@ -68,10 +75,7 @@ public class StdTimeZone extends StdArea
 		{
 			Enum[] arrA=new Enum[] {MCode.values()[0]};
 			Enum[] arrB=super.headerEnumM();
-			Enum[] total=new Enum[arrA.length+arrB.length];
-			System.arraycopy(arrA, 0, total, 0, arrA.length);
-			System.arraycopy(arrB, 0, total, arrA.length, arrB.length);
-			headerEnumM=total;
+			headerEnumM=CMParms.appendToArray(arrA, arrB, Enum[].class);
 		}
 		return headerEnumM;
 	}
@@ -83,10 +87,7 @@ public class StdTimeZone extends StdArea
 		{
 			SaveEnum[] arrA=SCode.values();
 			SaveEnum[] arrB=super.totalEnumS();
-			SaveEnum[] total=new SaveEnum[arrA.length+arrB.length];
-			System.arraycopy(arrA, 0, total, 0, arrA.length);
-			System.arraycopy(arrB, 0, total, arrA.length, arrB.length);
-			totalEnumS=total;
+			totalEnumS=CMParms.appendToArray(arrA, arrB, SaveEnum[].class);
 		}
 		return totalEnumS;
 	}
@@ -96,10 +97,7 @@ public class StdTimeZone extends StdArea
 		{
 			Enum[] arrA=new Enum[] {SCode.values()[0]};
 			Enum[] arrB=super.headerEnumS();
-			Enum[] total=new Enum[arrA.length+arrB.length];
-			System.arraycopy(arrA, 0, total, 0, arrA.length);
-			System.arraycopy(arrB, 0, total, arrA.length, arrB.length);
-			headerEnumS=total;
+			headerEnumS=CMParms.appendToArray(arrA, arrB, Enum[].class);
 		}
 		return headerEnumS;
 	}
@@ -109,10 +107,10 @@ public class StdTimeZone extends StdArea
 		{
 			for(int SID : childrenToLoad)
 			{
-				Area Adopted = (Area)SIDLib.Objects.AREA.get(SID);
+				Area Adopted = SIDLib.AREA.get(SID);
 				if(Adopted==null) continue;
 				Adopted.addParent(this);
-				children.addElement(Adopted);
+				children.add(Adopted);
 				Adopted.setTimeObj(getTimeObj());
 			}
 			childrenToLoad=null;
@@ -122,10 +120,15 @@ public class StdTimeZone extends StdArea
 
 	private enum SCode implements CMSavable.SaveEnum{
 		TIM(){
-			public ByteBuffer save(StdTimeZone E){ return CMLib.coffeeMaker().savSubFull(E.myClock); }
+			public ByteBuffer save(StdTimeZone E){
+				if(E.myClock==null) return GenericBuilder.emptyBuffer;
+				return CMLib.coffeeMaker().savSubFull(E.myClock); }
 			public int size(){return -1;}
 			public CMSavable subObject(CMSavable fromThis){return ((StdArea)fromThis).myClock;}
-			public void load(StdTimeZone E, ByteBuffer S){ E.myClock=(TimeClock)((Ownable)CMLib.coffeeMaker().loadSub(S, E.myClock)).setOwner(E); } }
+			public void load(StdTimeZone E, ByteBuffer S){
+				TimeClock old=E.myClock;
+				E.myClock=(TimeClock)((Ownable)CMLib.coffeeMaker().loadSub(S, E, this)).setOwner(E);
+				if((old!=null)&&(old!=E.myClock)) old.destroy(); } }
 		;
 		public abstract ByteBuffer save(StdTimeZone E);
 		public abstract void load(StdTimeZone E, ByteBuffer S);

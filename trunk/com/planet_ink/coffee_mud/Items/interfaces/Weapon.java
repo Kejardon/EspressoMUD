@@ -64,7 +64,7 @@ public interface Weapon extends Item
 	"STAFF",
 	"THROWN"};
 	
-        // shooting mode Classifications
+	// shooting mode Classifications
 	public final static int SHOOT_NONE=0;
 	public final static int SHOOT_SINGLE=1;
 	public final static int SHOOT_BURST=2;

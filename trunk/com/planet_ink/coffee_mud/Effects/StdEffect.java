@@ -8,13 +8,14 @@ import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
-import java.util.*;
 
+import java.util.*;
 import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -27,24 +28,30 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 public class StdEffect implements Effect
 {
 	protected int tickDown=-1;
-	protected Vector affects=new Vector(1);
-	protected long lastTick=0;
+	protected CopyOnWriteArrayList<Effect> affects=new CopyOnWriteArrayList();
+	//protected long lastTick=0;
 
 	protected Affectable affected=null;
 	protected boolean unInvoked=false;
 	protected EnumSet<Flags> myFlags=EnumSet.noneOf(Flags.class);
 	protected EnumSet<ListenHolder.Flags> lFlags=EnumSet.noneOf(ListenHolder.Flags.class);
-	protected Vector<OkChecker> okCheckers=null;
-	protected Vector<ExcChecker> excCheckers=null;
-	protected Vector<TickActer> tickActers=null;
+	protected CopyOnWriteArrayList<OkChecker> okCheckers=new CopyOnWriteArrayList();
+	protected CopyOnWriteArrayList<ExcChecker> excCheckers=new CopyOnWriteArrayList();
+	protected CopyOnWriteArrayList<TickActer> tickActers=new CopyOnWriteArrayList();
 	protected Tickable.TickStat tickStatus=Tickable.TickStat.Not;
+	protected int tickCount;
 	
 	protected int saveNum=0;
+	protected boolean amDestroyed=false;
 	protected int[] effectsToLoad=null;
 
 	public String ID() { return "StdEffect"; }
 	public int priority(ListenHolder L){return Integer.MAX_VALUE;}
-	public void registerListeners(ListenHolder here) { here.addListener(this, lFlags); }
+	public void registerListeners(ListenHolder here)
+	{
+		if(here==affected)
+			here.addListener(this, lFlags);
+	}
 	public void registerAllListeners()
 	{
 		if(affected instanceof ListenHolder)
@@ -56,11 +63,6 @@ public class StdEffect implements Effect
 			((ListenHolder)affected).removeListener(this, lFlags);
 	}
 	public void initializeClass() {}
-	public void registerListeners(Affectable forThis)
-	{
-		if(forThis==affected)
-			forThis.addListener(this, lFlags);
-	}
 	public StdEffect(){}
 
 	public CMObject newInstance()
@@ -73,8 +75,7 @@ public class StdEffect implements Effect
 
 	public void startTickDown(Affectable affected, int tickTime)
 	{
-		if(affected.fetchEffect(ID())==null)
-			affected.addEffect(this);
+		affected.addEffect(this);
 		tickDown=tickTime;
 		CMLib.database().saveObject(this);
 	}
@@ -83,12 +84,42 @@ public class StdEffect implements Effect
 	{
 		return ID().compareTo(o.ID());
 	}
-	protected void cloneFix(Effect E){saveNum=0;}
+	public Effect copyOnto(Affectable being)
+	{
+		try
+		{
+			StdEffect E=(StdEffect)this.clone();
+			E.saveNum=0;
+			being.addEffect(E);
+			E.cloneFix(this);
+			return E;
+		}
+		catch(CloneNotSupportedException e)
+		{
+			StdEffect E=(StdEffect)this.newInstance();
+			E.startTickDown(being, tickDown);
+			return E;
+		}
+	}
+	protected void cloneFix(StdEffect E)
+	{
+		okCheckers=new CopyOnWriteArrayList();
+		excCheckers=new CopyOnWriteArrayList();
+		tickActers=new CopyOnWriteArrayList();
+		tickStatus=Tickable.TickStat.Not;
+		myFlags=myFlags.clone();
+		lFlags=lFlags.clone();
+		//affected=null;
+		affects=new CopyOnWriteArrayList();
+		for(Effect A : E.affects)
+			affects.add(A.copyOnto(this));
+	}
 	public CMObject copyOf()
 	{
 		try
 		{
 			StdEffect E=(StdEffect)this.clone();
+			E.saveNum=0;
 			E.cloneFix(this);
 			return E;
 		}
@@ -104,15 +135,23 @@ public class StdEffect implements Effect
 	}
 	public void setAffectedOne(Affectable being)
 	{
+		if(affected instanceof ListenHolder)
+			((ListenHolder)affected).removeListener(this, lFlags);
 		affected=being;
+		if(affected instanceof ListenHolder)
+			((ListenHolder)affected).addListener(this, lFlags);
+		else if(affected==null)
+			destroy();
 	}
 
 	public void unInvoke()
 	{
 		unInvoked=true;
 		if(affected!=null)
+		{
 			affected.delEffect(this);
-		CMLib.database().deleteObject(this);
+			setAffectedOne(null);	//this should be redundant because of affected.delEffect but just in case...
+		}
 	}
 
 	public boolean invoke(Affectable target, int asLevel)
@@ -124,35 +163,40 @@ public class StdEffect implements Effect
 
 	public boolean okMessage(ListenHolder.OkChecker myHost, CMMsg msg)
 	{
-		if(okCheckers!=null)
-		for(int i=okCheckers.size();i>0;i--)
-			if(!okCheckers.get(i-1).okMessage(myHost,msg))
+		for(OkChecker O : okCheckers)
+			if(!O.okMessage(myHost,msg))
 				return false;
 		return true;
 	}
 	public boolean respondTo(CMMsg msg){return true;}
 	public void executeMsg(ListenHolder.ExcChecker myHost, CMMsg msg)
 	{
-		if(excCheckers!=null)
-		for(int i=excCheckers.size();i>0;i--)
-			excCheckers.get(i-1).executeMsg(myHost,msg);
+		for(ExcChecker E : excCheckers)
+			E.executeMsg(myHost,msg);
 	}
 
 	//Tickable
 	public Tickable.TickStat getTickStatus(){return tickStatus;}
-	public boolean tick(Tickable ticking, Tickable.TickID tickID)
+	public boolean tick(int tickTo)
 	{
-		if(tickID==Tickable.TickID.Action) return false;
+		if(tickCount==0) tickCount=tickTo-1;
+		else if(tickTo>tickCount+10)
+			tickTo=tickCount+10;
+		while(tickCount<tickTo)
+		{
+			tickCount++;
+			if(!doTick()) {lFlags.remove(ListenHolder.Flags.TICK); tickCount=0; return false;}
+		}
+		return true;
+	}
+	public boolean doTick()
+	{
 		tickStatus=Tickable.TickStat.Listener;
 		if(tickActers!=null)
-		for(int i=tickActers.size()-1;i>=0;i--)
-		{
-			TickActer T=tickActers.get(i);
-			if(!T.tick(ticking, tickID))
-				removeListener(T, EnumSet.of(ListenHolder.Flags.TICK));
-		}
+		for(TickActer T : tickActers)
+			if(!T.tick(tickCount))
+				tickActers.remove(T);
 		tickStatus=Tickable.TickStat.Not;
-		lastTick=System.currentTimeMillis();
 		if(tickDown!=Integer.MAX_VALUE)
 		{
 			if((--tickDown)<=0)
@@ -162,50 +206,57 @@ public class StdEffect implements Effect
 				return false;
 			}
 			CMLib.database().saveObject(this);
+			return true;
 		}
-		return true;
+		return (tickActers.size()>0);
 	}
-	public long lastAct(){return 0;}	//No Action ticks
-	public long lastTick(){return lastTick;}
+	public int tickCounter(){return tickCount;}
+	public void tickAct(){}
+	//public long lastAct(){return 0;}	//No Action ticks
+	//public long lastTick(){return lastTick;}
 	//Affectable
 	public void addEffect(Effect to)
 	{
-		if(to==null) return;
-		affects.addElement(to);
+		affects.add(to);
 		to.setAffectedOne(this);
 		CMLib.database().saveObject(this);
 	}
 	public void delEffect(Effect to)
 	{
-		if(affects.removeElement(to))
+		if(affects.remove(to))
+		{
 			to.setAffectedOne(null);
-		CMLib.database().saveObject(this);
+			CMLib.database().saveObject(this);
+		}
+	}
+	public boolean hasEffect(Effect to)
+	{
+		return affects.contains(to);
 	}
 	public int numEffects(){return affects.size();}
 	public Effect fetchEffect(int index)
 	{
-		try { return (Effect)affects.elementAt(index); }
+		try { return affects.get(index); }
 		catch(java.lang.ArrayIndexOutOfBoundsException x){}
 		return null;
 	}
 	public Vector<Effect> fetchEffect(String ID)
 	{
-		Vector<Effect> V=new Vector<Effect>();
-		for(int a=0;a<affects.size();a++)
-		{
-			Effect A=fetchEffect(a);
-			if((A!=null)&&(A.ID().equals(ID)))
-				V.add(A);
-		}
+		Vector<Effect> V=new Vector(1);
+		for(Effect E : affects)
+			if(E.ID().equals(ID))
+				V.add(E);
 		return V;
 	}
-	public Vector<Effect> allEffects() { return (Vector<Effect>)affects.clone(); }
+	public Iterator<Effect> allEffects() { return affects.iterator(); }
 	//Affectable/Behavable shared
-	public Vector<CharAffecter> charAffecters(){return null;}
-	public Vector<EnvAffecter> envAffecters(){return null;}	//TODO: Should this give the environmental's instead?
-	public Vector<OkChecker> okCheckers(){if(okCheckers==null) okCheckers=new Vector(); return okCheckers;}
-	public Vector<ExcChecker> excCheckers(){if(excCheckers==null) excCheckers=new Vector(); return excCheckers;}
-	public Vector<TickActer> tickActers(){if(tickActers==null) tickActers=new Vector(); return tickActers;}
+	public CopyOnWriteArrayList<CharAffecter> charAffecters(){return null;}
+	public CopyOnWriteArrayList<EnvAffecter> envAffecters(){return null;}
+	public CopyOnWriteArrayList<OkChecker> okCheckers(){return okCheckers;}
+	public CopyOnWriteArrayList<ExcChecker> excCheckers(){return excCheckers;}
+	public CopyOnWriteArrayList<TickActer> tickActers(){return tickActers;}
+	//TODO/NOTE: I might make a flag or something so this code will not clear TICK for effects that want to tick themselves,
+	//instead of needing to override these methods
 	public void removeListener(Listener oldAffect, EnumSet flags)
 	{
 		ListenHolder.O.removeListener(this, oldAffect, flags);
@@ -224,8 +275,18 @@ public class StdEffect implements Effect
 
 	public void destroy()
 	{
-		//TODO:
-		CMLib.database().deleteObject(this);
+		unInvoke();
+		for(Effect E : affects)
+			E.setAffectedOne(null);
+		affects.clear();
+		clearAllListeners();
+		amDestroyed=true;
+		if(saveNum!=0)
+			CMLib.database().deleteObject(this);
+	}
+	public boolean amDestroyed()
+	{
+		return amDestroyed;
 	}
 
 	//CMModifiable and CMSavable
@@ -235,11 +296,11 @@ public class StdEffect implements Effect
 	public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
 	public int saveNum()
 	{
-		if(saveNum==0)
+		if((saveNum==0)&&(!amDestroyed))
 		synchronized(this)
 		{
 			if(saveNum==0)
-				saveNum=SIDLib.Objects.EFFECT.getNumber(this);
+				saveNum=SIDLib.EFFECT.getNumber(this);
 		}
 		return saveNum;
 	}
@@ -248,9 +309,9 @@ public class StdEffect implements Effect
 		synchronized(this)
 		{
 			if(saveNum!=0)
-				SIDLib.Objects.EFFECT.removeNumber(saveNum);
+				SIDLib.EFFECT.removeNumber(saveNum);
 			saveNum=num;
-			SIDLib.Objects.EFFECT.assignNumber(num, this);
+			SIDLib.EFFECT.assignNumber(num, this);
 		}
 	}
 	public boolean needLink(){return true;}
@@ -260,15 +321,16 @@ public class StdEffect implements Effect
 		{
 			for(int SID : effectsToLoad)
 			{
-				Effect to = (Effect)SIDLib.Objects.EFFECT.get(SID);
+				Effect to = SIDLib.EFFECT.get(SID);
 				if(to==null) continue;
-				affects.addElement(to);
+				affects.add(to);
 				to.setAffectedOne(this);
 			}
 			effectsToLoad=null;
 		}
 	}
 	public void saveThis(){CMLib.database().saveObject(this);}
+	public void prepDefault(){}
 
 	private enum SCode implements CMSavable.SaveEnum{
 		TIC(){
@@ -277,7 +339,7 @@ public class StdEffect implements Effect
 			public void load(StdEffect E, ByteBuffer S){ E.tickDown=S.getInt(); } },
 		EFC(){
 			public ByteBuffer save(StdEffect E){
-				if(E.affects.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.affects.toArray(new CMSavable[E.affects.size()]));
+				if(E.affects.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.affects.toArray(CMSavable.dummyCMSavableArray));
 				return GenericBuilder.emptyBuffer; }
 			public int size(){return 0;}
 			public void load(StdEffect E, ByteBuffer S){ E.effectsToLoad=CMLib.coffeeMaker().loadAInt(S); } },

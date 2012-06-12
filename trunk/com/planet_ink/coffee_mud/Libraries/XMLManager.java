@@ -9,12 +9,14 @@ import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.XMLLibrary.XMLpiece;
 
 import java.util.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.XMLLibrary.XMLpiece;
+import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -23,6 +25,7 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
+//NOTE: As the MUD currently does not use XML I am mostly leaving this library untouched for the time being.
 @SuppressWarnings("unchecked")
 public class XMLManager extends StdLibrary implements XMLLibrary
 {
@@ -354,8 +357,8 @@ public class XMLManager extends StdLibrary implements XMLLibrary
 	{
 		if(V==null) return null;
 		for(int v=0;v<V.size();v++)
-			if(((XMLpiece)V.elementAt(v)).tag.equalsIgnoreCase(tag))
-				return (XMLpiece)V.elementAt(v);
+			if(((XMLpiece)V.get(v)).tag.equalsIgnoreCase(tag))
+				return (XMLpiece)V.get(v);
 		return null;
 	}
 
@@ -492,7 +495,7 @@ public class XMLManager extends StdLibrary implements XMLLibrary
 		while(next!=null)
 		{
 			end=next.outerEnd;
-			V.addElement(next);
+			V.add(next);
 			next=nextXML(buf,null,end+1);
 		}
 		return V;
@@ -546,7 +549,7 @@ public class XMLManager extends StdLibrary implements XMLLibrary
 		String s=null;
 		for(int v=0;v<V.size();v++)
 		{
-			s=V.elementAt(v).toString();
+			s=V.get(v).toString();
 			if(s.trim().length()==0)
 				str.append("<X />");
 			else
@@ -560,7 +563,7 @@ public class XMLManager extends StdLibrary implements XMLLibrary
 		Vector<XMLpiece> xml=parseAllXML(numberedList);
 		Vector<String> V=new Vector<String>();
 		for(int v=0;v<xml.size();v++)
-			V.addElement(this.restoreAngleBrackets(((XMLLibrary.XMLpiece)xml.elementAt(v)).value));
+			V.add(this.restoreAngleBrackets(((XMLLibrary.XMLpiece)xml.get(v)).value));
 		return V;
 	}
 }

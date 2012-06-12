@@ -27,6 +27,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
  * or even just simply respond to a player or even another mob.
  * @see com.planet_ink.coffee_mud.Behaviors.interfaces.Behavior
  */
+//Generally unsupported file
 public interface ChattyBehavior extends Behavior
 {
 	/**

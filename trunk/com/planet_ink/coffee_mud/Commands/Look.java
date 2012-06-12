@@ -24,12 +24,9 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Look extends StdCommand
 {
-	public Look(){}
+	public Look(){access=new String[]{"LOOK","LOO","LO","L"};}
 
-	private String[] access={"LOOK","LOO","LO","L"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		String textMsg="<S-NAME> look(s) ";
 		Interactable thisThang=null;
@@ -50,14 +47,17 @@ public class Look extends StdCommand
 			String name="at <T-NAMESELF>";
 			if(thisThang==mob.location())
 				name="around";
-			if((mob.location().doMessage(CMClass.getMsg(mob,thisThang,null,EnumSet.of(CMMsg.MsgCode.LOOK),textMsg+name+".")))
+			CMMsg msg=CMClass.getMsg(mob,thisThang,null,EnumSet.of(CMMsg.MsgCode.LOOK),textMsg+name+".");
+			if((mob.location().doMessage(msg))
 				&&(thisThang instanceof Room))
 				CMLib.commands().lookAtExits((Room)thisThang,mob);
+			msg.returnMsg();
 		}
 		else
 			mob.tell("You don't see that here!");
 		return false;
 	}
-	
+
+	public int commandType(MOB mob, String cmds){return CT_NON_ACTION;}
 	public boolean canBeOrdered(){return true;}
 }

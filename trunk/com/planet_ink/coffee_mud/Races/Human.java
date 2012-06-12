@@ -31,7 +31,7 @@ public class Human extends StdRace
 	public Human()
 	{
 		myGenders=new Gender[2];
-		myGenders[0]=(Gender)CMClass.Objects.GENDER.get("Male");
-		myGenders[1]=(Gender)CMClass.Objects.GENDER.get("Female");
+		myGenders[0]=CMClass.GENDER.get("Male");
+		myGenders[1]=CMClass.GENDER.get("Female");
 	}
 }

@@ -24,12 +24,9 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Transfer extends At
 {
-	public Transfer(){}
+	public Transfer(){access=new String[]{"TRANSFER"};}
 
-	private String[] access={"TRANSFER"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		Room room=null;
 		if(commands.size()<3)
@@ -40,12 +37,12 @@ public class Transfer extends At
 		commands.remove(0);
 		boolean mobFlag=false;
 		boolean itemFlag=false;
-		if(((String)commands.get(0)).equalsIgnoreCase("ITEM"))
+		if(commands.get(0).equalsIgnoreCase("ITEM"))
 		{
 			itemFlag=true;
 			commands.remove(0);
 		}
-		if(((String)commands.get(0)).equalsIgnoreCase("MOB"))
+		if(commands.get(0).equalsIgnoreCase("MOB"))
 		{
 			mobFlag=true;
 			commands.remove(0);
@@ -56,7 +53,7 @@ public class Transfer extends At
 			return false;
 		}
 
-		int maxToDo=CMLib.english().calculateMaxToGive(mob,commands,false,null,true);
+		int maxToDo=CMLib.english().calculateMaxToGive(mob,commands,null,true);
 		if(maxToDo<0) return false;
 
 		int partition=CMLib.english().getPartitionIndex(commands, "to", 1);
@@ -122,9 +119,8 @@ public class Transfer extends At
 			else
 			{
 				V=new Vector();
-				for(int s=0;s<CMLib.sessions().size();s++)
+				for(Session S : CMLib.sessions().toArray())
 				{
-					Session S=CMLib.sessions().elementAt(s);
 					MOB M=S.mob();
 					if((M!=null)&&(M.name().equalsIgnoreCase(mobname)))
 					{
@@ -145,7 +141,7 @@ public class Transfer extends At
 		if(cmd.equalsIgnoreCase("here")||cmd.equalsIgnoreCase("."))
 			room=curRoom;
 		else
-			room=CMLib.map().findWorldRoomLiberally(mob,cmd,"RIPME",100,120);
+			room=CMLib.map().findWorldRoomLiberally(mob,cmd,"RIPME",1000,120);
 
 		if(room==null)
 		{
@@ -162,7 +158,8 @@ public class Transfer extends At
 		mob.tell("Done.");
 		return false;
 	}
-	
+
+	public int commandType(MOB mob, String cmds){return CT_NON_ACTION;}
 	public boolean canBeOrdered(){return true;}
-	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,mob.location(),"TRANSFER");}
+	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,"TRANSFER");}
 }

@@ -24,36 +24,34 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Areas extends StdCommand
 {
-	public Areas(){}
+	public Areas(){access=new String[]{"AREAS"};}
 
-	private String[] access={"AREAS"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
-		StringBuffer msg=new StringBuffer("^HComplete areas list:^?^N\n\r");
-		Vector areasVec=new Vector();
-		for(Enumeration<Area> a=CMLib.map().areas();a.hasMoreElements();)
+		StringBuffer msg=new StringBuffer("^HComplete areas list:^?^N\r\n");
+		ArrayList<String> areasVec=new ArrayList();
+		for(Iterator<Area> a=CMLib.map().areas();a.hasNext();)
 		{
-			Area A=a.nextElement();
+			Area A=a.next();
 			String name=A.name();
-			areasVec.addElement(name);
+			areasVec.add(name);
 		}
 		int col=0;
 		for(int i=0;i<areasVec.size();i++)
 		{
 			if((++col)>3)
 			{
-				msg.append("\n\r");
+				msg.append("\r\n");
 				col=1;
 			}
-			msg.append(CMStrings.padRight((String)areasVec.elementAt(i),22)+"^N");
+			msg.append(CMStrings.padRight(areasVec.get(i),22)+"^N");
 		}
-		msg.append("\n\r\n\r^HEnter 'HELP (AREA NAME) for more information.^?");
+		msg.append("\r\n\r\n^HEnter 'HELP (AREA NAME) for more information.^?");
 		if((mob!=null)&&(mob.session()!=null))
 			mob.session().colorOnlyPrintln(msg.toString());
 		return false;
 	}
 
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	public boolean canBeOrdered(){return true;}
 }

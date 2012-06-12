@@ -24,26 +24,18 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Drop extends StdCommand
 {
-	public Drop(){}
-
-	private String[] access={"DROP","DRO"};
-	public String[] getAccessWords(){return access;}
+	public Drop(){access=new String[]{"DROP","DRO"};}
 
 	public boolean drop(MOB mob, Item dropThis, boolean quiet)
 	{
 		Room R=mob.location();
 		CMMsg msg=CMClass.getMsg(mob,dropThis,null,EnumSet.of(CMMsg.MsgCode.DROP),quiet?null:"<S-NAME> drop(s) <T-NAME>.");
 		boolean success=R.doMessage(msg);
-/*		if(dropThis instanceof Coins)
-			((Coins)dropThis).putCoinsBack();
-		else if(dropThis instanceof RawMaterial)
-			((RawMaterial)dropThis).rebundle();
-*/
+		msg.returnMsg();
 		return success;
 	}
 
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		String whatToDrop=null;
 
@@ -54,11 +46,11 @@ public class Drop extends StdCommand
 		}
 		commands.removeElementAt(0);
 
-		int maxToDrop=CMLib.english().calculateMaxToGive(mob,commands,true,mob,false);
+		int maxToDrop=CMLib.english().calculateMaxToGive(mob,commands,mob,false);
 		if(maxToDrop<0) return false;
 
 		whatToDrop=CMParms.combine(commands,0);
-		boolean allFlag=(commands.size()>0)?((String)commands.elementAt(0)).equalsIgnoreCase("all"):false;
+		boolean allFlag=(commands.size()>0)?commands.elementAt(0).equalsIgnoreCase("all"):false;
 		if(whatToDrop.toUpperCase().startsWith("ALL.")){ allFlag=true; whatToDrop="ALL "+whatToDrop.substring(4);}
 		if(whatToDrop.toUpperCase().endsWith(".ALL")){ allFlag=true; whatToDrop="ALL "+whatToDrop.substring(0,whatToDrop.length()-4);}
 
@@ -70,6 +62,6 @@ public class Drop extends StdCommand
 			drop(mob,V.elementAt(i),false);
 		return false;
 	}
-	public double actionsCost(MOB mob, Vector cmds){return DEFAULT_NONCOMBATACTION;}
+	public int commandType(MOB mob, String cmds){return CT_LOW_P_ACTION;}
 	public boolean canBeOrdered(){return true;}
 }

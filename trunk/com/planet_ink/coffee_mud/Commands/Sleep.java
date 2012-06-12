@@ -24,12 +24,9 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Sleep extends StdCommand
 {
-	public Sleep(){}
+	public Sleep(){access=new String[]{"SLEEP","SL"};}
 
-	private String[] access={"SLEEP","SL"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 /*
 		if(CMLib.flags().isSleeping(mob))
@@ -40,10 +37,12 @@ public class Sleep extends StdCommand
 */
 		if(commands.size()<=1)
 		{
-			mob.location().doMessage(CMClass.getMsg(mob,null,null,EnumSet.of(CMMsg.MsgCode.SLEEP),"<S-NAME> lay(s) down and take(s) a nap."));
+			CMMsg msg=CMClass.getMsg(mob,null,null,EnumSet.of(CMMsg.MsgCode.SLEEP),"<S-NAME> lay(s) down and take(s) a nap.");
+			mob.location().doMessage(msg);
+			msg.returnMsg();
 			return false;
 		}
-		if("ON".equalsIgnoreCase((String)commands.get(1)))
+		if("ON".equalsIgnoreCase(commands.get(1)))
 			commands.remove(1);
 		String possibleRideable=CMParms.combine(commands,1);
 		Interactable I=CMLib.english().fetchInteractable(possibleRideable, false, 1, mob.location());
@@ -55,8 +54,10 @@ public class Sleep extends StdCommand
 		String mountStr="<S-NAME> sleep(s) on <T-NAME>.";
 		CMMsg msg=CMClass.getMsg(mob,I,null,EnumSet.of(CMMsg.MsgCode.SLEEP),mountStr);
 		mob.location().doMessage(msg);
+		msg.returnMsg();
 		return false;
 	}
-	public double actionsCost(MOB mob, Vector cmds){return DEFAULT_NONCOMBATACTION;}
+
+	public int commandType(MOB mob, String cmds){return CT_LOW_P_ACTION;}
 	public boolean canBeOrdered(){return true;}
 }

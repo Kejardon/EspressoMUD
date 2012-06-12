@@ -1,7 +1,6 @@
 package com.planet_ink.coffee_mud.Libraries;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.core.database.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
@@ -10,15 +9,18 @@ import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
+import com.planet_ink.coffee_mud.core.database.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.XMLLibrary.XMLpiece;
+
 import java.util.*;
 import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.nio.CharBuffer;
 
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.XMLLibrary.XMLpiece;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -41,79 +43,6 @@ public class CoffeeMaker extends StdLibrary implements GenericBuilder
 {
 	public String ID(){return "CoffeeMaker";}
 
-/*
-	private Hashtable<String, String[]> basePropertiesStr=new Hashtable<String, String[]>();
-	private String[] getBaseString(CMSavable E, CMSavable.SaveEnum[] options)
-	{
-		String[] baseStrings=basePropertiesStr.get(E.ID());
-		if(baseStrings!=null) return baseStrings;
-		CMSavable baseObject=(CMSavable)E.newInstance();
-		baseStrings=new String[options.length];
-		for(int i=0;i<options.length;i++)
-			baseStrings[i]=options[i].save(baseObject);
-		basePropertiesStr.put(baseObject.ID(), baseStrings);
-		return baseStrings;
-	}
-	//General format is (saveCodeName+" "+saveSize+" "+saveData) for each entry, repeated until done.
-	//Vectors or other things may have an ID at the start. If so it'll just be a (ID+" ") before the entries. CMClass.getUnknown will get the object, or STRING will mean a java String
-	public ByteBuffer[] getPropertiesStr(CMSavable E)
-	{
-		if(E==null)
-			return "null";
-		CMSavable.SaveEnum[] options=E.totalEnumS();
-		ByteBuffer[] values=new ByteBuffer[options.length];
-		Vector<String> saveStrings=new Vector();
-		for(int i=0;i<options.length;i++)
-		{
-			String A=options[i].save(E);
-			if(A.equals(baseStrings[i])) continue;
-			saveStrings.add(options[i].toString()+" "+A.length()+" "+A);
-		}
-		StringBuilder Combined=new StringBuilder("");
-		for(int commandIndex=0;commandIndex<saveStrings.size();commandIndex++)
-			Combined.append(saveStrings.elementAt(commandIndex).toString());
-		for(int i=0;(i=Combined.indexOf("'",i))>=0;Combined.setCharAt(i++,'`')){}
-		return Combined.toString();
-	}
-	private CMSavable.SaveEnum getParser(Enum E, String S)
-	{
-		try{return (CMSavable.SaveEnum)E.valueOf((Class)E.getClass().getSuperclass(), S);}
-		catch(IllegalArgumentException e){if(e.getMessage().startsWith("No")) return null;}
-		try{return (CMSavable.SaveEnum)E.valueOf(E.getClass(), S);}
-		catch(IllegalArgumentException e){}
-		return null;
-	}
-	//IMPORTANT! Make sure any Strings saved to the object are NEW STRINGS WITH THEIR OWN MEMORY and not SUBSTRINGS OF OLD STRINGS' MEMORY
-	public void setPropertiesStr(CMSavable E, String S)
-	{
-		try{
-		if(E==null)
-		{
-			Log.errOut("CoffeeMaker","setPropertiesStr: null 'E'");
-			return;
-		}
-		Enum[] options=E.headerEnumS();
-		while(S.length()>0)
-		{
-			int spaceIndex=S.indexOf(' ');
-			String option=S.substring(0, spaceIndex);
-			S=S.substring(spaceIndex+1);
-			spaceIndex=S.indexOf(' ');
-			int length=Integer.parseInt(S.substring(0, spaceIndex));
-			S=S.substring(spaceIndex+1);
-			String A=S.substring(0,length);
-			S=S.substring(length);
-			
-			CMSavable.SaveEnum parser=null;
-			for(int i=0;(i<options.length)&&(parser==null);i++)
-				parser=getParser(options[i], option);
-			if (parser==null)
-				continue;
-			parser.load(E, A);
-		}
-		}catch(RuntimeException e){Log.errOut("CoffeeMaker","Error in S: "+S); throw e;}
-	}
-*/
 	protected byte[] toBytes(int i)
 	{
 		byte[] result = new byte[4];
@@ -133,6 +62,13 @@ public class CoffeeMaker extends StdLibrary implements GenericBuilder
 	}
 
 	//The rest of this file is public functions for common load/save code SaveEnums may want to use.
+	//no savAByte - just use ByteBuffer.wrap(bytes);
+	public byte[] loadAByte(ByteBuffer A)
+	{
+		byte[] vals=new byte[A.remaining()];
+		A.get(vals);
+		return vals;
+	}
 	public ByteBuffer savAShort(short[] val)
 	{
 		ByteBuffer buf=ByteBuffer.wrap(new byte[val.length*2]);
@@ -297,12 +233,13 @@ public class CoffeeMaker extends StdLibrary implements GenericBuilder
 */
 	public ByteBuffer savSubFull(CMSavable sub)	//prepend with 02, ID Size, ID
 	{
+		if(sub==null) return emptyBuffer;
 		//Total size: 1(header)+4(Type ID size)+?(Type ID)+4(ID Size)+?(ID)+?(Data)=9+typeSize+IDSize+DataSize
 		CMClass.Objects type=CMClass.getType(sub);
-		byte[] typeBytes=type.name().getBytes(DBManager.charFormat);
+		byte[] typeBytes=type.name.getBytes(DBManager.charFormat);
 		byte[] IDbytes=sub.ID().getBytes(DBManager.charFormat);
 		int totalSize=9+IDbytes.length+typeBytes.length;
-		Vector<ByteBuffer> allVals=new Vector();
+		ArrayList<ByteBuffer> allVals=new ArrayList();
 		for(CMSavable.SaveEnum thisEnum : sub.totalEnumS())
 		{
 			ByteBuffer buf=thisEnum.save(sub);
@@ -315,17 +252,19 @@ public class CoffeeMaker extends StdLibrary implements GenericBuilder
 		}
 		ByteBuffer saveData=ByteBuffer.wrap(new byte[totalSize]);
 		saveData.put((byte)2).putInt(typeBytes.length).put(typeBytes).putInt(IDbytes.length).put(IDbytes);
-		for(Enumeration<ByteBuffer> e=allVals.elements();e.hasMoreElements();)
-			saveData.put(e.nextElement());
+		for(Iterator<ByteBuffer> e=allVals.iterator();e.hasNext();)
+			saveData.put(e.next());
 		saveData.rewind();
 		return saveData;
 	}
-	public CMSavable loadSub(ByteBuffer buf, CMSavable sub)
+	public CMSavable loadSub(ByteBuffer buf, CMSavable source, CMSavable.SaveEnum subCall)
 	{
+		CMSavable sub=null;
 		switch(buf.get())
 		{
 			case 3:	//fixed data
 			{
+				sub=subCall.subObject(source);
 				DBManager.SaveFormat format=DBManager.getFormat(sub);
 				//TODO: These should be cached and loaded from format, not generated on the fly
 				CMSavable.SaveEnum[] parsers=new CMSavable.SaveEnum[format.enums.size()];
@@ -351,11 +290,12 @@ public class CoffeeMaker extends StdLibrary implements GenericBuilder
 				buf.get(typeBytes);
 				byte[] IDbytes=new byte[buf.getInt()];
 				buf.get(IDbytes);
-				sub=(CMSavable)((CMClass.Objects)CMClass.valueOf(CMClass.Objects.class, new String(typeBytes, DBManager.charFormat))).getNew(new String(IDbytes, DBManager.charFormat));
+				sub=(CMSavable)((CMClass.Objects)CMClass.Objects.valueOf(new String(typeBytes, DBManager.charFormat))).getNew(new String(IDbytes, DBManager.charFormat));
 				//fall through to var data
 			}
 			case 1:	//var data
 			{
+				if(sub==null) sub=subCall.subObject(source);
 				DBManager.SaveFormat format=DBManager.getFormat(sub);
 				byte[] enumName=new byte[3];
 				Enum[] options=format.myObject.headerEnumS();
@@ -379,9 +319,9 @@ public class CoffeeMaker extends StdLibrary implements GenericBuilder
 				}
 				break;
 			}
-			case 0:	//Null flag
-				return null;
-			//Should there be a default flag that just returns sub as-is?
+			case 0:	//Should there be a default flag that just returns sub as-is? Yes, there should.
+				return subCall.subObject(source);
+			//Null flag too? Actually, anything OTHER than 0-3 will get a null
 		}
 		return sub;
 	}
@@ -444,7 +384,7 @@ public class CoffeeMaker extends StdLibrary implements GenericBuilder
 			int weight=S.getInt();
 			byte[] raceBytes=new byte[S.getInt()];
 			S.get(raceBytes);
-			Race R=(Race)CMClass.Objects.RACE.get(new String(raceBytes, DBManager.charFormat));
+			Race R=CMClass.RACE.get(new String(raceBytes, DBManager.charFormat));
 			if(R!=null)
 				V.add(R, weight);
 		}

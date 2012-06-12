@@ -24,13 +24,9 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Empty extends Drop
 {
-	public Empty(){}
+	public Empty(){access=new String[]{"EMPTY","EMP"};}
 
-	private String[] access={"EMPTY","EMP"};
-	public String[] getAccessWords(){return access;}
-
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		String whatToDrop=null;
 		Interactable target=mob;
@@ -42,7 +38,7 @@ public class Empty extends Drop
 		commands.removeElementAt(0);
 		if(commands.size()>1)
 		{
-			String s=(String)commands.lastElement();
+			String s=commands.lastElement();
 			if((s.equalsIgnoreCase("here"))
 				||(s.equalsIgnoreCase("floor"))
 				||(s.equalsIgnoreCase("ground")))
@@ -67,11 +63,11 @@ public class Empty extends Drop
 			return false;
 		}
 
-		int maxToDrop=CMLib.english().calculateMaxToGive(mob,commands,true,mob,false);
+		int maxToDrop=CMLib.english().calculateMaxToGive(mob,commands,mob,false);
 		if(maxToDrop<0) return false;
 
 		whatToDrop=CMParms.combine(commands,0);
-		boolean allFlag=(commands.size()>0)?((String)commands.elementAt(0)).equalsIgnoreCase("all"):false;
+		boolean allFlag=(commands.size()>0)?commands.elementAt(0).equalsIgnoreCase("all"):false;
 		if(whatToDrop.toUpperCase().startsWith("ALL.")){ allFlag=true; whatToDrop="ALL "+whatToDrop.substring(4);}
 		if(whatToDrop.toUpperCase().endsWith(".ALL")){ allFlag=true; whatToDrop="ALL "+whatToDrop.substring(0,whatToDrop.length()-4);}
 		
@@ -103,7 +99,7 @@ public class Empty extends Drop
 		if((V.size()==0)
 		&&(drinks.size()==1)
 		&&(drinks.firstElement().nourishment()==0))
-			mob.tell(mob,(Drink)V.firstElement(),null,"<T-NAME> is already empty.");
+			mob.tell(mob,(Drink)V.firstElement(),"<T-NAME> is already empty.");
 		else
 		{
 			Room R=mob.location();
@@ -115,10 +111,13 @@ public class Empty extends Drop
 				if(C==target) continue;
 				col=ItemCollection.O.getFrom(C);
 				if(col==null) continue;
-				Vector<Item> stuff=col.allItems();
-				
-				if(!R.doMessage(CMClass.getMsg(mob,C,null,EnumSet.of(CMMsg.MsgCode.VISUAL),str))) continue;
-				R.doMessage(CMClass.getMsg(mob,target,stuff,EnumSet.of(CMMsg.MsgCode.DROP),null));
+				Vector<Item> stuff=CMParms.denumerate(col.allItems());
+				CMMsg msg=CMClass.getMsg(mob,C,null,EnumSet.of(CMMsg.MsgCode.VISUAL),str);
+				if(!R.doMessage(msg)) {msg.returnMsg(); continue;}
+				msg.returnMsg();
+				msg=CMClass.getMsg(mob,target,stuff,EnumSet.of(CMMsg.MsgCode.DROP),null);
+				R.doMessage(msg);
+				msg.returnMsg();
 /*
 				for(Item I : stuff)
 				{
@@ -137,11 +136,12 @@ public class Empty extends Drop
 					Drink D=drinks.elementAt(v);
 					CMMsg fillMsg=CMClass.getMsg(mob,target,D,EnumSet.of(CMMsg.MsgCode.FILL),(target!=null)?"<S-NAME> pour(s) <O-NAME> into <T-NAME>.":"<S-NAME> pour(s) <O-NAME> out.");
 					mob.location().doMessage(fillMsg);
+					fillMsg.returnMsg();
 				}
 			}
 		}
 		return false;
 	}
-	public double actionsCost(MOB mob, Vector cmds){return DEFAULT_NONCOMBATACTION;}
+	public int commandType(MOB mob, String cmds){return CT_LOW_P_ACTION;}
 	public boolean canBeOrdered(){return true;}
 }

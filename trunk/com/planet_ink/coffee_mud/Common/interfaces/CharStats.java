@@ -35,7 +35,18 @@ public interface CharStats extends CMCommon, CMModifiable, CMSavable, Ownable
 	*/
 	public static enum Stat
 	{
-		CONSTITUTION, REACTIONS, INTELLIGENCE, STRENGTH, PRECISION, OBSERVATION, WILLPOWER;
+		CONSTITUTION("Constitution", "constitution", "Con"),
+		REACTIONS("Reactions", "reactions", "Rct"),
+		INTELLIGENCE("Intelligence", "intelligence", "Int"),
+		STRENGTH("Strength", "strength", "Str"),
+		PRECISION("Precision", "precision", "Pre"),
+		OBSERVATION("Observation", "observation", "Obs"),
+		WILLPOWER("Willpower", "willpower", "Wil"),
+		;
+		public final String friendlyName;
+		public final String shortName;
+		public final String lowerName;
+		private Stat(String S1, String S2, String S3){friendlyName=S1; lowerName=S2; shortName=S3;}
 	}
 /*
 	public static final int STAT_SAVE_PARALYSIS=0;

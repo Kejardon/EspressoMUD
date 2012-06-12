@@ -8,14 +8,15 @@ import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
-import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.io.IOException;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -26,17 +27,18 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 */
 public class DefaultItemCol implements ItemCollection, Ownable
 {
-	protected Vector<Item> inventory=new Vector<Item>(1);
+	protected CopyOnWriteArrayList<Item> inventory=new CopyOnWriteArrayList();
 	protected CMSavable parent=null;
 	protected int maxweight=0;
 	protected int maxsize=0;
 	protected int[] itemsToLoad=null;
 	protected int saveNum=0;
+	protected boolean amDestroyed=false;
 	
 	//CMObject
 	public String ID(){return "DefaultItemCol";}
 	public CMObject newInstance(){return new DefaultItemCol();}
-	public CMObject copyOf(){return null;}
+	public CMObject copyOf(){return null;}	//TODO
 	public void initializeClass(){}
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 
@@ -44,10 +46,23 @@ public class DefaultItemCol implements ItemCollection, Ownable
 	public CMSavable owner(){return parent;}
 	public Ownable setOwner(CMSavable owner){parent=owner; return this;}
 
-	public void destroy()
+	public void destroy()	//TODO/NOTE: Item contents should be dumped onto the ground when a container is broken before this is called.
 	{
-		//TODO
-		CMLib.database().deleteObject(this);
+		amDestroyed=true;
+
+		Room limbo=SIDLib.ROOM.get(1);
+		if(limbo!=null)
+			for(Item I : inventory)
+				limbo.bringHere(I, false);
+		else
+			for(Item I : inventory)
+				I.destroy();
+		if(saveNum!=0)
+			CMLib.database().deleteObject(this);
+	}
+	public boolean amDestroyed()
+	{
+		return amDestroyed;
 	}
 
 	//CMModifiable and CMSavable
@@ -57,11 +72,11 @@ public class DefaultItemCol implements ItemCollection, Ownable
 	public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
 	public int saveNum()
 	{
-		if(saveNum==0)
+		if((saveNum==0)&&(!amDestroyed))
 		synchronized(this)
 		{
 			if(saveNum==0)
-				saveNum=SIDLib.Objects.ITEMCOLLECTION.getNumber(this);
+				saveNum=SIDLib.ITEMCOLLECTION.getNumber(this);
 		}
 		return saveNum;
 	}
@@ -70,9 +85,9 @@ public class DefaultItemCol implements ItemCollection, Ownable
 		synchronized(this)
 		{
 			if(saveNum!=0)
-				SIDLib.Objects.ITEMCOLLECTION.removeNumber(saveNum);
+				SIDLib.ITEMCOLLECTION.removeNumber(saveNum);
 			saveNum=num;
-			SIDLib.Objects.ITEMCOLLECTION.assignNumber(num, this);
+			SIDLib.ITEMCOLLECTION.assignNumber(num, this);
 		}
 	}
 	public boolean needLink(){return true;}
@@ -82,17 +97,18 @@ public class DefaultItemCol implements ItemCollection, Ownable
 		{
 			for(int SID : itemsToLoad)
 			{
-				Item item = (Item)SIDLib.Objects.ITEM.get(SID);
+				Item item = SIDLib.ITEM.get(SID);
 				if(item==null) continue;
-				if(parent instanceof ListenHolder)
-					item.registerListeners((ListenHolder)parent);
+				//if(parent instanceof ListenHolder)
+					//item.registerListeners((ListenHolder)parent);
 				item.setContainer(parent);
-				inventory.addElement(item);
+				inventory.add(item);
 			}
 			itemsToLoad=null;
 		}
 	}
 	public void saveThis(){CMLib.database().saveObject(this);}
+	public void prepDefault(){}
 
 	//ItemCollection
 	public boolean canHold(Item item)
@@ -100,9 +116,9 @@ public class DefaultItemCol implements ItemCollection, Ownable
 		if((maxweight==0)&&(maxsize==0)) return true;
 		int totalW=0;
 		int totalS=0;
-		for(int i=0;i<inventory.size();i++)
+		for(Item I : inventory)
 		{
-			EnvStats E=inventory.get(i).getEnvObject().envStats();
+			EnvStats E=I.getEnvObject().envStats();
 			totalW+=E.weight();
 			totalS+=E.height();
 		}
@@ -115,56 +131,48 @@ public class DefaultItemCol implements ItemCollection, Ownable
 	public boolean hasItem(Item item, boolean sub)
 	{
 		if(!sub) return inventory.contains(item);
-		for(int i=inventory.size()-1;i>=0;i--)
+		for(Item I : inventory)
 		{
-			if(item.equals(inventory.get(i))) return true;
-			ItemCollection O=ItemCollection.O.getFrom(inventory.get(i));
+			if(item.equals(I)) return true;
+			ItemCollection O=ItemCollection.O.getFrom(I);
 			if((O!=null)&&(O.hasItem(item, true))) return true;
 		}
 		return false;
 	}
 	public void addItem(Item item)
 	{
-		synchronized(inventory)
+		if(inventory.addIfAbsent(item))
 		{
-			if(inventory.contains(item)) return;
-			if(parent instanceof ListenHolder)
-				item.registerListeners((ListenHolder)parent);
+			//if(parent instanceof ListenHolder)
+				//item.registerListeners((ListenHolder)parent);
 			item.setContainer(parent);
-			inventory.addElement(item);
+			CMLib.database().saveObject(this);
 		}
-		CMLib.database().saveObject(this);
 	}
 	public void removeItem(Item item)
 	{
-		synchronized(inventory)
-		{
-			inventory.removeElement(item);
-		}
+		inventory.remove(item);
 		CMLib.database().saveObject(this);
 	}
 	public Item removeItem(int i)
 	{
-		synchronized(inventory)
-		{
-			Item item=inventory.remove(i);
-			CMLib.database().saveObject(this);
-			return item;
-		}
+		Item item=inventory.remove(i);
+		CMLib.database().saveObject(this);
+		return item;
 	}
 	public Item getItem(int index)
 	{
-		try { return inventory.elementAt(index); }
+		try { return inventory.get(index); }
 		catch(java.lang.ArrayIndexOutOfBoundsException x){}
 		return null;
 	}
 	public int numItems() { return inventory.size(); }
-	public Vector<Item> allItems() {return (Vector<Item>)inventory.clone();}
+	public Iterator<Item> allItems() {return inventory.iterator();}
 
 	private enum SCode implements CMSavable.SaveEnum{
 		INV(){
 			public ByteBuffer save(DefaultItemCol E){
-				if(E.inventory.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.inventory.toArray(new CMSavable[E.inventory.size()]));
+				if(E.inventory.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.inventory.toArray(CMSavable.dummyCMSavableArray));
 				return GenericBuilder.emptyBuffer; }
 			public int size(){return 0;}
 			public void load(DefaultItemCol E, ByteBuffer S){ E.itemsToLoad=CMLib.coffeeMaker().loadAInt(S); } },
@@ -189,7 +197,7 @@ public class DefaultItemCol implements ItemCollection, Ownable
 			public void mod(DefaultItemCol E, MOB M){
 				boolean done=false;
 				while((M.session()!=null)&&(!M.session().killFlag())&&(!done)) {
-					Vector<Item> V=E.allItems();
+					Vector<Item> V=CMParms.denumerate(E.allItems());
 					int i=CMLib.genEd().promptVector(M, V, true);
 					if(--i<0) done=true;
 					else if(i==V.size()) {

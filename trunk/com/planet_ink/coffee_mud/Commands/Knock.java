@@ -25,12 +25,9 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Knock extends StdCommand
 {
-	public Knock(){}
+	public Knock(){access=new String[]{"KNOCK"};}
 
-	private String[] access={"KNOCK"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		if(commands.size()<=1)
 		{
@@ -38,9 +35,9 @@ public class Knock extends StdCommand
 			return false;
 		}
 		int volume=-1;
-		if((commands.size()>2)&&(CMath.isInteger((String)commands.lastElement())))
+		if((commands.size()>2)&&(CMath.isInteger(commands.lastElement())))
 		{
-			volume=CMath.s_int((String)commands.lastElement());
+			volume=CMath.s_int(commands.lastElement());
 			commands.remove(commands.size()-1);
 		}
 		String knockWhat=CMParms.combine(commands,1).toUpperCase();
@@ -51,6 +48,7 @@ public class Knock extends StdCommand
 			if(volume!=-1)
 				msg.setValue(volume);
 			mob.location().doMessage(msg);
+			msg.returnMsg();
 		}
 		else
 		{
@@ -59,6 +57,7 @@ public class Knock extends StdCommand
 		}
 		return false;
 	}
-	public double actionsCost(MOB mob, Vector cmds){return DEFAULT_NONCOMBATACTION;}
+	//TODO: This needs to close in on range first.
+	public int commandType(MOB mob, String cmds){return CT_LOW_P_ACTION;}
 	public boolean canBeOrdered(){return true;}
 }

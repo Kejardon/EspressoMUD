@@ -8,14 +8,15 @@ import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
-import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.io.IOException;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -29,7 +30,7 @@ public class DefaultLid implements Closeable, Ownable
 	protected String key="skeleton";
 	protected boolean locked=false;
 	protected boolean haslock=false;
-	protected boolean open=false;
+	protected boolean closed=false;
 	protected boolean closeable=true;
 	protected boolean obvious=true;
 	protected CMSavable parent;
@@ -57,7 +58,7 @@ public class DefaultLid implements Closeable, Ownable
 		synchronized(this)
 		{
 			if(saveNum==0)
-				saveNum=SIDLib.Objects.CLOSEABLE.getNumber(this);
+				saveNum=SIDLib.CLOSEABLE.getNumber(this);
 		}
 		return saveNum; */
 		return 0;
@@ -67,33 +68,53 @@ public class DefaultLid implements Closeable, Ownable
 /*		synchronized(this)
 		{
 			if(saveNum!=0)
-				SIDLib.Objects.CLOSEABLE.removeNumber(saveNum);
+				SIDLib.CLOSEABLE.removeNumber(saveNum);
 			saveNum=num;
-			SIDLib.Objects.CLOSEABLE.assignNumber(num, this);
+			SIDLib.CLOSEABLE.assignNumber(num, this);
 		} */
 	}
 	public boolean needLink(){return false;}
 	public void link(){}
-	public void saveThis(){CMLib.database().saveObject(parent);}
+	public void saveThis(){if(parent!=null) parent.saveThis();}
+	public void prepDefault(){}
 
 	//Closeable
 	public String keyName(){return key;}
-	public void setKeyName(String keyName){key=keyName; CMLib.database().saveObject(parent);}
-	public boolean isLocked(){return locked;}
-	public boolean hasALock(){return haslock;}
-	public boolean isOpen(){return open;}
-	public boolean hasALid(){return closeable;}
+	public void setKeyName(String keyName){key=keyName; if(parent!=null) parent.saveThis();}
+	public void setLocked(boolean bool){locked=bool; if(parent!=null) parent.saveThis();}
+	public void setLock(boolean bool){haslock=bool; if(parent!=null) parent.saveThis();}
+	public void setClosed(boolean bool){closed=bool; if(parent!=null) parent.saveThis();}
+	public void setClosable(boolean bool){closeable=bool; if(parent!=null) parent.saveThis();}
+	public void setObvious(boolean bool){obvious=bool; if(parent!=null) parent.saveThis();}
+	public boolean locked(){return locked;}
+	public boolean hasLock(){return haslock;}
+	public boolean closed(){return closed;}
+	public boolean canClose(){return closeable;}
 	public boolean obviousLock(){return obvious;}
-	public void setLidsNLocks(boolean newHasALid, boolean newIsOpen, boolean newHasALock, boolean newIsLocked, boolean newObvious)
+	public void setLidsNLocks(boolean newHasALid, boolean newIsClosed, boolean newHasALock, boolean newIsLocked, boolean newObvious)
 	{
 		closeable=newHasALid;
-		open=newIsOpen;
+		closed=newIsClosed;
 		haslock=newHasALock;
 		locked=newIsLocked;
 		obvious=newObvious;
-		CMLib.database().saveObject(parent);
+		if(parent!=null) parent.saveThis();
 	}
-	public void destroy(){open=true; locked=false; closeable=false; key=""; CMLib.database().deleteObject(this);}
+	public void destroy()
+	{
+		closed=false;
+		locked=false;
+		closeable=false;
+		key="";
+		//if(saveNum!=0)
+		//	CMLib.database().deleteObject(this);
+	}
+	public boolean amDestroyed()
+	{
+		if(parent!=null)
+			return parent.amDestroyed();
+		return true;
+	}
 
 	private enum SCode implements CMSavable.SaveEnum{
 		KEY(){
@@ -106,7 +127,7 @@ public class DefaultLid implements Closeable, Ownable
 			public ByteBuffer save(DefaultLid E){
 				byte[] bools=new byte[1];
 				if(E.haslock) bools[0]|=1<<0;
-				if(E.open) bools[0]|=1<<1;
+				if(E.closed) bools[0]|=1<<1;
 				if(E.closeable) bools[0]|=1<<2;
 				if(E.locked) bools[0]|=1<<3;
 				if(E.obvious) bools[0]|=1<<4;
@@ -115,7 +136,7 @@ public class DefaultLid implements Closeable, Ownable
 			public void load(DefaultLid E, ByteBuffer S){
 				byte bools=S.get();
 				E.haslock=((bools&(1<<0))!=0);
-				E.open=((bools&(1<<1))!=0);
+				E.closed=((bools&(1<<1))!=0);
 				E.closeable=((bools&(1<<2))!=0);
 				E.locked=((bools&(1<<3))!=0);
 				E.obvious=((bools&(1<<4))!=0);} },
@@ -134,10 +155,10 @@ public class DefaultLid implements Closeable, Ownable
 			public String brief(DefaultLid E){return ""+E.locked;}
 			public String prompt(DefaultLid E){return ""+E.locked;}
 			public void mod(DefaultLid E, MOB M){E.locked=CMLib.genEd().booleanPrompt(M, ""+E.locked);} },
-		OPEN(){
-			public String brief(DefaultLid E){return ""+E.open;}
-			public String prompt(DefaultLid E){return ""+E.open;}
-			public void mod(DefaultLid E, MOB M){E.open=CMLib.genEd().booleanPrompt(M, ""+E.open);} },
+		CLOSED(){
+			public String brief(DefaultLid E){return ""+E.closed;}
+			public String prompt(DefaultLid E){return ""+E.closed;}
+			public void mod(DefaultLid E, MOB M){E.closed=CMLib.genEd().booleanPrompt(M, ""+E.closed);} },
 		CLOSEABLE(){
 			public String brief(DefaultLid E){return ""+E.closeable;}
 			public String prompt(DefaultLid E){return ""+E.closeable;}

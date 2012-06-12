@@ -24,12 +24,9 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Whisper extends StdCommand
 {
-	public Whisper(){}
+	public Whisper(){access=new String[]{"WHISPER"};}
 
-	private String[] access={"WHISPER"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		if(commands.size()==1)
 		{
@@ -40,7 +37,7 @@ public class Whisper extends StdCommand
 		Room R = mob.location();
 		if(commands.size()>2)
 		{
-			String possibleTarget=(String)commands.elementAt(1);
+			String possibleTarget=commands.elementAt(1);
 			target=R.fetchInhabitant(possibleTarget);
 			if(target==null) target=CMLib.english().fetchInteractable(possibleTarget,false,1,mob,mob.location());
 			if(target!=null)
@@ -50,16 +47,18 @@ public class Whisper extends StdCommand
 
 		CMMsg msg=null;
 		if(target==null)
-			msg=CMClass.getMsg(mob,null,null,EnumSet.of(CMMsg.MsgCode.SPEAK),"^T<S-NAME> whisper(s) to <S-HIM-HERSELF> '"+combinedCommands+"'.^?"+CMProps.msp("whisper.wav",40),
+			msg=CMClass.getMsg(mob,null,null,EnumSet.of(CMMsg.MsgCode.SPEAK),"^T<S-NAME> whisper(s) to <S-HIM-HERSELF> '"+combinedCommands+"'.^?",
 										  EnumSet.noneOf(CMMsg.MsgCode.class),null,
-										  EnumSet.of(CMMsg.MsgCode.SPEAK),"^T<S-NAME> whisper(s) to <S-HIM-HERSELF>.^?"+CMProps.msp("whisper.wav",40));
+										  EnumSet.of(CMMsg.MsgCode.SPEAK),"^T<S-NAME> whisper(s) to <S-HIM-HERSELF>.^?");
 		else
-			msg=CMClass.getMsg(mob,target,null,EnumSet.of(CMMsg.MsgCode.SPEAK),"^T^<WHISPER \""+target.name()+"\"^><S-NAME> whisper(s) to <T-NAMESELF> '"+combinedCommands+"'.^</WHISPER^>^?"+CMProps.msp("whisper.wav",40)
-										   ,EnumSet.of(CMMsg.MsgCode.SPEAK),"^T^<WHISPER \""+target.name()+"\"^><S-NAME> whisper(s) to <T-NAMESELF> '"+combinedCommands+"'^</WHISPER^>.^?"+CMProps.msp("whisper.wav",40)
-										   ,EnumSet.of(CMMsg.MsgCode.SPEAK),"^T<S-NAME> whisper(s) something to <T-NAMESELF>.^</WHISPER^>^?"+CMProps.msp("whisper.wav",40));
+			msg=CMClass.getMsg(mob,target,null,EnumSet.of(CMMsg.MsgCode.SPEAK),"^T^<WHISPER \""+target.name()+"\"^><S-NAME> whisper(s) to <T-NAMESELF> '"+combinedCommands+"'.^</WHISPER^>^?"
+										   ,EnumSet.of(CMMsg.MsgCode.SPEAK),"^T^<WHISPER \""+target.name()+"\"^><S-NAME> whisper(s) to <T-NAMESELF> '"+combinedCommands+"'^</WHISPER^>.^?"
+										   ,EnumSet.of(CMMsg.MsgCode.SPEAK),"^T<S-NAME> whisper(s) something to <T-NAMESELF>.^</WHISPER^>^?");
 		R.doMessage(msg);
+		msg.returnMsg();
 		return false;
 	}
-	public double actionsCost(MOB mob, Vector cmds){return DEFAULT_NONCOMBATACTION;}
+	//TODO: Check for proximity to target. If close enough this is free action, if too far must close to target first.
+	public int commandType(MOB mob, String cmds){return CT_NON_ACTION;}
 	public boolean canBeOrdered(){return true;}
 }

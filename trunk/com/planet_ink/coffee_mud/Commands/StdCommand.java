@@ -9,10 +9,13 @@ import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
+import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -36,40 +39,39 @@ public class StdCommand implements Command
 		return ID;
 	}
 
-	//TODO: Reprogram subclasses to initialize access, not declare access.
-	private String[] access=new String[0];
+	//Importantish NOTE: Access strings should be in all caps, and not use `(' is ok) or ". Otherwise other normal ASCII values are fine.
+	protected String[] access=new String[0];
 	public String[] getAccessWords(){return access;}
 	public void initializeClass(){}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
-	{
-		// accepts the mob executing, and a Vector of Strings as a parm.
-		// the return value is arbitrary, though false is conventional.
-		return false;
-	}
-	public boolean preExecute(MOB mob, Vector commands, int metaFlags, int secondsElapsed, double actionsRemaining)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		return true;
 	}
-
-	public double actionsCost(MOB mob, Vector cmds){return 0.0;}
+	public boolean execute(MOB mob, MOB.QueuedCommand commands)
+	{
+		return execute(mob, CMParms.parse(commands.cmdString, -1), commands.metaFlags);
+	}
+	public MOB.QueuedCommand prepCommand(MOB mob, String commands, int metaflags)
+	{
+		MOB.QueuedCommand commandInstance=new MOB.QueuedCommand();
+		commandInstance.command=this;
+		commandInstance.cmdString=commands;
+		commandInstance.commandType=commandType(mob, commands);
+		commandInstance.metaFlags=metaflags;
+		return commandInstance;
+	}
+/*	public boolean preExecute(MOB mob, Vector<String> commands, int metaFlags, int secondsElapsed, double actionsRemaining)
+	{
+		return true;
+	}
+*/
+	public boolean interruptCommand(MOB.QueuedCommand thisCommand, MOB.QueuedCommand interruptingCommand){return true;}
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	public boolean canBeOrdered(){return true;}
 	public boolean securityCheck(MOB mob){return true;}
 	public boolean staffCommand(){return false;}
 	public CMObject newInstance(){return this;}
-	public CMObject copyOf()
-	{
-		try
-		{
-			Object O=this.clone();
-			return (CMObject)O;
-		}
-		catch(CloneNotSupportedException e)
-		{
-			return this;
-		}
-	}
-	
+	public CMObject copyOf() { return this; }
+	public boolean prompter(){return false;}
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 }

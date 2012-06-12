@@ -38,6 +38,11 @@ import java.util.*;
  * languages.  A single ability usually represents a single language, but 
  * may support multiple simultaneously.
  */
+ /*
+ TODO: Make languages their own thing instead of an effect. Have them like commands, where there's a
+ single instance of the language that everything references. Need to repoint CMClass's loader from
+ Effects\Languages to new folder, otherwise nothing besides languages point to these atm.
+ */
 @SuppressWarnings("unchecked")
 public interface Language extends Effect
 {

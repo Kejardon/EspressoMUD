@@ -24,13 +24,9 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class HelpList extends StdCommand
 {
-	public HelpList(){}
+	public HelpList(){access=new String[]{"HELPLIST","HLIST"};}
 
-	private String[] access={"HELPLIST","HLIST"};
-	public String[] getAccessWords(){return access;}
-
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		String helpStr=CMParms.combine(commands,1);
 		if(CMLib.help().getHelpFile().size()==0)
@@ -43,11 +39,11 @@ public class HelpList extends StdCommand
 			mob.tell("You must enter a search pattern.  Use 'TOPICS' or 'COMMANDS' for an unfiltered list.");
 			return false;
 		}
-		StringBuilder thisTag=
+		String thisTag=
 					CMLib.help().getHelpList(
 					helpStr,
 					CMLib.help().getHelpFile(),
-					CMSecurity.isAllowed(mob,mob.location(),"AHELP")?CMLib.help().getArcHelpFile():null,
+					CMSecurity.isAllowed(mob,"AHELP")?CMLib.help().getArcHelpFile():null,
 					mob);
 		if((thisTag==null)||(thisTag.length()==0))
 		{
@@ -56,9 +52,10 @@ public class HelpList extends StdCommand
 		}
 		else
 		if(!mob.isMonster())
-			mob.session().wraplessPrintln("^xHelp File Matches:^.^?\n\r^N"+thisTag.toString().replace('_',' '));
+			mob.session().wraplessPrintln("^xHelp File Matches:^.^?\r\n^N"+thisTag.replace('_',' '));
 		return false;
 	}
-	
+
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	public boolean canBeOrdered(){return true;}
 }

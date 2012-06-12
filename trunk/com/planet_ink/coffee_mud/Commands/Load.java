@@ -25,20 +25,22 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Load extends StdCommand
 {
-	public Load(){}
-
-	private String[] access={"LOAD"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public Load(){access=new String[]{"LOAD"};}
+	protected String list;
+	protected String list()
 	{
-		String list="RESOURCE, "+CMParms.toStringList(CMClass.Objects.values());
+		if(list==null) list="RESOURCE, "+CMParms.toStringList(CMClass.Objects.values().toArray(new CMClass.Objects[0]));
+		return list;
+	}
+
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
+	{
 		if(commands.size()<3)
 		{
-			mob.tell("LOAD what? Use LOAD "+list+" [CLASS NAME]");
+			mob.tell("LOAD what? Use LOAD "+list()+" [CLASS NAME]");
 			return false;
 		}
-		String what=(String)commands.elementAt(1);
+		String what=commands.elementAt(1);
 		String name=CMParms.combine(commands,2);
 		if(what.equalsIgnoreCase("RESOURCE"))
 		{
@@ -59,6 +61,7 @@ public class Load extends StdCommand
 		{
 			try
 			{
+/*
 				if(name.toUpperCase().endsWith(".JAVA"))
 				{
 					while(name.startsWith("/")) name=name.substring(1);
@@ -92,36 +95,41 @@ public class Load extends StdCommand
 					}
 					name=name.substring(0,name.length()-5)+".class";
 				}
-				
+*/
 				String unloadClassName=name;
 				if(unloadClassName.toUpperCase().endsWith(".CLASS"))
 					unloadClassName=unloadClassName.substring(0,unloadClassName.length()-6);
 				unloadClassName=unloadClassName.replace('\\','.');
 				unloadClassName=unloadClassName.replace('/','.');
 				
+				CMClass.Objects classType=null;
 				if(what.equalsIgnoreCase("CLASS"))
 				{
-					Object O=CMClass.getClass(unloadClassName);
+					CMObject O=CMClass.getClass(unloadClassName);
 					if(O!=null)
-					{
-						CMClass.Objects x=CMClass.classCode(O);
-						if(x!=null) what=x.toString();
-					}
+						classType=CMClass.classCode(O);
 				}
-				if(CMClass.valueOf(CMClass.Objects.class, what)==null)
-					mob.tell("Don't know how to load a '"+what+"'.  Try one of the following: "+list);
+				else
+					classType=CMClass.classCode(what);
+				if(classType==null)
+					mob.tell("Don't know how to load a '"+what+"'.  Try one of the following: "+list());
 				else
 				{
-					Object O=CMClass.getClass(unloadClassName);
-					if((O instanceof CMObject)
-					&&(name.toUpperCase().endsWith(".CLASS"))
-					&&(CMClass.classCode(what).remove((CMObject)O))) //delClass(what,(CMObject)O))) 
+					if(CMClass.loadListToObj(classType, name, classType.ancestor, false))
+					{
+						mob.tell(what+" "+name+" was successfuly loaded.");
+						return false;
+					}
+/*					CMObject O=CMClass.getClass(unloadClassName);
+					if((O!=null)&&
+					   //(name.toUpperCase().endsWith(".CLASS"))&&
+					   (classType.remove(O)))
 						mob.tell(unloadClassName+" was unloaded.");
 					if(CMClass.loadClass(what,name,false))
 					{
 						mob.tell(CMStrings.capitalizeAndLower(what)+" "+name+" was successfully loaded.");
 						return true;
-					}
+					} */
 				}
 			}
 			catch(java.lang.Error err)
@@ -130,13 +138,14 @@ public class Load extends StdCommand
 			}
 			catch(Throwable t)
 			{
-				Log.errOut("Load",t.getClass().getName()+": "+t.getMessage());
+				Log.errOut("Load",t);
 			}
 			mob.tell(CMStrings.capitalizeAndLower(what)+" "+name+" was not loaded.");
 		}
 		return false;
 	}
-	
+
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	public boolean canBeOrdered(){return true;}
-	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,mob.location(),"LOADUNLOAD");}
+	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,"LOADUNLOAD");}
 }

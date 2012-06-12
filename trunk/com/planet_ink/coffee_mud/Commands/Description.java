@@ -24,17 +24,14 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Description extends StdCommand
 {
-	public Description(){}
+	public Description(){access=new String[]{"DESCRIPTION"};}
 
-	private String[] access={"DESCRIPTION"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		if(commands.size()<2)
 		{
-			mob.tell("^xYour current description:^?\n\r"+mob.description());
-            mob.tell("\n\rEnter DESCRIPTION [NEW TEXT] to change.");
+			mob.tell("^xYour current description:^?\r\n"+mob.description());
+			mob.tell("\r\nEnter DESCRIPTION [NEW TEXT] to change.");
 			return false;
 		}
 		String s=CMParms.combine(commands,1);
@@ -47,6 +44,7 @@ public class Description extends StdCommand
 		}
 		return false;
 	}
-	
+
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	public boolean canBeOrdered(){return false;}
 }

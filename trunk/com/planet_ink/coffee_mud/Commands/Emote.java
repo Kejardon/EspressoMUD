@@ -21,15 +21,13 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
+//Todo: When Socials are put back in, they should require this in some form. Probably start with ; and find a valid social, : will always be manuals
 @SuppressWarnings("unchecked")
 public class Emote extends StdCommand
 {
-	public Emote(){}
+	public Emote(){access=new String[]{"EMOTE",";",":"};}
 
-	private String[] access={"EMOTE",",",";",":"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		if(commands.size()<2)
 		{
@@ -43,8 +41,9 @@ public class Emote extends StdCommand
 			combinedCommands=" "+combinedCommands.trim();
 		CMMsg msg=CMClass.getMsg(mob,null,null,EnumSet.of(CMMsg.MsgCode.EMOTE),"^E<S-NAME>"+combinedCommands+" ^?");
 		mob.location().doMessage(msg);
+		msg.returnMsg();
 		return false;
 	}
-	public double actionsCost(MOB mob, Vector cmds){return DEFAULT_NONCOMBATACTION;}
+	public int commandType(MOB mob, String cmds){return CT_NON_ACTION;}
 	public boolean canBeOrdered(){return true;}
 }

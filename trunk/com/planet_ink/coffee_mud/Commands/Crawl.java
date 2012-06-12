@@ -24,24 +24,16 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Crawl extends StdCommand
 {
-	public Crawl(){}
+	public Crawl(){access=new String[]{"CRAWL","CR"};}
 
-	private String[] access={"CRAWL","CR"};
-	public String[] getAccessWords(){return access;}
-	
-	public boolean preExecute(MOB mob, Vector commands, int metaFlags, int secondsElapsed, double actionsRemaining)
-		throws java.io.IOException
-	{
-		return true;
-	}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		CMMsg msg=CMClass.getMsg(mob,null,null,EnumSet.of(CMMsg.MsgCode.LAYDOWN),"<S-NAME> lay(s) down and start(s) to crawl.");
 		mob.location().doMessage(msg);
+		msg.returnMsg();
 
 		return false;
 	}
-	public double actionsCost(MOB mob, Vector cmds){return DEFAULT_NONCOMBATACTION*1.5;}
+	public int commandType(MOB mob, String cmds){return CT_LOW_P_ACTION;}
 	public boolean canBeOrdered(){return true;}
 }

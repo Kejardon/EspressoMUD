@@ -24,12 +24,9 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Ver extends StdCommand
 {
-	public Ver(){}
+	public Ver(){access=new String[]{"VERSION","VER"};}
 
-	private String[] access={"VERSION","VER"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		mob.tell("CoffeeMud v5.6.2");
 		mob.tell("(C) 2000-2010 Bo Zimmerman");
@@ -40,8 +37,7 @@ public class Ver extends StdCommand
 		mob.tell("^<A HREF=\"http://sourceforge.net/projects/espress/\"^>http://sourceforge.net/projects/espress/^</A^>");
 		return false;
 	}
-	
-	public boolean canBeOrdered(){return true;}
 
-	
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
+	public boolean canBeOrdered(){return true;}
 }

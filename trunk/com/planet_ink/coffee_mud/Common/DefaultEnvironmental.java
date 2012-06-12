@@ -8,14 +8,15 @@ import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
-import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.io.IOException;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -28,14 +29,16 @@ public class DefaultEnvironmental implements Environmental, Ownable
 {
 	protected CMSavable parent;
 	protected Tickable.TickStat tickStatus=Tickable.TickStat.Not;
+	protected int tickCount=0;
+	//This is ok for now because there is no alternative to DefaultEnvStats
 	protected EnvStats baseEnvStats=(EnvStats)(new DefaultEnvStats().setOwner(this));
 	protected EnvStats envStats=(EnvStats)(new DefaultEnvStats().setOwner(this));
-	protected Vector<EnvAffecter> envAffecters=null;
-	protected Vector<OkChecker> okCheckers=null;
-	protected Vector<ExcChecker> excCheckers=null;
-	protected Vector<TickActer> tickActers=null;
-	protected Vector affects=new Vector(1);
-	protected long lastTick=0;
+	protected CopyOnWriteArrayList<EnvAffecter> envAffecters=new CopyOnWriteArrayList();
+	protected CopyOnWriteArrayList<OkChecker> okCheckers=new CopyOnWriteArrayList();
+	protected CopyOnWriteArrayList<ExcChecker> excCheckers=new CopyOnWriteArrayList();
+	protected CopyOnWriteArrayList<TickActer> tickActers=new CopyOnWriteArrayList();
+	protected CopyOnWriteArrayList<Effect> affects=new CopyOnWriteArrayList();
+	//protected long lastTick=0;
 	protected EnumSet<ListenHolder.Flags> lFlags=EnumSet.noneOf(ListenHolder.Flags.class);
 	protected int[] effectsToLoad=null;
 
@@ -46,38 +49,38 @@ public class DefaultEnvironmental implements Environmental, Ownable
 	//Affectable
 	public void addEffect(Effect to)
 	{
-		if(to==null) return;
-		affects.addElement(to);
+		affects.add(to);
 		to.setAffectedOne(this);
-		parent.saveThis();
+		if(parent!=null)parent.saveThis();
 	}
 	public void delEffect(Effect to)
 	{
-		if(affects.removeElement(to))
+		if(affects.remove(to))
 		{
 			to.setAffectedOne(null);
-			parent.saveThis();
+			if(parent!=null)parent.saveThis();
 		}
+	}
+	public boolean hasEffect(Effect to)
+	{
+		return affects.contains(to);
 	}
 	public int numEffects(){return affects.size();}
 	public Effect fetchEffect(int index)
 	{
-		try { return (Effect)affects.elementAt(index); }
+		try { return affects.get(index); }
 		catch(java.lang.ArrayIndexOutOfBoundsException x){}
 		return null;
 	}
 	public Vector<Effect> fetchEffect(String ID)
 	{
-		Vector<Effect> V=new Vector<Effect>();
-		for(int a=0;a<affects.size();a++)
-		{
-			Effect A=fetchEffect(a);
-			if((A!=null)&&(A.ID().equals(ID)))
-				V.add(A);
-		}
+		Vector<Effect> V=new Vector(1);
+		for(Effect E : affects)
+			if(E.ID().equals(ID))
+				V.add(E);
 		return V;
 	}
-	public Vector<Effect> allEffects() { return (Vector<Effect>)affects.clone(); }
+	public Iterator<Effect> allEffects() { return affects.iterator(); }
 	
 	//Affectable/Behavable shared
 	public void removeListener(Listener oldAffect, EnumSet flags)
@@ -116,53 +119,59 @@ public class DefaultEnvironmental implements Environmental, Ownable
 		if(parent instanceof ListenHolder)
 			((ListenHolder)parent).removeListener(this, lFlags);
 	}
-	public Vector<CharAffecter> charAffecters(){return null;}
-	public Vector<EnvAffecter> envAffecters(){if(envAffecters==null) envAffecters=new Vector(); return envAffecters;}
-	public Vector<OkChecker> okCheckers(){if(okCheckers==null) okCheckers=new Vector(); return okCheckers;}
-	public Vector<ExcChecker> excCheckers(){if(excCheckers==null) excCheckers=new Vector(); return excCheckers;}
-	public Vector<TickActer> tickActers(){if(tickActers==null) tickActers=new Vector(); return tickActers;}
+	public CopyOnWriteArrayList<CharAffecter> charAffecters(){return null;}
+	public CopyOnWriteArrayList<EnvAffecter> envAffecters(){return envAffecters;}
+	public CopyOnWriteArrayList<OkChecker> okCheckers(){return okCheckers;}
+	public CopyOnWriteArrayList<ExcChecker> excCheckers(){return excCheckers;}
+	public CopyOnWriteArrayList<TickActer> tickActers(){return tickActers;}
 	public EnumSet<ListenHolder.Flags> listenFlags() {return lFlags;}
 	//Tickable
 	public Tickable.TickStat getTickStatus(){return tickStatus;}
-	public boolean tick(Tickable ticking, Tickable.TickID tickID)
+	public boolean tick(int tickTo)
 	{
-		if(tickID==Tickable.TickID.Action) return false;
-		tickStatus=Tickable.TickStat.Listener;
-		if(tickActers!=null)
-		for(int i=tickActers.size()-1;i>=0;i--)
+		if(tickCount==0) tickCount=tickTo-1;
+		else if(tickTo>tickCount+10)
+			tickTo=tickCount+10;
+		while(tickCount<tickTo)
 		{
-			Tickable T=tickActers.get(i);
-			if(!T.tick(ticking, tickID))
-				tickActers.remove(i-1);
+			tickCount++;
+			if(!doTick()) {lFlags.remove(ListenHolder.Flags.TICK); tickCount=0; return false;}
 		}
-		tickStatus=Tickable.TickStat.Not;
-		lastTick=System.currentTimeMillis();
 		return true;
 	}
-	public long lastAct(){return 0;}	//No Action ticks
-	public long lastTick(){return lastTick;}
+	public int tickCounter(){return tickCount;}
+	public void tickAct(){}
+	protected boolean doTick()
+	{
+		tickStatus=Tickable.TickStat.Listener;
+		for(Tickable T : tickActers)
+			if(!T.tick(tickCount))
+				tickActers.remove(T);
+		tickStatus=Tickable.TickStat.Not;
+		return (tickActers.size()>0);
+	}
+	//public long lastAct(){return 0;}	//No Action ticks
+	//public long lastTick(){return lastTick;}
 //	public int actTimer(){return actTimer;}
 //	public void setActT(int i){actTimer=i;}
 
 	//CMObject
 	public String ID(){return "DefaultEnvironmental";}
 	public CMObject newInstance(){return new DefaultEnvironmental();}
-	public CMObject copyOf(){return null;}
+	public CMObject copyOf(){return null;}	//TODO
 	public void initializeClass(){}
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 
 	//MsgListener
 	public void executeMsg(ListenHolder.ExcChecker myHost, CMMsg msg)
 	{
-		if(excCheckers!=null)
-		for(int i=excCheckers.size();i>0;i--)
-			excCheckers.get(i-1).executeMsg(this,msg);
+		for(ExcChecker E : excCheckers)
+			E.executeMsg(myHost,msg);
 	}
 	public boolean okMessage(ListenHolder.OkChecker myHost, CMMsg msg)
 	{
-		if(okCheckers!=null)
-		for(int i=okCheckers.size();i>0;i--)
-			if(!okCheckers.get(i-1).okMessage(this,msg))
+		for(OkChecker O : okCheckers)
+			if(!O.okMessage(myHost,msg))
 				return false;
 		return true;
 	}
@@ -188,15 +197,16 @@ public class DefaultEnvironmental implements Environmental, Ownable
 		{
 			for(int SID : effectsToLoad)
 			{
-				Effect to = (Effect)SIDLib.Objects.EFFECT.get(SID);
+				Effect to = SIDLib.EFFECT.get(SID);
 				if(to==null) continue;
-				affects.addElement(to);
+				affects.add(to);
 				to.setAffectedOne(this);
 			}
 			effectsToLoad=null;
 		}
 	}
-	public void saveThis(){parent.saveThis();}
+	public void saveThis(){if(parent!=null)parent.saveThis();}
+	public void prepDefault(){}	//baseEnvStats will already default fine.
 
 	//Environmental
 	public EnvStats baseEnvStats(){return baseEnvStats;}
@@ -205,21 +215,27 @@ public class DefaultEnvironmental implements Environmental, Ownable
 		baseEnvStats=(EnvStats)((Ownable)newBaseEnvStats).setOwner(this);
 		envStats=(EnvStats)newBaseEnvStats.copyOf();
 		recoverEnvStats();
-		parent.saveThis();
+		if(parent!=null)parent.saveThis();
 	}
 	public EnvStats envStats(){return envStats;}
 	public void recoverEnvStats()
 	{
 		baseEnvStats.copyInto(envStats);
-		if(envAffecters!=null)
-		for(int i=envAffecters.size();i>0;i--)
-			envAffecters.get(i-1).affectEnvStats(this,envStats);
+		for(EnvAffecter E : envAffecters)
+			E.affectEnvStats(this,envStats);
 	}
 	public void destroy()
 	{
-		while(affects.size()>0)
-			delEffect(fetchEffect(0));
+		for(Effect E : affects)
+			E.setAffectedOne(null);
+		affects.clear();
 		clearAllListeners();
+	}
+	public boolean amDestroyed()
+	{
+		if(parent!=null)
+			return parent.amDestroyed();
+		return true;
 	}
 	public boolean sameAs(Environmental E)
 	{
@@ -234,10 +250,10 @@ public class DefaultEnvironmental implements Environmental, Ownable
 			public int size(){return -1;}
 			public CMSavable subObject(CMSavable fromThis){return ((DefaultEnvironmental)fromThis).baseEnvStats;}
 			public void load(DefaultEnvironmental E, ByteBuffer S){
-				E.setBaseEnvStats((EnvStats)CMLib.coffeeMaker().loadSub(S, E.baseEnvStats)); } },
+				E.setBaseEnvStats((EnvStats)CMLib.coffeeMaker().loadSub(S, E, this)); } },
 		EFC(){
 			public ByteBuffer save(DefaultEnvironmental E){
-				if(E.affects.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.affects.toArray(new CMSavable[E.affects.size()]));
+				if(E.affects.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.affects.toArray(CMSavable.dummyCMSavableArray));
 				return GenericBuilder.emptyBuffer; }
 			public int size(){return 0;}
 			public void load(DefaultEnvironmental E, ByteBuffer S){ E.effectsToLoad=CMLib.coffeeMaker().loadAInt(S); } },

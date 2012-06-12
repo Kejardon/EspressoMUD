@@ -24,13 +24,9 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Extinguish extends StdCommand
 {
-	public Extinguish(){}
+	public Extinguish(){access=new String[]{"EXTINGUISH"};}
 
-	private String[] access={"EXTINGUISH"};
-	public String[] getAccessWords(){return access;}
-
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		if(commands.size()<2)
 		{
@@ -39,11 +35,11 @@ public class Extinguish extends StdCommand
 		}
 		commands.removeElementAt(0);
 
-		int maxToExt=CMLib.english().calculateMaxToGive(mob,commands,true,mob,false);
+		int maxToExt=CMLib.english().calculateMaxToGive(mob,commands,mob,false);
 		if(maxToExt<0) return false;
 
 		String target=CMParms.combine(commands,0);
-		boolean allFlag=(commands.size()>0)?((String)commands.elementAt(0)).equalsIgnoreCase("all"):false;
+		boolean allFlag=(commands.size()>0)?commands.elementAt(0).equalsIgnoreCase("all"):false;
 		if(target.toUpperCase().startsWith("ALL.")){ allFlag=true; target="ALL "+target.substring(4);}
 		if(target.toUpperCase().endsWith(".ALL")){ allFlag=true; target="ALL "+target.substring(0,target.length()-4);}
 		if(allFlag)
@@ -56,7 +52,11 @@ public class Extinguish extends StdCommand
 			{
 				Item I=(Item)items.elementAt(i);
 				if((items.size()==1)||(I instanceof Light))
-					mob.location().doMessage(CMClass.getMsg(mob,I,null,EnumSet.of(CMMsg.MsgCode.EXTINGUISH),"<S-NAME> extinguish(es) <T-NAME>."));
+				{
+					CMMsg msg=CMClass.getMsg(mob,I,null,EnumSet.of(CMMsg.MsgCode.EXTINGUISH),"<S-NAME> extinguish(es) <T-NAME>.");
+					mob.location().doMessage(msg);
+					msg.returnMsg();
+				}
 			}
 		}
 		else
@@ -65,10 +65,14 @@ public class Extinguish extends StdCommand
 			if(I==null)
 				mob.tell("You don't see '"+target+"' here.");
 			else
-				mob.location().doMessage(CMClass.getMsg(mob,I,null,EnumSet.of(CMMsg.MsgCode.EXTINGUISH),"<S-NAME> extinguish(es) <T-NAME>."));
+			{
+				CMMsg msg=CMClass.getMsg(mob,I,null,EnumSet.of(CMMsg.MsgCode.EXTINGUISH),"<S-NAME> extinguish(es) <T-NAME>.");
+				mob.location().doMessage(msg);
+				msg.returnMsg();
+			}
 		}
 		return false;
 	}
-	public double actionsCost(MOB mob, Vector cmds){return DEFAULT_NONCOMBATACTION;}
+	public int commandType(MOB mob, String cmds){return CT_LOW_P_ACTION;}
 	public boolean canBeOrdered(){return true;}
 }

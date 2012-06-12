@@ -9,14 +9,14 @@ import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.Basic.StdItem;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.GenericBuilder;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
 import java.nio.ByteBuffer;
-
+import java.util.concurrent.CopyOnWriteArrayList;
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
 EspressoMUD copyright 2011 Kejardon
@@ -31,22 +31,27 @@ public class StdArea implements Area
 	protected String name="the area";
 	protected SortedVector<Room> properRooms=new SortedVector<Room>();
 	protected Tickable.TickStat tickStatus=Tickable.TickStat.Not;
-	protected long lastPlayerTime=System.currentTimeMillis();
-	protected Vector affects=new Vector(1);
-	protected Vector<OkChecker> okCheckers=new Vector();
-	protected Vector<ExcChecker> excCheckers=new Vector();
-	protected Vector<TickActer> tickActers=new Vector();
+	protected int tickCount=0;
+	
+//	protected long lastPlayerTime=System.currentTimeMillis();
+	protected CopyOnWriteArrayList<Effect> affects=new CopyOnWriteArrayList();
+	protected CopyOnWriteArrayList<OkChecker> okCheckers=new CopyOnWriteArrayList();
+	protected CopyOnWriteArrayList<ExcChecker> excCheckers=new CopyOnWriteArrayList();
+	protected CopyOnWriteArrayList<TickActer> tickActers=new CopyOnWriteArrayList();
 	protected HashedList<Room> tickingRooms=new HashedList<Room>();
-	protected Vector<Room> totalMetroRooms=null;
-	protected long lastTick=0;
+	protected Room[] totalMetroRooms=null;
+	//protected int lastTick=0;
 	protected int saveNum=0;
 
-	protected Vector<Area> children=new Vector(1);
-	protected Vector<Area> parents=new Vector(1);
-	protected Environmental myEnvironmental=(Environmental)CMClass.Objects.COMMON.getNew("DefaultEnvironmental");
+	protected CopyOnWriteArrayList<Area> children=new CopyOnWriteArrayList();
+	protected CopyOnWriteArrayList<Area> parents=new CopyOnWriteArrayList();
+	protected Environmental myEnvironmental;//=(Environmental)((Ownable)CMClass.COMMON.getNew("DefaultEnvironmental")).setOwner(this);
 	protected EnumSet<ListenHolder.Flags> lFlags=EnumSet.noneOf(ListenHolder.Flags.class);
 
 	protected String author="";
+	protected TimeClock myClock=null;
+
+	protected volatile boolean interruptGMC=false;
 
 	protected int[] childrenToLoad=null;
 	protected int[] effectsToLoad=null;
@@ -56,116 +61,83 @@ public class StdArea implements Area
 
 	public void initializeClass(){}
 
-//	protected Vector subOps=new Vector(1);
-	protected TimeClock myClock=null;
-	public void setTimeObj(TimeClock obj){myClock=obj; CMLib.database().saveObject(this);}
+	public void setTimeObj(TimeClock obj){myClock=obj;}
 	public TimeClock getTimeObj()
 	{
-		if(myClock==null) myClock=CMLib.time().globalClock();
+		if(myClock==null) myClock=CMLib.misc().globalClock();
 		return myClock;
 	}
-	public Environmental getEnvObject() {return myEnvironmental;}
+	public Environmental getEnvObject(){
+		if(myEnvironmental==null)
+			synchronized(this){if(myEnvironmental==null) myEnvironmental=(Environmental)((Ownable)CMClass.COMMON.getNew("DefaultEnvironmental")).setOwner(this);}
+		return myEnvironmental;
+	}
 	public int priority(ListenHolder L){return Integer.MAX_VALUE;}
 	public void registerListeners(ListenHolder here) { here.addListener(this, lFlags); }
-	public void registerAllListeners()
-	{
-	}
-	public void clearAllListeners()
-	{
-	}
+	public void registerAllListeners() { }
+	public void clearAllListeners() { }
 
-	public StdArea()
-	{
-		super();
-		((Ownable)myEnvironmental).setOwner(this);
-	}
+	public StdArea() { }
 	protected void finalize(){}
 	protected boolean amDestroyed=false;
 	public void destroy()
 	{
 		amDestroyed=true;
-		affects=null;
-		author=null;
-		children=null;
-		parents=null;
-		childrenToLoad=null;
-		effectsToLoad=null;
-//		blurbFlags=null;
-//		subOps=null;
-		properRooms=null;
-		totalMetroRooms=null;
-		myClock=null;
-		CMLib.database().deleteObject(this);
+		CMLib.threads().deleteArea(this);
+		if(myEnvironmental!=null) myEnvironmental.destroy();
+		for(Effect E : affects)
+			E.setAffectedOne(null);
+		affects.clear();
+		for(Area A : children)
+			A.removeParent(this);
+		children.clear();
+		for(Area A : parents)	//TODO ish: This doesn't make sure metroRooms doesn't end up with obliterated rooms
+			A.removeChild(this);
+		parents.clear();
+		CMLib.map().finishObliterateArea(this, getProperMap());
+		clearMetroMap();
+		if(saveNum!=0)
+			CMLib.database().deleteObject(this);
 	}
 	public boolean amDestroyed(){return amDestroyed;}
 
-	public String name()
-	{
-		return name;
-	}
+	public String name() { return name; }
 
 	public void setName(String newName){name=newName; CMLib.database().saveObject(this);}
 	public String Name(){return name;}
 
-	/*  A thought occurs to me. If this is relied on to make rooms, the method that calls it must either
-	 *  a) make and claim the number IMMEDIATELY after calling this and/or
-	 *  b) interpret a failure to make as the number it got being taken before it got to it (so call this again)
-	 */
-	//OR I can make this unnecessary. Derp.
-/*	public String getNewRoomID()
-	{
-		Room lastRoom=properRooms.lastElement();
-		if(lastRoom==null) return name+"#1";
-		String S=lastRoom.roomID();
-		return name+"#"+(1+CMath.s_int(S.substring(S.indexOf("#")+1)));
-	}
-*/
-	public long lastAct(){return 0;}	//No Action ticks
-	public long lastTick(){return lastTick;}
+//	public long lastAct(){return 0;}	//No Action ticks
+	//public long lastTick(){return lastTick;}
 
 	public EnumSet<ListenHolder.Flags> listenFlags() {return lFlags;}
-	public CMObject newInstance()
-	{
-		try
-		{
-			return this.getClass().newInstance();
-		}
-		catch(Exception e)
-		{
-			Log.errOut(ID(),e);
-		}
-		return new StdArea();
-	}
+	public CMObject newInstance() { return new StdArea(); }
 	protected void cloneFix(StdArea E)
-	{	//TODO
-		saveNum=0;
-		parents=null;
-		if(E.parents!=null)
-			parents=(Vector)E.parents.clone();
-		children=null;
-		if(E.children!=null)
-			children=(Vector)E.children.clone();
-		affects=new Vector(1);
-		for(int a=0;a<E.numEffects();a++)
-		{
-			Effect A=E.fetchEffect(a);
-			if(A!=null)
-				affects.addElement((Effect)A.copyOf());
-		}
+	{
+		okCheckers=new CopyOnWriteArrayList();
+		excCheckers=new CopyOnWriteArrayList();
+		tickActers=new CopyOnWriteArrayList();
+		lFlags=lFlags.clone();
+		if(E.myEnvironmental!=null)
+			myEnvironmental=(Environmental)((Ownable)E.myEnvironmental.copyOf()).setOwner(this);
+		properRooms=new SortedVector(); //ROOOOOOOMS AGH. Going to say no for now.
+		tickingRooms=new HashedList();
+		tickStatus=Tickable.TickStat.Not;
+		parents=new CopyOnWriteArrayList();
+		children=new CopyOnWriteArrayList();
+		affects=new CopyOnWriteArrayList();
+		for(Effect A : E.affects)
+			affects.add(A.copyOnto(this));
 	}
 	public CMObject copyOf()
 	{
 		try
 		{
 			StdArea E=(StdArea)this.clone();
+			E.saveNum=0;
 			E.cloneFix(this);
 			return E;
-
 		}
-		catch(CloneNotSupportedException e)
-		{
-			return this.newInstance();
-		}
+		catch(CloneNotSupportedException e) { return newInstance(); }	//To be safe for class extension
 	}
 
 	public int compareTo(CMObject o)
@@ -190,14 +162,15 @@ public class StdArea implements Area
 		if((flags.contains(ListenHolder.Flags.EXC))&&(!excCheckers.isEmpty()))
 			lFlags.add(ListenHolder.Flags.EXC);
 	}
-	public Vector<CharAffecter> charAffecters(){return null;}
-	public Vector<EnvAffecter> envAffecters(){return null;}
-	public Vector<OkChecker> okCheckers(){return okCheckers;}
-	public Vector<ExcChecker> excCheckers(){return excCheckers;}
-	public Vector<TickActer> tickActers(){return tickActers;}
+	public CopyOnWriteArrayList<CharAffecter> charAffecters(){return null;}
+	public CopyOnWriteArrayList<EnvAffecter> envAffecters(){return null;}
+	public CopyOnWriteArrayList<OkChecker> okCheckers(){return okCheckers;}
+	public CopyOnWriteArrayList<ExcChecker> excCheckers(){return excCheckers;}
+	public CopyOnWriteArrayList<TickActer> tickActers(){return tickActers;}
 
 	public boolean okMessage(OkChecker myHost, CMMsg msg)
 	{
+/*
 		for(int i=0;i<msg.source().size();i++)
 		{
 			Interactable E = msg.source().get(i);
@@ -206,129 +179,141 @@ public class StdArea implements Area
 				lastPlayerTime=System.currentTimeMillis();
 			}
 		}
-		for(int i=0;i<okCheckers.size();i++)
-			if(!okCheckers.get(i).okMessage(this,msg))
+*/
+		for(OkChecker O : okCheckers)
+			if(!O.okMessage(this,msg))
 				return false;
-		if(parents!=null)
-		for(int i=0;i<parents.size();i++)
-			if(!parents.elementAt(i).okMessage(myHost,msg))
+		for(Area A : parents)
+			if(!A.okMessage(myHost,msg))
 				return false;
+		/*
+		if(myHost==this)
+		for(Room R : getMetroCollection())
+			if(!R.okMessage(this,msg))	//TODO: This and executeMsg have to handle room locks somehow...
+				return false;
+		*/
 		return true;
 	}
 	public boolean respondTo(CMMsg msg){return true;}
 
+	public void sendMessageEverywhere(CMMsg msg)
+	{
+		for(Room R : getMetroCollection())
+			R.send(msg);
+	}
+	public void showMessageEverywhere(Interactable source, Interactable target, CMObject tool, String message)
+	{
+		for(Room R : getMetroCollection())
+			R.show(source, target, tool, message);
+	}
+	public void showMessageEverywhere(Interactable source, Interactable target, CMObject tool, String srcMessage, String tarMessage, String othMessage)
+	{
+		for(Room R : getMetroCollection())
+			R.show(source, target, tool, srcMessage, tarMessage, othMessage);
+	}
+
 	public void executeMsg(ExcChecker myHost, CMMsg msg)
 	{
-		for(int i=0;i<excCheckers.size();i++)
-			excCheckers.get(i).executeMsg(this, msg);
-
-		if(parents!=null)
-		for(int i=0;i<parents.size();i++)
-			parents.elementAt(i).executeMsg(myHost,msg);
+		for(ExcChecker O : excCheckers)
+			O.executeMsg(this, msg);
+		for(Area A : parents)
+			A.executeMsg(myHost,msg);
+		if(myHost==this)
+		for(Room R : getMetroCollection())
+			R.executeMsg(this, msg);
 	}
 
 	public Tickable.TickStat getTickStatus(){return tickStatus;}
 
-	public boolean tick(Tickable ticking, Tickable.TickID tickID)
+	public void tickAct(){}
+	public int tickCounter(){return tickCount;}
+	public boolean tick(int tickTo)
 	{
-		if(tickID==Tickable.TickID.Action) return false;
-		tickStatus=Tickable.TickStat.Start;
-		getTimeObj().tick(this,tickID);
-		tickStatus=Tickable.TickStat.Listener;
-		for(int i=tickActers.size()-1;i>=0;i--)
+		if(tickCount==0) tickCount=tickTo-1;
+		while(tickCount<tickTo)
 		{
-			TickActer T=tickActers.get(i);
-			if(!T.tick(ticking, tickID))
-				removeListener(T, EnumSet.of(ListenHolder.Flags.TICK));
+			tickCount++;
+			if(!doTick()) {tickCount=0; return false;}
 		}
+		return true;
+	}
+	protected boolean doTick()
+	{
+		//tickStatus=Tickable.TickStat.Start;
+		//getTimeObj().tick(this,tickID);	//NOTE: This isn't ideal, but it'll work. Ideally TimeClocks are directly ticked by the service engine..
+		tickStatus=Tickable.TickStat.Listener;
+		for(TickActer T : tickActers)
+			if(!T.tick(tickCount))
+				tickActers.remove(T);
+		tickStatus=Tickable.TickStat.End;
 		for(Iterator<Room> I=tickingRooms.iterator(); I.hasNext();)
 		{
 			Room R=I.next();
-			if(!R.tick(ticking, tickID))
+			if(!R.tick(tickCount))
 				tickingRooms.remove(R);
 		}
 		tickStatus=Tickable.TickStat.Not;
-		lastTick=System.currentTimeMillis();
 		return true;
 	}
 
 	public void addEffect(Effect to)
 	{
-		if(to==null) return;
-		affects.addElement(to);
+		affects.add(to);
 		to.setAffectedOne(this);
 		CMLib.database().saveObject(this);
 	}
 	public void delEffect(Effect to)
 	{
-		if(affects.removeElement(to))
+		if(affects.remove(to))
 		{
 			to.setAffectedOne(null);
 			CMLib.database().saveObject(this);
 		}
 	}
+	public boolean hasEffect(Effect to)
+	{
+		return affects.contains(to);
+	}
 	public int numEffects(){return affects.size();}
 	public Effect fetchEffect(int index)
 	{
-		try { return (Effect)affects.elementAt(index); }
+		try { return affects.get(index); }
 		catch(java.lang.ArrayIndexOutOfBoundsException x){}
 		return null;
 	}
 	public Vector<Effect> fetchEffect(String ID)
 	{
-		Vector<Effect> V=new Vector<Effect>();
-		for(int a=0;a<affects.size();a++)
-		{
-			Effect A=fetchEffect(a);
-			if((A!=null)&&(A.ID().equals(ID)))
-				V.add(A);
-		}
+		Vector<Effect> V=new Vector(1);
+		for(Effect E : affects)
+			if(E.ID().equals(ID))
+				V.add(E);
 		return V;
 	}
-	public Vector<Effect> allEffects() { return (Vector<Effect>)affects.clone(); }
+	public Iterator<Effect> allEffects() { return affects.iterator(); }
 	public boolean inMyMetroArea(Area A)
 	{
 		if(A==this) return true;
 		if(getNumChildren()==0) return false;
-		for(int i=0;i<getNumChildren();i++)
-			if(getChild(i).inMyMetroArea(A))
+		for(Area child : children)
+			if(child.inMyMetroArea(A))
 				return true;
 		return false;
 	}
 
+	public void addTickingRoom(Room R) { tickingRooms.add(R); }
+	public void removeTickingRoom(Room R) { tickingRooms.remove(R); }
 	public int properSize() { return properRooms.size(); }
 	public void addProperRoom(Room R)
 	{
-		if(R==null) return;
-//		String roomID=R.roomID();
-//		SortedList.SortableObject<Room> contR=null;
 		synchronized(properRooms)
 		{
-//			if(roomID.startsWith(name+"#"))
-//			{
-				if(properRooms.contains(R))	//This might rename the room later, but for now just stop.
-					return;
-//			}
-//			else
-//			{
-//				R.setArea(null);
-//				R.setRoomID(getNewRoomID());
-//			}
+			if(properRooms.contains(R))
+				return;
 			properRooms.add(R);
 		}
-//		R.setAreaRaw(this);
 		clearMetroMap();
 	}
-	public void addTickingRoom(Room R)
-	{
-		tickingRooms.add(R);
-	}
-	public void removeTickingRoom(Room R)
-	{
-		tickingRooms.remove(R);
-	}
-
-	//TODO: Update this for item rooms when they're done
+	//TODO: Update this for item rooms when they're done?
 	public boolean isRoom(Room R)
 	{
 		if(R==null) return false;
@@ -339,9 +324,6 @@ public class StdArea implements Area
 	}
 	public void delProperRoom(Room R)
 	{
-//		if(R==null) return;
-//		String roomID=R.roomID();
-//		if(roomID.startsWith(name+"#"))
 		synchronized(properRooms)
 		{
 			if(properRooms.remove(R))
@@ -349,65 +331,54 @@ public class StdArea implements Area
 		}
 	}
 
-/*	public Room getRoom(String roomID)
-	{
-		if(roomID.startsWith(name+"#"))
-		{
-			Room R=(Room)CMClass.Objects.LOCALE.getNew("StdRoom");
-			R.setRoomID(roomID);
-			synchronized(properRooms)
-			{
-				int foundIndex=properRooms.indexOf(R);
-				if(foundIndex>=0) return properRooms.get(foundIndex);
-			}
-		}
-		return null;
-	} */
-
 	public int metroSize()
 	{
+		if(totalMetroRooms!=null) return totalMetroRooms.length;
 		int num=properSize();
-		for(int c=getNumChildren()-1;c>=0;c--)
-			num+=getChild(c).metroSize();
+		for(Area A : children)
+			num+=A.metroSize();
 		return num;
 	}
 	public Room getRandomProperRoom()
 	{
-		if(properRooms.size()==0) return null;
-		return properRooms.get(CMath.random(properRooms.size()));
+		while(!properRooms.isEmpty()) try{
+			return properRooms.get(CMath.random(properRooms.size()));
+		}catch (Exception e){}
+		return null;
 	}
 	public Room getRandomMetroRoom()
 	{
-		Vector<Room> V=getMetroCollection();
-		if(V.size()>0) return V.get(CMath.random(V.size()));
+		Room[] V=getMetroCollection();
+		if(V.length>0) return V[CMath.random(V.length)];
 		return null;
 	}
 
 	public void clearMetroMap()
 	{
+		interruptGMC=true;
 		totalMetroRooms=null;
-		for(Enumeration<Area> e=getParents();e.hasMoreElements();)
-			e.nextElement().clearMetroMap();
+		for(Area A : parents)
+			A.clearMetroMap();
 	}
 
-	public Enumeration<Room> getProperMap()
+	public Room[] getProperMap()
 	{
-		Vector<Room> V=(Vector<Room>)properRooms.clone();
-		return V.elements();
+		return (Room[])properRooms.toArray(Room.dummyRoomArray);
 	}
 
-	public Vector<Room> getMetroCollection()
+	public Room[] getMetroCollection()
 	{
 		if(totalMetroRooms!=null)
 			return totalMetroRooms;
-		totalMetroRooms = new Vector(1);
-		Vector<Room> tempList=totalMetroRooms;
-		Vector<Room>[] toAdd=new Vector[children.size()];
+		interruptGMC=false;
+		ArrayList<Room> tempList=new ArrayList(0);
+		ArrayList<Room[]> toAdd=new ArrayList(children.size());
 		int totalSize=0;
-		for(int i=0;i<children.size();i++)
+		for(Area child : children)
 		{
-			toAdd[i]=children.get(i).getMetroCollection();
-			totalSize+=toAdd[i].size();
+			Room[] childRooms=child.getMetroCollection();
+			toAdd.add(childRooms);
+			totalSize+=childRooms.length;
 		}
 		synchronized(properRooms)
 		{
@@ -415,21 +386,22 @@ public class StdArea implements Area
 			tempList.ensureCapacity(totalSize);
 			tempList.addAll(properRooms);
 		}
-		for(int i=0;i<toAdd.length;i++)
-			tempList.addAll(toAdd[i]);
-		return tempList;
-
+		for(Room[] roomGroup : toAdd)
+			for(Room roomToAdd : roomGroup)
+				tempList.add(roomToAdd);
+		Room[] finalList=tempList.toArray(Room.dummyRoomArray);
+		if(!interruptGMC)	totalMetroRooms=finalList;
+		return finalList;
 	}
-	public Enumeration getMetroMap(){return getMetroCollection().elements();}
+	//public Enumeration<Room> getMetroMap(){return getMetroCollection().elements();}
 
 	// Children
-	public Enumeration getChildren() { return children.elements(); }
+	public Iterator<Area> getChildren() { return children.iterator(); }
 	public String getChildrenList()
 	{
 		StringBuffer str=new StringBuffer("");
-		for(Enumeration<Area> e=getChildren(); e.hasMoreElements();)
+		for(Area A : children)
 		{
-			Area A=e.nextElement();
 			if(str.length()>0) str.append(";");
 			str.append(A.name());
 		}
@@ -437,70 +409,51 @@ public class StdArea implements Area
 	}
 
 	public int getNumChildren() { return children.size(); }
-	public Area getChild(int num) { return children.elementAt(num); }
+	public Area getChild(int num) { return children.get(num); }
 	public Area getChild(String named)
 	{
-		for(int i=0;i<children.size();i++)
-		{
-			Area A=children.elementAt(i);
+		for(Area A : children)
 			if(A.name().equalsIgnoreCase(named))
 				return A;
-		}
 		return null;
 	}
 	public boolean isChild(Area named) { return children.contains(named); }
 	public boolean isChild(String named)
 	{
-		for(int i=0;i<children.size();i++)
-		{
-			Area A=children.elementAt(i);
+		for(Area A : children)
 			if(A.name().equalsIgnoreCase(named))
 				return true;
-		}
 		return false;
 	}
 	public void addChild(Area Adopted)
 	{
-		Adopted.addParent(this);
-		for(int i=0;i<children.size();i++)
+		if(children.addIfAbsent(Adopted))
 		{
-			Area A=children.elementAt(i);
-			if(A.name().equalsIgnoreCase(Adopted.name()))
-			{
-				children.setElementAt(Adopted, i);
-				return;
-			}
+			Adopted.addParent(this);
+			CMLib.database().saveObject(this);
 		}
-		children.addElement(Adopted);
-		CMLib.database().saveObject(this);
 	}
-	public void removeChild(Area Disowned) { children.removeElement(Disowned); Disowned.removeParent(this); CMLib.database().saveObject(this);}
-	public void removeChild(int Disowned) { children.remove(Disowned).removeParent(this); CMLib.database().saveObject(this);}
+	public void removeChild(Area Disowned) { children.remove(Disowned); Disowned.removeParent(this); clearMetroMap(); CMLib.database().saveObject(this);}
+	public void removeChild(int Disowned) { children.remove(Disowned).removeParent(this); clearMetroMap(); CMLib.database().saveObject(this); }
 	// child based circular reference check
 	// Doesn't prevent having the same parent twice. NOTE: People making areas should take care about this!
 	public boolean canChild(Area newChild)
 	{
-		if(parents.contains(newChild))
-			return false;
-		for(int i=0;i<parents.size();i++)
-		{
-			Area rent=parents.elementAt(i);
-			if(!(rent.canChild(newChild)))
+		if(newChild==this) return false;
+		for(Area A : parents)
+			if(!(A.canChild(newChild)))
 				return false;
-		}
 		return true;
 	}
 
 	// Parent
-	public Enumeration<Area> getParents() { return parents.elements(); }
+	public Iterator<Area> getParents() { return parents.iterator(); }
 	public Vector<Area> getParentsRecurse()
 	{
 		Vector<Area> V=new Vector<Area>();
-		Area A=null;
-		for(Enumeration<Area> e=getParents();e.hasMoreElements();)
+		for(Area A : parents)
 		{
-			A=e.nextElement();
-			V.addElement(A);
+			V.add(A);
 			CMParms.addToVector(A.getParentsRecurse(),V);
 		}
 		return V;
@@ -509,9 +462,8 @@ public class StdArea implements Area
 	public String getParentsList()
 	{
 		StringBuffer str=new StringBuffer("");
-		for(Enumeration<Area> e=getParents(); e.hasMoreElements();) 
+		for(Area A : parents) 
 		{
-			Area A=e.nextElement();
 			if(str.length()>0) str.append(";");
 			str.append(A.name());
 		}
@@ -519,15 +471,12 @@ public class StdArea implements Area
 	}
 
 	public int getNumParents() { return parents.size(); }
-	public Area getParent(int num) { return parents.elementAt(num); }
+	public Area getParent(int num) { return parents.get(num); }
 	public Area getParent(String named)
 	{
-		for(int i=0;i<parents.size();i++)
-		{
-			Area A=parents.elementAt(i);
+		for(Area A : parents)
 			if(A.name().equalsIgnoreCase(named))
 				return A;
-		}
 		return null;
 	}
 	public boolean isParent(Area named)
@@ -536,39 +485,14 @@ public class StdArea implements Area
 	}
 	public boolean isParent(String named)
 	{
-		for(int i=0;i<parents.size();i++)
-		{
-			Area A=parents.elementAt(i);
+		for(Area A : parents)
 			if(A.name().equalsIgnoreCase(named))
 				return true;
-		}
 		return false;
 	}
-	public void addParent(Area Adopted)
-	{
-		for(int i=0;i<parents.size();i++)
-			if(Adopted.name().equalsIgnoreCase(parents.elementAt(i).name()))
-			{
-				parents.setElementAt(Adopted, i);
-				return;
-			}
-		parents.addElement(Adopted);
-	}
-	public void removeParent(Area Disowned) { parents.removeElement(Disowned); }
-	public void removeParent(int Disowned) { parents.removeElementAt(Disowned); }
-	//Redundant with canChild
-	public boolean canParent(Area newParent)
-	{
-		if(children.contains(newParent))
-			return false;
-		for(int i=0;i<children.size();i++)
-		{
-			Area child=children.elementAt(i);
-			if(!(child.canParent(newParent)))
-				return false;
-		}
-		return true;
-	}
+	public void addParent(Area Adopted) { parents.add(Adopted); }
+	public void removeParent(Area Disowned) { parents.remove(Disowned); }
+	public void removeParent(int Disowned) { parents.remove(Disowned); }
 
 	//CMModifiable and CMSavable
 	public SaveEnum[] totalEnumS(){return SCode.values();}
@@ -581,7 +505,7 @@ public class StdArea implements Area
 		synchronized(this)
 		{
 			if(saveNum==0)
-				saveNum=SIDLib.Objects.AREA.getNumber(this);
+				saveNum=SIDLib.AREA.getNumber(this);
 		}
 		return saveNum;
 	}
@@ -590,9 +514,9 @@ public class StdArea implements Area
 		synchronized(this)
 		{
 			if(saveNum!=0)
-				SIDLib.Objects.AREA.removeNumber(saveNum);
+				SIDLib.AREA.removeNumber(saveNum);
 			saveNum=num;
-			SIDLib.Objects.AREA.assignNumber(num, this);
+			SIDLib.AREA.assignNumber(num, this);
 		}
 	}
 	public boolean needLink(){return true;}
@@ -602,10 +526,10 @@ public class StdArea implements Area
 		{
 			for(int SID : childrenToLoad)
 			{
-				Area Adopted = (Area)SIDLib.Objects.AREA.get(SID);
+				Area Adopted = SIDLib.AREA.get(SID);
 				if(Adopted==null) continue;
 				Adopted.addParent(this);
-				children.addElement(Adopted);
+				children.add(Adopted);
 			}
 			childrenToLoad=null;
 		}
@@ -613,15 +537,17 @@ public class StdArea implements Area
 		{
 			for(int SID : effectsToLoad)
 			{
-				Effect to = (Effect)SIDLib.Objects.EFFECT.get(SID);
+				Effect to = SIDLib.EFFECT.get(SID);
 				if(to==null) continue;
-				affects.addElement(to);
+				affects.add(to);
 				to.setAffectedOne(this);
 			}
 			effectsToLoad=null;
 		}
+		CMLib.map().addArea(this);
 	}
 	public void saveThis(){CMLib.database().saveObject(this);}
+	public void prepDefault(){getEnvObject();}
 
 	private enum SCode implements CMSavable.SaveEnum{
 		NAM(){
@@ -630,18 +556,24 @@ public class StdArea implements Area
 			public void load(StdArea E, ByteBuffer S){ E.name=CMLib.coffeeMaker().loadString(S); } },
 		CHL(){
 			public ByteBuffer save(StdArea E){
-				if(E.children!=null) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.children.toArray(new CMSavable[E.children.size()]));
+				if(E.children.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.children.toArray(CMSavable.dummyCMSavableArray));
 				return GenericBuilder.emptyBuffer; }
 			public int size(){return 0;}
 			public void load(StdArea E, ByteBuffer S){ E.childrenToLoad=CMLib.coffeeMaker().loadAInt(S); } },
 		ENV(){
-			public ByteBuffer save(StdArea E){ return CMLib.coffeeMaker().savSubFull(E.myEnvironmental); }
+			public ByteBuffer save(StdArea E){
+				if(E.myEnvironmental==null) return GenericBuilder.emptyBuffer;
+				return CMLib.coffeeMaker().savSubFull(E.myEnvironmental); }
 			public int size(){return -1;}
 			public CMSavable subObject(CMSavable fromThis){return ((StdArea)fromThis).myEnvironmental;}
-			public void load(StdArea E, ByteBuffer S){ E.myEnvironmental=(Environmental)((Ownable)CMLib.coffeeMaker().loadSub(S, E.myEnvironmental)).setOwner(E); } },
+			public void load(StdArea E, ByteBuffer S){
+				Environmental old=E.myEnvironmental;
+				E.myEnvironmental=(Environmental)CMLib.coffeeMaker().loadSub(S, E, this);
+				if(E.myEnvironmental!=null) ((Ownable)E.myEnvironmental).setOwner(E);
+				if((old!=null)&&(old!=E.myEnvironmental)) old.destroy(); } },
 		EFC(){
 			public ByteBuffer save(StdArea E){
-				if(E.affects.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.affects.toArray(new CMSavable[E.affects.size()]));
+				if(E.affects.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.affects.toArray(CMSavable.dummyCMSavableArray));
 				return GenericBuilder.emptyBuffer; }
 			public int size(){return 0;}
 			public void load(StdArea E, ByteBuffer S){ E.effectsToLoad=CMLib.coffeeMaker().loadAInt(S); } },
@@ -649,7 +581,7 @@ public class StdArea implements Area
 			public ByteBuffer save(StdArea E){ return CMLib.coffeeMaker().savString(E.author); }
 			public int size(){return 0;}
 			public void load(StdArea E, ByteBuffer S){ E.author=CMLib.coffeeMaker().loadString(S); } }
-		;	//blurbflags, properrooms
+		;
 		public abstract ByteBuffer save(StdArea E);
 		public abstract void load(StdArea E, ByteBuffer S);
 		public ByteBuffer save(CMSavable E){return save((StdArea)E);}
@@ -659,21 +591,13 @@ public class StdArea implements Area
 		NAME(){
 			public String brief(StdArea E){return E.name;}
 			public String prompt(StdArea E){return E.name;}
-			public void mod(StdArea E, MOB M){
-				String newName=CMLib.genEd().stringPrompt(M, E.name, false);
-				if(E.name.equals(newName)) return;
-				for(Enumeration<Room> e=E.getProperMap();e.hasMoreElements();)
-				{
-					Room R=e.nextElement();
-					R.setName(newName+R.name().substring(R.name().indexOf('#')));
-				}
-				E.name=newName; } },
+			public void mod(StdArea E, MOB M){E.name=CMLib.genEd().stringPrompt(M, E.name, false);} },
 		EFFECTS(){
 			public String brief(StdArea E){return ""+E.affects.size();}
 			public String prompt(StdArea E){return "";}
 			public void mod(StdArea E, MOB M){CMLib.genEd().modAffectable(E, M);} },
 		ENVIRONMENTAL(){
-			public String brief(StdArea E){return E.myEnvironmental.ID();}
+			public String brief(StdArea E){return E.getEnvObject().ID();}
 			public String prompt(StdArea E){return "";}
 			public void mod(StdArea E, MOB M){CMLib.genEd().genMiscSet(M, E.myEnvironmental);} },
 		AUTHOR(){
@@ -711,64 +635,6 @@ public class StdArea implements Area
 		public void mod(CMModifiable toThis, MOB M){mod((StdArea)toThis, M);} }
 
 /*
-	public int[] getAreaIStats()
-	{
-		if(!CMProps.getBoolVar(CMProps.SYSTEMB_MUDSTARTED))
-			return new int[Area.AREASTAT_NUMBER];
-		int[] statData=(int[])Resources.getResource("STATS_"+Name().toUpperCase());
-		if(statData!=null) return statData;
-		synchronized(("STATS_"+Name()).intern())
-		{
-			Resources.removeResource("HELP_"+Name().toUpperCase());
-			Vector levelRanges=new Vector();
-			statData=new int[Area.AREASTAT_NUMBER];
-			statData[Area.AREASTAT_POPULATION]=0;
-			statData[Area.AREASTAT_MINLEVEL]=Integer.MAX_VALUE;
-			statData[Area.AREASTAT_MAXLEVEL]=Integer.MIN_VALUE;
-			statData[Area.AREASTAT_AVGLEVEL]=0;
-			statData[Area.AREASTAT_MEDLEVEL]=0;
-			statData[Area.AREASTAT_TOTLEVEL]=0;
-			statData[Area.AREASTAT_INTLEVEL]=0;
-			statData[Area.AREASTAT_VISITABLEROOMS]=getProperRoomnumbers().roomCountAllAreas();
-			Room R=null;
-			MOB mob=null;
-			for(Enumeration r=getProperMap();r.hasMoreElements();)
-			{
-				R=(Room)r.nextElement();
-				for(int i=0;i<R.numInhabitants();i++)
-				{
-					mob=R.fetchInhabitant(i);
-					if((mob!=null)&&(mob.isMonster()))
-					{
-						int lvl=mob.baseEnvStats().level();
-						levelRanges.addElement(Integer.valueOf(lvl));
-						statData[Area.AREASTAT_POPULATION]++;
-						statData[Area.AREASTAT_TOTLEVEL]+=lvl;
-						if(!CMLib.flags().isAnimalIntelligence(mob))
-							statData[Area.AREASTAT_INTLEVEL]+=lvl;
-						if(lvl<statData[Area.AREASTAT_MINLEVEL])
-							statData[Area.AREASTAT_MINLEVEL]=lvl;
-						if(lvl>statData[Area.AREASTAT_MAXLEVEL])
-							statData[Area.AREASTAT_MAXLEVEL]=lvl;
-					}
-				}
-			}
-			if((statData[Area.AREASTAT_POPULATION]==0)||(levelRanges.size()==0))
-			{
-				statData[Area.AREASTAT_MINLEVEL]=0;
-				statData[Area.AREASTAT_MAXLEVEL]=0;
-			}
-			else
-			{
-				Collections.sort(levelRanges);
-				statData[Area.AREASTAT_MEDLEVEL]=((Integer)levelRanges.elementAt((int)Math.round(Math.floor(CMath.div(levelRanges.size(),2.0))))).intValue();
-				statData[Area.AREASTAT_AVGLEVEL]=(int)Math.round(CMath.div(statData[Area.AREASTAT_TOTLEVEL],statData[Area.AREASTAT_POPULATION]));
-			}
-
-			Resources.submitResource("STATS_"+Name().toUpperCase(),statData);
-		}
-		return statData;
-	}
 	protected Vector allBlurbFlags()
 	{
 		Vector V=(Vector)blurbFlags.clone();
@@ -846,113 +712,6 @@ public class StdArea implements Area
 					return;
 				}
 		}catch(Exception e){}
-	}
-	public boolean amISubOp(String username)
-	{
-		for(int s=subOps.size()-1;s>=0;s--)
-		{
-			if(((String)subOps.elementAt(s)).equalsIgnoreCase(username))
-				return true;
-		}
-		return false;
-	}
-	public String getSubOpList()
-	{
-		StringBuffer list=new StringBuffer("");
-		for(int s=subOps.size()-1;s>=0;s--)
-		{
-			String str=(String)subOps.elementAt(s);
-			list.append(str);
-			list.append(";");
-		}
-		return list.toString();
-	}
-	public void setSubOpList(String list)
-	{
-		subOps=CMParms.parseSemicolons(list,true);
-	}
-	public void addSubOp(String username){subOps.addElement(username);}
-	public void delSubOp(String username)
-	{
-		for(int s=subOps.size()-1;s>=0;s--)
-		{
-			if(((String)subOps.elementAt(s)).equalsIgnoreCase(username))
-				subOps.removeElementAt(s);
-		}
-	}
-	public synchronized StringBuffer getAreaStats()
-	{
-		if(!CMProps.getBoolVar(CMProps.SYSTEMB_MUDSTARTED))
-			return new StringBuffer("");
-		StringBuffer s=(StringBuffer)Resources.getResource("HELP_"+Name().toUpperCase());
-		if(s!=null) return s;
-		s=new StringBuffer("");
-		int[] statData=getAreaIStats();
-		s.append(description()+"\n\r");
-		if(author.length()>0)
-			s.append("Author         : "+author+"\n\r");
-		s.append("Number of rooms: "+statData[Area.AREASTAT_VISITABLEROOMS]+"\n\r");
-		if(statData[Area.AREASTAT_POPULATION]==0)
-		{
-			if(getProperRoomnumbers().roomCountAllAreas()/2<properRooms.size())
-				s.append("Population     : 0\n\r");
-		}
-		else
-		{
-			s.append("Population     : "+statData[Area.AREASTAT_POPULATION]+"\n\r");
-			String currName=CMLib.beanCounter().getCurrency(this);
-			if(currName.length()>0)
-				s.append("Currency       : "+CMStrings.capitalizeAndLower(currName)+"\n\r");
-			else
-				s.append("Currency       : Gold coins (default)\n\r");
-			s.append("Level range    : "+statData[Area.AREASTAT_MINLEVEL]+" to "+statData[Area.AREASTAT_MAXLEVEL]+"\n\r");
-			s.append("Average level  : "+statData[Area.AREASTAT_AVGLEVEL]+"\n\r");
-			s.append("Median level   : "+statData[Area.AREASTAT_MEDLEVEL]+"\n\r");
-			try{
-				String flag=null;
-				int num=numAllBlurbFlags();
-				boolean blurbed=false;
-				for(int i=0;i<num;i++)
-				{
-					flag=this.getBlurbFlag(i);
-					if(flag!=null) flag=getBlurbFlag(flag);
-					if(flag!=null)
-					{
-						if(!blurbed){blurbed=true; s.append("\n\r");}
-						s.append(flag+"\n\r");
-					}
-				}
-				if(blurbed) s.append("\n\r");
-			}catch(Exception e){}
-		}
-		//Resources.submitResource("HELP_"+Name().toUpperCase(),s);
-		return s;
-	}
-	protected int getProperIndex(Room R)
-	{
-		if(properRooms.size()==0) return -1;
-		if(R.roomID().length()==0) return 0;
-		String roomID=R.roomID();
-		synchronized(properRooms)
-		{
-			int start=0;
-			int end=properRooms.size()-1;
-			int mid=0;
-			while(start<=end)
-			{
-				mid=(end+start)/2;
-				int comp=properRooms.elementAt(mid).roomID().compareToIgnoreCase(roomID);
-				if(comp==0) return mid;
-				else
-				if(comp>0)
-					end=mid-1;
-				else
-					start=mid+1;
-			}
-			if(end<0) return 0;
-			if(start>=properRooms.size()) return properRooms.size()-1;
-			return mid;
-		}
 	}
 */
 }

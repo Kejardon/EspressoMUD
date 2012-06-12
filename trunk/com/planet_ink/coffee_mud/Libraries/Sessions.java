@@ -1,14 +1,21 @@
 package com.planet_ink.coffee_mud.Libraries;
-import java.util.Enumeration;
-import java.util.Vector;
-import com.planet_ink.coffee_mud.Common.interfaces.Session;
-import com.planet_ink.coffee_mud.Libraries.interfaces.SessionsList;
-import com.planet_ink.coffee_mud.Libraries.interfaces.ThreadEngine;
-import com.planet_ink.coffee_mud.core.CMLib;
-import com.planet_ink.coffee_mud.core.CMSecurity;
-import com.planet_ink.coffee_mud.core.DVector;
-import com.planet_ink.coffee_mud.core.Log;
-import com.planet_ink.coffee_mud.core.interfaces.MudHost;
+import com.planet_ink.coffee_mud.core.interfaces.*;
+import com.planet_ink.coffee_mud.core.*;
+import com.planet_ink.coffee_mud.Effects.interfaces.*;
+import com.planet_ink.coffee_mud.Areas.interfaces.*;
+import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
+import com.planet_ink.coffee_mud.Commands.interfaces.*;
+import com.planet_ink.coffee_mud.Common.interfaces.*;
+import com.planet_ink.coffee_mud.Exits.interfaces.*;
+import com.planet_ink.coffee_mud.Items.interfaces.*;
+import com.planet_ink.coffee_mud.Locales.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.MOBS.interfaces.*;
+import com.planet_ink.coffee_mud.Races.interfaces.*;
+
+import java.util.*;
+import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -21,51 +28,81 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 public class Sessions extends StdLibrary implements SessionsList
 {
 	public String ID(){return "Sessions";}
+	
+//	protected int lastSize=0;
+	
 	private ThreadEngine.SupportThread thread=null;
-	public Vector all=new Vector();
+	public Vector<Session> all=new Vector();
+	public Session[] sessArray=Session.dummySessionArray;
 	
 	public ThreadEngine.SupportThread getSupportThread() { return thread;}
 	
 	public Session elementAt(int x)
 	{
-		return (Session)all.elementAt(x);
+		return (x<all.size())?all.get(x):null;
 	}
 	public int size()
 	{
 		return all.size();
 	}
+	public Session[] toArray()
+	{
+		synchronized(all)
+		{ return ((sessArray==null)?(sessArray=(Session[])all.toArray(Session.dummySessionArray)):(sessArray)); }
+	}
 	public void addElement(Session S)
 	{
-		all.addElement(S);
+		synchronized(all)
+		{
+			all.add(S);
+			sessArray=null;
+		}
 	}
 	public void removeElementAt(int x)
 	{
-		all.removeElementAt(x);
+		synchronized(all)
+		{
+			all.remove(x);
+			sessArray=null;
+		}
 	}
 	public void removeElement(Session S)
 	{
-		all.removeElement(S);
+		synchronized(all)
+		{
+			if(all.remove(S))
+				sessArray=null;
+		}
 	}
-	public Enumeration sessions() { return ((Vector)all.clone()).elements();}
+	//public Enumeration sessions() { return ((Vector)all.clone()).elements();}	//Use toArray
 	
+	//This spawns/calls another thread to do the work so it doesn't have to pause with checking/updating other sessions
 	public void stopSessionAtAllCosts(Session S)
 	{
 		if(S==null) return;
-		S.kill(true,true,false);
-		try{Thread.sleep(1000);}catch(Exception e){}
-		int tries=100;
-		while((S.getStatus()!=Session.STATUS_LOGOUTFINAL)
-		&&((--tries)>=0))
-		{
-			S.kill(true,true,true);
-			try{Thread.sleep(100);}catch(Exception e){}
-		}
 		removeElement(S);
+		CMClass.threadPool.execute(new SessionStopper(S));
+	}
+	private static class SessionStopper implements Runnable
+	{
+		Session S;
+		public SessionStopper(Session ses){S=ses;}
+		public void run()
+		{
+			S.kill(false);
+			try{Thread.sleep(1000);}catch(Exception e){}
+			int tries=5;
+			while((S.getStatus()!=Session.STATUS_LOGOUTFINAL)
+			&&((--tries)>=0))
+			{
+				S.kill(true);
+				try{Thread.sleep(100);}catch(Exception e){}
+			}
+		}
 	}
 	public boolean activate() {
 		if(thread==null)
-			thread=new ThreadEngine.SupportThread("THSessions"+Thread.currentThread().getThreadGroup().getName().charAt(0), 
-					MudHost.TIME_UTILTHREAD_SLEEP, this, CMSecurity.isDebugging("UTILITHREAD"));
+			thread=new ThreadEngine.SupportThread("THSessions", 60000, this, CMSecurity.isDebugging("UTILITHREAD"));
 		if(!thread.started)
 			thread.start();
 		return true;
@@ -79,9 +116,8 @@ public class Sessions extends StdLibrary implements SessionsList
 	public Session findPlayerOnline(String srchStr, boolean exactOnly)
 	{
 		// then look for players
-		for(int s=0;s<size();s++)
+		for(Session thisSession : toArray())
 		{
-			Session thisSession=elementAt(s);
 			if((thisSession.mob()!=null) && (!thisSession.killFlag())
 			&&(thisSession.mob().location()!=null)
 			&&(thisSession.mob().name().equalsIgnoreCase(srchStr)))
@@ -102,94 +138,73 @@ public class Sessions extends StdLibrary implements SessionsList
 	
 	public void run()
 	{
-		if((CMSecurity.isDisabled("UTILITHREAD"))
-		||(CMSecurity.isDisabled("SESSIONTHREAD")))
-			return;
 		thread.status("checking player sessions.");
-		for(int s=size()-1;s>=0;s--)
+		for(Session S : toArray())
 		{
-			Session S=elementAt(s);
 			if(S==null) continue;
 			long time=System.currentTimeMillis()-S.lastLoopTime();
-			if(time>0)
+			if(time>60000)
 			{
-				if((S.mob()!=null)||(S.getStatus()==Session.STATUS_ACCOUNTMENU))
+				String prev=S.previousCMD();
+				MOB mob=S.mob();
+				if(prev==null) prev="";
+				if((mob!=null)||(S.getStatus()==Session.STATUS_ACCOUNTMENU))
 				{
 					long check=60000;
 
-					if((S.previousCMD()!=null)
-					&&(S.previousCMD().size()>0)
-					&&(((String)S.previousCMD().firstElement()).equalsIgnoreCase("IMPORT")
-					   ||((String)S.previousCMD().firstElement()).equalsIgnoreCase("EXPORT")
-					   ||((String)S.previousCMD().firstElement()).equalsIgnoreCase("CHARGEN")
-					   ||((String)S.previousCMD().firstElement()).equalsIgnoreCase("MERGE")))
-						check=check*600;
-					else
-					if((S.mob()!=null)&&(CMSecurity.isAllowed(S.mob(),S.mob().location(),"CMDROOMS")))
-						check=check*15;
-					else
-					if(S.getStatus()==Session.STATUS_LOGIN)
-						check=check*5;
-
 					if(time>(check*10))
 					{
-						int roomID=(S.mob()!=null&&S.mob().location()!=null)?S.mob().location().saveNum():0;
-						if((S.previousCMD()==null)||(S.previousCMD().size()==0)||(S.getStatus()==Session.STATUS_LOGIN)||(S.getStatus()==Session.STATUS_ACCOUNTMENU))
-							Log.errOut(thread.getName(),"Kicking out: "+((S.mob()==null)?"Unknown":S.mob().name())+" who has spent "+time+" millis out-game.");
+						if((prev.length()==0)||(S.getStatus()==Session.STATUS_LOGIN)||(S.getStatus()==Session.STATUS_ACCOUNTMENU))
+							Log.errOut(thread.getName(),"Kicking out: "+((mob==null)?"Unknown":mob.name())+" who has spent "+time+" millis out-game.");
 						else
 						{
-							Log.errOut(thread.getName(),"KILLING DEAD Session: "+((S.mob()==null)?"Unknown":S.mob().name())+" ("+roomID+"), out for "+time);
-							Log.errOut(thread.getName(),"STATUS  was :"+S.getStatus()+", LASTCMD was :"+((S.previousCMD()!=null)?S.previousCMD().toString():""));
+							int roomID=(mob!=null&&mob.location()!=null)?mob.location().saveNum():0;
+							Log.errOut(thread.getName(),"KILLING DEAD Session: "+((mob==null)?"Unknown":mob.name())+" ("+roomID+"), out for "+time);
+							Log.errOut(thread.getName(),"STATUS  was :"+S.getStatus()+", LASTCMD was :"+prev);
 							if(S instanceof Thread)
 								thread.debugDumpStack((Thread)S);
 						}
-						thread.status("killing session ");
 						stopSessionAtAllCosts(S);
-						thread.status("checking player sessions.");
+						continue;
 					}
-					else
-					if(time>check)
+					else if(time>check)
 					{
-						if((S.mob()==null)||(S.mob().name()==null)||(S.mob().name().length()==0))
-							stopSessionAtAllCosts(S);
-						else
-						if((S.previousCMD()!=null)&&(S.previousCMD().size()>0))
+						if(mob==null)
 						{
-							int roomID=(S.mob()!=null&&S.mob().location()!=null)?S.mob().location().saveNum():0;
-							if((S.isLockedUpWriting())
-							&&(CMLib.flags().isInTheGame(S.mob(),true)))
-							{
-								Log.errOut(thread.getName(),"LOGGED OFF Session: "+((S.mob()==null)?"Unknown":S.mob().name())+" ("+roomID+"), out for "+time+": "+S.isLockedUpWriting());
-								stopSessionAtAllCosts(S);
-							}
-							else
-								Log.errOut(thread.getName(),"Suspect Session: "+((S.mob()==null)?"Unknown":S.mob().name())+" ("+roomID+"), out for "+time);
-							if((S.getStatus()!=1)||((S.previousCMD()!=null)&&(S.previousCMD().size()>0)))
-								Log.errOut(thread.getName(),"STATUS  is :"+S.getStatus()+", LASTCMD was :"+((S.previousCMD()!=null)?S.previousCMD().toString():""));
+							stopSessionAtAllCosts(S);
+							continue;
+						}
+						else if((S.isLockedUpWriting())&&(CMLib.flags().isInTheGame(mob,true)))
+						{
+							int roomID=(mob.location()!=null)?mob.location().saveNum():0;
+							Log.errOut(thread.getName(),"LOGGED OFF Session: "+((mob==null)?"Unknown":mob.name())+" ("+roomID+"), out for "+time+": "+S.isLockedUpWriting());
+							if((S.getStatus()!=1)||(prev.length()>0))
+								Log.errOut(thread.getName(),"STATUS  is :"+S.getStatus()+", LASTCMD was :"+prev);
 							else
 								Log.errOut(thread.getName(),"STATUS  is :"+S.getStatus()+", no last command available.");
+							stopSessionAtAllCosts(S);
+							continue;
 						}
 					}
 				}
 				else
-				if(time>(60000))
 				{
-					int roomID=(S.mob()!=null&&S.mob().location()!=null)?S.mob().location().saveNum():0;
 					if(S.getStatus()==Session.STATUS_LOGIN)
 						Log.errOut(thread.getName(),"Kicking out login session after "+time+" millis.");
 					else
 					{
-						Log.errOut(thread.getName(),"KILLING DEAD Session: "+((S.mob()==null)?"Unknown":S.mob().name())+" ("+roomID+"), out for "+time);
+						int roomID=(mob!=null&&mob.location()!=null)?mob.location().saveNum():0;
+						Log.errOut(thread.getName(),"KILLING DEAD Session: "+((mob==null)?"Unknown":mob.name())+" ("+roomID+"), out for "+time);
 						if(S instanceof Thread)
 							thread.debugDumpStack((Thread)S);
 					}
-					if((S.getStatus()!=1)||((S.previousCMD()!=null)&&(S.previousCMD().size()>0)))
-						Log.errOut(thread.getName(),"STATUS  was :"+S.getStatus()+", LASTCMD was :"+((S.previousCMD()!=null)?S.previousCMD().toString():""));
-					thread.status("killing session ");
+					if((S.getStatus()!=1)||(prev.length()>0))
+						Log.errOut(thread.getName(),"STATUS  was :"+S.getStatus()+", LASTCMD was :"+prev);
 					stopSessionAtAllCosts(S);
-					thread.status("checking player sessions");
+					continue;
 				}
 			}
+			//S.checkInput();	//putting this back into the session's run() method
 		}
 	}
 }

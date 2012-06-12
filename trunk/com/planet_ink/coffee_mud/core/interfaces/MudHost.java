@@ -35,19 +35,17 @@ public interface MudHost
 	/** the number of milliseconds between each savethread execution */
 	public final static long TIME_SAVETHREAD_SLEEP=60*60000; // 60 minutes, right now.
 	/** the number of milliseconds between each utilithread execution */
-	public final static long TIME_UTILTHREAD_SLEEP=Tickable.TIME_MILIS_PER_MUDHOUR;
+	public final static long TIME_UTILTHREAD_SLEEP=15*60000; //Tickable.TIME_MILIS_PER_MUDHOUR;
 
-	// the hostname of the mud server
-	// @return hostname or ip address 
-	public String getHost();
 	public int getPort();
 
 	public void shutdown(Session S, boolean keepItDown);
 
 	public String getStatus();
 	public long getUptimeSecs();
+	public long getUptimeStart();
 
-	public Vector getOverdueThreads();
+//	public Vector getOverdueThreads();
 
 	public void setAcceptConnections(boolean truefalse);
 	public boolean isAcceptingConnections();

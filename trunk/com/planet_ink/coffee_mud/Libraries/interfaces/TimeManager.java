@@ -13,6 +13,8 @@ import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
+import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.text.*;
 
 /*
@@ -284,5 +286,5 @@ public interface TimeManager extends CMLibrary
 	 * @see com.planet_ink.coffee_mud.Common.interfaces.TimeClock
 	 * @return the global clock
 	 */
-	public TimeClock globalClock();
+	//public TimeClock globalClock();
 }

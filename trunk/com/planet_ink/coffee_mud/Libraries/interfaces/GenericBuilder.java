@@ -14,6 +14,7 @@ import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
 import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -35,6 +36,7 @@ public interface GenericBuilder extends CMLibrary
 	//Public functions for common save/load code
 //	public CMSavable loadSub(String A);
 //	public ByteBuffer getSubStr(CMSavable Obj);
+	public byte[] loadAByte(ByteBuffer A);
 	public ByteBuffer savAShort(short[] val);
 	public short[] loadAShort(ByteBuffer A);
 	public ByteBuffer savAInt(int[] val);
@@ -55,7 +57,7 @@ public interface GenericBuilder extends CMLibrary
 //	public ByteBuffer savSubFixed(CMSavable.CMSubSavable sub);
 //	public ByteBuffer savSubVar(CMSavable.CMSubSavable sub);
 	public ByteBuffer savSubFull(CMSavable sub);
-	public CMSavable loadSub(ByteBuffer buf, CMSavable sub);
+	public CMSavable loadSub(ByteBuffer buf, CMSavable source, CMSavable.SaveEnum subCall);
 	public ByteBuffer savSaveNums(CMSavable[] e);
 	public ByteBuffer getRaceWVector(WVector<Race> V);
 	public WVector<Race> setRaceWVector(ByteBuffer S);

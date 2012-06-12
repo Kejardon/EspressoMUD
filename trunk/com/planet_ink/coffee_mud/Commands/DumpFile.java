@@ -17,37 +17,32 @@ import java.util.*;
 @SuppressWarnings("unchecked")
 public class DumpFile extends StdCommand
 {
-	public DumpFile(){}
+	public DumpFile(){access=new String[]{"DUMPFILE"};}
 
-	private String[] access={"DUMPFILE"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
-		if(commands.size()<3)
+		commands.removeElementAt(0);
+		if((commands.size()<2)||(commands.size()==2&&commands.get(0).equalsIgnoreCase("raw")))
 		{
 			mob.tell("dumpfile {raw} username|all {filename1 ...}");
 			return false;
 		}
-		commands.removeElementAt(0);
 
 		int numFiles = 0;
 		int numSessions = 0;
 		boolean rawMode=false;
 
-		if(((String)commands.elementAt(0)).equalsIgnoreCase("raw"))
+		if(commands.elementAt(0).equalsIgnoreCase("raw"))
 		{
 			rawMode = true;
 			commands.removeElementAt(0);
 		}
 
-		String targetName = (String)commands.elementAt(0);
+		String targetName = commands.remove(0);
 		boolean allFlag=(targetName.equalsIgnoreCase("all"));
 
-		commands.removeElementAt(0);
-
 		// so they can do dumpfile (username) RAW filename too
-		if(!rawMode && ( ((String)commands.elementAt(0)).equalsIgnoreCase("raw")) )
+		if(!rawMode && (commands.elementAt(0).equalsIgnoreCase("raw")) )
 		{
 			rawMode = true;
 			commands.removeElementAt(0);
@@ -57,7 +52,7 @@ public class DumpFile extends StdCommand
 		while (commands.size() > 0)
 		{
 			boolean wipeAfter = true;
-			String fn = (String)commands.elementAt(0);
+			String fn = commands.remove(0);
 
 			if (Resources.getResource(fn) != null)
 				wipeAfter = false;
@@ -65,25 +60,20 @@ public class DumpFile extends StdCommand
 			StringBuffer ft = new CMFile(fn,mob,true).text();
 			if (ft != null && ft.length() > 0)
 			{
-				fileText.append("\n\r");
+				fileText.append("\r\n");
 				fileText.append(ft);
 				++numFiles;
 			}
 
 			if (wipeAfter)
 				Resources.removeResource(fn);
-			commands.removeElementAt(0);
-
 		}
 		if (fileText.length() > 0)
 		{
-			for(int s=0;s<CMLib.sessions().size();s++)
+			for(Session thisSession : CMLib.sessions().toArray())
 			{
-				Session thisSession=CMLib.sessions().elementAt(s);
-
-				if (thisSession==null) continue;
 				if (thisSession.killFlag() || (thisSession.mob()==null)) continue;
-				if(!CMSecurity.isAllowed(mob,thisSession.mob().location(),"DUMPFILE"))
+				if(!CMSecurity.isAllowed(mob,"DUMPFILE"))
 					continue;
 				if (allFlag || thisSession.mob().name().equalsIgnoreCase(targetName))
 				{
@@ -99,6 +89,7 @@ public class DumpFile extends StdCommand
 		return false;
 	}
 
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	public boolean canBeOrdered(){return true;}
-	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,mob.location(),"DUMPFILE");}
+	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,"DUMPFILE");}
 }

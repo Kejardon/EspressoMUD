@@ -1,5 +1,4 @@
 package com.planet_ink.coffee_mud.Common;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
@@ -10,12 +9,14 @@ import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
-import com.planet_ink.coffee_mud.MOBS.StdMOB;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
 import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
+//import com.planet_ink.coffee_mud.MOBS.StdMOB;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -31,12 +32,13 @@ public class DefaultPlayerStats implements PlayerStats
 	protected final static int TELL_STACK_MAX_SIZE=50;
 	protected final static int GTELL_STACK_MAX_SIZE=50;
 
-	protected HashSet<MOB> friends=new HashSet();
+	protected HashSet<String> securityGroups=new HashSet();
+	protected HashSet<AccountStats> friends=new HashSet();
 	protected HashSet<MOB> ignored=new HashSet();
 	protected HashSet<MOB> introductions=new HashSet();
-	protected Vector<AccountStats> ignoredBy=new Vector();
-	protected Vector<String> tellStack=new Vector();
-	protected Vector<String> gtellStack=new Vector();
+	protected HashSet<AccountStats> ignoredBy=new HashSet();
+	protected LinkedList<String> tellStack=new LinkedList();
+	//protected Vector<String> gtellStack=new Vector();
 	protected HashMap<String, String> alias=new HashMap();
 	protected byte[] lastIP=null;//"";
 	protected long LastDateTime=System.currentTimeMillis();
@@ -51,14 +53,15 @@ public class DefaultPlayerStats implements PlayerStats
 	protected MOB replyTo=null;
 	protected int replyType=0;
 	protected long replyTime=0;
+	protected MOB mob=null;
 
 	protected int saveNum=0;
+	protected boolean amDestroyed=false;
 	protected int[] friendsToAdd=null;
 	protected int[] ignoredToAdd=null;
 	protected int[] introducedToAdd=null;
 	protected int accountToLink=0;
 
-	protected HashSet<String> securityGroups=new HashSet();
 //	protected RoomnumberSet visitedRoomSet=null;
 	
 	protected int bitmap=0;
@@ -73,6 +76,8 @@ public class DefaultPlayerStats implements PlayerStats
 		return true;
 	} */
 	
+	public MOB mob(){return mob;}
+	public void setMOB(MOB m){mob=m;}
 	public CMObject newInstance(){try{return (CMObject)getClass().newInstance();}catch(Exception e){return new DefaultPlayerStats();}}
 	public void initializeClass(){}
 	public CMObject copyOf()
@@ -84,12 +89,14 @@ public class DefaultPlayerStats implements PlayerStats
 //				O.visitedRoomSet=(RoomnumberSet)visitedRoomSet.copyOf();
 //			else
 //				O.visitedRoomSet=null;
-			O.securityGroups=(HashSet)securityGroups.clone();
-			O.friends=(HashSet)friends.clone();
-			O.ignored=(HashSet)ignored.clone();
-			O.tellStack=(Vector)tellStack.clone();
-			O.gtellStack=(Vector)gtellStack.clone();
-			O.alias=(HashMap)alias.clone();
+			synchronized(securityGroups) {O.securityGroups=(HashSet)securityGroups.clone();}
+			synchronized(friends) {O.friends=(HashSet)friends.clone();}
+			synchronized(ignored) {O.ignored=(HashSet)ignored.clone();}
+			synchronized(ignoredBy) {O.ignoredBy=(HashSet)ignoredBy.clone();}
+			synchronized(introductions) {O.introductions=(HashSet)introductions.clone();}
+			synchronized(tellStack) {O.tellStack=(LinkedList)tellStack.clone(); }
+			//O.gtellStack=(Vector)gtellStack.clone();
+			synchronized(alias) {O.alias=(HashMap)alias.clone();}
 			return O;
 		}
 		catch(CloneNotSupportedException e)
@@ -108,29 +115,41 @@ public class DefaultPlayerStats implements PlayerStats
 	public void setLastUpdated(long time)
 	{
 		lastUpdated=time;
+		CMLib.database().saveObject(this);
 		if(account != null)
+		{
 			account.setLastUpdated(time);
+			//account.saveThis();
+		}
 	}
 	public long lastDateTime(){return LastDateTime;}
 	public void setLastDateTime(long C)
 	{ 
 		LastDateTime=C;
+		CMLib.database().saveObject(this);
 		if(account != null)
+		{
 			account.setLastDateTime(C);
+			//account.saveThis();
+		}
 	}
 	public String password(){return (account!=null)?account.password():Password;}
 	public void setPassword(String newPassword)
 	{
 		Password=newPassword;
+		CMLib.database().saveObject(this);
 		if(account != null)
+		{
 			account.setPassword(newPassword);
+			//account.saveThis();
+		}
 	}
 	
 	public int getWrap(){return wrap;}
-	public void setWrap(int newWrap){wrap=newWrap;}
+	public void setWrap(int newWrap){wrap=newWrap; CMLib.database().saveObject(this);}
 	public int getPageBreak(){return pageBreak;}
-	public void setPageBreak(int newBreak){pageBreak=newBreak;}
-	public void setChannelMask(int newMask){ channelMask=newMask;}
+	public void setPageBreak(int newBreak){pageBreak=newBreak; CMLib.database().saveObject(this);}
+	public void setChannelMask(int newMask){ channelMask=newMask; CMLib.database().saveObject(this);}
 	public int getChannelMask(){ return channelMask;}
 	public MOB replyTo(){	return replyTo;	}
 	public int replyType(){	return replyType;}
@@ -140,9 +159,9 @@ public class DefaultPlayerStats implements PlayerStats
 		replyTo=mob;
 		this.replyType=replyType;
 	}
-	public void setPrompt(String newPrompt){prompt=newPrompt;}
+	public void setPrompt(String newPrompt){prompt=newPrompt; CMLib.database().saveObject(this);}
 	public String getColorStr(){return colorStr;}
-	public void setColorStr(String newColors){colorStr=newColors;}
+	public void setColorStr(String newColors){colorStr=newColors; CMLib.database().saveObject(this);}
 	public String getPrompt()
 	{
 		if((prompt==null)||(prompt.length()==0))
@@ -159,55 +178,116 @@ public class DefaultPlayerStats implements PlayerStats
 	{
 		if(mob!=null)
 		{
-			introductions.add(mob);
-			CMLib.database().saveObject(this);
+			boolean result=false;
+			synchronized(introductions){ result=introductions.add(mob);}
+			if(result)
+				CMLib.database().saveObject(this);
 		}
 	}
+	protected MOB[] getIntroduced() { synchronized(introductions){return (MOB[])introductions.toArray(MOB.dummyMOBArray);}}
 
 	public void addTellStack(String msg)
 	{
-		if(tellStack.size()>TELL_STACK_MAX_SIZE)
-			tellStack.removeElementAt(0);
-		tellStack.addElement(msg);
+		synchronized(tellStack)
+		{
+			if(tellStack.size()>TELL_STACK_MAX_SIZE)
+				tellStack.removeFirst();
+			tellStack.add(msg);
+		}
 	}
 	
-	public Vector<String> getTellStack()
+	public LinkedList<String> getTellStack()
 	{
-		return (Vector)tellStack.clone();
+		synchronized(tellStack)
+		{ return (LinkedList<String>)tellStack.clone(); }
 	}
-	public void addGTellStack(String msg)
+	/*public void addGTellStack(String msg)
 	{
 		if(gtellStack.size()>GTELL_STACK_MAX_SIZE)
 			gtellStack.removeElementAt(0);
 		gtellStack.addElement(msg);
 	}
-	
 	public Vector<String> getGTellStack()
 	{
 		return (Vector)gtellStack.clone();
-	}
-	
-	public HashSet<MOB> getFriends()
+	}*/
+
+	public boolean hasFriend(AccountStats M){
+		if((account!=null)&&(account.hasFriend(M))) return true;
+		return ((friends.contains(M))||((M instanceof PlayerStats)&&(friends.contains(((PlayerStats)M).getAccount())))); }
+	public boolean addFriend(AccountStats M){
+		if(account==null){
+			boolean result=false;
+			synchronized(friends) { result=friends.add(M);}
+			if(result) CMLib.database().saveObject(this);
+			return result; }
+		return account.addFriend(M); }
+	public boolean addFriend(MOB M){
+		PlayerStats friendStats=M.playerStats();
+		PlayerAccount friendAcct=friendStats.getAccount();
+		if(friendAcct!=null) return addFriend(friendAcct);
+		return addFriend(friendStats);}
+	public boolean removeFriend(AccountStats M){
+		boolean result=false;
+		if(account!=null) result=account.removeFriend(M);
+		synchronized(friends) { result|=friends.remove(M); }
+		if(result) CMLib.database().saveObject(this);
+		return result; }
+	public AccountStats removeFriend(String M){
+		if(account!=null){
+			AccountStats result=account.removeFriend(M);
+			if(result!=null) return result;}
+		synchronized(friends) {
+			for(AccountStats oldFriend : friends)
+			if(((oldFriend instanceof PlayerStats)&&(((PlayerStats)oldFriend).mob().name().equals(M)))
+			  ||(((PlayerAccount)oldFriend).accountName().equalsIgnoreCase(M))) {
+				friends.remove(oldFriend);
+				CMLib.database().saveObject(this);
+				return oldFriend; }}
+		return null; }
+	public boolean hasIgnored(MOB M){
+		if((account!=null)&&(account.hasIgnored(M))) return true;
+		return ignored.contains(M);}
+	public boolean addIgnored(MOB M){
+		if(account==null){
+			boolean result=false;
+			synchronized(ignored) { result=ignored.add(M); }
+			if(result) CMLib.database().saveObject(this);
+			return result;}
+		return account.addIgnored(M);}
+	public boolean removeIgnored(MOB M){
+		boolean result=false;
+		if(account!=null) result=account.removeIgnored(M);
+		synchronized(ignored) { result|=ignored.remove(M); }
+		if(result) CMLib.database().saveObject(this);
+		return result;}
+
+	public AccountStats[] getFriends()
 	{
 		if(account != null)
 			return account.getFriends();
-		return friends;
+		synchronized(friends) {return (AccountStats[])friends.toArray(AccountStats.dummyASArray);}
 	}
-	public HashSet<MOB> getIgnored()
+	protected AccountStats[] getOwnFriends(){synchronized(friends) {return (AccountStats[])friends.toArray(AccountStats.dummyASArray);}}
+	public MOB[] getIgnored()
 	{
 		if(account != null)
 			return account.getIgnored();
-		return ignored;
+		synchronized(ignored) {return (MOB[])ignored.toArray(MOB.dummyMOBArray);}
 	}
-	public Vector<AccountStats> getIgnoredBy()
+	public MOB[] getOwnIgnored() {synchronized(ignored) {return (MOB[])ignored.toArray(MOB.dummyMOBArray);}}
+	/*public HashSet<AccountStats> getIgnoredBy()
 	{
 		if(account != null)
 			return account.getIgnoredBy();
 		return ignoredBy;
-	}
+	} */
+	public boolean addIgnoredBy(AccountStats M){synchronized(ignoredBy){return ignoredBy.add(M);}}
+	public boolean removeIgnoredBy(AccountStats M){synchronized(ignoredBy){return ignoredBy.remove(M);}}
+	public AccountStats[] getIgnoredBy(){synchronized(ignoredBy){return (AccountStats[])ignoredBy.toArray(AccountStats.dummyASArray);}}
 	
-	public String[] getAliasNames()
-	{ return (String[])alias.keySet().toArray(new String[0]); }
+	public String[] getAliasNames(){ synchronized(alias){return (String[])alias.keySet().toArray(CMClass.dummyStringArray); }}
+	protected String[] getAliasValues(){ synchronized(alias){return (String[])alias.values().toArray(CMClass.dummyStringArray); }}
 	//TODO: Should this return "" or null?
 	public String getAlias(String named)
 	{
@@ -215,36 +295,70 @@ public class DefaultPlayerStats implements PlayerStats
 		if(S==null) return "";
 		return S;
 	}
-	public void delAliasName(String named) { alias.remove(named); }
-	public void setAlias(String named, String value) { alias.put(named, value); }
+	public void delAliasName(String named) { synchronized(alias){alias.remove(named);} CMLib.database().saveObject(this);}
+	public void setAlias(String named, String value) { synchronized(alias){alias.put(named, value);} CMLib.database().saveObject(this);}
 
 	public HashSet<String> getSecurityGroups(){	return securityGroups;}
 	
-	public int getBitmap() {return bitmap;}
-	
-	public void setBitmap(int newBits) {bitmap=newBits;}
+	public int getBitmap() {return bitmap;}	
+	public void setBitmap(int newBits) {bitmap=newBits; CMLib.database().saveObject(this);}
+	public void setBits(int bits, boolean set)
+	{
+		if(set)
+			bitmap|=bits;
+		else
+			bitmap&=bits;
+		CMLib.database().saveObject(this);
+	}
+	public boolean hasBits(int bits)
+	{
+		return ((bitmap&bits)==bits);
+	}
 	
 	public PlayerAccount getAccount() { return account;}
 	public void setAccount(PlayerAccount account) { this.account = account; CMLib.database().saveObject(this);}
 
-	public void destroy()
+	public void destroy()	//should only REALLY be called by the MOB's destroy()
 	{
-		//TODO
-		CMLib.database().deleteObject(this);
+		//TODO?
+		amDestroyed=true;
+		for(AccountStats nextMOB : getOwnFriends())
+		{
+			nextMOB.removeFriend(this);
+			/*PlayerStats pstats=nextMOB.playerStats();
+			pstats.getFriends().remove(mob);
+			/*if(pstats.getAccount()==null)
+				pstats.saveThis();
+			else
+				pstats.getAccount().saveThis();*/
+		}
+		friends.clear();
+		for(AccountStats pstats : getIgnoredBy())
+		{
+			pstats.removeIgnored(mob);
+			//pstats.saveThis();
+		}
+		ignoredBy.clear();
+		if(saveNum!=0)
+			CMLib.database().deleteObject(this);
+	}
+	public boolean amDestroyed()
+	{
+		return amDestroyed;
 	}
 
 	//CMModifiable and CMSavable
 	public SaveEnum[] totalEnumS(){return SCode.values();}
-	public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]} ;}
+	public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]};}
 	public ModEnum[] totalEnumM(){return MCode.values();}
 	public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
 	public int saveNum()
 	{
-		if(saveNum==0)
+		if((saveNum==0)&&(!amDestroyed))
 		synchronized(this)
 		{
 			if(saveNum==0)
-				saveNum=SIDLib.Objects.ACCOUNT.getNumber(this);
+				saveNum=SIDLib.ACCOUNTSTATS.getNumber(this);
 		}
 		return saveNum;
 	}
@@ -253,9 +367,9 @@ public class DefaultPlayerStats implements PlayerStats
 		synchronized(this)
 		{
 			if(saveNum!=0)
-				SIDLib.Objects.ACCOUNT.removeNumber(saveNum);
+				SIDLib.ACCOUNTSTATS.removeNumber(saveNum);
 			saveNum=num;
-			SIDLib.Objects.ACCOUNT.assignNumber(num, this);
+			SIDLib.ACCOUNTSTATS.assignNumber(num, this);
 		}
 	}
 	public boolean needLink(){return true;}
@@ -265,7 +379,7 @@ public class DefaultPlayerStats implements PlayerStats
 		{
 			for(int SID : friendsToAdd)
 			{
-				MOB friend = (MOB)SIDLib.Objects.CREATURE.get(SID);
+				AccountStats friend = SIDLib.ACCOUNTSTATS.get(SID);
 				if(friend!=null)
 					friends.add(friend);
 			}
@@ -275,11 +389,11 @@ public class DefaultPlayerStats implements PlayerStats
 		{
 			for(int SID : ignoredToAdd)
 			{
-				MOB ignoredM = (MOB)SIDLib.Objects.CREATURE.get(SID);
+				MOB ignoredM = SIDLib.CREATURE.get(SID);
 				if((ignoredM!=null)&&(!ignoredM.isMonster()))
 				{
 					ignored.add(ignoredM);
-					ignoredM.playerStats().getIgnoredBy().add(this);
+					ignoredM.playerStats().addIgnoredBy(this);
 				}
 			}
 			ignoredToAdd=null;
@@ -288,7 +402,7 @@ public class DefaultPlayerStats implements PlayerStats
 		{
 			for(int SID : introducedToAdd)
 			{
-				MOB player= (MOB)SIDLib.Objects.CREATURE.get(SID);
+				MOB player=SIDLib.CREATURE.get(SID);
 				if(player!=null)
 					introductions.add(player);
 			}
@@ -296,34 +410,36 @@ public class DefaultPlayerStats implements PlayerStats
 		}
 		if(accountToLink!=0)
 		{
-			account=(PlayerAccount)SIDLib.Objects.ACCOUNT.get(accountToLink);
+			AccountStats O=SIDLib.ACCOUNTSTATS.get(accountToLink);
+			if(O instanceof PlayerAccount)
+				account=(PlayerAccount)O;
 			accountToLink=0;
 		}
 	}
 	public void saveThis(){CMLib.database().saveObject(this);}
+	public void prepDefault(){}
 
 	private enum SCode implements CMSavable.SaveEnum{
 		FRN(){
-			public ByteBuffer save(DefaultPlayerStats E){ return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.friends.toArray(new CMSavable[E.friends.size()])); }
+			public ByteBuffer save(DefaultPlayerStats E){ return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.getOwnFriends()); }
 			public int size(){return 0;}
 			public void load(DefaultPlayerStats E, ByteBuffer S){ E.friendsToAdd=CMLib.coffeeMaker().loadAInt(S); } },
 		IGN(){
-			public ByteBuffer save(DefaultPlayerStats E){ return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.ignored.toArray(new CMSavable[E.ignored.size()])); }
+			public ByteBuffer save(DefaultPlayerStats E){ return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.getOwnIgnored()); }
 			public int size(){return 0;}
 			public void load(DefaultPlayerStats E, ByteBuffer S){ E.ignoredToAdd=CMLib.coffeeMaker().loadAInt(S); } },
 		ALS(){
-			public ByteBuffer save(DefaultPlayerStats E){
-				return CMLib.coffeeMaker().savAAString((String[])E.alias.keySet().toArray(new String[E.alias.size()]), (String[])E.alias.values().toArray(new String[E.alias.size()])); }
+			public ByteBuffer save(DefaultPlayerStats E){ return CMLib.coffeeMaker().savAAString(E.getAliasNames(), E.getAliasValues()); }
 			public int size(){return 0;}
 			public void load(DefaultPlayerStats E, ByteBuffer S){
 				String[] vals=CMLib.coffeeMaker().loadAString(S);
 				int div=vals.length/2;
-				for(int i=div-1; i<=0;i--)
+				for(int i=div-1; i>=0;i--)
 					E.setAlias(vals[i], vals[i+div]); } },
 		LIP(){
-			public ByteBuffer save(DefaultPlayerStats E){ return ByteBuffer.wrap(E.lastIP); }
+			public ByteBuffer save(DefaultPlayerStats E){ return (E.lastIP==null?GenericBuilder.emptyBuffer:ByteBuffer.wrap(E.lastIP)); }
 			public int size(){return 0;}	//Ideally I can just say 4 but... ipv6.
-			public void load(DefaultPlayerStats E, ByteBuffer S){ S.get(E.lastIP); } },
+			public void load(DefaultPlayerStats E, ByteBuffer S){ E.lastIP=CMLib.coffeeMaker().loadAByte(S); } },
 		CHN(){
 			public ByteBuffer save(DefaultPlayerStats E){ return (ByteBuffer)ByteBuffer.wrap(new byte[4]).putInt(E.channelMask).rewind(); }
 			public int size(){return 4;}
@@ -355,7 +471,7 @@ public class DefaultPlayerStats implements PlayerStats
 			public int size(){return 4;}
 			public void load(DefaultPlayerStats E, ByteBuffer S){ E.pageBreak=S.getInt(); } },
 		INT(){
-			public ByteBuffer save(DefaultPlayerStats E){ return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.introductions.toArray(new CMSavable[E.introductions.size()])); }
+			public ByteBuffer save(DefaultPlayerStats E){ return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.getIntroduced()); }
 			public int size(){return 0;}
 			public void load(DefaultPlayerStats E, ByteBuffer S){ E.introducedToAdd=CMLib.coffeeMaker().loadAInt(S); } },
 		BIT(){
@@ -379,28 +495,29 @@ public class DefaultPlayerStats implements PlayerStats
 				if(acc!=null) E.account=acc; } },
 		SECURITY(){
 			public String brief(DefaultPlayerStats E){return ""+E.securityGroups.size();}
-			public String prompt(DefaultPlayerStats E){return E.securityGroups.toString();}
+			public String prompt(DefaultPlayerStats E){synchronized(E.securityGroups) {return E.securityGroups.toString();}}
 			public void mod(DefaultPlayerStats E, MOB M){
 				boolean done=false;
 				while((M.session()!=null)&&(!M.session().killFlag())&&(!done)) {
-					Vector<String> V=new Vector(E.securityGroups);
+					Vector<String> V;
+					synchronized(E.securityGroups) {V=new Vector(E.securityGroups);}
 					int i=CMLib.genEd().promptVector(M, V, true);
 					if(--i<0) done=true;
 					else if(i==V.size()) {
 						String S=CMLib.genEd().stringPrompt(M, "", false).trim().toUpperCase();
-						if(S.length()>0) E.securityGroups.add(S); }
-					else if(i<V.size()) E.securityGroups.remove(V.get(i)); } } },
+						if(S.length()>0) synchronized(E.securityGroups) {E.securityGroups.add(S); } }
+					else if(i<V.size()) synchronized(E.securityGroups) {E.securityGroups.remove(V.get(i)); } } } },
 		INTRODUCED(){
 			public String brief(DefaultPlayerStats E){return ""+E.introductions.size();}
-			public String prompt(DefaultPlayerStats E){return ""+E.introductions.toArray(new String[0]);}
+			public String prompt(DefaultPlayerStats E){return ""+E.getIntroduced();}
 			public void mod(DefaultPlayerStats E, MOB M){
 				boolean done=false;
 				while((M.session()!=null)&&(!M.session().killFlag())&&(!done)) {
 					String S=CMStrings.capitalizeAndLower(CMLib.genEd().stringPrompt(M, "", false));
 					if(S.length()>0) {
 						MOB newI=CMLib.players().getPlayer(S);
-						if(E.introductions.contains(newI)&&(M.session().confirm("Remove this name?", "N"))) E.introductions.remove(newI);
-						else if(M.session().confirm("Add this name?", "N")) E.introductions.add(newI); }
+						if(E.introductions.contains(newI)&&(M.session().confirm("Remove this name?", "N"))) synchronized(E.introductions){E.introductions.remove(newI);}
+						else if(M.session().confirm("Add this name?", "N")) synchronized(E.introductions){E.introductions.add(newI);} }
 					else done=true; } } },
 		;
 		public abstract String brief(DefaultPlayerStats fromThis);

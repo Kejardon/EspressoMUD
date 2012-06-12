@@ -24,12 +24,9 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Display extends StdCommand
 {
-	public Display(){}
+	public Display(){access=new String[]{"DISPLAY","SHOW"};}
 
-	private String[] access={"DISPLAY","SHOW"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		commands.remove(0);
 		if(commands.size()<2)
@@ -38,27 +35,15 @@ public class Display extends StdCommand
 			return false;
 		}
 
-		MOB recipient=null;
-		{
-			Vector<MOB> V=mob.location().fetchInhabitants((String)commands.get(0));
-			if(V.size()>0)
-				recipient=V.get(0);
-		}
+		MOB recipient=mob.location().fetchInhabitant(commands.get(0));
 		if(recipient==null)
 		{
-			mob.tell("I don't see anyone called "+(String)commands.get(0)+" here.");
+			mob.tell("I don't see anyone called "+commands.get(0)+" here.");
 			return false;
 		}
 		commands.remove(0);
 
-//		int maxToGive=CMLib.english().calculateMaxToGive(mob,commands,true,mob,false);
-//		if(maxToGive<0) return false;
-
 		String thingToGive=CMParms.combine(commands,0);
-//		Vector V=new Vector();
-//		boolean allFlag=(commands.size()>0)?((String)commands.elementAt(0)).equalsIgnoreCase("all"):false;
-//		if(thingToGive.toUpperCase().startsWith("ALL.")){ allFlag=true; thingToGive="ALL "+thingToGive.substring(4);}
-//		if(thingToGive.toUpperCase().endsWith(".ALL")){ allFlag=true; thingToGive="ALL "+thingToGive.substring(0,thingToGive.length()-4);}
 		Item giveThis=mob.fetchInventory(thingToGive);
 
 		if(giveThis==null)
@@ -68,7 +53,10 @@ public class Display extends StdCommand
 		}
 		CMMsg newMsg=CMClass.getMsg(recipient,giveThis,mob,EnumSet.of(CMMsg.MsgCode.LOOK),"<O-NAME> show(s) <T-NAME> to <S-NAMESELF>.");
 		mob.location().doMessage(newMsg);
+		newMsg.returnMsg();
 		return false;
 	}
+
+	public int commandType(MOB mob, String cmds){return CT_LOW_P_ACTION;}
 	public boolean canBeOrdered(){return true;}
 }

@@ -24,47 +24,43 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class SysMsgs extends StdCommand
 {
-	public SysMsgs(){}
+	public SysMsgs(){access=new String[]{"SYSMSGS"};}
 
-	private String[] access={"SYSMSGS"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		PlayerStats ps=mob.playerStats();
 		if(ps==null) return false;
 		if(commands.size()>1)
 		{
-			if(((String)commands.get(1)).equalsIgnoreCase("on"))
+			if(commands.get(1).equalsIgnoreCase("on"))
 			{
 				if((ps.getBitmap()&PlayerStats.ATT_SYSOPMSGS)==0)
 				{
 					mob.playerStats().setBitmap(mob.playerStats().getBitmap()|PlayerStats.ATT_SYSOPMSGS);
-					mob.tell("Extended messages enabled.\n\r");
+					mob.tell("Extended messages enabled.\r\n");
 				}
 				else
-					mob.tell("Extended messages are already enabled.\n\r");
+					mob.tell("Extended messages are already enabled.\r\n");
 				return false;
 			}
-			else if(((String)commands.get(1)).equalsIgnoreCase("off"))
+			else if(commands.get(1).equalsIgnoreCase("off"))
 			{
 				if((ps.getBitmap()&PlayerStats.ATT_SYSOPMSGS)>0)
 				{
 					mob.playerStats().setBitmap(mob.playerStats().getBitmap()&~PlayerStats.ATT_SYSOPMSGS);
-					mob.tell("Extended messages disabled.\n\r");
+					mob.tell("Extended messages disabled.\r\n");
 				}
 				else
-					mob.tell("Extended messages are already disabled.\n\r");
+					mob.tell("Extended messages are already disabled.\r\n");
 				return false;
 			}
 		}
-		mob.tell(((ps.getBitmap()&PlayerStats.ATT_SYSOPMSGS)>0)?("Extended messages are currently enabled.\n\r"):("Extended messages are currently disabled.\n\r"));
-		mob.tell("Use 'sysmsgs on' or 'sysmsgs off' to set.\n\r");
+		mob.tell(((ps.getBitmap()&PlayerStats.ATT_SYSOPMSGS)>0)?("Extended messages are currently enabled.\r\n"):("Extended messages are currently disabled.\r\n"));
+		mob.tell("Use 'sysmsgs on' or 'sysmsgs off' to set.\r\n");
 		return false;
 	}
-	
-	public boolean canBeOrdered(){return true;}
-	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,mob.location(),"SYSMSGS");}
 
-	
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
+	public boolean canBeOrdered(){return true;}
+	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,"SYSMSGS");}
 }

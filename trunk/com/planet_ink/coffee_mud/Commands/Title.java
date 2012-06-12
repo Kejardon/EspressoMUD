@@ -24,35 +24,44 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Title extends StdCommand
 {
-	private String[] access={"TITLE"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public Title(){access=new String[]{"TITLE"};}
+
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
-		if((mob.playerStats()==null)||(mob.getTitles().size()==0))
+		String[] titleOptions=mob.getTitles();
+		if((mob.playerStats()==null)||(titleOptions.length==0))
 		{
 			mob.tell("You don't have any titles to select from.");
 			return false;
 		}
-		String currTitle=(String)mob.getTitles().elementAt(0);
+		String currTitle=titleOptions[0];
 		if(currTitle.startsWith("{")&&currTitle.endsWith("}"))
 		{
 			mob.tell("You can not change your current title.");
 			return false;
 		}
 		PlayerStats ps=mob.playerStats();
-		StringBuffer menu=new StringBuffer("^xTitles:^.^?\n\r");
-		if(!mob.getTitles().contains("*")) mob.getTitles().addElement("*");
-		for(int i=0;i<mob.getTitles().size();i++)
+		StringBuilder menu=new StringBuilder("^xTitles:^.^?\r\n");
 		{
-			String title=(String)mob.getTitles().elementAt(i);
-			if(title.startsWith("{")&&title.endsWith("}")) title=title.substring(1,title.length()-1);
-			if(title.equalsIgnoreCase("*"))
-				menu.append(CMStrings.padRight(""+(i+1),2)+": Do not use a title.\n\r");
-			else
-				menu.append(CMStrings.padRight(""+(i+1),2)+": "+CMStrings.replaceAll(title,"*",mob.name())+"\n\r");
+			boolean needAst=false;
+			for(String str : titleOptions)
+				if(str.equals("*"))
+				{
+					needAst=false;
+					break;
+				}
+			if(needAst) mob.addTitle("*");
 		}
 		int selection=1;
+		for(String title : titleOptions)
+		{
+			if(title.startsWith("{")&&title.endsWith("}")) title=title.substring(1,title.length()-1);
+			if(title.equalsIgnoreCase("*"))
+				menu.append(CMStrings.padRight(""+(selection++),2)).append(": Do not use a title.\r\n");
+			else
+				menu.append(CMStrings.padRight(""+(selection++),2)).append(": ").append(title.replace("*",mob.name())).append("\r\n");
+		}
+		selection=1;
 		while((mob.session()!=null)&&(!mob.session().killFlag()))
 		{
 			mob.tell(menu.toString());
@@ -60,7 +69,7 @@ public class Title extends StdCommand
 			if(which.length()==0)
 				break;
 			int num=CMath.s_int(which);
-			if((num>0)&&(num<=mob.getTitles().size()))
+			if((num>0)&&(num<=titleOptions.length))
 			{
 				selection=num;
 				break;
@@ -70,14 +79,13 @@ public class Title extends StdCommand
 			mob.tell("No change");
 		else
 		{
-			String which=(String)mob.getTitles().elementAt(selection-1);
-			mob.getTitles().removeElementAt(selection-1);
-			mob.getTitles().insertElementAt(which,0);
+			String which=titleOptions[selection-1];
+			mob.setActiveTitle(which);
 			mob.tell("Title changed accepted.");
 		}
 		return false;
 	}
-	
+
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	public boolean canBeOrdered(){return true;}
 }
-

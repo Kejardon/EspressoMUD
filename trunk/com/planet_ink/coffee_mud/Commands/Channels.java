@@ -24,16 +24,13 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Channels extends StdCommand
 {
-	public Channels(){}
+	public Channels(){access=new String[]{"CHANNELS"};}
 
-	private String[] access={"CHANNELS"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		PlayerStats pstats=mob.playerStats();
 		if(pstats==null) return false;
-		StringBuffer buf=new StringBuffer("Available channels: \n\r");
+		StringBuffer buf=new StringBuffer("Available channels: \r\n");
 		int col=0;
 		String[] names=CMLib.channels().getChannelNames();
 		for(int x=0;x<names.length;x++)
@@ -41,7 +38,7 @@ public class Channels extends StdCommand
 			{
 				if((++col)>3)
 				{
-					buf.append("\n\r");
+					buf.append("\r\n");
 					col=1;
 				}
 				String channelName=names[x];
@@ -51,10 +48,11 @@ public class Channels extends StdCommand
 		if(names.length==0)
 			buf.append("None!");
 		else
-			buf.append("\n\rUse NOCHANNELNAME (ex: NOGOSSIP) to turn a channel off.");
+			buf.append("\r\nUse NOCHANNELNAME (ex: NOGOSSIP) to turn a channel off.");
 		mob.tell(buf.toString());
 		return false;
 	}
-	
+
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	public boolean canBeOrdered(){return true;}
 }

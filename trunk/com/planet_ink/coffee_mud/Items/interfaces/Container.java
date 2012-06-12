@@ -13,5 +13,6 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public interface Container extends Item, ItemCollection.ItemHolder, Closeable.CloseableHolder
 {
+	public static final Container[] dummyContainerArray=new Container[0];
 	//nope, interfaces pretty much hit all the details
 }

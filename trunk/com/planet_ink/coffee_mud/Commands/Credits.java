@@ -24,15 +24,12 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Credits extends StdCommand
 {
-	public Credits(){}
+	public Credits(){access=new String[]{"CREDITS"};}
 
-	private String[] access={"CREDITS"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
-		StringBuffer credits=new CMFile(Resources.buildResourcePath("text")+"credits.txt",null,true).text();
-    	try { credits = CMLib.httpUtils().doVirtualPage(credits);}catch(Exception ex){}
+		StringBuffer credits=new CMFile("resources/text/credits.txt",null,true).text();
+		try { credits = CMLib.httpUtils().doVirtualPage(credits);}catch(Exception ex){}
 		if((credits!=null)&&(mob.session()!=null)&&(credits.length()>0))
 			mob.session().colorOnlyPrintln(credits.toString());
 		else
@@ -42,6 +39,7 @@ public class Credits extends StdCommand
 		}
 		return false;
 	}
-	
+
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	public boolean canBeOrdered(){return true;}
 }

@@ -36,7 +36,7 @@ public interface Rideable extends CMObject, CMModifiable, CMSavable, CMCommon //
 	public void removeRider(Item mob);
 	public Item removeRider(int i);
 	public Item getRider(int which);
-	public Vector<Item> allRiders();
+	public Iterator<Item> allRiders();
 	public int numRiders();
 	/* Returns a string grammatically correct for the given rider when
 	 * they are mounted on this Rideable */
@@ -59,13 +59,16 @@ public interface Rideable extends CMObject, CMModifiable, CMSavable, CMCommon //
 	public String dismountString(Item R);
 	public void setDismountString(String S);
 
-	public static class RideThing
+	public static class O
 	{
 		public static Rideable getFrom(CMObject O)
 		{
 			if(O instanceof Rideable) return (Rideable)O;
-			while((O instanceof Ownable)&&((Ownable)O).owner()!=O) O=((Ownable)O).owner();
 			if(O instanceof RideHolder) return ((RideHolder)O).getRideObject();
+			while((O instanceof Ownable)&&((Ownable)O).owner()!=O){
+				O=((Ownable)O).owner();
+				if(O instanceof Rideable) return (Rideable)O;
+				if(O instanceof RideHolder) return ((RideHolder)O).getRideObject(); }
 			return null;
 		}
 	}

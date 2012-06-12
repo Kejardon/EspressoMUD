@@ -11,10 +11,12 @@ import com.planet_ink.coffee_mud.Items.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
-import java.util.*;
 
 import com.planet_ink.coffee_mud.core.exceptions.*;
 
+import java.util.*;
+import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.net.InetAddress;
 
 /*
@@ -48,7 +50,7 @@ public interface ExternalHTTPRequests extends CMLibrary
 	public void removeRequestParameter(String key);
 	public void addRequestParameters(String key, String value);
 	public Vector getAllRequestParameterKeys(String keyMask);
-	public Hashtable getVirtualDirectories();
+	//public Hashtable getVirtualDirectories();
 	public String getRequestEncodedParameters();
 	public InetAddress getServerAddress();
 	public String getPageContent(String filename);

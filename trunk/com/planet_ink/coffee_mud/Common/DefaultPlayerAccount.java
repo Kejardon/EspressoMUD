@@ -8,14 +8,14 @@ import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
-import com.planet_ink.coffee_mud.MOBS.StdMOB;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
 import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -28,18 +28,21 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 public class DefaultPlayerAccount implements PlayerAccount
 {
 	public String ID(){return "DefaultPlayerAccount";}
-	protected HashSet<MOB> friends=new HashSet();
+	protected HashSet<AccountStats> friends=new HashSet();
 	protected HashSet<MOB> ignored=new HashSet();
-	protected Vector<AccountStats> ignoredBy=new Vector();
-	protected Vector<MOB> fullPlayers = new Vector<MOB>();
+	//protected HashSet<AccountStats> ignoredBy=new HashSet();
+	protected CopyOnWriteArrayList<MOB> fullPlayers = new CopyOnWriteArrayList();
 	protected String accountName = "";
 	protected byte[] lastIP=null;//"";
 	protected long LastDateTime=System.currentTimeMillis();
 	protected long lastUpdated=0;
 	protected String Password="";
-	protected HashSet<String> acctFlags = new HashSet<String>();
+//	protected HashSet<String> acctFlags = new HashSet<String>();
+	protected int bitmap=0;
+	protected int accBitmap=0;
 
 	protected int saveNum=0;
+	protected boolean amDestroyed=false;
 	protected int[] friendsToAdd=null;
 	protected int[] ignoredToAdd=null;
 	protected int[] playersToAdd=null;
@@ -77,9 +80,38 @@ public class DefaultPlayerAccount implements PlayerAccount
 	public String password(){return Password;}
 	public void setPassword(String newPassword){Password=newPassword; CMLib.database().saveObject(this);}
 
-	public HashSet<MOB> getFriends(){return friends;}
-	public HashSet<MOB> getIgnored(){return ignored;}
-	public Vector<AccountStats> getIgnoredBy(){return ignoredBy;}
+	public boolean hasFriend(AccountStats M){return ((friends.contains(M))||((M instanceof PlayerStats)&&(friends.contains(((PlayerStats)M).getAccount()))));}
+	public boolean addFriend(AccountStats M){ boolean result=false;
+		synchronized(friends) { result=friends.add(M); }
+		if(result) CMLib.database().saveObject(this);
+		return result; }
+	public boolean removeFriend(AccountStats M){ boolean result=false;
+		synchronized(friends) { result=friends.remove(M); }
+		if(result) CMLib.database().saveObject(this);
+		return result; }
+	public AccountStats removeFriend(String M){
+		synchronized(friends) {
+			for(AccountStats oldFriend : friends)
+			if(((oldFriend instanceof PlayerStats)&&(((PlayerStats)oldFriend).mob().name().equals(M)))
+			  ||(((PlayerAccount)oldFriend).accountName().equalsIgnoreCase(M))) {
+				friends.remove(oldFriend);
+				CMLib.database().saveObject(this);
+				return oldFriend; }}
+		return null; }
+	public AccountStats[] getFriends(){return (AccountStats[])friends.toArray(AccountStats.dummyASArray);}
+	public boolean hasIgnored(MOB M){return ignored.contains(M);}
+	public boolean addIgnored(MOB M){ boolean result=false;
+		synchronized(ignored) { result=ignored.add(M); }
+		if(result) CMLib.database().saveObject(this);
+		return result; }
+	public boolean removeIgnored(MOB M){ boolean result=false;
+		synchronized(ignored) { result=ignored.remove(M); }
+		if(result) CMLib.database().saveObject(this);
+		return result; }
+	public MOB[] getIgnored(){return (MOB[])ignored.toArray(MOB.dummyMOBArray);}
+	//public boolean addIgnoredBy(AccountStats M){synchronized(ignoredBy) { return ignoredBy.add(M); } }
+	//public boolean removeIgnoredBy(AccountStats M){synchronized(ignoredBy) { return ignoredBy.remove(M); } }
+	//public Vector<AccountStats> getIgnoredBy(){return ignoredBy;}
 
 /*	protected String getPrivateList(HashSet h)
 	{
@@ -96,33 +128,36 @@ public class DefaultPlayerAccount implements PlayerAccount
 	
 	public void addNewPlayer(MOB mob) 
 	{
-		synchronized(fullPlayers)
-		{
-			if(fullPlayers.contains(mob))
-				return;
-			fullPlayers.add(mob);
-		}
-		CMLib.database().saveObject(this);
+		if(fullPlayers.addIfAbsent(mob))
+			CMLib.database().saveObject(this);
 	}
-	
 	public boolean isPlayer(String name) 
 	{
-		if(name==null) return false;
-		for(int i=0;i<fullPlayers.size();i++)
-			if(fullPlayers.get(i).name().equals(name)) return true;
+		if(name!=null)
+			for(MOB M : fullPlayers)
+				if(M.name().equalsIgnoreCase(name))
+					return true;
 		return false;
 	}
-	
+	public MOB getPlayer(String name) 
+	{
+		if(name!=null)
+			for(MOB M : fullPlayers)
+				if(M.name().equalsIgnoreCase(name))
+					return M;
+		return null;
+	}
 	public void delPlayer(MOB mob) 
 	{
-		synchronized(fullPlayers) {fullPlayers.remove(mob); }
-		CMLib.database().saveObject(this);
+		if(fullPlayers.remove(mob))
+			CMLib.database().saveObject(this);
 	}
-	public Enumeration<MOB> getLoadPlayers() 
+	public Iterator<MOB> getLoadPlayers() 
 	{
-		return fullPlayers.elements();
+		return fullPlayers.iterator();
 	}
 	public int numPlayers() { return fullPlayers.size();}
+/*
 	public boolean isSet(String flagName) { return acctFlags.contains(flagName.toUpperCase());}
 	public void setFlag(String flagName, boolean setOrUnset)
 	{
@@ -132,11 +167,62 @@ public class DefaultPlayerAccount implements PlayerAccount
 			acctFlags.remove(flagName.toUpperCase());
 		CMLib.database().saveObject(this);
 	}
-	
-	public void destroy()
+*/
+	public int getBitmap() {return bitmap;}	
+	public void setBitmap(int newBits) {bitmap=newBits; CMLib.database().saveObject(this);}
+	public void setBits(int bits, boolean set)
 	{
-		//TODO
-		CMLib.database().deleteObject(this);
+		if(set)
+			bitmap|=bits;
+		else
+			bitmap&=bits;
+		CMLib.database().saveObject(this);
+	}
+	public boolean hasBits(int bits)
+	{
+		return ((bitmap&bits)==bits);
+	}
+	public int getAccBitmap() {return accBitmap;}	
+	public void setAccBitmap(int newBits) {accBitmap=newBits; CMLib.database().saveObject(this);}
+	public void setAccBits(int bits, boolean set)
+	{
+		if(set)
+			accBitmap|=bits;
+		else
+			accBitmap&=bits;
+		CMLib.database().saveObject(this);
+	}
+	public boolean hasAccBits(int bits)
+	{
+		return ((accBitmap&bits)==bits);
+	}
+	
+	public void destroy()	//should only REALLY be called by the MOB's destroy()
+	{
+		//TODO?
+		amDestroyed=true;
+		for(AccountStats M : (AccountStats[])friends.toArray(AccountStats.dummyASArray))
+		{
+			//PlayerStats pstats=M.playerStats();
+			M.removeFriend(this);
+			/*if(pstats.getAccount()==null)
+				pstats.saveThis();
+			else
+				pstats.getAccount().saveThis(); */
+		}
+		friends.clear();
+		/*for(AccountStats pstats : (AccountStats[])ignoredBy.toArray(AccountStats.dummyASArray))
+		{
+			pstats.removeIgnored(mob);
+			//pstats.saveThis();
+		}
+		ignoredBy.clear();*/
+		if(saveNum!=0)
+			CMLib.database().deleteObject(this);
+	}
+	public boolean amDestroyed()
+	{
+		return amDestroyed;
 	}
 
 	//CMModifiable and CMSavable
@@ -146,11 +232,11 @@ public class DefaultPlayerAccount implements PlayerAccount
 	public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
 	public int saveNum()
 	{
-		if(saveNum==0)
+		if((saveNum==0)&&(!amDestroyed))
 		synchronized(this)
 		{
 			if(saveNum==0)
-				saveNum=SIDLib.Objects.ACCOUNT.getNumber(this);
+				saveNum=SIDLib.ACCOUNTSTATS.getNumber(this);
 		}
 		return saveNum;
 	}
@@ -159,9 +245,9 @@ public class DefaultPlayerAccount implements PlayerAccount
 		synchronized(this)
 		{
 			if(saveNum!=0)
-				SIDLib.Objects.ACCOUNT.removeNumber(saveNum);
+				SIDLib.ACCOUNTSTATS.removeNumber(saveNum);
 			saveNum=num;
-			SIDLib.Objects.ACCOUNT.assignNumber(num, this);
+			SIDLib.ACCOUNTSTATS.assignNumber(num, this);
 		}
 	}
 	public boolean needLink(){return true;}
@@ -171,7 +257,7 @@ public class DefaultPlayerAccount implements PlayerAccount
 		{
 			for(int SID : friendsToAdd)
 			{
-				MOB friend = (MOB)SIDLib.Objects.CREATURE.get(SID);
+				AccountStats friend = SIDLib.ACCOUNTSTATS.get(SID);
 				if(friend!=null)
 					friends.add(friend);
 			}
@@ -181,11 +267,11 @@ public class DefaultPlayerAccount implements PlayerAccount
 		{
 			for(int SID : ignoredToAdd)
 			{
-				MOB ignoredM = (MOB)SIDLib.Objects.CREATURE.get(SID);
+				MOB ignoredM = SIDLib.CREATURE.get(SID);
 				if((ignoredM!=null)&&(!ignoredM.isMonster()))
 				{
 					ignored.add(ignoredM);
-					ignoredM.playerStats().getIgnoredBy().add(this);
+					ignoredM.playerStats().addIgnoredBy(this);
 				}
 			}
 			ignoredToAdd=null;
@@ -194,36 +280,47 @@ public class DefaultPlayerAccount implements PlayerAccount
 		{
 			for(int SID : playersToAdd)
 			{
-				MOB player= (MOB)SIDLib.Objects.CREATURE.get(SID);
+				MOB player= SIDLib.CREATURE.get(SID);
 				if(player!=null)
 					fullPlayers.add(player);
 			}
 			playersToAdd=null;
 		}
+		CMLib.players().queueAccount(this);
 	}
 	public void saveThis(){CMLib.database().saveObject(this);}
+	public void prepDefault(){}
 
 	private enum SCode implements CMSavable.SaveEnum{
 		FRN(){
-			public ByteBuffer save(DefaultPlayerAccount E){ return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.friends.toArray(new CMSavable[E.friends.size()])); }
+			public ByteBuffer save(DefaultPlayerAccount E){ return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.friends.toArray(CMSavable.dummyCMSavableArray)); }
 			public int size(){return 0;}
 			public void load(DefaultPlayerAccount E, ByteBuffer S){ E.friendsToAdd=CMLib.coffeeMaker().loadAInt(S); } },
 		IGN(){
-			public ByteBuffer save(DefaultPlayerAccount E){ return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.ignored.toArray(new CMSavable[E.ignored.size()])); }
+			public ByteBuffer save(DefaultPlayerAccount E){ return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.ignored.toArray(CMSavable.dummyCMSavableArray)); }
 			public int size(){return 0;}
 			public void load(DefaultPlayerAccount E, ByteBuffer S){ E.ignoredToAdd=CMLib.coffeeMaker().loadAInt(S); } },
 		LIP(){
-			public ByteBuffer save(DefaultPlayerAccount E){ return ByteBuffer.wrap(E.lastIP); }
+			public ByteBuffer save(DefaultPlayerAccount E){ return (E.lastIP==null?GenericBuilder.emptyBuffer:ByteBuffer.wrap(E.lastIP)); }
 			public int size(){return 0;}	//Ideally I can just say 4 but... ipv6.
-			public void load(DefaultPlayerAccount E, ByteBuffer S){ S.get(E.lastIP); } },
+			public void load(DefaultPlayerAccount E, ByteBuffer S){ E.lastIP=CMLib.coffeeMaker().loadAByte(S); } },
 		PSS(){
 			public ByteBuffer save(DefaultPlayerAccount E){ return CMLib.coffeeMaker().savString(E.Password); }
 			public int size(){return 0;}
 			public void load(DefaultPlayerAccount E, ByteBuffer S){ E.Password=CMLib.coffeeMaker().loadString(S); } },
-		FLG(){
+		BIT(){
+			public ByteBuffer save(DefaultPlayerAccount E){ return (ByteBuffer)ByteBuffer.wrap(new byte[4]).putInt(E.bitmap).rewind(); }
+			public int size(){return 4;}
+			public void load(DefaultPlayerAccount E, ByteBuffer S){ E.bitmap=S.getInt(); } },
+		ABT(){
+			public ByteBuffer save(DefaultPlayerAccount E){ return (ByteBuffer)ByteBuffer.wrap(new byte[4]).putInt(E.accBitmap).rewind(); }
+			public int size(){return 4;}
+			public void load(DefaultPlayerAccount E, ByteBuffer S){ E.accBitmap=S.getInt(); } },
+/*		FLG(){
 			public ByteBuffer save(DefaultPlayerAccount E){ return CMLib.coffeeMaker().savAString((String[])E.acctFlags.toArray(new String[0])); }
 			public int size(){return 0;}
 			public void load(DefaultPlayerAccount E, ByteBuffer S){ for(String newF : CMLib.coffeeMaker().loadAString(S)) E.acctFlags.add(newF); } },
+*/
 		;
 		public abstract ByteBuffer save(DefaultPlayerAccount E);
 		public abstract void load(DefaultPlayerAccount E, ByteBuffer S);
@@ -237,7 +334,7 @@ public class DefaultPlayerAccount implements PlayerAccount
 			public void mod(DefaultPlayerAccount E, MOB M){
 				boolean done=false;
 				while((M.session()!=null)&&(!M.session().killFlag())&&(!done)) {
-					Vector<MOB> V=(Vector<MOB>)E.fullPlayers.clone();
+					Vector<MOB> V=CMParms.denumerate(E.fullPlayers.iterator());
 					int i=CMLib.genEd().promptVector(M, V, false);
 					if(--i<0) done=true;
 					else if(i<V.size()) {
@@ -246,9 +343,9 @@ public class DefaultPlayerAccount implements PlayerAccount
 							MOB mob = V.get(i);
 							if(M.session().confirm("WARNING: This will PERMANENTLY DELETE the character "+mob.name()+". Are you sure?", "N")) {
 								E.delPlayer(mob);
-								mob.destroy(); } }	//TODO: Database deletion of character?
+								mob.destroy(); } }
 						else if(action=='M') CMLib.genEd().genMiscSet(M, V.get(i)); } } } },
-		FLAGS(){
+/*		FLAGS(){
 			public String brief(DefaultPlayerAccount E){return ""+E.acctFlags.size();}
 			public String prompt(DefaultPlayerAccount E){return ""+E.acctFlags.toArray(new String[0]);}
 			public void mod(DefaultPlayerAccount E, MOB M){
@@ -259,6 +356,7 @@ public class DefaultPlayerAccount implements PlayerAccount
 						if(E.acctFlags.contains(S)&&(M.session().confirm("Remove this flag?", "N"))) E.acctFlags.remove(S);
 						else if(M.session().confirm("Add this flag?", "N")) E.acctFlags.add(S); }
 					else done=true; } } },
+*/
 		;
 		public abstract String brief(DefaultPlayerAccount fromThis);
 		public abstract String prompt(DefaultPlayerAccount fromThis);

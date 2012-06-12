@@ -32,13 +32,27 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 //A MOB will be affectable independant of its body... but generally not targetable independant of its body (things like scry being the exception). So most interactions will go through the body.
 //Body will have to be fairly transparent between the MOB and others.
 //A body will be rideable but not really moveable without a MOB.
-public interface MOB extends ItemCollection.ItemHolder, Interactable, CMSavable, CMModifiable
+public interface MOB extends ItemCollection.ItemHolder, Interactable, CMSavable, CMModifiable, TickActer
 {
+	public static final MOB[] dummyMOBArray=new MOB[0];
+	public class QueuedCommand	//Nothing more than a storage object instead of having an Object[] and typecasting stuff
+	{
+		public long nextAct;
+		public Command command;
+		public String cmdString;
+		public int commandType;
+		public Object data;
+		public int metaFlags;
+	}
+
 	public Body body();
 	public void setBody(Body newBody);
 
-	public Vector getTitles();
+	public String[] getTitles();
 	public String getActiveTitle();
+	public void setActiveTitle(String S);
+	public void addTitle(String title);
+	public void removeTitle(String title);
 
 	public String titledName();
 	public String displayName(MOB mob);
@@ -69,12 +83,14 @@ public interface MOB extends ItemCollection.ItemHolder, Interactable, CMSavable,
 
 	/** Primary mob communication */
 	public void tell(Interactable source, Interactable target, Vector<CMObject> tool, String msg);
+	public void tell(Interactable source, Interactable target, CMObject tool, String msg);
+	public void tell(Interactable source, Interactable target, String msg);
 	public void tell(String msg);
-	public void enqueCommand(Vector commands, int metaFlags, double tickDelay);
-	public void prequeCommand(Vector commands, int metaFlags, double tickDelay);
-	public boolean dequeCommand();
+	public void enqueCommand(String commands, int metaFlags);
+	//public void prequeCommand(Vector commands, int metaFlags, double tickDelay);
+	//public boolean dequeCommand();
 	public int commandQueSize();
-	public void doCommand(Vector commands, int metaFlags);
+	public boolean doCommand(QueuedCommand command);	//currently return is sorta meaningless
 	public double actions();
 	public void setActions(double remain);
 

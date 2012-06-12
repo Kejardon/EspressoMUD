@@ -24,12 +24,9 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class AFK extends StdCommand
 {
-	public AFK(){}
+	public AFK() { access=new String[]{"AFK"}; }
 
-	private String[] access={"AFK"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		if(mob.session()==null) return false;
 		if(mob.session().afkFlag())
@@ -41,6 +38,7 @@ public class AFK extends StdCommand
 		}
 		return false;
 	}
-	
+
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	public boolean canBeOrdered(){return true;}
 }

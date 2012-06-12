@@ -8,13 +8,16 @@ import com.planet_ink.coffee_mud.Commands.interfaces.*;
 import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
-import com.planet_ink.coffee_mud.Libraries.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
-import java.io.IOException;
+import com.planet_ink.coffee_mud.Libraries.*;
+
 import java.util.*;
+import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.io.IOException;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -39,12 +42,12 @@ public interface WorldMap extends CMLibrary, Runnable
 	public Area getArea(String calledThis);
 	public Area findAreaStartsWith(String calledThis);
 //	public Area findArea(String calledThis);
-	public Enumeration<Area> areas();
+	public Iterator<Area> areas();
 //	public Enumeration sortedAreas();
 	public Area getFirstArea();
 	public Area getRandomArea();
 	public void obliterateArea(String areaName);
-	
+	public void finishObliterateArea(Area A, Room[] rooms);
 	
 	/************************************************************************/
 	/**							 ROOMS										*/
@@ -55,7 +58,7 @@ public interface WorldMap extends CMLibrary, Runnable
 //	public Room getRoom(String calledThis);
 //	public Room getRoom(Vector<Room> roomSet, String calledThis);
 //	public Room getRoom(Hashtable hashedRoomSet, String areaName, String calledThis);
-	public Enumeration rooms();
+	public Iterator<Room> rooms();
 	public Room getRandomRoom();
 //	public void renameRooms(Area A, String oldName, Vector allMyDamnRooms);
 	public void obliterateRoom(Room deadRoom);
@@ -65,14 +68,14 @@ public interface WorldMap extends CMLibrary, Runnable
 	public Room findWorldRoomLiberally(MOB M, String cmd, String srchWhatAERIPMVK, int timePct, int maxSeconds);
 	public Vector findAreaRoomsLiberally(MOB M, Area A, String cmd, String srchWhatAERIPMVK, int timePct);
 	public Room findAreaRoomLiberally(MOB M, Area A, String cmd, String srchWhatAERIPMVK, int timePct);
-	public Vector findRooms(Enumeration rooms, MOB mob, String srchStr, boolean displayOnly, int timePct);
-	public Room findFirstRoom(Enumeration rooms, MOB mob, String srchStr, boolean displayOnly, int timePct);
-	public MOB findFirstInhabitant(Enumeration rooms, String srchStr, int timePct);
-	public Vector findInhabitants(Enumeration rooms, String srchStr, int timePct);
-	public Vector findRoomItems(Enumeration rooms, String srchStr, boolean anyItems, int timePct);
-	public Item findFirstRoomItem(Enumeration rooms, String srchStr, boolean anyItems, int timePct);
-	public Vector findInventory(Enumeration rooms, String srchStr, int timePct);
-	public Item findFirstInventory(Enumeration rooms, String srchStr, int timePct);
+	public Vector findRooms(Iterator<Room> rooms, String srchStr, boolean displayOnly, int timePct);
+	public Room findFirstRoom(Iterator<Room> rooms, String srchStr, boolean displayOnly, int timePct);
+	public MOB findFirstInhabitant(Iterator<Room> rooms, String srchStr, int timePct);
+	public Vector findInhabitants(Iterator<Room> rooms, String srchStr, int timePct);
+	public Vector findRoomItems(Iterator<Room> rooms, String srchStr, int timePct);
+	public Item findFirstRoomItem(Iterator<Room> rooms, String srchStr, int timePct);
+	public Vector findInventory(Iterator<Room> rooms, String srchStr, int timePct);
+	public Item findFirstInventory(Iterator<Room> rooms, String srchStr, int timePct);
 	
 	/************************************************************************/
 	/**							 ROOM-AREA-UTILITIES						*/

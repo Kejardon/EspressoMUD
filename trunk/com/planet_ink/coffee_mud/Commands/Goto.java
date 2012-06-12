@@ -24,12 +24,9 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Goto extends At
 {
-	public Goto(){}
+	public Goto(){access=new String[]{"GOTO"};}
 
-	private String[] access={"GOTO"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		Room room=null;
 		if(commands.size()<2)
@@ -55,19 +52,19 @@ public class Goto extends At
 				mob.tell("Your previous room stack is empty.");
 			else
 			{
-				room=(Room)SIDLib.Objects.ROOM.get(stack.lastElement());
+				room=SIDLib.ROOM.get(stack.lastElement());
 				stack.removeElementAt(stack.size()-1);
 			}
 		}
 		else
-			room=CMLib.map().findWorldRoomLiberally(mob,cmd.toString(),"RIPMA",100,120);
+			room=CMLib.map().findWorldRoomLiberally(mob,cmd.toString(),"RIPMA",1000,120);
 
 		if(room==null)
 		{
 			mob.tell("Goto where? Try a Room ID, player name, area name, room text, or PREVIOUS!");
 			return false;
 		}
-		if(!CMSecurity.isAllowed(mob,room,"GOTO"))
+		if(!CMSecurity.isAllowed(mob,"GOTO"))
 		{
 			mob.tell("You aren't powerful enough to do that. Try 'GO'.");
 			return false;
@@ -86,7 +83,8 @@ public class Goto extends At
 		CMLib.commands().postLook(mob);
 		return false;
 	}
-	
+
+	public int commandType(MOB mob, String cmds){return CT_NON_ACTION;}
 	public boolean canBeOrdered(){return true;}
-	public boolean securityCheck(MOB mob){return CMSecurity.isAllowedAnywhere(mob,"GOTO");}
+	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,"GOTO");}
 }

@@ -24,12 +24,9 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Feed extends StdCommand
 {
-	public Feed(){}
+	public Feed(){access=new String[]{"FEED"};}
 
-	private String[] access={"FEED"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		if(commands.size()<3)
 		{
@@ -66,12 +63,14 @@ public class Feed extends StdCommand
 				code=EnumSet.of(CMMsg.MsgCode.EAT);
 			else
 				code=EnumSet.of(CMMsg.MsgCode.DRINK);
-			mob.location().doMessage(CMClass.getMsg(mob,target,item,code,"<S-NAME> feed(s) "+item.name()+" to <T-NAMESELF>."));
+			CMMsg msg=CMClass.getMsg(mob,target,item,code,"<S-NAME> feed(s) "+item.name()+" to <T-NAMESELF>.");
+			mob.location().doMessage(msg);
+			msg.returnMsg();
 		}
 		else
 			mob.tell(target.name()+" won't let you.");
 		return false;
 	}
-	public double actionsCost(MOB mob, Vector cmds){return DEFAULT_NONCOMBATACTION;}
+	public int commandType(MOB mob, String cmds){return CT_LOW_P_ACTION;}
 	public boolean canBeOrdered(){return true;}
 }

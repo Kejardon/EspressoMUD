@@ -1,7 +1,6 @@
 package com.planet_ink.coffee_mud.Libraries;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.Effects.interfaces.*;
 import com.planet_ink.coffee_mud.Areas.interfaces.*;
 import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
@@ -10,11 +9,14 @@ import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
-import java.io.IOException;
 import java.util.*;
+import java.nio.ByteBuffer;
+import java.util.concurrent.*;
+import java.io.IOException;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -27,214 +29,105 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 public class CMPlayers extends StdLibrary implements PlayerLibrary
 {
 	public String ID(){return "CMPlayers";}
-	public Vector<MOB> playersList = new Vector<MOB>();
-	public Vector<PlayerAccount> accountsList = new Vector<PlayerAccount>();
+	//Ideally, new ConcurrentHashMap(size, 0.75, 2);
+	public ConcurrentHashMap<String, MOB> playersList = null;//new ConcurrentHashMap();
+	public ConcurrentHashMap<String, PlayerAccount> accountsList = null;//new ConcurrentHashMap();
+	public ArrayList<MOB> playersQueue = new ArrayList();
+	public ArrayList<PlayerAccount> accountsQueue = new ArrayList();
 
 	private ThreadEngine.SupportThread thread=null;
-	
 	public ThreadEngine.SupportThread getSupportThread() { return thread;}
 	
 	public int numPlayers() { return playersList.size(); }
+	public void queuePlayer(MOB newOne)	//Should only be called by a single thread at MUD boot, so no synch stuff
+	{ playersQueue.add(newOne); }
+	public void queueAccount(PlayerAccount newOne)
+	{ accountsQueue.add(newOne); }
+	public void unqueuePlayers()
+	{
+		playersList=new ConcurrentHashMap(playersQueue.size()*11/10+10, (float)0.75, 4);
+		accountsList=new ConcurrentHashMap(accountsQueue.size()*11/10+10, (float)0.75, 4);
+		for(MOB M : playersQueue)
+			playersList.put(M.name().toUpperCase(), M);
+		for(PlayerAccount M : accountsQueue)
+			accountsList.put(M.accountName().toUpperCase(), M);
+		playersQueue=null;
+		accountsQueue=null;
+	}
 	public void addPlayer(MOB newOne)
 	{
-		synchronized(playersList)
+		//if(getPlayer(newOne.name())!=null) return;
+		if(playersList.putIfAbsent(newOne.name().toUpperCase(), newOne)==newOne)
 		{
-			if(getPlayer(newOne.name())!=null) return;
-			if(playersList.contains(newOne)) return;
-			PlayerAccount acct = null;
-			if(newOne.playerStats()!=null)
-				acct=newOne.playerStats().getAccount();
-			playersList.add(newOne);
-			if((acct != null)&&(getAccount(acct.accountName())==null)&&(!accountsList.contains(acct)))
-				accountsList.add(acct);
+			PlayerAccount acct=newOne.playerStats().getAccount();
+			if(acct!=null)
+				accountsList.putIfAbsent(acct.accountName().toUpperCase(), acct);
 		}
 	}
-	public void delPlayer(MOB oneToDel) { synchronized(playersList){playersList.remove(oneToDel);} }
-/*
-	public PlayerAccount getLoadAccount(String calledThis)
+	public void delPlayer(MOB oneToDel) { playersList.remove(oneToDel.name().toUpperCase()); }
+	public void delPlayer(String oneToDel) { playersList.remove(oneToDel.toUpperCase()); }
+	public boolean swapPlayer(MOB mob, String oldName)
 	{
-		if(calledThis=="") return null;
-		PlayerAccount A = getAccount(calledThis);
-		if(A!=null) return A;
-		return CMLib.database().DBReadAccount(calledThis);
+		if(playersList.putIfAbsent(mob.name().toUpperCase(), mob)==mob)
+		{
+			if(playersList.remove(oldName.toUpperCase(), mob))
+				return true;
+			playersList.remove(mob.name().toUpperCase(), mob);
+		}
+		return false;
 	}
-*/
 	public PlayerAccount getAccount(String calledThis)
 	{
-		synchronized(playersList)
-		{
-			MOB M=null;
-			for(PlayerAccount A : accountsList)
-				if(A.accountName().equalsIgnoreCase(calledThis))
-					return A;
-			for (Enumeration p=players(); p.hasMoreElements();)
-			{
-				M = (MOB)p.nextElement();
-				if((M.playerStats()!=null)
-				&&(M.playerStats().getAccount()!=null)
-				&&(M.playerStats().getAccount().accountName().equalsIgnoreCase(calledThis)))
-				{
-					accountsList.add(M.playerStats().getAccount());
-					return M.playerStats().getAccount();
-				}
-			}
-		}
-		return null;
+		return accountsList.get(calledThis.toUpperCase());
 	}
 	public MOB getPlayer(String calledThis)
 	{
-		MOB M = null;
-		synchronized(playersList)
-		{
-			for (Enumeration p=players(); p.hasMoreElements();)
-			{
-				M = (MOB)p.nextElement();
-				if (M.name().equalsIgnoreCase(calledThis))
-					return M;
-			}
-		}
-		return null;
+		return playersList.get(calledThis.toUpperCase());
 	}
-/*
-	public MOB getLoadPlayer(String last)
-	{
-		if(!CMProps.Bools.MUDSTARTED.property())
-			return null;
-		MOB M=null;
-		synchronized(playersList)
-		{
-			M=getPlayer(last);
-			if(M!=null) return M;
-
-			for(Enumeration<MOB> p=players();p.hasMoreElements();)
-			{
-				MOB mob2=p.nextElement();
-				if(mob2.name().equalsIgnoreCase(last))
-				{ return mob2;}
-			}
-
-			if(playerExists(last))
-			{
-				M=(MOB)CMClass.Objects.MOB.getNew("StdMOB");
-				M.setName(CMStrings.capitalizeAndLower(last));
-				CMLib.database().DBReadPlayer(M);
-				if(M.playerStats()!=null)
-					M.playerStats().setLastUpdated(M.playerStats().lastDateTime());
-				M.recoverCharStats();
-			}
-		}
-		return M;
-	}
-*/
 	public boolean accountExists(String name)
 	{
-		if(name==null) return false;
-		name=CMStrings.capitalizeAndLower(name);
-		return getAccount(name)!=null;
+		return (accountsList.get(name.toUpperCase())!=null);
 	}
 	
 	public boolean playerExists(String name)
 	{
-		if(name==null) return false;
-		name=CMStrings.capitalizeAndLower(name);
-		for(Enumeration<MOB> e=players();e.hasMoreElements();)
-			if(e.nextElement().name().equals(name))
-				return true;
-		return false;
+		return (playersList.get(name.toUpperCase())!=null);
 	}
-	public Enumeration players() { return (Enumeration)DVector.s_enum(playersList); }
-	public Enumeration accounts() { return (Enumeration)DVector.s_enum(accountsList); }
+	public Enumeration<MOB> players() { return playersList.elements(); }
+	public Enumeration<PlayerAccount> accounts() { return accountsList.elements(); }
 
 	public void obliteratePlayer(MOB deadMOB, boolean quiet)
 	{
-		if(getPlayer(deadMOB.name())!=null)
+		delPlayer(deadMOB);
+		/*for(Session S : CMLib.sessions().toArray())
 		{
-		   deadMOB=getPlayer(deadMOB.name());
-		   delPlayer(deadMOB);
-		}
-		for(int s=0;s<CMLib.sessions().size();s++)
-		{
-			Session S=CMLib.sessions().elementAt(s);
-			if((!S.killFlag())&&(S.mob()!=null)&&(S.mob().name().equals(deadMOB.name())))
-			   deadMOB=S.mob();
-		}
+			MOB M=S.mob();
+			if((M!=null)&&(!S.killFlag())&&(M.name().equals(deadMOB.name())))
+				deadMOB=S.mob();
+		}*/
 		CMMsg msg=CMClass.getMsg(deadMOB,null,null,EnumSet.of(CMMsg.MsgCode.RETIRE),(quiet)?null:"A horrible death cry is heard throughout the land.");
+		CMLib.map().sendGlobalMessage(deadMOB, EnumSet.of(CMMsg.MsgCode.RETIRE), msg);
 		Room deadLoc=deadMOB.location();
 		if(deadLoc!=null)
 			deadLoc.send(msg);
-		try
-		{
-			for(Enumeration r=CMLib.map().rooms();r.hasMoreElements();)
-			{
-				Room R=(Room)r.nextElement();
-				if((R!=null)&&(R!=deadLoc))
-				{
-					if(R.okMessage(deadMOB,msg))
-						R.send(msg);
-					else
-					{
-						addPlayer(deadMOB);
-						return;
-					}
-				}
-			}
-		}catch(NoSuchElementException e){}
 
-		CMLib.database().deleteObject(deadMOB);
+		//CMLib.database().deleteObject(deadMOB);	//in the destroy()
 		if(deadMOB.session()!=null)
-			deadMOB.session().kill(false,false,false);
+			deadMOB.session().kill(false);
 		Log.sysOut("Scoring",deadMOB.name()+" has been deleted.");
 		deadMOB.destroy();
+		msg.returnMsg();
 	}
 	
 	public void obliterateAccountOnly(PlayerAccount deadAccount)
 	{
-		deadAccount = getAccount(deadAccount.accountName());
-		if(deadAccount==null) return;
-		accountsList.remove(deadAccount);
+		if(!accountsList.remove(deadAccount.accountName().toUpperCase(), deadAccount))
+			return;
 
-		CMLib.database().deleteObject(deadAccount);
+		deadAccount.destroy();
+		//CMLib.database().deleteObject(deadAccount);
 		Log.sysOut("Scoring",deadAccount.accountName()+" has been deleted.");
 	}
-/*
-	public int savePlayers()
-	{
-		int processed=0;
-		for(Enumeration p=players();p.hasMoreElements();)
-		{
-			MOB mob=(MOB)p.nextElement();
-			if(!mob.isMonster())
-			{
-				thread.status("just saving "+mob.name());
-				CMLib.database().DBUpdatePlayerMOBOnly(mob);
-				if((mob.name().length()==0)||(mob.playerStats()==null))
-					continue;
-				PlayerAccount account = mob.playerStats().getAccount();
-				mob.playerStats().setLastUpdated(System.currentTimeMillis());
-				if(account!=null)
-				{
-					thread.status("saving account "+account.accountName()+" for "+mob.name());
-					CMLib.database().DBUpdateAccount(account);
-					account.setLastUpdated(System.currentTimeMillis());
-				}
-				processed++;
-			}
-			else
-			if((mob.playerStats()!=null)
-			&&((mob.playerStats().lastUpdated()==0)
-			   ||(mob.playerStats().lastUpdated()<mob.playerStats().lastDateTime())))
-			{
-				thread.status("just saving "+mob.name());
-				CMLib.database().DBUpdatePlayerMOBOnly(mob);
-				if((mob.name().length()==0)||(mob.playerStats()==null))
-					continue;
-				mob.playerStats().setLastUpdated(System.currentTimeMillis());
-				processed++;
-			}
-		}
-		return processed;
-	}
-*/
 	public boolean activate() {
 		if(thread==null)
 			thread=new ThreadEngine.SupportThread("THPlayers"+Thread.currentThread().getThreadGroup().getName().charAt(0), 
@@ -245,7 +138,7 @@ public class CMPlayers extends StdLibrary implements PlayerLibrary
 		Vector<String> knownPlayers=CMLib.database().getUserList();
 		for(String S : (String[])knownPlayers.toArray(new String[0]))
 		{
-			MOB M=(MOB)CMClass.Objects.MOB.getNew("StdMOB");
+			MOB M=CMClass.CREATURE.getNew("StdMOB");
 			M.setName(CMStrings.capitalizeAndLower(S));
 			CMLib.database().DBReadPlayer(M);
 //			if(M.playerStats()!=null)
@@ -256,7 +149,7 @@ public class CMPlayers extends StdLibrary implements PlayerLibrary
 	}
 	
 	public boolean shutdown() {
-		playersList.clear();
+		//playersList.clear();
 		thread.shutdown();
 		return true;
 	}
@@ -351,6 +244,79 @@ public class CMPlayers extends StdLibrary implements PlayerLibrary
 		case 7: return player.ip;
 		}
 		return player.name;
+	}
+	public MOB getLoadPlayer(String last)
+	{
+		if(!CMProps.Bools.MUDSTARTED.property())
+			return null;
+		MOB M=null;
+		synchronized(playersList)
+		{
+			M=getPlayer(last);
+			if(M!=null) return M;
+
+			for(Enumeration<MOB> p=players();p.hasMoreElements();)
+			{
+				MOB mob2=p.nextElement();
+				if(mob2.name().equalsIgnoreCase(last))
+				{ return mob2;}
+			}
+
+			if(playerExists(last))
+			{
+				M=CMClass.CREATURE.getNew("StdMOB");
+				M.setName(CMStrings.capitalizeAndLower(last));
+				CMLib.database().DBReadPlayer(M);
+				if(M.playerStats()!=null)
+					M.playerStats().setLastUpdated(M.playerStats().lastDateTime());
+				M.recoverCharStats();
+			}
+		}
+		return M;
+	}
+	public PlayerAccount getLoadAccount(String calledThis)
+	{
+		if(calledThis=="") return null;
+		PlayerAccount A = getAccount(calledThis);
+		if(A!=null) return A;
+		return CMLib.database().DBReadAccount(calledThis);
+	}
+	public int savePlayers()
+	{
+		int processed=0;
+		for(Enumeration p=players();p.hasMoreElements();)
+		{
+			MOB mob=(MOB)p.nextElement();
+			if(!mob.isMonster())
+			{
+				thread.status("just saving "+mob.name());
+				CMLib.database().DBUpdatePlayerMOBOnly(mob);
+				if((mob.name().length()==0)||(mob.playerStats()==null))
+					continue;
+				PlayerAccount account = mob.playerStats().getAccount();
+				mob.playerStats().setLastUpdated(System.currentTimeMillis());
+				if(account!=null)
+				{
+					thread.status("saving account "+account.accountName()+" for "+mob.name());
+					CMLib.database().DBUpdateAccount(account);
+					account.setLastUpdated(System.currentTimeMillis());
+				}
+				processed++;
+			}
+			else
+			if((mob.playerStats()!=null)
+			&&((mob.playerStats().lastUpdated()==0)
+			   ||(mob.playerStats().lastUpdated()<mob.playerStats().lastDateTime())))
+			{
+				thread.status("just saving "+mob.name());
+				CMLib.database().DBUpdatePlayerMOBOnly(mob);
+				if((mob.name().length()==0)||(mob.playerStats()==null))
+					continue;
+				mob.playerStats().setLastUpdated(System.currentTimeMillis());
+				processed++;
+			}
+		}
+		return processed;
 	}
 */
 }

@@ -24,10 +24,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class ATopics extends StdCommand
 {
-	public ATopics(){}
-
-	private String[] access={"ARCTOPICS","ATOPICS"};
-	public String[] getAccessWords(){return access;}
+	public ATopics(){access=new String[]{"ARCTOPICS","ATOPICS"};}
 
 	public static void doTopics(MOB mob, Properties rHelpFile, String helpName, String resName)
 	{
@@ -36,10 +33,10 @@ public class ATopics extends StdCommand
 		{
 			topicBuffer=new StringBuffer();
 
-			Vector reverseList=new Vector();
-			for(Enumeration e=rHelpFile.keys();e.hasMoreElements();)
+			Vector<String> reverseList=new Vector();
+			for(Enumeration<String> e=(Enumeration)rHelpFile.keys();e.hasMoreElements();)
 			{
-				String ptop = (String)e.nextElement();
+				String ptop = e.nextElement();
 				String thisTag=rHelpFile.getProperty(ptop);
 				if ((thisTag==null)||(thisTag.length()==0)||(thisTag.length()>=35)
 					|| (rHelpFile.getProperty(thisTag)== null) )
@@ -47,18 +44,17 @@ public class ATopics extends StdCommand
 			}
 
 			Collections.sort(reverseList);
-			topicBuffer=new StringBuffer("Help topics: \n\r\n\r");
+			topicBuffer=new StringBuffer("Help topics: \r\n\r\n");
 			topicBuffer.append(CMLib.lister().fourColumns(reverseList,"HELP"));
 			topicBuffer=new StringBuffer(topicBuffer.toString().replace('_',' '));
 			Resources.submitResource(resName,topicBuffer);
 		}
 		if((mob!=null)&&(!mob.isMonster()))
-			mob.session().colorOnlyPrintln(topicBuffer.toString()+"\n\r\n\rEnter "+helpName+" (TOPIC NAME) for more information.",false);
+			mob.session().colorOnlyPrintln(topicBuffer.toString()+"\r\n\r\nEnter "+helpName+" (TOPIC NAME) for more information.",false);
 	}
 
 
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		Properties arcHelpFile=CMLib.help().getArcHelpFile();
 		if(arcHelpFile.size()==0)
@@ -71,7 +67,8 @@ public class ATopics extends StdCommand
 		doTopics(mob,arcHelpFile,"AHELP", "ARCHON TOPICS");
 		return false;
 	}
-	
+
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	public boolean canBeOrdered(){return true;}
-	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,mob.location(),"AHELP");}
+	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,"AHELP");}
 }

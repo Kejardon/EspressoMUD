@@ -33,9 +33,9 @@ public class StdGender implements Gender
 
 	public String name(){return "NA";}
 //	public char letter();
-	public String subject(){return "he";}
-	public String object(){return "him";}
-	public String possessive(){return "his";}
+	public String subject(){return "std";}
+	public String object(){return "std";}
+	public String possessive(){return "stds";}
 //	public String HeShe();
-	public String sirmadam(){return "sir";}
+	public String sirmadam(){return "std";}
 }

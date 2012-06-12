@@ -24,13 +24,12 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Tell extends StdCommand
 {
-	public Tell(){}
+	public Tell(){access=new String[]{"TELL","T"};}
 
-	private String[] access={"TELL","T"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
+		Session sourceSession=mob.session();
+		if(sourceSession==null) return false;
 		if(commands.size()<3)
 		{
 			mob.tell("Tell whom what?");
@@ -42,47 +41,49 @@ public class Tell extends StdCommand
 		   &&(CMath.isNumber(CMParms.combine(commands,1)))
 		   &&(mob.playerStats()!=null))
 		{
-			Vector V=mob.playerStats().getTellStack();
-			if(V.size()==0)
+			LinkedList<String> V=mob.playerStats().getTellStack();
+			int listSize=V.size();
+			if(listSize==0)
 				mob.tell("No telling.");
 			else
 			{
 				int num=CMath.s_int(CMParms.combine(commands,1));
-				if(num>V.size()) num=V.size();
-				for(int i=V.size()-num;i<V.size();i++)
-					mob.tell((String)V.elementAt(i));
+				if(num>listSize) num=listSize;
+				for(ListIterator<String> iter=V.listIterator(listSize-num);iter.hasNext();)
+					mob.tell(iter.next());
 			}
 			return false;
 		}
 		
 		MOB target=null;
-		String targetName=((String)commands.elementAt(0)).toUpperCase();
-		for(int s=0;s<CMLib.sessions().size();s++)
+		Session targetSession=null;
+		String targetName=commands.elementAt(0).toUpperCase();
+		for(Session thisSession : CMLib.sessions().toArray())
 		{
-			Session thisSession=CMLib.sessions().elementAt(s);
 			if((thisSession.mob()!=null)
 			   &&(!thisSession.killFlag())
 			   &&(thisSession.mob().name().equalsIgnoreCase(targetName)))
 			{
 				target=thisSession.mob();
+				targetSession=thisSession;
 				break;
 			}
 		}
 		if(target==null)
-		for(int s=0;s<CMLib.sessions().size();s++)
+		for(Session thisSession : CMLib.sessions().toArray())
 		{
-			Session thisSession=CMLib.sessions().elementAt(s);
 			if((thisSession.mob()!=null)
 			   &&(!thisSession.killFlag())
 			   &&(CMLib.english().containsString(thisSession.mob().name(),targetName)))
 			{
 				target=thisSession.mob();
+				targetSession=thisSession;
 				break;
 			}
 		}
 		for(int i=1;i<commands.size();i++)
 		{
-			String s=(String)commands.elementAt(i);
+			String s=commands.elementAt(i);
 			if(s.indexOf(" ")>=0)
 				commands.setElementAt("\""+s+"\"",i);
 		}
@@ -98,30 +99,31 @@ public class Tell extends StdCommand
 			return false;
 		}
 		
-		boolean ignore=((target.playerStats()!=null)&&(target.playerStats().getIgnored().contains(mob.name())));
+		boolean ignore=((target.playerStats()!=null)&&(target.playerStats().hasIgnored(mob)));
 		String msg="^t^<TELL \""+mob.name()+"\"^><S-NAME> tell(s) <T-NAME> '"+combinedCommands+"'^</TELL^>^?^.";
-		mob.tell(mob,target,null,msg);
+		mob.tell(mob,target,msg);
 		if((mob!=target)&&(!ignore))
 		{
-			target.tell(mob,target,null,msg);
+			target.tell(mob,target,msg);
 			if((!mob.isMonster())&&(!target.isMonster()))
 			{
 				if(mob.playerStats()!=null)
 				{
 					mob.playerStats().setReplyTo(target,PlayerStats.REPLY_TELL);
-					mob.playerStats().addTellStack(CMLib.coffeeFilter().fullOutFilter(mob.session(),mob,mob,target,null,CMStrings.removeColors(msg),false));
+					mob.playerStats().addTellStack(CMLib.coffeeFilter().fullOutFilter(sourceSession,mob,mob,target,null,CMStrings.removeColors(msg),false));
 				}
 				if(target.playerStats()!=null)
 				{
 					target.playerStats().setReplyTo(mob,PlayerStats.REPLY_TELL);
-					target.playerStats().addTellStack(CMLib.coffeeFilter().fullOutFilter(target.session(),target,mob,target,null,CMStrings.removeColors(msg),false));
+					target.playerStats().addTellStack(CMLib.coffeeFilter().fullOutFilter(targetSession,target,mob,target,null,CMStrings.removeColors(msg),false));
 				}
 			}
 		}
 
-		if((target.session()!=null)&&(target.session().afkFlag()))
-			mob.tell(target.session().afkMessage());
+		if(targetSession.afkFlag())
+			mob.tell(targetSession.afkMessage());
 		return false;
 	}
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	public boolean canBeOrdered(){return false;}
 }

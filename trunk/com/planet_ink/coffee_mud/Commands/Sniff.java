@@ -24,14 +24,10 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Sniff extends StdCommand
 {
-	public Sniff(){}
+	public Sniff(){access=new String[]{"SNIFF","SMELL"};}
 
-	private String[] access={"SNIFF","SMELL"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
-		
 		if(commands.size()>1)
 		{
 			Interactable thisThang=null;
@@ -46,7 +42,9 @@ public class Sniff extends StdCommand
 				String name=" <T-NAMESELF>";
 				if(thisThang==mob.location())
 					name=" around";
-				mob.location().doMessage(CMClass.getMsg(mob,thisThang,null,EnumSet.of(CMMsg.MsgCode.SNIFF),"<S-NAME> sniff(s)"+name+"."));
+				CMMsg msg=CMClass.getMsg(mob,thisThang,null,EnumSet.of(CMMsg.MsgCode.SNIFF),"<S-NAME> sniff(s)"+name+".");
+				mob.location().doMessage(msg);
+				msg.returnMsg();
 			}
 			else
 				mob.tell("You don't see that here!");
@@ -55,9 +53,12 @@ public class Sniff extends StdCommand
 		{
 			CMMsg msg=CMClass.getMsg(mob,mob.location(),null,EnumSet.of(CMMsg.MsgCode.SNIFF),"<S-NAME> sniff(s) around.");
 			mob.location().doMessage(msg);
+			msg.returnMsg();
 		}
 		return false;
 	}
-	public double actionsCost(MOB mob, Vector cmds){return DEFAULT_NONCOMBATACTION;}
+
+	//TODO: um. Sniff at distance or close distance or..? This is really a racial specific command too...
+	public int commandType(MOB mob, String cmds){return CT_NON_ACTION;}
 	public boolean canBeOrdered(){return true;}
 }

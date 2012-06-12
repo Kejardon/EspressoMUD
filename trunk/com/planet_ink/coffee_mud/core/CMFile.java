@@ -14,6 +14,8 @@ import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.io.*;
 import java.nio.charset.Charset;
+import java.nio.*;
+import java.nio.channels.*;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.lang.*;
@@ -25,47 +27,87 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
+//TODO: Redo stuff here using nio? Test in misc.java
 @SuppressWarnings("unchecked")
 public class CMFile
 {
-	public enum Flags
+/*	public enum Flags
 	{
-		DIRECTORY, HIDDEN, NOREADLOCAL, NOWRITELOCAL
-	}
-	public EnumSet<Flags> Savable=EnumSet.of(Flags.DIRECTORY, Flags.HIDDEN);
-	public static final int VFS_MASK_MASKSAVABLE=1+2+4;
+		NOWRITELOCAL, //DIRECTORY, NOREADLOCAL, HIDDEN, 
+	} */
+	//public EnumSet<Flags> Savable=EnumSet.of(Flags.DIRECTORY, Flags.HIDDEN);
+	//public static final int VFS_MASK_MASKSAVABLE=1+2+4;
 
 	private static final char pathSeparator=File.separatorChar;
-	private static final String inCharSet = Charset.defaultCharset().name();
-	private static final String outCharSet = Charset.defaultCharset().name();
+	private static final Charset inCharSet = Charset.defaultCharset();
+	private static final Charset outCharSet = Charset.defaultCharset();
 
 	private boolean logErrors=false;
 
-	private EnumSet vfsBits=EnumSet.noneOf(Flags.class);
+	//private EnumSet vfsBits=EnumSet.noneOf(Flags.class);
+	private boolean mayAccess=false;
 	private String localPath=null;
 	private String path=null;
 	private String name=null;
-	private String author=null;
+	//private String author=null;
 	private MOB accessor=null;
-	private long modifiedDateTime=System.currentTimeMillis();
+	//private long modifiedDateTime=System.currentTimeMillis();
 	private File localFile=null;
-	private String parentDir=null;
+	//private String parentDir=null;
 
 	public CMFile(String filename, MOB user, boolean pleaseLogErrors)
 	{ super(); buildCMFile(filename,user,pleaseLogErrors,false);}
 	public CMFile(String filename, MOB user, boolean pleaseLogErrors, boolean forceAllow)
 	{ super(); buildCMFile(filename,user,pleaseLogErrors,forceAllow);}
-	public CMFile (String currentPath, String filename, MOB user, boolean pleaseLogErrors)
-	{ super(); buildCMFile(incorporateBaseDir(currentPath,filename),user,pleaseLogErrors,false); }
-	public CMFile (String currentPath, String filename, MOB user, boolean pleaseLogErrors, boolean forceAllow)
-	{ super(); buildCMFile(incorporateBaseDir(currentPath,filename),user,pleaseLogErrors,forceAllow); }
 
+	public static String getProperExistingPath(String absolutePath)
+	{
+		absolutePath=localizeFilename(absolutePath);
+		File localFile=new File(absolutePath);
+		if(!localFile.exists())
+		{
+			File localDir=new File(".");
+			int endZ=-1;
+			boolean found=true;
+			while((!localFile.exists())&&(endZ<absolutePath.length())&&(localDir.exists())&&(localDir.isDirectory())&&(found))
+			{
+				int startZ=endZ+1;
+				endZ=absolutePath.indexOf(pathSeparator,startZ);
+				if(endZ<0)
+					endZ=absolutePath.length();
+				String[] files=localDir.list();
+				found=false;
+				String altPath=null;
+				for(int f=0;f<files.length;f++)
+				{
+					if(files[f].equalsIgnoreCase(absolutePath.substring(startZ,endZ)))
+					{
+						found=true;
+						if(files[f].equals(absolutePath.substring(startZ,endZ)))
+						{
+							altPath=null;
+							break;
+						}
+						altPath=files[f];
+					}
+				}
+				if(found)
+				{
+					if(altPath!=null)
+						absolutePath=absolutePath.substring(0,startZ)+altPath+((endZ<absolutePath.length())?absolutePath.substring(endZ):"");
+					if(endZ!=absolutePath.length())
+						localDir=new File(localDir.getAbsolutePath()+pathSeparator+absolutePath.substring(startZ,endZ));
+				}
+			}
+		}
+		return absolutePath;
+	}
 	private void buildCMFile(String absolutePath, MOB user, boolean pleaseLogErrors, boolean forceAllow)
 	{
 		accessor=user;
 		localFile=null;
 		logErrors=pleaseLogErrors;
-		if(accessor!=null) author=accessor.name();
+		//if(accessor!=null) author=accessor.name();
 		absolutePath=vfsifyFilename(absolutePath);
 		name=absolutePath;
 		int x=absolutePath.lastIndexOf('/');
@@ -75,10 +117,10 @@ public class CMFile
 			path=absolutePath.substring(0,x);
 			name=absolutePath.substring(x+1);
 		}
-		parentDir=path;
+		//parentDir=path;
 		localPath=path.replace('/',pathSeparator);
 		// fill in all we can
-		vfsBits=EnumSet.noneOf(Flags.class);
+		//vfsBits=EnumSet.noneOf(Flags.class);
 		String ioPath=getIOReadableLocalPathAndName();
 		localFile=new File(ioPath);
 		if(!localFile.exists())
@@ -86,8 +128,6 @@ public class CMFile
 			File localDir=new File(".");
 			int endZ=-1;
 			boolean found=true;
-			if((localDir.exists())&&(localDir.isDirectory()))
-				parentDir="//"+localPath;
 			while((!localFile.exists())&&(endZ<ioPath.length())&&(localDir.exists())&&(localDir.isDirectory())&&(found))
 			{
 				int startZ=endZ+1;
@@ -96,128 +136,109 @@ public class CMFile
 					endZ=ioPath.length();
 				String[] files=localDir.list();
 				found=false;
+				String altPath=null;
 				for(int f=0;f<files.length;f++)
 				{
 					if(files[f].equalsIgnoreCase(ioPath.substring(startZ,endZ)))
 					{
-						if(!files[f].equals(ioPath.substring(startZ,endZ)))
-							ioPath=ioPath.substring(0,startZ)+files[f]+((endZ<ioPath.length())?ioPath.substring(endZ):"");
 						found=true;
-						break;
+						if(files[f].equals(ioPath.substring(startZ,endZ)))
+						{
+							altPath=null;
+							break;
+						}
+						altPath=files[f];
 					}
 				}
 				if(found)
 				{
-					if(endZ==ioPath.length())
-					{
-						int lastSep=ioPath.lastIndexOf(pathSeparator);
-						if(lastSep>=0)
-						{
-							localPath=ioPath.substring(0,lastSep);
-							name=ioPath.substring(lastSep+1);
-						}
-						else
-							name=ioPath;
-						localFile=new File(getIOReadableLocalPathAndName());
-					}
-					else
+					if(altPath!=null)
+						ioPath=ioPath.substring(0,startZ)+altPath+((endZ<ioPath.length())?ioPath.substring(endZ):"");
+					if(endZ!=ioPath.length())
 						localDir=new File(localDir.getAbsolutePath()+pathSeparator+ioPath.substring(startZ,endZ));
 				}
 			}
+			int lastSep=ioPath.lastIndexOf(pathSeparator);
+			if(lastSep>=0)
+			{
+				localPath=ioPath.substring(0,lastSep);
+				path=localPath.replace(pathSeparator,'/');
+				name=ioPath.substring(lastSep+1);
+			}
+			else
+				name=ioPath;
+			localFile=new File(getIOReadableLocalPathAndName());
+
 		}
 
-		modifiedDateTime=localFile.lastModified();
-		if(localFile.isHidden()) vfsBits.add(Flags.HIDDEN);
+		//modifiedDateTime=localFile.lastModified();
+		//if(localFile.isHidden()) vfsBits.add(Flags.HIDDEN);
 
-		boolean isADirectory=((localFile!=null)&&(localFile.exists())&&(localFile.isDirectory()));
-		boolean allowedToTraverseAsDirectory=isADirectory
-										   &&((accessor==null)||CMSecurity.canTraverseDir(accessor,accessor.location(),absolutePath));
-		boolean allowedToWriteLocal=((forceAllow)||(accessor==null)||(CMSecurity.canAccessFile(accessor,accessor.location(),absolutePath,false)));
-		boolean allowedToReadLocal=(localFile!=null)
-									&&(localFile.exists())
-									&&(allowedToWriteLocal||allowedToTraverseAsDirectory);
+		//boolean isADirectory=((localFile.exists()&&(localFile.isDirectory()));
+		//boolean allowedToTraverseAsDirectory=isADirectory&&((accessor==null)||CMSecurity.canTraverseDir(accessor,absolutePath));
+		mayAccess=((forceAllow)||(accessor==null)||(CMSecurity.canAccessFile(accessor,absolutePath)));
+		/*boolean allowedToReadLocal=//(localFile!=null)&&
+									//(localFile.exists())&&
+									(allowedToWriteLocal||isADirectory);
 
 		if(!allowedToReadLocal) vfsBits.add(Flags.NOREADLOCAL);
+*/
+		//if(!allowedToWriteLocal) vfsBits.add(Flags.NOWRITELOCAL);
 
-		if(!allowedToWriteLocal) vfsBits.add(Flags.NOWRITELOCAL);
-
-		if(allowedToTraverseAsDirectory)  vfsBits.add(Flags.DIRECTORY);
+		//if(isADirectory) vfsBits.add(Flags.DIRECTORY);
 	}
 
 	public CMFile getParent(){return new CMFile(path,accessor,false,false);}
 
 	public boolean mustOverwrite()
 	{
-		if(!isDirectory())
-			return canRead();
-		return ((localFile!=null)&&(localFile.isDirectory()));
+		if(localFile.isDirectory())
+			return true;
+		return canRead();
 	}
 
 	public boolean canRead()
 	{
-		if(!exists()) return false;
-		if(vfsBits.contains(Flags.NOREADLOCAL))
-			return false;
-		return true;
+		if(!mayAccess) return false;
+		return localFile.exists();
 	}
 	public boolean canWrite()
 	{
-		if(vfsBits.contains(Flags.NOWRITELOCAL))
-			return false;
-		return true;
+		return mayAccess;
 	}
 
-	public boolean isDirectory(){return exists()&&vfsBits.contains(Flags.DIRECTORY);}
-	public boolean exists(){ return !(vfsBits.contains(Flags.NOREADLOCAL));}
-	public boolean isFile(){return canRead()&&(!vfsBits.contains(Flags.DIRECTORY));}
-	public long lastModified(){return modifiedDateTime;}
-	public String author(){return ((author!=null))?author:"SYS_UNK";}
-	public boolean canLocalEquiv(){return (!vfsBits.contains(Flags.NOREADLOCAL));}
-	public String getName(){return name;}
+	public boolean isDirectory(){return localFile.isDirectory();}
+	public boolean exists(){ return localFile.exists();}
+	//public boolean isFile(){return canRead()&&(!vfsBits.contains(Flags.DIRECTORY));}
+	public long lastModified(){return localFile.lastModified();}
+	public String accessor(){return ((accessor!=null)?accessor.name():"SYS_UNK");}
+	//public boolean canLocalEquiv(){return (!vfsBits.contains(Flags.NOREADLOCAL));}
+	public String getName(){return name;}	//NOTE: Not 100% sure this will equal(localFile.name())
 	public String getAbsolutePath(){return "/"+getLocalPathAndName();}
 	public String getLocalPathAndName()
 	{
-		if(path.length()==0)
+		if(localPath.length()==0)
 			return name;
 		return localPath+pathSeparator+name;
 	}
-    public String getVFSPathAndName()
-    {
-        if(path.length()==0)
-            return name;
-        return path+'/'+name;
-    }
+	public String getVFSPathAndName()
+	{
+		if(path.length()==0)
+			return name;
+		return path+'/'+name;
+	}
 	public String getIOReadableLocalPathAndName()
 	{
 		String s=getLocalPathAndName();
-		if(s.trim().length()==0) return ".";
+		if(s.trim().length()==0) return ".";	//CAn this even happen?
 		return s;
-	}
-
-	public boolean mayDeleteIfDirectory()
-	{
-		if(!isDirectory()) return true;
-		if((localFile!=null)&&(localFile.isDirectory())&&(localFile.list().length>0))
-			return false;
-		return true;
-	}
-
-	public boolean deleteLocal()
-	{
-		if(!exists()) return false;
-		if(!canWrite()) return false;
-		if(!mayDeleteIfDirectory()) return false;
-		if((canLocalEquiv())&&(localFile!=null))
-			return localFile.delete();
-		return false;
 	}
 
 	public boolean delete()
 	{
-		if(!exists()) return false;
-		if(!canWrite()) return false;
-		if(!mayDeleteIfDirectory()) return false;
-		return deleteLocal();
+		if(mayAccess)
+			return localFile.delete();
+		return false;
 	}
 
 	public StringBuffer text()
@@ -233,20 +254,17 @@ public class CMFile
 		BufferedReader reader = null;
 		try
 		{
-			reader=new BufferedReader(
-				   new InputStreamReader(
-				   new FileInputStream(
-				   	getIOReadableLocalPathAndName()
-			),inCharSet));
-			String line="";
-			while((line!=null)&&(reader.ready()))
+			reader=new BufferedReader(new InputStreamReader(new FileInputStream(getIOReadableLocalPathAndName()),inCharSet));
+			while(reader.ready())
 			{
-				line=reader.readLine();
+				String line=reader.readLine();
 				if(line!=null)
 				{
 					buf.append(line);
-					buf.append("\n\r");
+					buf.append("\r\n");
+					continue;
 				}
+				else break;
 			}
 		}
 		catch(Exception e)
@@ -257,18 +275,13 @@ public class CMFile
 		}
 		finally
 		{
-			try
-			{
-				if ( reader != null )
+			if ( reader != null )
+				try
 				{
 					reader.close();
 					reader = null;
 				}
-			}
-			catch ( final IOException ignore )
-			{
-
-			}
+				catch ( final IOException ignore ) {}
 		}
 		return buf;
 	}
@@ -285,10 +298,7 @@ public class CMFile
 		Reader F = null;
 		try
 		{
-			F=new InputStreamReader(
-		 	  new FileInputStream(
-			   	getIOReadableLocalPathAndName()
-			 ),inCharSet);
+			F=new BufferedReader(new InputStreamReader(new FileInputStream(getIOReadableLocalPathAndName()),inCharSet));
 			char c=' ';
 			while(F.ready())
 			{
@@ -304,18 +314,13 @@ public class CMFile
 		}
 		finally
 		{
-			try
-			{
-				if ( F != null )
+			if ( F != null )
+				try
 				{
 					F.close();
 					F = null;
 				}
-			}
-			catch ( final IOException ignore )
-			{
-
-			}
+				catch ( final IOException ignore ){}
 		}
 		return buf;
 	}
@@ -344,18 +349,13 @@ public class CMFile
 		}
 		finally
 		{
-			try
-			{
-				if ( fileIn != null )
+			if ( fileIn != null )
+				try
 				{
 					fileIn.close();
 					fileIn = null;
 				}
-			}
-			catch ( final IOException ignore )
-			{
-
-			}
+				catch ( final IOException ignore ){}
 		}
 		return buf;
 	}
@@ -369,54 +369,29 @@ public class CMFile
 		return text;
 	}
 
-	public boolean saveRaw(Object data)
+	//This currently only is given StringBuffers
+	public boolean saveRaw(CharSequence data)
 	{
 		if(data==null)
 		{
 			Log.errOut("CMFile","Unable to save file '"+getLocalPathAndName()+"': No Data.");
 			return false;
 		}
-		if((vfsBits.contains(Flags.DIRECTORY))
-		||(!canWrite()))
+		if((localFile.isDirectory())||(!mayAccess))
 		{
 			Log.errOut("CMFile","Access error saving file '"+getLocalPathAndName()+"'.");
 			return false;
 		}
-
-		Object O=null;
-		if(data instanceof String)
-			O=new StringBuffer((String)data);
-		else
-		if(data instanceof StringBuffer)
-			O=(StringBuffer)data;
-		else
-		if(data instanceof byte[])
-		{
-			StringBuffer test=textVersion((byte[])data);
-			if(test!=null)
-				O=test;
-			else
-				O=(byte[])data;
-		}
-		else
-			O=new StringBuffer(data.toString());
 
 		FileOutputStream FW = null;
 		try
 		{
-			File F=new File(getIOReadableLocalPathAndName());
-			if(O instanceof StringBuffer)
-				O=CMStrings.strToBytes(((StringBuffer)O).toString());
-			if(O instanceof String)
-				O=CMStrings.strToBytes(((String)O));
-			if(O instanceof byte[])
-			{
-				FW=new FileOutputStream(F,false);
-				FW.write((byte[])O);
-				FW.flush();
-				FW.close();
-			}
-			vfsBits.remove(Flags.NOREADLOCAL);
+			ByteBuffer O=outCharSet.encode(CharBuffer.wrap(data));
+			FW=new FileOutputStream(localFile,false);
+			FileChannel FC=FW.getChannel();
+			FC.write(O);
+			FW.close();
+			FW=null;
 			return true;
 		}
 		catch(IOException e)
@@ -425,56 +400,38 @@ public class CMFile
 		}
 		finally
 		{
-			try
-			{
-				if ( FW != null )
+			if ( FW != null )
+				try
 				{
 					FW.close();
 					FW = null;
 				}
-			}
-			catch ( final IOException ignore )
-			{
-
-			}
+				catch ( final IOException ignore ){}
 		}
 		return false;
 	}
-
-	public boolean saveText(Object data){ return saveText(data,false);}
-	public boolean saveText(Object data, boolean append)
+	public boolean saveRaw(byte[] data)
 	{
 		if(data==null)
 		{
 			Log.errOut("CMFile","Unable to save file '"+getLocalPathAndName()+"': No Data.");
 			return false;
 		}
-		if((vfsBits.contains(Flags.DIRECTORY))||(!canWrite()))
+		if((localFile.isDirectory())||(!mayAccess))
 		{
 			Log.errOut("CMFile","Access error saving file '"+getLocalPathAndName()+"'.");
 			return false;
 		}
 
-		StringBuffer O=null;
-		if(data instanceof String)
-			O=new StringBuffer((String)data);
-		else
-		if(data instanceof StringBuffer)
-			O=(StringBuffer)data;
-		else
-		if(data instanceof byte[])
-			O=new StringBuffer(CMStrings.bytesToStr((byte[])data));
-		else
-			O=new StringBuffer(data.toString());
-
-		FileWriter FW = null;
+		FileOutputStream FW = null;
 		try
 		{
-			File F=new File(getIOReadableLocalPathAndName());
-			FW=new FileWriter(F,append);
-			FW.write(saveBufNormalize(O).toString());
+			ByteBuffer O=ByteBuffer.wrap(data);
+			FW=new FileOutputStream(localFile,false);
+			FileChannel FC=FW.getChannel();
+			FC.write(O);
 			FW.close();
-			vfsBits.remove(Flags.NOREADLOCAL);
+			FW=null;
 			return true;
 		}
 		catch(IOException e)
@@ -483,18 +440,56 @@ public class CMFile
 		}
 		finally
 		{
-			try
-			{
-				if ( FW != null )
+			if ( FW != null )
+				try
 				{
 					FW.close();
 					FW = null;
 				}
-			}
-			catch ( final IOException ignore )
-			{
+				catch ( final IOException ignore ){}
+		}
+		return false;
+	}
 
-			}
+	public boolean saveText(CharSequence data){ return saveText(data,false);}
+	public boolean saveText(CharSequence data, boolean append)
+	{
+		if(data==null)
+		{
+			Log.errOut("CMFile","Unable to save file '"+getLocalPathAndName()+"': No Data.");
+			return false;
+		}
+		if((localFile.isDirectory())||(!mayAccess))
+		{
+			Log.errOut("CMFile","Access error saving file '"+getLocalPathAndName()+"'.");
+			return false;
+		}
+
+		//StringBuffer O=saveBufNormalize((data instanceof StringBuffer)?data:new StringBuffer(data));
+		FileOutputStream FW = null;
+		try
+		{
+			ByteBuffer O=outCharSet.encode(CharBuffer.wrap(data));
+			FW=new FileOutputStream(localFile,append);
+			FileChannel FC=FW.getChannel();
+			FC.write(O);
+			FW.close();
+			FW=null;
+			return true;
+		}
+		catch(IOException e)
+		{
+			Log.errOut("CMFile","Error Saving '"+getIOReadableLocalPathAndName()+"': "+e.getMessage());
+		}
+		finally
+		{
+			if ( FW != null )
+				try
+				{
+					FW.close();
+					FW = null;
+				}
+				catch ( final IOException ignore ) { }
 		}
 		return false;
 	}
@@ -506,99 +501,63 @@ public class CMFile
 			Log.errOut("CMFile","File exists '"+getLocalPathAndName()+"'.");
 			return false;
 		}
-		if(!canWrite())
+		if(!mayAccess)
 		{
 			Log.errOut("CMFile","Access error making directory '"+getLocalPathAndName()+"'.");
 			return false;
 		}
-		String fullPath=getIOReadableLocalPathAndName();
-		File F=new File(fullPath);
-		File PF=F.getParentFile();
-		Vector parents=new Vector();
-		while(PF!=null)
-		{
-			parents.addElement(PF);
-			PF=PF.getParentFile();
-		}
-		for(int p=parents.size()-1;p>=0;p--)
-		{
-			PF=(File)parents.elementAt(p);
-			if((PF.exists())&&(PF.isDirectory())) continue;
-			if((PF.exists()&&(!PF.isDirectory()))||(!PF.mkdir()))
-			{
-				Log.errOut("CMFile","Unable to mkdir '"+PF.getAbsolutePath()+"'.");
-				return false;
-			}
-		}
-		if(F.exists())
-		{
-			Log.errOut("CMFile","File exists '"+fullPath+"'.");
-			return false;
-		}
-		if(F.mkdir())
-		{
-			vfsBits.remove(Flags.NOREADLOCAL);
-			vfsBits.add(Flags.DIRECTORY);
-			vfsBits.remove(Flags.NOWRITELOCAL);
+		if(localFile.mkdirs())
 			return true;
-		}
+		Log.errOut("CMFile","Unable to mkdir '"+localFile.getAbsolutePath()+"'.");
 		return false;
 	}
 
 	public String[] list()
 	{
-		if(!isDirectory()) return new String[0];
-		CMFile[] CF=listFiles();
-		String[] list=new String[CF.length];
-		for(int f=0;f<CF.length;f++)
-			list[f]=CF[f].getName();
-		return list;
-	}
-
-	public boolean isLocalDirectory()
-	{
-		return (localFile!=null)&&(localFile.isDirectory());
+		return localFile.list();
 	}
 
 	public CMFile[] listFiles()
 	{
-		if((!isDirectory())||(!canRead()))
-			return new CMFile[0];
-		String prefix="//";
-		Vector dir=new Vector();
-		Vector fcheck=new Vector();
-		String thisDir=getIOReadableLocalPathAndName();
-		File F=new File(thisDir);
-		if(F.isDirectory())
+		File[] list=localFile.listFiles();
+		if(list==null) return null;
+		CMFile[] finalDir=new CMFile[list.length];
+		File F2;
+		String subPath=getVFSPathAndName()+"/";
+		for(int i=0;i<list.length;i++)
 		{
-			File[] list=F.listFiles();
-			File F2=null;
-			for(int l=0;l<list.length;l++)
-			{
-				F2=list[l];
-				String thisPath=vfsifyFilename(thisDir)+"/"+F2.getName();
-				String thisName=F2.getName();
-				CMFile CF=new CMFile(prefix+thisPath,accessor,false);
-				if((CF.canRead())
-				&&(!fcheck.contains(thisName.toUpperCase())))
-					dir.addElement(CF);
-			}
+			F2=list[i];
+			CMFile CF=new CMFile(subPath+F2.getName(),accessor,false);
+			finalDir[i]=CF;
 		}
-
-		CMFile[] finalDir=new CMFile[dir.size()];
-		for(int f=0;f<dir.size();f++)
-			finalDir[f]=(CMFile)dir.elementAt(f);
 		return finalDir;
 	}
 
+	public static String localizeFilename(String filename)
+	{
+		filename=filename.trim();
+		if(filename.startsWith("//"))
+			filename=filename.substring(2);
+		if((filename.length()>2)
+		&&(Character.isLetter(filename.charAt(0))
+		&&(filename.charAt(1)==':')))
+			filename=filename.substring(2);
+		while(filename.startsWith("/")) filename=filename.substring(1);
+		while(filename.startsWith("\\")) filename=filename.substring(1);
+		while(filename.endsWith("/"))
+			filename=filename.substring(0,filename.length()-1);
+		while(filename.endsWith("\\"))
+			filename=filename.substring(0,filename.length()-1);
+		if(pathSeparator=='\\')
+			return filename.replace('/',pathSeparator);
+		return filename.replace('\\',pathSeparator);
+	}
 	public static String vfsifyFilename(String filename)
 	{
 		filename=filename.trim();
-		if(filename.startsWith("::"))
-			filename=filename.substring(2);
 		if(filename.startsWith("//"))
 			filename=filename.substring(2);
-		if((filename.length()>3)
+		if((filename.length()>2)
 		&&(Character.isLetter(filename.charAt(0))
 		&&(filename.charAt(1)==':')))
 			filename=filename.substring(2);
@@ -611,6 +570,7 @@ public class CMFile
 		return filename.replace(pathSeparator,'/');
 	}
 
+	//Converts all ends of lines to \n. Efficient/standardized file saving I guess.
 	private StringBuffer saveBufNormalize(StringBuffer myRsc)
 	{
 		for(int i=0;i<myRsc.length();i++)
@@ -627,48 +587,7 @@ public class CMFile
 		return myRsc;
 	}
 
-	private static String incorporateBaseDir(String currentPath, String filename)
-	{
-		String starter="";
-		if(filename.startsWith("::")||filename.startsWith("//"))
-		{
-			starter=filename.substring(0,2);
-			filename=filename.substring(2);
-		}
-		if(!filename.startsWith("/"))
-		{
-			boolean didSomething=true;
-			while(didSomething)
-			{
-				didSomething=false;
-				if(filename.startsWith(".."))
-				{
-					filename=filename.substring(2);
-					int x=currentPath.lastIndexOf("/");
-					if(x>=0)
-						currentPath=currentPath.substring(0,x);
-					else
-						currentPath="";
-					didSomething=true;
-				}
-				if((filename.startsWith("."))&&(!(filename.startsWith(".."))))
-				{
-					filename=filename.substring(1);
-					didSomething=true;
-				}
-				while(filename.startsWith("/")) filename=filename.substring(1);
-			}
-			if((currentPath.length()>0)&&(filename.length()>0))
-				filename=currentPath+"/"+filename;
-			else
-			if(currentPath.length()>0)
-				filename=currentPath;
-		}
-		return starter+filename;
-	}
-
-	public static CMFile[] getFileList(String currentPath, String filename, MOB user, boolean recurse, boolean expandDirs)
-	{ return getFileList(incorporateBaseDir(currentPath,filename),user,recurse,expandDirs);}
+/*	//Not used at the moment, can't think of when I'd use it, so disabling it for the time being.
 	public static CMFile[] getFileList(String parse, MOB user, boolean recurse, boolean expandDirs)
 	{
 		CMFile dirTest=new CMFile(parse,user,false);
@@ -735,4 +654,5 @@ public class CMFile
 			cset[s]=(CMFile)set.elementAt(s);
 		return cset;
 	}
+*/
 }

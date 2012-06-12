@@ -24,13 +24,11 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Sounds extends StdCommand
 {
-	public Sounds(){}
+	public Sounds(){access=new String[]{"SOUNDS","MSP"};}
 
-	private String[] access={"SOUNDS","MSP"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
+/*
 		PlayerStats ps=mob.playerStats();
 		if(ps==null) return false;
 		if(commands.size()>1)
@@ -48,13 +46,13 @@ public class Sounds extends StdCommand
 					if(mob.session().clientTelnetMode(Session.TELNET_MSP))
 					{
 						mob.playerStats().setBitmap(mob.playerStats().getBitmap()|PlayerStats.ATT_SOUND);
-						mob.tell("MSP Sound/Music enabled.\n\r");
+						mob.tell("MSP Sound/Music enabled.\r\n");
 					}
 					else
 						mob.tell("Your client does not appear to support MSP.");
 				}
 				else
-					mob.tell("MSP Sound/Music is already enabled.\n\r");
+					mob.tell("MSP Sound/Music is already enabled.\r\n");
 				return false;
 			}
 			else if(((String)commands.get(1)).equalsIgnoreCase("off"))
@@ -64,18 +62,21 @@ public class Sounds extends StdCommand
 					mob.playerStats().setBitmap(mob.playerStats().getBitmap()&~PlayerStats.ATT_SOUND);
 					mob.session().changeTelnetMode(Session.TELNET_MSP,false);
 					mob.session().setClientTelnetMode(Session.TELNET_MSP,false);
-					mob.tell("MSP Sound/Music disabled.\n\r");
+					mob.tell("MSP Sound/Music disabled.\r\n");
 				}
 				else
-					mob.tell("MSP Sound/Music already disabled.\n\r");
+					mob.tell("MSP Sound/Music already disabled.\r\n");
 				return false;
 			}
 		}
-		mob.tell(((ps.getBitmap()&PlayerStats.ATT_SOUND)>0)?("MSP Sound/Music is currently enabled.\n\r"):("MSP Sound/Music is currently disabled.\n\r"));
-		mob.tell("Use 'sounds on' or 'sounds off' to set.\n\r");
+		mob.tell(((ps.getBitmap()&PlayerStats.ATT_SOUND)>0)?("MSP Sound/Music is currently enabled.\r\n"):("MSP Sound/Music is currently disabled.\r\n"));
+		mob.tell("Use 'sounds on' or 'sounds off' to set.\r\n");
+*/
+		mob.tell("MSP is currently disabled in this MUD.");
 		return false;
 	}
 
+	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	public boolean canBeOrdered(){return true;}
 	public boolean securityCheck(MOB mob){return super.securityCheck(mob)&&(!CMSecurity.isDisabled("MSP"));}
 }

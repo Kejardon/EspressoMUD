@@ -53,8 +53,7 @@ public interface TimeClock extends Tickable, CMCommon, CMSavable, CMModifiable
 	public void setDaysInWeek(String[] days);
 	public String[] getYearNames();
 	public void setYearNames(String[] years);
-	public String deriveEllapsedTimeString(long millis);
-	public void initializeINIClock(CMProps page);
+	//public String deriveEllapsedTimeString(long millis);
 
 	public final static String[] TOD_DESC={
 		"It is dawn ","It is daytime ","It is dusk ","It is nighttime "

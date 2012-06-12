@@ -24,17 +24,15 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Exits extends StdCommand
 {
-	public Exits(){}
+	public Exits(){access=new String[]{"EXITS","EX"};}
 
-	private String[] access={"EXITS","EX"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		if(mob.location()!=null)
 			CMLib.commands().lookAtExits(mob.location(),mob);
 		return false;
 	}
-	
+
+	public int commandType(MOB mob, String cmds){return CT_NON_ACTION;}
 	public boolean canBeOrdered(){return true;}
 }

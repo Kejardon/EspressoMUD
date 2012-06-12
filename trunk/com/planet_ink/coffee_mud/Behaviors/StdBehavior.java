@@ -9,11 +9,13 @@ import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
 import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -28,11 +30,13 @@ public class StdBehavior implements Behavior
 	protected Behavable behaver=null;
 	protected String parms="";
 
-	protected long lastTick=0;
+	//protected long lastTick=0;
 	protected Tickable.TickStat tickStatus=Tickable.TickStat.Not;
+	protected int tickCount=0;
 	protected EnumSet<ListenHolder.Flags> lFlags=EnumSet.noneOf(ListenHolder.Flags.class);
 	
 	protected int saveNum=0;
+	protected boolean amDestroyed=false;
 
 	public String ID(){return "StdBehavior";}
 	public String name(){return ID();}
@@ -45,30 +49,17 @@ public class StdBehavior implements Behavior
 	{if(behaver instanceof ListenHolder) behaver.addListener(this, lFlags);}
 	public void clearAllListeners()
 	{if(behaver instanceof ListenHolder) behaver.removeListener(this, lFlags);}
-	public void affectEnvStats(Environmental affectedEnv, EnvStats affectableStats)
-	{}
-	public void affectCharStats(CMObject affected, CharStats affectableStats)
-	{}
+	public void affectEnvStats(Environmental affectedEnv, EnvStats affectableStats){}
+	public void affectCharStats(CMObject affected, CharStats affectableStats){}
 
-	public StdBehavior()
-	{
-		super();
-	}
+	public StdBehavior() {}
 
 	public Behavable behaver(){return behaver;}
 
-	/** return a new instance of the object*/
-	public CMObject newInstance()
+	public CMObject newInstance() { return new StdBehavior(); }
+	public void cloneFix(StdBehavior E)
 	{
-		try
-		{
-			return (Behavior)this.getClass().newInstance();
-		}
-		catch(Exception e)
-		{
-			Log.errOut(ID(),e);
-		}
-		return new StdBehavior();
+		//parms=E.getParms();	//Not actually necessary as Strings are immutable
 	}
 	public CMObject copyOf()
 	{
@@ -76,16 +67,20 @@ public class StdBehavior implements Behavior
 		{
 			StdBehavior B=(StdBehavior)this.clone();
 			B.saveNum=0;
-			B.setParms(getParms());
+			B.cloneFix(this);
 			return B;
 		}
-		catch(CloneNotSupportedException e)
-		{
-			return new StdBehavior();
-		}
+		catch(CloneNotSupportedException e) { return newInstance(); }
 	}
-	public void startBehavior(Behavable forMe){behaver=forMe; if(behaver==null) CMLib.database().deleteObject(this);}
-	protected void finalize(){}
+	public void startBehavior(Behavable forMe)
+	{
+		clearAllListeners();
+		behaver=forMe;
+		if(behaver==null)
+			destroy();
+		else
+			registerAllListeners();
+	}
 	public String getParms(){return parms;}
 	public void setParms(String parameters){parms=parameters; CMLib.database().saveObject(this); }
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
@@ -100,18 +95,32 @@ public class StdBehavior implements Behavior
 		return true;
 	}
 
-	public boolean tick(Tickable ticking, Tickable.TickID tickID)
+	public boolean tick(int tickTo)
 	{
-		lastTick=System.currentTimeMillis();
+		if(tickCount==0) tickCount=tickTo-1;
+		while(tickCount<tickTo)
+		{
+			tickCount++;
+			if(!doTick()) {lFlags.remove(ListenHolder.Flags.TICK); tickCount=0; return false;}
+		}
 		return true;
 	}
-	public long lastAct(){return 0;}	//No Action ticks
-	public long lastTick(){return lastTick;}
+	public int tickCounter(){return tickCount;}
+	public void tickAct(){}
+	protected boolean doTick(){return false;}
+//	public long lastAct(){return 0;}	//No Action ticks
+	//public long lastTick(){return lastTick;}
 
 	public void destroy()
 	{
-		//TODO
-		CMLib.database().deleteObject(this);
+		amDestroyed=true;
+		clearAllListeners();
+		if(saveNum!=0)
+			CMLib.database().deleteObject(this);
+	}
+	public boolean amDestroyed()
+	{
+		return amDestroyed;
 	}
 
 	//CMModifiable and CMSavable
@@ -121,11 +130,11 @@ public class StdBehavior implements Behavior
 	public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
 	public int saveNum()
 	{
-		if((saveNum==0)&&(behaver!=null))
+		if((saveNum==0)&&(amDestroyed!=true))
 		synchronized(this)
 		{
 			if(saveNum==0)
-				saveNum=SIDLib.Objects.BEHAVIOR.getNumber(this);
+				saveNum=SIDLib.BEHAVIOR.getNumber(this);
 		}
 		return saveNum;
 	}
@@ -134,14 +143,15 @@ public class StdBehavior implements Behavior
 		synchronized(this)
 		{
 			if(saveNum!=0)
-				SIDLib.Objects.BEHAVIOR.removeNumber(saveNum);
+				SIDLib.BEHAVIOR.removeNumber(saveNum);
 			saveNum=num;
-			SIDLib.Objects.BEHAVIOR.assignNumber(num, this);
+			SIDLib.BEHAVIOR.assignNumber(num, this);
 		}
 	}
 	public boolean needLink(){return false;}
 	public void link(){}
 	public void saveThis(){CMLib.database().saveObject(this);}
+	public void prepDefault(){}
 
 	private enum SCode implements CMSavable.SaveEnum{
 		PRM(){
@@ -166,13 +176,11 @@ public class StdBehavior implements Behavior
 		public String brief(CMModifiable fromThis){return brief((StdBehavior)fromThis);}
 		public String prompt(CMModifiable fromThis){return prompt((StdBehavior)fromThis);}
 		public void mod(CMModifiable toThis, MOB M){mod((StdBehavior)toThis, M);} }
-
+/*
 	public boolean sameAs(Behavior E)
 	{
 		if(!(E instanceof StdBehavior)) return false;
-//		for(int i=0;i<CODES.length;i++)
-//			if(!E.getStat(CODES[i]).equals(getStat(CODES[i])))
-//				return false;
 		return true;
 	}
+*/
 }

@@ -24,25 +24,20 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public class Boot extends StdCommand
 {
-	public Boot(){}
+	public Boot(){access=new String[]{"BOOT"};}
 
-	private String[] access={"BOOT"};
-	public String[] getAccessWords(){return access;}
-	public boolean execute(MOB mob, Vector commands, int metaFlags)
-		throws java.io.IOException
+	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
-		commands.removeElementAt(0);
 		if(mob.session()==null) return false;
-		if(commands.size()==0)
+		if(commands.size()<=1)
 		{
 			mob.tell("Boot out who?");
 			return false;
 		}
-		String whom=CMParms.combine(commands,0);
+		String whom=CMParms.combine(commands,1);
 		boolean boot=false;
-		for(int s=0;s<CMLib.sessions().size();s++)
+		for(Session S : CMLib.sessions().toArray())
 		{
-			Session S=CMLib.sessions().elementAt(s);
 			if(((S.mob()!=null)&&(CMLib.english().containsString(S.mob().name(),whom)))
 			||(S.getAddress().equalsIgnoreCase(whom)))
 			{
@@ -54,13 +49,13 @@ public class Boot extends StdCommand
 				if(S.mob()!=null)
 				{
 					mob.tell("You boot "+S.mob().name());
-					if(S.mob().location()!=null)
-						S.mob().location().show(S.mob(),null,null,EnumSet.of(CMMsg.MsgCode.VISUAL),"Something is happening to <S-NAME>.");
+//					if(S.mob().location()!=null)
+//						S.mob().location().show(S.mob(),null,null,EnumSet.of(CMMsg.MsgCode.VISUAL),"Something is happening to <S-NAME>.");
 				}
 				else
 					mob.tell("You boot "+S.getAddress());
-				S.kill(false,false,false);
-				if(((S.previousCMD()==null)||(S.previousCMD().size()==0))
+				S.kill(false);
+				if(((S.previousCMD()==null)||(S.previousCMD().length()==0))
 				&&(!CMLib.flags().isInTheGame(S.mob(),true)))
 					CMLib.sessions().stopSessionAtAllCosts(S);
 				boot=true;
@@ -71,7 +66,8 @@ public class Boot extends StdCommand
 			mob.tell("You can't find anyone by that name or ip address.");
 		return false;
 	}
-	
+
+	public int commandType(MOB mob, String cmds){return CT_NON_ACTION;}
 	public boolean canBeOrdered(){return true;}
-	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,mob.location(),"BOOT");}
+	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,"BOOT");}
 }
