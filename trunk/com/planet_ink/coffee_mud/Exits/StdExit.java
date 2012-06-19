@@ -32,6 +32,12 @@ public class StdExit implements Exit
 	protected String name="an ordinary pathway";
 	protected String display="an open passage to another place.";
 	protected String desc="";
+	protected String plainName;
+	protected String plainNameOf;
+	protected String plainDisplay;
+	protected String plainDisplayOf;
+	protected String plainDesc;
+	protected String plainDescOf;
 	protected boolean visible=true;
 
 	protected EnumSet<ListenHolder.Flags> lFlags=EnumSet.of(ListenHolder.Flags.OK,ListenHolder.Flags.EXC);
@@ -85,10 +91,49 @@ public class StdExit implements Exit
 
 	public void initializeClass(){}
 	public String name(){ return name;}
+	public String plainName()
+	{
+		if(name==plainNameOf)
+			return plainName;
+		String newName=name;
+		String newPlain=CMLib.coffeeFilter().toRawString(newName);
+		synchronized(this)
+		{
+			plainName=newPlain;
+			plainNameOf=newName;
+		}
+		return newPlain;
+	}
 	public void setName(String newName){name=newName; CMLib.database().saveObject(this);}
 	public String displayText(){return display;}
+	public String plainDisplayText()
+	{
+		if(display==plainDisplayOf)
+			return plainDisplay;
+		String newDisplay=display;
+		String newPlain=CMLib.coffeeFilter().toRawString(newDisplay);
+		synchronized(this)
+		{
+			plainDisplay=newPlain;
+			plainDisplayOf=newDisplay;
+		}
+		return newPlain;
+	}
 	public void setDisplayText(String newDisplayText){display=newDisplayText; CMLib.database().saveObject(this);}
 	public String description(){return desc;}
+	public String plainDescription()
+	{
+		if(desc==plainDescOf)
+			return plainDesc;
+		String newDesc=desc;
+		String newPlain=CMLib.coffeeFilter().toRawString(newDesc);
+		synchronized(this)
+		{
+			plainDesc=newPlain;
+			plainDescOf=newDesc;
+		}
+		return newPlain;
+	}
 	public void setDescription(String newDescription){desc=newDescription; CMLib.database().saveObject(this);}
 
 	public void destroy()

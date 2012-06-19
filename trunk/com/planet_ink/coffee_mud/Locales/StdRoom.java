@@ -38,6 +38,12 @@ public class StdRoom implements Room
 	protected String name="the room";
 	protected String display="Standard Room";
 	protected String desc="";
+	protected String plainName;
+	protected String plainNameOf;
+	protected String plainDisplay;
+	protected String plainDisplayOf;
+	protected String plainDesc;
+	protected String plainDescOf;
 	protected Area myArea=null;
 	protected CopyOnWriteArrayList<REMap> exits=new CopyOnWriteArrayList();
 	protected AtomicReference<Thread> activeThread=new AtomicReference<Thread>();
@@ -90,11 +96,50 @@ public class StdRoom implements Room
 			synchronized(this){if(myEnvironmental==null) myEnvironmental=(Environmental)((Ownable)CMClass.COMMON.getNew("DefaultEnvironmental")).setOwner(this);}
 		return myEnvironmental;
 	}
-	public void setName(String newName){name=newName; CMLib.database().saveObject(this);}
 	public String name(){ return name;}
+	public String plainName()
+	{
+		if(name==plainNameOf)
+			return plainName;
+		String newName=name;
+		String newPlain=CMLib.coffeeFilter().toRawString(newName);
+		synchronized(this)
+		{
+			plainName=newPlain;
+			plainNameOf=newName;
+		}
+		return newPlain;
+	}
+	public void setName(String newName){name=newName; CMLib.database().saveObject(this);}
 	public String displayText(){return display;}
+	public String plainDisplayText()
+	{
+		if(display==plainDisplayOf)
+			return plainDisplay;
+		String newDisplay=display;
+		String newPlain=CMLib.coffeeFilter().toRawString(newDisplay);
+		synchronized(this)
+		{
+			plainDisplay=newPlain;
+			plainDisplayOf=newDisplay;
+		}
+		return newPlain;
+	}
 	public void setDisplayText(String newDisplayText){display=newDisplayText; CMLib.database().saveObject(this);}
 	public String description(){return desc;}
+	public String plainDescription()
+	{
+		if(desc==plainDescOf)
+			return plainDesc;
+		String newDesc=desc;
+		String newPlain=CMLib.coffeeFilter().toRawString(newDesc);
+		synchronized(this)
+		{
+			plainDesc=newPlain;
+			plainDescOf=newDesc;
+		}
+		return newPlain;
+	}
 	public void setDescription(String newDescription){desc=newDescription; CMLib.database().saveObject(this);}
 
 	protected void cloneFix(StdRoom E)
@@ -183,7 +228,9 @@ public class StdRoom implements Room
 	public REMap getREMap(String S)
 	{
 		//Definitely need TODO
-		return null;
+		REMap exit = (REMap)CMLib.english().fetchInteractable(exits.iterator(),S,true);
+		if(exit!=null) return exit;
+		return (REMap)CMLib.english().fetchInteractable(exits.iterator(),S,false);
 	}
 	public Iterator<REMap> getAllExits() { return exits.iterator(); }
 	public boolean changeExit(REMap R, Exit newExit)
@@ -420,7 +467,7 @@ public class StdRoom implements Room
 		if((V=msg.trailerHappens())!=null)
 		{
 			if(depth>30)
-				Log.errOut("Messages","Excessive message depth: "+msg.toString());
+				Log.errOut("Messages",new RuntimeException("Excessive message happens depth: "+msg.toString()));
 			else for(int i=0;i<V.size();i++)
 			{
 				CMMsg.TrailMessage msg2=V.get(i);
@@ -432,7 +479,7 @@ public class StdRoom implements Room
 		if((V=msg.trailerMsgs())!=null)
 		{
 			if(depth>30)
-				Log.errOut("Messages","Excessive message depth: "+msg.toString());
+				Log.errOut("Messages",new RuntimeException("Excessive message trail depth: "+msg.toString()));
 			else for(int i=0;i<V.size();i++)
 			{
 				CMMsg.TrailMessage msg2=V.get(i);
@@ -467,27 +514,29 @@ public class StdRoom implements Room
 			}
 			if(!gotLock)
 			{
-				Log.errOut("StdRoom","Failed to get roomlock in "+saveNum());
+				Log.errOut("StdRoom",new RuntimeException(myThread+" Failed to get roomlock in "+saveNum()+". "+activeThread.get()+"\r\n"+CMClass.getStackTrace(activeThread.get())));
 				return 2;
 			}
 			freshLock=true;
 			Log.errOut("StdRoom","A thread failed to return lock in timely fashion for "+saveNum());
 		}
-		else while((freshLock=!activeThread.compareAndSet(null, myThread))&&(activeThread.get()!=myThread))
+		else while(!(freshLock=activeThread.compareAndSet(null, myThread))&&(activeThread.get()!=myThread))
 			if(tries++<100)
 				try{myThread.sleep(10);}catch(InterruptedException e){}
 			else
 			{
-				Log.errOut("StdRoom","Failed to get roomlock in "+saveNum());
+				Log.errOut("StdRoom",new RuntimeException(myThread+" Failed to get roomlock in "+saveNum()+". "+activeThread.get()+"\r\n"+CMClass.getStackTrace(activeThread.get())));
 				return 2;
 			}
 		if(time>0)
 			lockTime=System.currentTimeMillis()+time;
+		//if(freshLock) Log.errOut("StdRoom",new RuntimeException(myThread+" got roomlock in "+saveNum()+". "));
 		return freshLock?1:0;
 	}
 	public void returnLock()
 	{
 		activeThread.compareAndSet(Thread.currentThread(), null);
+		//Log.errOut("StdRoom",new RuntimeException(Thread.currentThread()+" returned roomlock in "+saveNum()+". "));
 	}
 
 	public boolean doMessage(CMMsg msg)
@@ -924,7 +973,7 @@ public class StdRoom implements Room
 			public int size(){return 4;}
 			public void load(StdRoom E, ByteBuffer S){ E.areaToLink=S.getInt(); } },
 		INV(){
-			public ByteBuffer save(StdRoom E){ return (ByteBuffer)ByteBuffer.wrap(new byte[4]).putInt(E.inventory.saveNum()).rewind(); }
+			public ByteBuffer save(StdRoom E){ return (ByteBuffer)ByteBuffer.wrap(new byte[4]).putInt(E.getItemCollection().saveNum()).rewind(); }
 			public int size(){return 4;}
 			public void load(StdRoom E, ByteBuffer S){ E.itemCollectionToLoad=S.getInt(); } },
 		EFC(){

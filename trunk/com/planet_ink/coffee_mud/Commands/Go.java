@@ -56,6 +56,8 @@ public class Go extends StdCommand
 		try{
 			if((gotDepart!=2)&&(gotEntrance!=2))
 				nolook|=!thisRoom.doMessage(leaveMsg);
+			else
+				nolook=true;
 		}finally{
 			if(gotEntrance==1) destRoom.returnLock();
 			if(gotDepart==1) thisRoom.returnLock();

@@ -40,8 +40,11 @@ public class OpenExit implements Exit
 	public int saveNum(){return 1;}
 	public void initializeClass(){ SIDLib.EXIT.assignNumber(saveNum(), this); }
 	public String name(){ return "a wide open passage";}
+	public String plainName(){ return "a wide open passage";}
 	public String displayText(){return "a path to another place.";}
+	public String plainDisplayText(){return "a path to another place.";}
 	public String description(){return "";}
+	public String plainDescription(){return "";}
 	public void destroy(){}
 	public boolean amDestroyed(){return false;}
 	public void setVisible(boolean b){}
@@ -77,7 +80,7 @@ public class OpenExit implements Exit
 	public Effect fetchEffect(int index) { return null; }
 	public boolean hasEffect(Effect to) { return false; }
 	public Vector<Effect> fetchEffect(String ID) { return CMClass.emptyVector; }
-	public Iterator<Effect> allEffects() { return CMClass.emptyIterator; }
+	public Iterator<Effect> allEffects() { return Collections.emptyIterator(); }
 
 	//Behavable
 	public void addBehavior(Behavior to) { }
@@ -86,7 +89,7 @@ public class OpenExit implements Exit
 	public Behavior fetchBehavior(int index) { return null; }
 	public Behavior fetchBehavior(String ID) { return null; }
 	public boolean hasBehavior(String ID) { return false; }
-	public Iterator<Behavior> allBehaviors(){ return CMClass.emptyIterator; }
+	public Iterator<Behavior> allBehaviors(){ return Collections.emptyIterator(); }
 
 	//Affectable/Behavable shared
 	public CopyOnWriteArrayList<CharAffecter> charAffecters(){return null;}

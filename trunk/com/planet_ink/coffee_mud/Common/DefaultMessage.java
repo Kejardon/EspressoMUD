@@ -207,10 +207,9 @@ public class DefaultMessage implements CMMsg
 	}
 	public boolean handleResponses()
 	{
-		ListenHolder.MsgListener next=null;
 		if(responders!=null)
-		for(ListIterator<SortedList.SortableObject<ListenHolder.MsgListener>> L=responders.listIterator();L.hasNext();next=L.next().myObj)
-			if(!(next.respondTo(this)))
+		for(ListIterator<SortedList.SortableObject<ListenHolder.MsgListener>> L=responders.listIterator();L.hasNext();)
+			if(!(L.next().myObj.respondTo(this)))
 				return false;
 		return true;
 	}
@@ -306,9 +305,8 @@ public class DefaultMessage implements CMMsg
 		if(tools!=null)
 		for(int i=tools.size()-1;i>=0;i--)
 		{
-			output.append(tools.get(i).ID()+", "+sources.get(i).name());
+			output.append(tools.get(i).ID());
 			if(i!=0) output.append(", ");
-			
 		}
 		output.append('/');
 		for(MsgCode c : othersCode)

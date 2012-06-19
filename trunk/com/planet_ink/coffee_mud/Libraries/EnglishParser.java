@@ -333,10 +333,20 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 			s2++;
 		}
 	}
-	
+	public boolean containsRawString(String toSrchStr, String srchStr)
+	{
+		int len = srchStr.length();
+		if(len==0) return false;
+		int max = toSrchStr.length() - len;
+		for (int i = 0; i <= max; i++)
+			if(toSrchStr.regionMatches(true, i, srchStr, 0, srchStr.length()))
+				return true;
+		return false;
+	}
+
 	public boolean containsString(String toSrchStr, String srchStr)
 	{
-		return CMLib.coffeeFilter().toRawString(toSrchStr).toLowerCase().contains(srchStr.toLowerCase());
+		return containsRawString(CMLib.coffeeFilter().toRawString(toSrchStr), srchStr);
 
 		/*if((toSrchStr==null)||(srchStr==null)) return false;
 		if((toSrchStr.length()==0)&&(srchStr.length()>0)) return false;
@@ -508,7 +518,7 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 			for(int i=0;i<list.size();i++)
 			{
 				CMObject thisThang=list.get(i);
-				if(containsString(thisThang.ID(),flags.srchStr))
+				if(containsRawString(thisThang.ID(),flags.srchStr))
 					if((--flags.occurrance)<=0)
 						return thisThang;
 			}
@@ -536,7 +546,7 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 			while(list.hasNext())
 			{
 				CMObject thisThang=list.next();
-				if(containsString(thisThang.ID(),flags.srchStr))
+				if(containsRawString(thisThang.ID(),flags.srchStr))
 					if((--flags.occurrance)<=0)
 						return thisThang;
 			}
@@ -561,7 +571,7 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 		}
 		else
 		{
-			if(containsString(thisThang.name(),flags.srchStr)
+			if(containsRawString(thisThang.plainName(),flags.srchStr)
 			   &&((!flags.allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0))))
 			{
 				V.add(thisThang);
@@ -661,7 +671,7 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 		if(exact)
 			return (thing.ID().equalsIgnoreCase(name)||thing.name().equalsIgnoreCase(name));
 		else
-			return (containsString(thing.name(),name));
+			return (containsRawString(thing.plainName(),name));
 	}
 	protected Interactable thingCheck(Interactable thisThang, EnglishParsing.StringFlags flags, boolean exact, int maxDepth)
 	{
@@ -674,7 +684,7 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 		}
 		else
 		{
-			if(containsString(thisThang.name(),flags.srchStr)
+			if(containsRawString(thisThang.plainName(),flags.srchStr)
 			   &&((!flags.allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0))))
 				if((--flags.occurrance)<=0)
 					return thisThang;
@@ -750,7 +760,7 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 		{
 			int oldOccurrance=flags.occurrance;
 			for(Interactable thisThang : list)
-				if(containsString(thisThang.name(),flags.srchStr)
+				if(containsRawString(thisThang.plainName(),flags.srchStr)
 				   &&((!flags.allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0))))
 					if((--flags.occurrance)<=0)
 						matches.add(thisThang);
@@ -758,7 +768,7 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 			{
 				flags.occurrance=oldOccurrance;
 				for(Interactable thisThang : list)
-					if((containsString(thisThang.displayText(),flags.srchStr)
+					if((containsRawString(thisThang.plainDisplayText(),flags.srchStr)
 						||((thisThang instanceof MOB)&&containsString(((MOB)thisThang).genericName(),flags.srchStr))))
 							if((--flags.occurrance)<=0)
 								matches.add(thisThang);
@@ -791,14 +801,14 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 			int oldOccurrance=flags.occurrance;
 			for(Interactable thisThang : list)
 				if(   (thisThang!=null)
-					&&(containsString(thisThang.name(),flags.srchStr))
+					&&(containsRawString(thisThang.plainName(),flags.srchStr))
 					&&((!flags.allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0)))
 					&&((--flags.occurrance)<=0) )
 					return thisThang;
 			flags.occurrance=oldOccurrance;
 			for(Interactable thisThang : list)
 				if(   (thisThang!=null)
-					&&((containsString(thisThang.displayText(),flags.srchStr))
+					&&((containsRawString(thisThang.plainDisplayText(),flags.srchStr))
 						||((thisThang instanceof MOB)&&containsString(((MOB)thisThang).genericName(),flags.srchStr)))
 					&&((--flags.occurrance)<=0) )
 					return thisThang;

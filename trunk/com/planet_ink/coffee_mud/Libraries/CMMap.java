@@ -61,11 +61,14 @@ public class CMMap extends StdLibrary implements WorldMap
 		//public Room(){}
 		public CMObject newInstance(){return this;}
 		public Environmental getEnvObject() {return (Environmental)CMClass.COMMON.get("DefaultEnvironmental");}
-		public void setName(String newName){}
 		public String name(){ return "Limbo";}
+		public String plainName(){ return "Limbo";}
+		public void setName(String newName){}
 		public String displayText(){return "Nothing should be here. If there is, an archon should take care of it.";}
+		public String plainDisplayText(){return "Nothing should be here. If there is, an archon should take care of it.";}
 		public void setDisplayText(String newDisplayText){}
 		public String description(){return "";}
+		public String plainDescription(){return "";}
 		public void setDescription(String newDescription){}
 		public CMObject copyOf(){ return this; }
 		public int numExits() { return 0;}

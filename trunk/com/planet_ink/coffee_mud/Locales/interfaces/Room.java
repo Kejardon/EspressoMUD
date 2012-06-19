@@ -9,10 +9,14 @@ import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
+import java.nio.ByteBuffer;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.io.IOException;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -26,7 +30,7 @@ public interface Room extends ItemCollection.ItemHolder, Interactable, CMSavable
 {
 	//public static final EnumSet<CMMsg.MsgCode> showHappensSet=EnumSet.of(CMMsg.MsgCode.SHOWHAPPEN);
 	public static Room[] dummyRoomArray=new Room[0];
-	public static class REMap implements CMObject
+	public static class REMap implements Interactable
 	{
 		public final Room room;
 		public final Exit exit;
@@ -42,6 +46,52 @@ public interface Room extends ItemCollection.ItemHolder, Interactable, CMSavable
 		public CMObject copyOf(){return new REMap(room, exit);}
 		public void initializeClass(){}
 		public int compareTo(CMObject O){return -1;}
+
+		public String name(){return exit.name();}
+		public String plainName(){return exit.plainName();}
+		public void setName(String newName){}
+		public String displayText(){return exit.directLook(null, room);}
+		public String plainDisplayText(){return CMLib.coffeeFilter().toRawString(exit.directLook(null, room));}
+		public void setDisplayText(String newDisplayText){}
+		public String description(){return exit.description();}
+		public String plainDescription(){return exit.plainDescription();}
+		public void setDescription(String newDescription){}
+
+		public void addBehavior(Behavior to){}
+		public void delBehavior(Behavior to){}
+		public boolean hasBehavior(String ID){return false;}
+		public int numBehaviors(){return 0;}
+		public Behavior fetchBehavior(int index){return null;}
+		public Behavior fetchBehavior(String ID){return null;}
+		public Iterator<Behavior> allBehaviors(){return Collections.emptyIterator();}
+
+		public void addEffect(Effect to){}
+		public void delEffect(Effect to){}
+		public boolean hasEffect(Effect to){return false;}
+		public int numEffects(){return 0;}
+		public Effect fetchEffect(int index){return null;}
+		public Vector<Effect> fetchEffect(String ID){return CMClass.emptyVector;}
+		public Iterator<Effect> allEffects(){return Collections.emptyIterator();}
+
+		public CopyOnWriteArrayList<CharAffecter> charAffecters(){return null;}
+		public CopyOnWriteArrayList<EnvAffecter> envAffecters(){return null;}
+		public CopyOnWriteArrayList<OkChecker> okCheckers(){return null;}
+		public CopyOnWriteArrayList<ExcChecker> excCheckers(){return null;}
+		public CopyOnWriteArrayList<TickActer> tickActers(){return null;}
+		public void removeListener(Listener oldAffect, EnumSet flags){}
+		public void addListener(Listener newAffect, EnumSet flags){}
+		public void registerListeners(ListenHolder forThis){}
+		public void registerAllListeners(){}
+		public void clearAllListeners(){}
+		public int priority(ListenHolder forThis){return 0;}
+		public EnumSet<ListenHolder.Flags> listenFlags() {return EnumSet.noneOf(ListenHolder.Flags.class);}
+		public Environmental getEnvObject(){return null;}
+		public Tickable.TickStat getTickStatus(){return Tickable.TickStat.Not;}
+		public boolean tick(int tickTo){return false;}
+		public int tickCounter(){return 0;}
+		public boolean respondTo(CMMsg msg){return true;}
+		public boolean okMessage(OkChecker myHost, CMMsg msg){return true;}
+		public void executeMsg(ExcChecker myHost, CMMsg msg){return;}
 	}
 	public enum Domain
 	{

@@ -406,10 +406,10 @@ public class MUD extends Thread implements MudHost
 		CMProps.Strings.MUDSTATUS.setProperty("Shutting down...Notifying Objects");
 		MOB mob=null;
 		if(S!=null) mob=S.mob();
-		CMMsg msg=CMClass.getMsg(mob,null,null,EnumSet.of(CMMsg.MsgCode.SHUTDOWN),null);
-		for(Iterator<Room> r=CMLib.map().rooms();r.hasNext();)
-			r.next().send(msg);
-		msg.returnMsg();
+		//CMMsg msg=CMClass.getMsg(mob,null,null,EnumSet.of(CMMsg.MsgCode.SHUTDOWN),null);
+		//for(Iterator<Room> r=CMLib.map().rooms();r.hasNext();)
+		//	r.next().send(msg);
+		//msg.returnMsg();
 		if(S!=null)S.println("done");
 		if(S!=null)S.println("Save thread stopped");
 		CMProps.Strings.MUDSTATUS.setProperty("Shutting down...Session Thread");

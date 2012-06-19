@@ -40,8 +40,8 @@ public class CMClass extends ClassLoader
 	public static final byte[] dummybyteArray=new byte[0];
 
 	public static final Vector emptyVector=new Vector();
-	public static final Enumeration emptyEnumeration=emptyVector.elements();
-	public static final Iterator emptyIterator=emptyVector.iterator();
+	//public static final Enumeration emptyEnumeration=emptyVector.elements();
+	//public static final Iterator emptyIterator=emptyVector.iterator();
 
 	public static final ExecutorService threadPool=Executors.newCachedThreadPool();	//Gotta put it somewhere, here's a good spot
 	protected static boolean debugging=false;
@@ -129,19 +129,19 @@ public class CMClass extends ClassLoader
 		public int size(){return options.size();}
 		public Iterator<U> all(){ return options.values().iterator(); }
 	}
-	public static final Objects<Race> RACE=new Objects<Race>(Race.class, "RACE"){};
 	public static final Objects<Gender> GENDER=new Objects<Gender>(Gender.class, "GENDER"){};
-	public static final Objects<MOB> CREATURE=new Objects<MOB>(MOB.class, "MOB"){};
-	public static final Objects<CMCommon> COMMON=new Objects<CMCommon>(CMCommon.class, "COMMON"){};
-	public static final Objects<Room> LOCALE=new Objects<Room>(Room.class, "LOCALE"){};
-	public static final Objects<Exit> EXIT=new Objects<Exit>(Exit.class, "EXIT"){};
-	public static final Objects<Closeable> CLOSEABLE=new Objects<Closeable>(Closeable.class, "CLOSEABLE"){};
-	public static final Objects<Item> ITEM=new Objects<Item>(Item.class, "ITEM"){};
-	public static final Objects<Weapon> WEAPON=new Objects<Weapon>(Weapon.class, "WEAPON"){};
-	public static final Objects<Wearable> WEARABLE=new Objects<Wearable>(Wearable.class, "WEARABLE"){};
+	public static final Objects<Race> RACE=new Objects<Race>(Race.class, "RACE"){};
 	public static final Objects<Effect> EFFECT=new Objects<Effect>(Effect.class, "EFFECT"){};
+	public static final Objects<Room> LOCALE=new Objects<Room>(Room.class, "LOCALE"){};
+	public static final Objects<MOB> CREATURE=new Objects<MOB>(MOB.class, "MOB"){};
+	public static final Objects<Exit> EXIT=new Objects<Exit>(Exit.class, "EXIT"){};
 	public static final Objects<Behavior> BEHAVIOR=new Objects<Behavior>(Behavior.class, "BEHAVIOR"){};
 	public static final Objects<Area> AREA=new Objects<Area>(Area.class, "AREA"){};
+	public static final Objects<Closeable> CLOSEABLE=new Objects<Closeable>(Closeable.class, "CLOSEABLE"){};
+	public static final Objects<CMCommon> COMMON=new Objects<CMCommon>(CMCommon.class, "COMMON"){};
+	public static final Objects<Wearable> WEARABLE=new Objects<Wearable>(Wearable.class, "WEARABLE"){};
+	public static final Objects<Weapon> WEAPON=new Objects<Weapon>(Weapon.class, "WEAPON"){};
+	public static final Objects<Item> ITEM=new Objects<Item>(Item.class, "ITEM"){};
 	public static final Objects<Command> COMMAND=new Objects<Command>(Command.class, "COMMAND"){
 		private HashMap<String, Command> commandWordsMap=new HashMap<String, Command>();
 		private HashMap<String, Command> tempWordsMap=new HashMap<String, Command>();
@@ -233,12 +233,13 @@ public class CMClass extends ClassLoader
 		if(O instanceof Exit) return EXIT;
 		if(O instanceof Behavior) return BEHAVIOR;
 		if(O instanceof Area) return AREA;
-		if(O instanceof CMLibrary) return LIBRARY;
+		if(O instanceof Closeable) return CLOSEABLE;
 		if(O instanceof CMCommon) return COMMON;
-		if(O instanceof Command) return COMMAND;
 		if(O instanceof Wearable) return WEARABLE;
 		if(O instanceof Weapon) return WEAPON;
 		if(O instanceof Item) return ITEM;
+		if(O instanceof Command) return COMMAND;
+		if(O instanceof CMLibrary) return LIBRARY;
 		return null;
 	}
 
@@ -317,6 +318,8 @@ public class CMClass extends ClassLoader
 	{
 		if(MSGS_CACHE.size()<10000)
 		{
+			//if(MSGS_CACHE.remove(msg))
+			//	Log.errOut("CMClass",new RuntimeException("Returned an already cached message!"));
 			MSGS_CACHE.add(msg);	//This should be ok without synchronization, really.
 			return true;
 		}
@@ -330,7 +333,7 @@ public class CMClass extends ClassLoader
 		{
 			int i=MSGS_CACHE.size();
 			if(i==0)
-				msg=(CMMsg)COMMON.get("DefaultMessage");
+				msg=(CMMsg)COMMON.getNew("DefaultMessage");
 			else
 				msg=MSGS_CACHE.remove(i-1);
 		}
@@ -599,13 +602,14 @@ public class CMClass extends ClassLoader
 		return null;
 	}
 
+	//Currently this order is important because of dependancies. I don't like that, would like to fix that later.
 	public static boolean loadClasses()
 	{
 		try
 		{
 			String prefix="com/planet_ink/coffee_mud/";
 			debugging=CMSecurity.isDebugging("CLASSLOADER");
-			
+
 			Objects O=LIBRARY;
 			loadListToObj(O, prefix+"Libraries/", O.ancestor(), false);
 			if(O.size()==0) return false;
@@ -614,10 +618,6 @@ public class CMClass extends ClassLoader
 				Log.errOut("CMClass","Fatal Error: libraries are unregistered: "+CMLib.unregistered().substring(0,CMLib.unregistered().length()-2));
 				return false;
 			}
-
-			O=COMMON;
-			loadListToObj(O, prefix+"Common/", O.ancestor(), false);
-			if(O.size()==0) return false;
 
 			O=GENDER;
 			loadListToObj(O, prefix+"Races/Genders/", O.ancestor(), false);
@@ -629,26 +629,6 @@ public class CMClass extends ClassLoader
 			Log.sysOut(Thread.currentThread().getName(),"Races loaded      : "+O.size());
 			if(O.size()==0) return false;
 
-			O=CREATURE;
-			loadListToObj(O, prefix+"MOBS/", O.ancestor(), false);
-			Log.sysOut(Thread.currentThread().getName(),"MOB Types loaded  : "+O.size());
-			if(O.size()==0) return false;
-
-			O=EXIT;
-			loadListToObj(O, prefix+"Exits/", O.ancestor(), false);
-			Log.sysOut(Thread.currentThread().getName(),"Exit Types loaded : "+O.size());
-			if(O.size()==0) return false;
-
-			O=AREA;
-			loadListToObj(O, prefix+"Areas/", O.ancestor(), false);
-			Log.sysOut(Thread.currentThread().getName(),"Area Types loaded : "+O.size());
-			if(O.size()==0) return false;
-
-			O=LOCALE;
-			loadListToObj(O, prefix+"Locales/", O.ancestor(), false);
-			Log.sysOut(Thread.currentThread().getName(),"Locales loaded    : "+O.size());
-			if(O.size()==0) return false;
-
 			O=EFFECT;
 			loadListToObj(O, prefix+"Effects/", O.ancestor(), false);
 			loadListToObj(O, prefix+"Effects/Languages/", O.ancestor(), false);
@@ -656,24 +636,52 @@ public class CMClass extends ClassLoader
 			Log.sysOut(Thread.currentThread().getName(),"Effects loaded    : "+O.size());
 			if(O.size()==0) return false;
 
-			O=ITEM;
-			loadListToObj(O, prefix+"Items/Basic/", O.ancestor(), false);
-			Log.sysOut(Thread.currentThread().getName(),"Basic Items loaded: "+O.size());
+			O=LOCALE;
+			loadListToObj(O, prefix+"Locales/", O.ancestor(), false);
+			Log.sysOut(Thread.currentThread().getName(),"Locales loaded    : "+O.size());
+			if(O.size()==0) return false;
 
-			O=WEAPON;
-			loadListToObj(O, prefix+"Items/Weapons/", O.ancestor(), false);
-			Log.sysOut(Thread.currentThread().getName(),"Weapons loaded    : "+O.size());
+			O=BEHAVIOR;
+			loadListToObj(O, prefix+"Behaviors/", O.ancestor(), false);
+			Log.sysOut(Thread.currentThread().getName(),"Behaviors loaded  : "+O.size());
+			if(O.size()==0) return false;
+
+			O=AREA;
+			loadListToObj(O, prefix+"Areas/", O.ancestor(), false);
+			Log.sysOut(Thread.currentThread().getName(),"Area Types loaded : "+O.size());
+			if(O.size()==0) return false;
+
+			O=CLOSEABLE;
+			loadListToObj(O, prefix+"Common/Closeable/", O.ancestor(), false);
+			Log.sysOut(Thread.currentThread().getName(),"Closeables loaded : "+O.size());
+
+			O=COMMON;
+			loadListToObj(O, prefix+"Common/", O.ancestor(), false);
+			if(O.size()==0) return false;
 
 			O=WEARABLE;
 			loadListToObj(O, prefix+"Items/Armor/", O.ancestor(), false);
 			Log.sysOut(Thread.currentThread().getName(),"Armor loaded      : "+O.size());
 
+			O=WEAPON;
+			loadListToObj(O, prefix+"Items/Weapons/", O.ancestor(), false);
+			Log.sysOut(Thread.currentThread().getName(),"Weapons loaded    : "+O.size());
+
+			O=ITEM;
+			loadListToObj(O, prefix+"Items/Basic/", O.ancestor(), false);
+			Log.sysOut(Thread.currentThread().getName(),"Basic Items loaded: "+O.size());
+
 			if((ITEM.size()+WEAPON.size()+WEARABLE.size())==0)
 				return false;
 
-			O=BEHAVIOR;
-			loadListToObj(O, prefix+"Behaviors/", O.ancestor(), false);
-			Log.sysOut(Thread.currentThread().getName(),"Behaviors loaded  : "+O.size());
+			O=EXIT;
+			loadListToObj(O, prefix+"Exits/", O.ancestor(), false);
+			Log.sysOut(Thread.currentThread().getName(),"Exit Types loaded : "+O.size());
+			if(O.size()==0) return false;
+
+			O=CREATURE;
+			loadListToObj(O, prefix+"MOBS/", O.ancestor(), false);
+			Log.sysOut(Thread.currentThread().getName(),"MOB Types loaded  : "+O.size());
 			if(O.size()==0) return false;
 
 			O=COMMAND;
@@ -714,6 +722,14 @@ public class CMClass extends ClassLoader
 		try{return Enum.valueOf((Class)E.getSuperclass(), S);}
 		catch(IllegalArgumentException e){}
 		return null;
+	}
+	public static String getStackTrace(Thread theThread)
+	{
+		java.lang.StackTraceElement[] s=(java.lang.StackTraceElement[])theThread.getStackTrace();
+		StringBuffer dump = new StringBuffer("");
+		for(int i=0;i<s.length;i++)
+			dump.append("\n   "+s[i].getClassName()+": "+s[i].getMethodName()+"("+s[i].getFileName()+": "+s[i].getLineNumber()+")");
+		return dump.toString();
 	}
 /*
 	public Class finishDefineClass(String className, byte[] classData, String overPackage, boolean resolveIt)

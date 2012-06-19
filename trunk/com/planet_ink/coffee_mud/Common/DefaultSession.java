@@ -2187,9 +2187,6 @@ public class DefaultSession extends Thread implements Session
 			CMLib.login().notifyFriends(mob,"^X"+mob.name()+" has logged off.^.^?");
 
 			// the player quit message!
-			//loginLogoutThread LT=new loginLogoutThread(mob,EnumSet.of(CMMsg.MsgCode.QUIT));
-			//LT.initialize();
-			//LT.start();
 			mob.playerStats().setLastDateTime(System.currentTimeMillis());
 			Log.sysOut("Session",getAddress()+" logout: "+name);
 			mob.setSession(null);
@@ -2211,73 +2208,6 @@ public class DefaultSession extends Thread implements Session
 		status=Session.STATUS_LOGOUTFINAL;
 	}
 
-	//no this is terrible. Use global messages!
-	private static class loginLogoutThread extends Thread implements CMObject //... Tickable WHY?
-	{
-		public String name(){return (theMOB==null)?"Dead LLThread":"LLThread for "+theMOB.name();}
-//		public boolean tick(int tickID){return false;}
-		public String ID(){return name();}
-		public CMObject newInstance(){try{return (CMObject)getClass().newInstance();}catch(Exception e){return new loginLogoutThread();}}
-		public void initializeClass(){}
-		public CMObject copyOf(){try{return (CMObject)this.clone();}catch(Exception e){return newInstance();}}
-		public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
-//		public Tickable.TickStat getTickStatus(){return Tickable.TickStat.Not;}
-//		public long lastTick(){return 0;}
-//		public long lastAct(){return 0;}
-		private MOB theMOB=null;
-		private EnumSet<CMMsg.MsgCode> msgCode=null;
-		private HashSet skipRooms=new HashSet();
-		private loginLogoutThread(){}
-		public loginLogoutThread(MOB mob, EnumSet<CMMsg.MsgCode> msgC)
-		{
-			theMOB=mob;
-			msgCode=msgC;
-		}
-
-		public void initialize()
-		{
-			skipRooms.clear();
-			if((!CMProps.Bools.MUDSHUTTINGDOWN.property())
-			&&(CMProps.Bools.MUDSTARTED.property()))
-			{
-				CMMsg msg=CMClass.getMsg(theMOB,null,null,msgCode,null);
-				Room R=theMOB.location();
-				if(R!=null) skipRooms.remove(R);
-				try{
-					if((R!=null)&&(theMOB.location()!=null))
-						R.send(msg);
-					for(Iterator i=skipRooms.iterator();i.hasNext();)
-					{
-						R=(Room)i.next();
-						if(theMOB.location()!=null)
-							R.send(msg);
-					}
-					if(R!=null) skipRooms.add(R);
-				}catch(Exception e){}
-				msg.returnMsg();
-			}
-		}
-
-		public void run()
-		{
-			if((!CMProps.Bools.MUDSHUTTINGDOWN.property())
-			&&(CMProps.Bools.MUDSTARTED.property()))
-			{
-				CMMsg msg=CMClass.getMsg(theMOB,null,null,msgCode,null);
-				Room R=null;
-				try{
-					for(Iterator<Room> e=CMLib.map().rooms();e.hasNext();)
-					{
-						R=e.next();
-						if((!skipRooms.contains(R))&&(theMOB.location()!=null))
-							R.send(msg);
-					}
-				}catch(Exception e){}
-				theMOB=null;
-				msg.returnMsg();
-			}
-		}
-	}
 /*
 	public int read() throws IOException
 	{

@@ -32,6 +32,12 @@ public class StdItem implements Item
 	protected String name="an ordinary item";
 	protected String display="a nondescript item sits here doing nothing.";
 	protected String desc="";
+	protected String plainName;
+	protected String plainNameOf;
+	protected String plainDisplay;
+	protected String plainDisplayOf;
+	protected String plainDesc;
+	protected String plainDescOf;
 	protected String stackName="";
 	//protected String miscText="";
 	protected int baseGoldValue=0;
@@ -78,10 +84,49 @@ public class StdItem implements Item
 	public void initializeClass(){}
 	public void setName(String newName){name=newName; CMLib.database().saveObject(this);}
 	public String name(){ return name;}
+	public String plainName()
+	{
+		if(name==plainNameOf)
+			return plainName;
+		String newName=name;
+		String newPlain=CMLib.coffeeFilter().toRawString(newName);
+		synchronized(this)
+		{
+			plainName=newPlain;
+			plainNameOf=newName;
+		}
+		return newPlain;
+	}
 	public String displayText(){return display;}
 	public void setDisplayText(String newDisplayText){display=newDisplayText; CMLib.database().saveObject(this);}
+	public String plainDisplayText()
+	{
+		if(display==plainDisplayOf)
+			return plainDisplay;
+		String newDisplay=display;
+		String newPlain=CMLib.coffeeFilter().toRawString(newDisplay);
+		synchronized(this)
+		{
+			plainDisplay=newPlain;
+			plainDisplayOf=newDisplay;
+		}
+		return newPlain;
+	}
 	public String description(){return desc;}
 	public void setDescription(String newDescription){desc=newDescription; CMLib.database().saveObject(this);}
+	public String plainDescription()
+	{
+		if(desc==plainDescOf)
+			return plainDesc;
+		String newDesc=desc;
+		String newPlain=CMLib.coffeeFilter().toRawString(newDesc);
+		synchronized(this)
+		{
+			plainDesc=newPlain;
+			plainDescOf=newDesc;
+		}
+		return newPlain;
+	}
 	public String stackableName(){return stackName;}
 	public void setStackableName(String newSN){stackName=newSN; CMLib.database().saveObject(this);}
 	//public void setMiscText(String newMiscText){miscText=newMiscText; CMLib.database().saveObject(this);}

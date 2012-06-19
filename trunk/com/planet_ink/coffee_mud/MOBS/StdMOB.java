@@ -33,6 +33,8 @@ public class StdMOB implements MOB
 
 	public String ID(){return "StdMOB";}
 	protected String name="";
+	protected String plainName;
+	protected String plainNameOf;
 
 	protected QueuedCommand currentCommand=null;
 	protected ArrayList<QueuedCommand> commandQue=new ArrayList();
@@ -128,6 +130,19 @@ public class StdMOB implements MOB
 	{
 		return name;
 	}
+	public String plainName()
+	{
+		if(name==plainNameOf)
+			return plainName;
+		String newName=name;
+		String newPlain=CMLib.coffeeFilter().toRawString(newName);
+		synchronized(this)
+		{
+			plainName=newPlain;
+			plainNameOf=newName;
+		}
+		return newPlain;
+	}
 	public String titledName()
 	{
 		return name;
@@ -144,8 +159,10 @@ public class StdMOB implements MOB
 	public Body body(){return myBody;}
 	public void setDescription(String S){}
 	public String description(){return "";}
+	public String plainDescription(){return "";}
 	public void setDisplayText(String S){}
 	public String displayText(){return "";}
+	public String plainDisplayText(){return "";}
 
 	public ItemCollection getItemCollection()
 	{
