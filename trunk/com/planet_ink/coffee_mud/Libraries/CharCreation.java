@@ -532,7 +532,7 @@ public class CharCreation extends StdLibrary implements CharCreationLibrary
 				if(mob==session.mob())
 					reloadTerminal(mob);
 				mob.body().bringToLife(getDefaultStartRoom(mob),true);
-				mob.location().show(mob,"<S-NAME> appears!");
+				mob.location().show(mob,"^[S-NAME] appears!");
 				CMLib.players().addPlayer(mob);
 	
 				mob.playerStats().setLastIP(session.getByteAddress());
@@ -796,7 +796,7 @@ public class CharCreation extends StdLibrary implements CharCreationLibrary
 		if(loginsDisabled(mob))
 			return LoginResult.NO_LOGIN;
 		mob.body().bringToLife(mob.location(),false);	//NOTE: Chars stats will remain whatever they were before because of this
-		if(showMessage) mob.location().show(mob,"<S-NAME> stirs!");
+		if(showMessage) mob.location().show(mob,"^[S-NAME] stirs!");
 		mob.playerStats().setLastIP(session.getByteAddress());
 		notifyFriends(mob,"^X"+mob.name()+" has logged on.^.^?");
 		Vector<String> channels=CMLib.channels().getFlaggedChannelNames(ChannelsLibrary.ChannelFlag.LOGINS);

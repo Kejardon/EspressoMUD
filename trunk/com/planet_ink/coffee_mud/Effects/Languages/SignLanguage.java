@@ -48,19 +48,19 @@ public class SignLanguage extends StdLanguage
 		String fullMsgStr = CMStrings.substituteSayInMessage(msg.sourceMessage(),wordsSaid);
 		wordStart=fullMsgStr.indexOf('\'');
 		String startFullMsg=fullMsgStr.substring(0,wordStart);
-		if(startFullMsg.indexOf("YELL(S)")>0)
+		if(startFullMsg.indexOf("YELL^s")>0)
 		{
 			if(msg.firstSource() instanceof MOB)
 				((MOB)msg.firstSource()).tell("You can't yell in sign language.");
 			return false;
 		}
 		String oldStartFullMsg = startFullMsg;
-		startFullMsg = startFullMsg.replace("say(s)", "sign(s)");
-		startFullMsg = startFullMsg.replace("ask(s)", "sign(s) askingly");
-		startFullMsg = startFullMsg.replace("exclaim(s)", "sign(s) excitedly");
+		startFullMsg = startFullMsg.replace("say^s", "sign^s");
+		startFullMsg = startFullMsg.replace("ask^s", "sign^s askingly");
+		startFullMsg = startFullMsg.replace("exclaim^s", "sign^s excitedly");
 		if(oldStartFullMsg.equals(startFullMsg))
 		{
-			int x=startFullMsg.toLowerCase().lastIndexOf("(s)");
+			int x=startFullMsg.toLowerCase().lastIndexOf("^s");
 			if(x<0) 
 				x=startFullMsg.trim().length();
 			else
@@ -81,25 +81,25 @@ public class SignLanguage extends StdLanguage
 		int wordStart=fullOtherMsgStr.indexOf('\'');
 		if(wordStart<0) return true;
 		String startFullMsg=fullOtherMsgStr.substring(0,wordStart);
-		String verb = "sign(s)";
+		String verb = "sign^s";
 		switch(CMLib.dice().roll(1, 20, 0))
 		{
-		case 1: case 2: case 3: case 4: case 5: verb="gesture(s)"; break;
-		case 6: verb="wave(s)"; break;
-		case 7: case 8: verb="gesticulate(s)"; break;
-		case 9: verb="wave(s) <S-HIS-HER> fingers"; break;
-		case 10: verb="wiggle(s) <S-HIS-HER> hands"; break;
-		case 11: case 12: verb="wave(s) <S-HIS-HER> hands"; break;
-		case 13: verb="wiggle(s) <S-HIS-HER> fingers"; break;
+		case 1: case 2: case 3: case 4: case 5: verb="gesture^s"; break;
+		case 6: verb="wave^s"; break;
+		case 7: case 8: verb="gesticulate^s"; break;
+		case 9: verb="wave^s ^[S-HIS-HER] fingers"; break;
+		case 10: verb="wiggle^s ^[S-HIS-HER] hands"; break;
+		case 11: case 12: verb="wave^s ^[S-HIS-HER] hands"; break;
+		case 13: verb="wiggle^s ^[S-HIS-HER] fingers"; break;
 		}
 		String oldStartFullMsg = startFullMsg;
-		startFullMsg = startFullMsg.replace("tell(s)", verb);
-		startFullMsg = startFullMsg.replace("say(s)", verb);
-		startFullMsg = startFullMsg.replace("ask(s)", verb+" askingly");
-		startFullMsg = startFullMsg.replace("exclaim(s)", verb+" excitedly");
+		startFullMsg = startFullMsg.replace("tell^s", verb);
+		startFullMsg = startFullMsg.replace("say^s", verb);
+		startFullMsg = startFullMsg.replace("ask^s", verb+" askingly");
+		startFullMsg = startFullMsg.replace("exclaim^s", verb+" excitedly");
 		if(oldStartFullMsg.equals(startFullMsg))
 		{
-			int x=startFullMsg.toLowerCase().lastIndexOf("(s)");
+			int x=startFullMsg.toLowerCase().lastIndexOf("^s");
 			if(x<0) 
 				x=startFullMsg.trim().length();
 			else

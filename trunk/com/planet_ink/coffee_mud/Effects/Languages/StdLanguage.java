@@ -244,9 +244,9 @@ public class StdLanguage extends StdEffect implements Language
 //						msg.setOthersCode(CMMsg.TYP_SPEAK);
 						String reply=null;
 						if((L==null)||(!L.beingSpoken(ID())))
-							reply="<S-NAME> <S-IS-ARE> speaking "+name()+" and do(es) not appear to understand <T-YOUPOSS> words.";
+							reply="^[S-NAME] ^[S-IS-ARE] speaking "+name()+" and do^e not appear to understand ^[T-YOUPOSS] words.";
 						else
-							reply="<S-NAME> <S-IS-ARE> having trouble understanding <T-YOUPOSS> pronunciation.";
+							reply="^[S-NAME] ^[S-IS-ARE] having trouble understanding ^[T-YOUPOSS] pronunciation.";
 						msg.addTrailerMsg(source.location(), CMClass.getMsg((MOB)affected,source,null,EnumSet.of(CMMsg.MsgCode.VISUAL),reply));
 					}
 					break;

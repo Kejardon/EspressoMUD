@@ -28,7 +28,7 @@ public class Snoop extends StdCommand
 
 	protected boolean canHear(Session S, Session S2)
 	{
-		if(S==S2) return false;
+		if(S==S2) return true;
 		for(Iterator<Session> iter=S2.snoopTargets();iter.hasNext();)
 			if(canHear(S, iter.next()))
 				return true;

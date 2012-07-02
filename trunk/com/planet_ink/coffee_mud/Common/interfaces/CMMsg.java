@@ -54,7 +54,8 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
  			Smell			Psionic/whatever
  
  	Response speed stuff.
- 	10: Entrance msg due to Leave msg
+ 	9: get itemcollection canhold
+ 	10: Entrance msg due to Leave msg (ok only, execute doesn't happen until the Leave execute)
  */
 @SuppressWarnings("unchecked")
 public interface CMMsg extends CMCommon

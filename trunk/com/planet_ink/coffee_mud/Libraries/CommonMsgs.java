@@ -176,9 +176,10 @@ public class CommonMsgs extends StdLibrary implements CommonCommands
 	{
 		StringBuilder msg=new StringBuilder("");
 		Iterator<Item> items = mob.getItemCollection().allItems();
-		ArrayList<Item> list=new ArrayList();
+		ArrayList<Item> list;//=new ArrayList();
 		if((mask!=null)&&(mask.trim().length()>0))
 		{
+			list=new ArrayList();
 			mask=mask.trim().toUpperCase();
 //			if(!mask.startsWith("all")) mask="all "+mask;
 			while(items.hasNext())
@@ -188,6 +189,8 @@ public class CommonMsgs extends StdLibrary implements CommonCommands
 					list.add(I);
 			}
 		}
+		else
+			list=CMParms.toArrayList(items);
 		if(list.size()==0)
 		{
 			if((mask!=null)&&(mask.length()>0))
@@ -247,12 +250,12 @@ public class CommonMsgs extends StdLibrary implements CommonCommands
 
 	public void handleBeingLookedAt(CMMsg msg)
 	{
-		if(msg.target() instanceof Room)
-			handleBeingRoomLookedAt(msg);
-//		else
-//		if(msg.target() instanceof Item)
-//			handleBeingItemLookedAt(msg);
-		else
+		//if(msg.target() instanceof Room)
+		//	handleBeingRoomLookedAt(msg);
+		//else
+		//if(msg.target() instanceof Item)
+		//	handleBeingItemLookedAt(msg);
+		//else
 		if(msg.target() instanceof MOB)
 			handleBeingMobLookedAt(msg);
 		else
@@ -260,94 +263,6 @@ public class CommonMsgs extends StdLibrary implements CommonCommands
 			handleBeingExitLookedAt(msg);
 	}
 
-	protected void handleBeingRoomLookedAt(CMMsg msg)
-	{
-		for(Interactable I : msg.sourceArr())
-		{
-			if(!(I instanceof MOB)) continue;
-			MOB mob=(MOB)I;
-			if(mob.session()==null) continue; // no need for monsters to build all this data
-	
-			Room room=(Room)msg.target();
-			int lookCode=LOOK_LONG;
-			if(msg.hasTargetCode(CMMsg.MsgCode.EXAMINE))
-				lookCode=(msg.sourceMessage()==null)?LOOK_BRIEFOK:LOOK_NORMAL;
-	
-			StringBuilder Say=new StringBuilder("");
-			if(mob.playerStats().hasBits(PlayerStats.ATT_SYSOPMSGS))
-			{
-				if(!CMSecurity.isAllowed(mob,"SYSMSGS"))
-					mob.playerStats().setBits(PlayerStats.ATT_SYSOPMSGS, false);
-				else
-				{
-					if(room.getArea()!=null)
-						Say.append("Area  : "+room.getArea().name()+"\r\n");
-					Say.append("SaveNum: "+room.saveNum()+"  ("+room.ID()+")\r\n");
-				}
-			}
-			Say.append(room.displayText()).append("\r\n");
-			String roomDesc=room.description();
-			ItemCollection col=room.getItemCollection();
-			/*if(lookCode==LOOK_LONG)
-			{
-				Vector<String> keyWords=null;
-				String word=null;
-				int x=0;
-				for(int c=0;c<col.numItems();c++)
-				{
-					Item item=col.getItem(c);
-					if(item==null) continue;
-					if(item.displayText().length()==0)
-					{
-						keyWords=CMParms.parse(item.name().toUpperCase());
-						for(int k=0;k<keyWords.size();k++)
-						{
-							word=keyWords.get(k);
-							x=roomDesc.toUpperCase().indexOf(word);
-							while(x>=0)
-							{
-								if(((x<=0)||((!Character.isLetterOrDigit(roomDesc.charAt(x-1)))&&(roomDesc.charAt(x-1)!='>')))
-								&&(((x+word.length())>=(roomDesc.length()-1))||((!Character.isLetterOrDigit(roomDesc.charAt((x+word.length()))))&&(roomDesc.charAt(x+word.length())!='^'))))
-								{
-									int brackCheck=roomDesc.substring(x).indexOf("^>");
-									int brackCheck2=roomDesc.substring(x).indexOf("^<");
-									if((brackCheck<0)||(brackCheck2<brackCheck))
-									{
-										int start=x;
-										while((start>=0)&&(!Character.isWhitespace(roomDesc.charAt(start))))
-											start--;
-										start++;
-										int end=(x+word.length());
-										while((end<roomDesc.length())&&(!Character.isWhitespace(roomDesc.charAt(end))))
-											end++;
-										int l=roomDesc.length();
-										roomDesc=roomDesc.substring(0,start)+"^H^<WItem \""+item.name()+"\"^>"+roomDesc.substring(start,end)+"^</WItem^>^?"+roomDesc.substring(end);
-										x=x+(roomDesc.length()-l);
-									}
-								}
-								x=roomDesc.toUpperCase().indexOf(word,x+1);
-							}
-						}
-					}
-				}
-			}*/
-			Say.append(roomDesc);
-
-			Say.append("\r\n\r\n");
-
-			ArrayList<Item> viewItems=CMParms.toArrayList(col.allItems());
-
-			//NOTE: Will probably redo these tags sometimes.
-			StringBuilder itemStr=CMLib.lister().lister(mob,viewItems,false,"RItem"," \"*\"",lookCode==LOOK_LONG);
-			if(itemStr.length()>0)
-				Say.append(itemStr);
-	
-			if(Say.length()==0)
-				mob.tell("You can't see anything!");
-			else
-				mob.tell(Say.toString());
-		}
-	}
 
 	protected void handleBeingExitLookedAt(CMMsg msg)
 	{
@@ -720,7 +635,7 @@ public class CommonMsgs extends StdLibrary implements CommonCommands
 		if(CMLib.flags().canSmell(msg.source()))
 			s=RawMaterial.CODES.SMELL(item.material()).toLowerCase();
 		if((s!=null)&&(s.length()>0))
-			msg.source().tell(msg.source(),item,null,"<T-NAME> has a "+s+" smell.");
+			msg.source().tell(msg.source(),item,null,"^[T-NAME] has a "+s+" smell.");
 	}
 	public void handleIntroductions(MOB speaker, MOB me, String msg)
 	{
@@ -914,6 +829,38 @@ public class CommonMsgs extends StdLibrary implements CommonCommands
 			standingmob.getEnvObject().recoverEnvStats();
 			standingmob.recoverCharStats();
 			standingmob.tell(standingmob,msg.target(),msg.tool(),msg.sourceMessage());
+		}
+	}
+	protected void handleBeingRoomLookedAt(CMMsg msg)
+	{
+		boolean longLook=msg.hasTargetCode(CMMsg.MsgCode.EXAMINE);
+		Room room=(Room)msg.target();
+		for(Interactable I : msg.sourceArr())
+		{
+			if(!(I instanceof MOB)) continue;
+			MOB mob=(MOB)I;
+			if(mob.session()==null) continue; // no need for monsters to build all this data
+
+			StringBuilder Say=new StringBuilder("");
+			if(mob.playerStats().hasBits(PlayerStats.ATT_SYSOPMSGS))
+			{
+				if(room.getArea()!=null)
+					Say.append("Area  : "+room.getArea().name()+"\r\n");
+				Say.append("SaveNum: "+room.saveNum()+"  ("+room.ID()+")\r\n");
+			}
+			Say.append(room.displayText()).append("\r\n").append(room.description()).append("\r\n\r\n");
+
+			ArrayList<Item> viewItems=CMParms.toArrayList(room.getItemCollection().allItems());
+
+			//NOTE: Will probably redo these tags sometimes.
+			StringBuilder itemStr=CMLib.lister().lister(mob,viewItems,false,"RItem"," \"*\"",longLook);
+			if(itemStr.length()>0)
+				Say.append(itemStr);
+	
+			if(Say.length()==0)
+				mob.tell("You can't see anything!");
+			else
+				mob.tell(Say.toString());
 		}
 	}
 */

@@ -214,7 +214,7 @@ public class StdExit implements Exit
 	}
 	protected void mountLadder(MOB mob, Rideable ladder)
 	{
-		CMMsg msg=CMClass.getMsg(mob,ladder,null,CMMsg.MSG_MOUNT,"<S-NAME> mounts <T-NAMESELF>.");
+		CMMsg msg=CMClass.getMsg(mob,ladder,null,CMMsg.MSG_MOUNT,"^[S-NAME] mounts ^[T-NAMESELF].");
 		Room room=(Room)((Item)ladder).owner();
 		if(mob.location()==room) room=null;
 		if((mob.location().okMessage(mob,msg))

@@ -307,6 +307,8 @@ public class StdMOB implements MOB
 
 	public Room location()
 	{
+		return CMLib.map().roomLocation(myBody);
+		/*
 		if(myBody==null) return null;
 		CMObject O=myBody.container();
 		while((O!=null)&&!(O instanceof Room)&&(O instanceof Item))
@@ -314,6 +316,7 @@ public class StdMOB implements MOB
 		if(O instanceof Room)
 			return (Room)O;
 		return null;
+		*/
 	}
 	public void setLocation(Room newPlace)
 	{
@@ -391,7 +394,8 @@ public class StdMOB implements MOB
 
 	public boolean doCommand(QueuedCommand qCom)
 	{
-		if((qCom.command.prompter())&&(mySession==Thread.currentThread()))
+		//Log.sysOut("MOB",""+Thread.currentThread()+" is doing "+qCom.command.ID()+" for "+mySession);
+		if((qCom.command.prompter())&&((mySession==Thread.currentThread())||(false)))
 			mySession.handlePromptFor(new CommandCallWrap(this, qCom));
 		else try
 		{
@@ -594,11 +598,13 @@ public class StdMOB implements MOB
 
 	public void tell(String msg)
 	{
-		tell(this,this,new Vector(),msg);
+		tell(this,this,msg);
 	}
 	public boolean respondTo(CMMsg msg){return true;}
 	public void executeMsg(ListenHolder.ExcChecker myHost, CMMsg msg)
 	{
+		if(msg.othersMessage()!=null)
+			tell(msg.firstSource(),msg.target(),msg.firstTool(),msg.othersMessage());
 		for(ExcChecker O : excCheckers)
 			O.executeMsg(myHost, msg);
 	}

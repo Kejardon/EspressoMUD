@@ -29,7 +29,7 @@ public class Drop extends StdCommand
 	public boolean drop(MOB mob, Item dropThis, boolean quiet)
 	{
 		Room R=mob.location();
-		CMMsg msg=CMClass.getMsg(mob,dropThis,null,EnumSet.of(CMMsg.MsgCode.DROP),quiet?null:"<S-NAME> drop(s) <T-NAME>.");
+		CMMsg msg=CMClass.getMsg(mob,null,dropThis,EnumSet.of(CMMsg.MsgCode.DROP),quiet?null:"^[S-NAME] drop^s ^[O-NAME].");
 		boolean success=R.doMessage(msg);
 		msg.returnMsg();
 		return success;

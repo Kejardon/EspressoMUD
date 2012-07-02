@@ -122,11 +122,23 @@ public class DefaultItemCol implements ItemCollection, Ownable
 			totalW+=E.weight();
 			totalS+=E.height();
 		}
-		if((maxweight==0)||(totalW>maxweight))
+		EnvStats E=item.getEnvObject().envStats();
+		if((maxweight!=0)&&(totalW+E.weight()>maxweight))
 			return false;
-		if((maxsize==0)||(totalS>maxsize))
+		if((maxsize!=0)&&(totalS+E.height()>maxsize))
 			return false;
-		return true;
+		return recurseCheck(parent, item);
+	}
+	public boolean recurseCheck(CMObject E, Item I)
+	{
+		while(true)
+		{
+			if((E==null)||(E==I))
+				return false;
+			if(E instanceof Room)	//TODO: Expand this for item rooms?
+				return true;
+			E=CMLib.map().goUpOne(E);
+		}
 	}
 	public boolean hasItem(Item item, boolean sub)
 	{
@@ -141,7 +153,7 @@ public class DefaultItemCol implements ItemCollection, Ownable
 	}
 	public void addItem(Item item)
 	{
-		if(inventory.addIfAbsent(item))
+		if(recurseCheck(parent, item) && inventory.addIfAbsent(item))
 		{
 			//if(parent instanceof ListenHolder)
 				//item.registerListeners((ListenHolder)parent);

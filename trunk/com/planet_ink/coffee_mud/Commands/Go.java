@@ -46,9 +46,9 @@ public class Go extends StdCommand
 		//EnumSet enterCode=EnumSet.of(CMMsg.MsgCode.LEAVE);
 		//if(always)
 		//	enterCode.add(CMMsg.MsgCode.ALWAYS);
-		//TODO: Include specific Exit description. Also enterMsg should be a response to leaveMsg.
+		//TODO: Include specific Exit description. Also have this call the mob's race to get a proper message for how to move.
 		EnumSet<CMMsg.MsgCode> code=always?EnumSet.of(CMMsg.MsgCode.LEAVE,CMMsg.MsgCode.ALWAYS):EnumSet.of(CMMsg.MsgCode.LEAVE);
-		CMMsg leaveMsg=CMClass.getMsg(mob,null,exit,code,"<S-NAME> leave(s).");
+		CMMsg leaveMsg=CMClass.getMsg(mob,null,exit,code,"^[S-NAME] leave(s).");
 		
 		int gotDepart=thisRoom.getLock(0);
 		int gotEntrance=(destRoom==null?0:destRoom.getLock(0));

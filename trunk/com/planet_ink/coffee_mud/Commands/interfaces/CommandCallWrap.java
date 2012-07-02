@@ -42,6 +42,8 @@ public class CommandCallWrap implements Callable<Void>
 	}
 	public Void call()	//even though it returns null, the fact it returns when done is useful, so submit(), not execute()
 	{
+		Session S=mob.session();
+		if(S!=null) S.catchPromptFor(this);
 		commands.command.execute(mob, commands);
 		return null;
 	}

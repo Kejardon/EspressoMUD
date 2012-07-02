@@ -242,6 +242,27 @@ public class Destroy extends StdCommand
 		mob.location().show(null,"A wall of inhibition covers "+target.exit.directLook(mob, target.room)+".");
 		
 	}
+	public void lock(MOB mob, Vector<String> commands)
+	{
+		Room R;
+		if(commands.size()<3)
+			R=mob.location();
+		else
+		{
+			String roomName=CMParms.combine(commands,2);
+			if(roomName.equalsIgnoreCase("HERE"))
+				R=mob.location();
+			else
+				R=SIDLib.ROOM.get(CMath.s_int(roomName));
+			if(R==null)
+			{
+				mob.tell("You have failed to specify a room.  Try a VALID ROOM ID, or \"HERE\".\r\n");
+				return;
+			}
+		}
+
+		mob.tell("Room lock cleared. It was previously "+R.undoLock());
+	}
 
 	public boolean items(MOB mob, Vector<String> commands)
 	{
@@ -293,7 +314,7 @@ public class Destroy extends StdCommand
 		}
 		if(!doneSomething)
 		{
-			mob.tell("I don't see '"+itemID+" here.\r\n");
+			mob.tell("I don't see '"+itemID+"' here.\r\n");
 			return false;
 		}
 		return true;
@@ -345,36 +366,30 @@ public class Destroy extends StdCommand
 			if(!CMSecurity.isAllowed(mob,"CMDEXITS")) return errorOut(mob);
 			exits(mob,commands,commandType.equals("EXIT"));
 		}
-		else
-		if(commandType.equals("ITEM"))
+		else if(commandType.equals("ITEM"))
 		{
 			if(!CMSecurity.isAllowed(mob,"CMDITEMS")) return errorOut(mob);
 			items(mob,commands);
 		}
-		else
-		if(commandType.equals("AREA"))
+		else if(commandType.equals("AREA"))
 		{
 			areas(mob,commands);
 		}
-		else
-		if(commandType.equals("ROOM"))
+		else if(commandType.equals("ROOM"))
 		{
 			rooms(mob,commands);
 		}
-		else
-		if(commandType.equals("USER"))
+		else if(commandType.equals("USER"))
 		{
 			if(!CMSecurity.isAllowed(mob,"CMDPLAYERS")) return errorOut(mob);
 			players(mob,commands);
 		}
-		else
-		if((commandType.equals("ACCOUNT"))&&(CMProps.Ints.COMMONACCOUNTSYSTEM.property()>1))
+		else if((commandType.equals("ACCOUNT"))&&(CMProps.Ints.COMMONACCOUNTSYSTEM.property()>1))
 		{
 			if(!CMSecurity.isAllowed(mob,"CMDPLAYERS")) return errorOut(mob);
 			accounts(mob,commands);
 		}
-		else
-		if(commandType.equals("BAN"))
+		else if(commandType.equals("BAN"))
 		{
 			//TODO: This is terrible interface for removing bans
 			if(!CMSecurity.isAllowed(mob,"BAN")) return errorOut(mob);
@@ -389,8 +404,7 @@ public class Destroy extends StdCommand
 				mob.tell("Ok.");
 			}
 		}
-		else
-		if(commandType.equals("THREAD"))
+		else if(commandType.equals("THREAD"))
 		{
 			if(!CMSecurity.isASysOp(mob)) return errorOut(mob);
 			String which=CMParms.combine(commands,2);
@@ -406,8 +420,7 @@ public class Destroy extends StdCommand
 				mob.tell("Stop sent to: "+whichT.getName()+".");
 			}
 		}
-		else
-		if(commandType.startsWith("SESSION"))
+		else if(commandType.startsWith("SESSION"))
 		{
 			if(!CMSecurity.isAllowed(mob,"BOOT")) return errorOut(mob);
 			int which=-1;
@@ -425,16 +438,20 @@ public class Destroy extends StdCommand
 					mob.tell("Failed to gracefully shutdown: "+Session.STATUS_STR[S.getStatus()]+", but a forcable stop was issued.");
 			}
 		}
-		else
-		if(commandType.equals("MOB"))
+		else if(commandType.equals("MOB"))
 		{
 			if(!CMSecurity.isAllowed(mob,"CMDMOBS")) return errorOut(mob);
 			mobs(mob,commands);
 		}
+		else if(commandType.equals("LOCK"))
+		{
+			if(!CMSecurity.isAllowed(mob,"CMDROOMS")) return errorOut(mob);
+			lock(mob,commands);
+		}
 		else
 		{
 			mob.tell("\r\nYou cannot destroy a '"+commandType+
-			"'. However, you might try an EXIT, ITEM, AREA, USER, MOB, SESSION, TICKS, THREAD, BAN, or a ROOM.");
+			"'. However, you might try an EXIT, ITEM, AREA, USER, MOB, SESSION, TICKS, THREAD, BAN, LOCK or a ROOM.");
 		}
 		return false;
 	}

@@ -148,6 +148,7 @@ public interface Room extends ItemCollection.ItemHolder, Interactable, CMSavable
 //	public int getExitIndex(Exit E, Room R);
 //	public void initExits();
 
+	public String undoLock();
 	public int getLock(long time);
 	public void returnLock();
 	

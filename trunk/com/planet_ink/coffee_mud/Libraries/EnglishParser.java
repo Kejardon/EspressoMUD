@@ -465,7 +465,10 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 			flags.allFlag=true;
 		}
 		else if(srchStr.equals("ALL"))
+		{
 			flags.allFlag=true;
+			srchStr="ALL";	//For == check elsewhere
+		}
 		else
 			flags.allFlag=false;
 
@@ -497,13 +500,10 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 	{
 		EnglishParsing.StringFlags flags=fetchFlags(srchStr);
 		if(flags==null) return null;
-		//srchStr=(String)flags[FLAG_STR];
-		//int myOccurrance=((Integer)flags[FLAG_DOT]).intValue();
-		//boolean allFlag=((Boolean)flags[FLAG_ALL]).booleanValue();
+		if(flags.srchStr=="ALL")
+			return (list.size()>0?list.get(0):null);
 		if(exactOnly)
 		{
-			//if(flags.srchStr.startsWith("$")) flags.srchStr=flags.srchStr.substring(1);
-			//if(flags.srchStr.endsWith("$")) flags.srchStr=flags.srchStr.substring(0,flags.srchStr.length()-1);
 			for(int i=0;i<list.size();i++)
 			{
 				CMObject thisThang=list.get(i);
@@ -514,7 +514,6 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 		}
 		else
 		{
-			//myOccurrance=((Integer)flags[FLAG_DOT]).intValue();
 			for(int i=0;i<list.size();i++)
 			{
 				CMObject thisThang=list.get(i);
@@ -529,10 +528,10 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 	{
 		EnglishParsing.StringFlags flags=fetchFlags(srchStr);
 		if(flags==null) return null;
+		if(flags.srchStr=="ALL")
+			return (list.hasNext()?list.next():null);
 		if(exactOnly)
 		{
-			//if(flags.srchStr.startsWith("$")) flags.srchStr=flags.srchStr.substring(1);
-			//if(flags.srchStr.endsWith("$")) flags.srchStr=flags.srchStr.substring(0,flags.srchStr.length()-1);
 			while(list.hasNext())
 			{
 				CMObject thisThang=list.next();
@@ -554,34 +553,66 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 		return null;
 	}
 
+	private boolean displayCheckExact(Interactable I, String str)
+	{
+		if((I instanceof Item)
+		  &&(!(((Item)I).container() instanceof Room)))
+			return false;
+		return I.plainDisplayText().equalsIgnoreCase(str);
+	}
+	private boolean displayCheck(Interactable I, String str)
+	{
+		if((I instanceof Item)
+		  &&(!(((Item)I).container() instanceof Room)))
+			return false;
+		return containsRawString(I.plainDisplayText(),str);
+	}
 	public Interactable fetchInteractable(Vector<? extends Interactable> list, String srchStr, boolean exactOnly)
 	{ return fetchInteractable((Interactable[])list.toArray(Interactable.dummyInteractableArray), srchStr, exactOnly); }
 	public Interactable fetchInteractable(Iterator<? extends Interactable> list, String srchStr, boolean exactOnly)
 	{ return fetchInteractable((Interactable[])CMParms.toArrayList(list).toArray(Interactable.dummyInteractableArray), srchStr, exactOnly); }
 	protected boolean thingCheck(Vector<Interactable> V, Interactable thisThang, EnglishParsing.StringFlags flags, boolean exact, int maxDepth)
 	{
-		if(exact)
+		boolean added=false;
+		if(flags.srchStr=="ALL")
 		{
-			if((thisThang.ID().equalsIgnoreCase(flags.srchStr)||thisThang.name().equalsIgnoreCase(flags.srchStr))
-				&&((!flags.allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0))))
+			V.add(thisThang);
+			if((--flags.occurrance)<=0) return true;
+			added=true;
+		}
+		else if(exact)
+		{
+			if((thisThang.ID().equalsIgnoreCase(flags.srchStr)
+			  ||thisThang.plainName().equalsIgnoreCase(flags.srchStr)
+			  ||displayCheckExact(thisThang, flags.srchStr)))
 			{
 				V.add(thisThang);
 				if((--flags.occurrance)<=0) return true;
+				added=true;
 			}
 		}
 		else
 		{
-			if(containsRawString(thisThang.plainName(),flags.srchStr)
-			   &&((!flags.allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0))))
+			if(containsRawString(thisThang.plainName(),flags.srchStr)||displayCheck(thisThang,flags.srchStr))
 			{
 				V.add(thisThang);
 				if((--flags.occurrance)<=0) return true;
+				added=true;
 			}
 		}
-		//NOTE: Not sure if this line is a good idea!
-		if((thisThang instanceof Body)&&(((Body)thisThang).mob()!=null))
-			if(thingCheck(V, ((Body)thisThang).mob(), flags, exact, 0))
-				return true;
+		if(!added)
+		{
+			MOB M;
+			if((thisThang instanceof Body)&&((M=((Body)thisThang).mob())!=null))
+			{
+				M=(MOB)thingCheck(M, flags, exact, 0);
+				if(M!=null)
+				{
+					V.add(thisThang);
+					if((--flags.occurrance)<=0) return true;
+				}
+			}
+		}
 		if(maxDepth>0)
 		{
 			ItemCollection col=ItemCollection.O.getFrom(thisThang);
@@ -621,10 +652,8 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 		Vector<Interactable> V=new Vector();
 		EnglishParsing.StringFlags flags=fetchFlags(srchStr);
 		if(flags==null) return null;
-		//int toSkip=flags.occurance;
-		flags.occurrance=toFind;	//It wasn't used at all before so... hmm.
-		//if(srchStr.startsWith("$")) srchStr=srchStr.substring(1);
-		//if(srchStr.endsWith("$")) srchStr=srchStr.substring(0,srchStr.length()-1);
+		int toSkip=flags.occurrance;
+		flags.occurrance=toFind+toSkip;	//It wasn't used at all before so... hmm.
 		for(Object O : list)
 		{
 			if(O instanceof Interactable)
@@ -636,8 +665,10 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 			else if(O instanceof Vector)
 				{ if(thingArrayCheck(V, (Interactable[])((Vector)O).toArray(Interactable.dummyInteractableArray), flags, exactOnly, maxDepth)) return V; }
 		}
-		/*for(toSkip-=2;toSkip>=0;toSkip--)
-			V.remove(toSkip);*/
+		if(toSkip>V.size()-1)
+			V.clear();
+		else for(toSkip-=2;toSkip>=0;toSkip--)
+			V.remove(toSkip);
 		return V;
 	}
 	public Interactable fetchInteractable(String srchStr, boolean exactOnly, int maxDepth, Object... list)
@@ -645,12 +676,7 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 		EnglishParsing.StringFlags flags=fetchFlags(srchStr);
 		if(flags==null) return null;
 
-		//srchStr=(String)flags[FLAG_STR];
-		//int[] myOccurrance={((Integer)flags[FLAG_DOT]).intValue()};
-		//boolean allFlag=((Boolean)flags[FLAG_ALL]).booleanValue();
 		Interactable thisThang=null;
-		//if(srchStr.startsWith("$")) srchStr=srchStr.substring(1);
-		//if(srchStr.endsWith("$")) srchStr=srchStr.substring(0,srchStr.length()-1);
 		for(Object O : list)
 		{
 			if(O instanceof Interactable)
@@ -669,29 +695,34 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 	public boolean isCalled(Interactable thing, String name, boolean exact)
 	{
 		if(exact)
-			return (thing.ID().equalsIgnoreCase(name)||thing.name().equalsIgnoreCase(name));
+			return (thing.ID().equalsIgnoreCase(name)||thing.plainName().equalsIgnoreCase(name));
 		else
 			return (containsRawString(thing.plainName(),name));
 	}
 	protected Interactable thingCheck(Interactable thisThang, EnglishParsing.StringFlags flags, boolean exact, int maxDepth)
 	{
+		if(flags.srchStr=="ALL")
+			return thisThang;
 		if(exact)
 		{
-			if(thisThang.ID().equalsIgnoreCase(flags.srchStr)||thisThang.name().equalsIgnoreCase(flags.srchStr))
-				if((!flags.allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0)))
-					if((--flags.occurrance)<=0)
-						return thisThang;
-		}
-		else
-		{
-			if(containsRawString(thisThang.plainName(),flags.srchStr)
-			   &&((!flags.allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0))))
+			if(thisThang.ID().equalsIgnoreCase(flags.srchStr)
+			  ||thisThang.plainName().equalsIgnoreCase(flags.srchStr)
+			  ||displayCheckExact(thisThang,flags.srchStr))
 				if((--flags.occurrance)<=0)
 					return thisThang;
 		}
-		//NOTE: Not sure if this line is a good idea! Will check mobs instead of just bodys, but not mobs inventories
-		if((thisThang instanceof Body)&&(((Body)thisThang).mob()!=null))
-			return thingCheck(((Body)thisThang).mob(), flags, exact, 0);
+		else
+		{
+			if(containsRawString(thisThang.plainName(),flags.srchStr)||displayCheck(thisThang,flags.srchStr))
+				if((--flags.occurrance)<=0)
+					return thisThang;
+		}
+		{
+			MOB M;
+			if((thisThang instanceof Body)&&((M=((Body)thisThang).mob())!=null))
+				if(thingCheck(M, flags, exact, 0)!=null)
+					return thisThang;
+		}
 		if(maxDepth>0)
 		{
 			Interactable found=null;
@@ -750,28 +781,29 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 		if(exactOnly)
 		{
 			for(Interactable thisThang : list)
-				if(thisThang.ID().equalsIgnoreCase(flags.srchStr)
-				   ||thisThang.name().equalsIgnoreCase(flags.srchStr))
-					if((!flags.allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0)))
-						if((--flags.occurrance)<=0)
-							matches.add(thisThang);
+				if((flags.srchStr=="ALL")||
+				  (thisThang.ID().equalsIgnoreCase(flags.srchStr)
+				   ||thisThang.plainName().equalsIgnoreCase(flags.srchStr)
+				   ||displayCheckExact(thisThang,flags.srchStr)))
+					if((--flags.occurrance)<=0)
+						matches.add(thisThang);
 		}
 		else
 		{
 			int oldOccurrance=flags.occurrance;
 			for(Interactable thisThang : list)
-				if(containsRawString(thisThang.plainName(),flags.srchStr)
-				   &&((!flags.allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0))))
+				if((flags.srchStr=="ALL")||
+				  (containsRawString(thisThang.plainName(),flags.srchStr)
+				   ||displayCheck(thisThang,flags.srchStr)))
 					if((--flags.occurrance)<=0)
 						matches.add(thisThang);
 			if(matches.size()==0)
 			{
 				flags.occurrance=oldOccurrance;
 				for(Interactable thisThang : list)
-					if((containsRawString(thisThang.plainDisplayText(),flags.srchStr)
-						||((thisThang instanceof MOB)&&containsString(((MOB)thisThang).genericName(),flags.srchStr))))
-							if((--flags.occurrance)<=0)
-								matches.add(thisThang);
+					if((thisThang instanceof MOB)&&containsString(((MOB)thisThang).genericName(),flags.srchStr))
+						if((--flags.occurrance)<=0)
+							matches.add(thisThang);
 			}
 		}
 		return matches;
@@ -781,18 +813,15 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 	{
 		EnglishParsing.StringFlags flags=fetchFlags(srchStr);
 		if(flags==null) return null;
-
-		//srchStr=(String)flags[FLAG_STR];
-		//int myOccurrance=((Integer)flags[FLAG_DOT]).intValue();
-		//boolean allFlag=((Boolean)flags[FLAG_ALL]).booleanValue();
+		if(flags.srchStr=="ALL")
+			return (list.length>0?list[0]:null);
 		if(exactOnly)
 		{
-			//if(srchStr.startsWith("$")) srchStr=srchStr.substring(1);
-			//if(srchStr.endsWith("$")) srchStr=srchStr.substring(0,srchStr.length()-1);
 			for(Interactable thisThang : list)
 				if(   (thisThang!=null)
-					&&(thisThang.ID().equalsIgnoreCase(flags.srchStr)||thisThang.name().equalsIgnoreCase(flags.srchStr))
-					&&((!flags.allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0)))
+					&&(thisThang.ID().equalsIgnoreCase(flags.srchStr)
+					  ||thisThang.plainName().equalsIgnoreCase(flags.srchStr)
+					  ||displayCheckExact(thisThang, flags.srchStr))
 					&&((--flags.occurrance)<=0) )
 					return thisThang;
 		}
@@ -801,15 +830,14 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 			int oldOccurrance=flags.occurrance;
 			for(Interactable thisThang : list)
 				if(   (thisThang!=null)
-					&&(containsRawString(thisThang.plainName(),flags.srchStr))
-					&&((!flags.allFlag)||((thisThang.displayText()!=null)&&(thisThang.displayText().length()>0)))
+					&&(containsRawString(thisThang.plainName(),flags.srchStr)
+					  ||displayCheck(thisThang, flags.srchStr))
 					&&((--flags.occurrance)<=0) )
 					return thisThang;
 			flags.occurrance=oldOccurrance;
 			for(Interactable thisThang : list)
 				if(   (thisThang!=null)
-					&&((containsRawString(thisThang.plainDisplayText(),flags.srchStr))
-						||((thisThang instanceof MOB)&&containsString(((MOB)thisThang).genericName(),flags.srchStr)))
+					&&((thisThang instanceof MOB)&&containsString(((MOB)thisThang).genericName(),flags.srchStr))
 					&&((--flags.occurrance)<=0) )
 					return thisThang;
 		}

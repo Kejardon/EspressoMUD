@@ -555,13 +555,13 @@ public class MUD extends Thread implements MudHost
 				if(tArray[i] instanceof Session)
 				{
 					Session S=(Session)tArray[i];
-					Log.sysOut(Thread.currentThread().getName(), "-->Thread: Session status "+S.getStatus()+"-"+S.previousCMD() + "\r\n");
+					Log.sysOut(Thread.currentThread().getName(), "-->Thread: Session status "+S.getStatus()+"-"+S.previousCMD() + "\r\n"+CMClass.getStackTrace((Thread)S));
 				}
 				else
 				if(tArray[i] instanceof Tickable)
 				{
 					Tickable T=(Tickable)tArray[i];
-					Log.sysOut(Thread.currentThread().getName(), "-->Thread: "+T.ID()+"-"+T.getTickStatus() + "\r\n");
+					Log.sysOut(Thread.currentThread().getName(), "-->Thread: "+T.ID()+"-"+T.getTickStatus() + "\r\n"+CMClass.getStackTrace((Thread)T));
 				}
 /*				else
 				if((tArray[i] instanceof Tick)
@@ -569,7 +569,7 @@ public class MUD extends Thread implements MudHost
 				&&(((Tick)tArray[i]).lastClient.clientObject!=null))
 					Log.sysOut(Thread.currentThread().getName(), "-->Thread: "+tArray[i].getName()+" "+((Tick)tArray[i]).lastClient.clientObject.ID()+"-"+((Tick)tArray[i]).lastClient.clientObject.name()+"-"+((Tick)tArray[i]).lastClient.clientObject.getTickStatus() + "\r\n");
 */				else
-					Log.sysOut(Thread.currentThread().getName(), "-->Thread: "+tArray[i].getName() + "\r\n");
+					Log.sysOut(Thread.currentThread().getName(), "-->Thread: "+tArray[i].getName() + "\r\n"+CMClass.getStackTrace(tArray[i]));
 			}
 		}
 	}
@@ -720,7 +720,7 @@ public class MUD extends Thread implements MudHost
 		  page.getStr("HLPMSGS"),
 		  page.getStr("KILMSGS"),
 		  page.getStr("CBTMSGS"));
-		while(!bringDown)
+		if(!bringDown)	//Disabling ability to restart without full shutdown
 		{
 			System.out.println();
 			Log.sysOut(Thread.currentThread().getName(),"CoffeeMud v K1");
@@ -732,6 +732,7 @@ public class MUD extends Thread implements MudHost
 			HostGroup H=new HostGroup(G,nameID);
 			H.start();
 			try{H.join();}catch(Exception e){e.printStackTrace(); Log.errOut(Thread.currentThread().getName(),e); }
+			CMClass.threadPool.shutdown();
 			System.gc();
 			try{Thread.sleep(1000);}catch(Exception e){}
 			System.runFinalization();
@@ -739,6 +740,7 @@ public class MUD extends Thread implements MudHost
 
 			if(activeThreadCount(Thread.currentThread().getThreadGroup())>1)
 			{
+				CMClass.threadPool.shutdownNow();
 				try{ Thread.sleep(1000);}catch(Exception e){}
 				killCount(Thread.currentThread().getThreadGroup(),Thread.currentThread());
 				try{ Thread.sleep(1000);}catch(Exception e){}

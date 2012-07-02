@@ -607,14 +607,14 @@ public class CoffeeFilter extends StdLibrary implements TelnetFilter
 					case 's':	//Pluralization AND conjugation check
 						if(doSagain||shouldUseExtension(buf,lastSp,lastSpace))
 						{
-							nextChar=Character.isUpperCase(buf.charAt(buf.length()-1))?'S':'s';
-							len++;
+							len+=2;
+							nextChar=(char)0;
 							doSagain=true;
 						}
 						else
 						{
-							len+=2;
-							nextChar=(char)0;
+							nextChar=Character.isUpperCase(buf.charAt(buf.length()-1))?'S':'s';
+							len++;
 						}
 						firstSdone=true;
 						break;

@@ -34,6 +34,7 @@ public interface Session extends CMCommon
 	public static final Session[] dummySessionArray=new Session[0];
 
 	public void handlePromptFor(CommandCallWrap command);
+	public void catchPromptFor(CommandCallWrap command);
 	/**
 	 * Negotiates various telnet options (or attempts to), and 
 	 * prints the introTextStr to the user.

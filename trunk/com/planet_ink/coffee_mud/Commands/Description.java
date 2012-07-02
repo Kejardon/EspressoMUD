@@ -28,18 +28,23 @@ public class Description extends StdCommand
 
 	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
+		Body myBody=mob.body();
+		if(myBody==null)
+		{
+			mob.tell("You do not currently possess a body to describe.");
+		}
 		if(commands.size()<2)
 		{
-			mob.tell("^xYour current description:^?\r\n"+mob.description());
+			mob.tell("Your current description:\r\n"+myBody.description());
 			mob.tell("\r\nEnter DESCRIPTION [NEW TEXT] to change.");
 			return false;
 		}
 		String s=CMParms.combine(commands,1);
-		if(s.length()>255)
-			mob.tell("Your description exceeds 255 characters in length.  Please re-enter a shorter one.");
+		if(s.length()>1024)
+			mob.tell("Your description exceeds 1024 characters in length.  Please re-enter a shorter one.");
 		else
 		{
-			mob.setDescription(s);
+			myBody.setDescription(s);
 			mob.tell("Your description has been changed.");
 		}
 		return false;

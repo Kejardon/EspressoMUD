@@ -54,7 +54,7 @@ public class DBManager implements DatabaseEngine	//extends Thread
 	public static final String subFileName="sub.bin";	//1 per backup. Holds fixed width data
 	public static final int timeTillDoFirst=120000;
 	public static final int timeTillDoLast=30000;
-	public static final int numBackups=2;
+	public static final int numBackups=0;
 	public static final long waitInterval=timeTillDoLast/2+2000;
 //	public static final long finalWaitInterval=1000;
 	public static final java.nio.charset.Charset charFormat=java.nio.charset.Charset.forName("ISO-8859-1");	//This should probably not be changed. Mainly, 1-byte chars and ASCII printable char equivalent will be assumed.
@@ -423,7 +423,7 @@ public class DBManager implements DatabaseEngine	//extends Thread
 			//if(!confirmedGood)
 			for(int i=1;i<fixedVals.length;i++)
 				if((fixedVals[i]==null)||(fixedVals[i].remaining()!=enums.weight(i-1)))
-					fixedVals[i]=ByteBuffer.wrap(new byte[enums.weight(i)]);
+					fixedVals[i]=ByteBuffer.wrap(new byte[enums.weight(i-1)]);
 			return fixedVals;
 		}
 		public ByteBuffer getPartFixedVals(CMSavable O)

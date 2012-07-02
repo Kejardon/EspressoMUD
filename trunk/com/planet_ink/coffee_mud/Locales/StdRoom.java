@@ -355,7 +355,7 @@ public class StdRoom implements Room
 						Room.REMap entrance=new Room.REMap(this, map.exit);
 						//TODO: What if destination.hasREMap(entrance)==false ?
 						EnumSet<CMMsg.MsgCode> codeSet=always?EnumSet.of(CMMsg.MsgCode.ENTER,CMMsg.MsgCode.ALWAYS):EnumSet.of(CMMsg.MsgCode.ENTER);
-						CMMsg enterMessage=CMClass.getMsg(msg.source().clone(),null,entrance,codeSet,"<S-NAME> enter(s).");
+						CMMsg enterMessage=CMClass.getMsg(msg.source().clone(),null,entrance,codeSet,"^[S-NAME] enter(s).");
 						if(destination.okMessage(destination, enterMessage)&&enterMessage.handleResponses())
 						{
 							msg.addTrailerHappens(destination, enterMessage);
@@ -376,6 +376,7 @@ public class StdRoom implements Room
 	//Item of Room: If host is a room, do not send to room UNLESS host is your container.
 	public void executeMsg(ExcChecker myHost, CMMsg msg)
 	{
+		Interactable target=msg.target();
 		for(CMMsg.MsgCode code : msg.othersCode())
 		switch(code)
 		{
@@ -393,13 +394,51 @@ public class StdRoom implements Room
 					if(I instanceof Item)
 						bringHere((Item)I, true);
 				}
+				break;
 			}
-			break;
+			case LOOK:
+				if(target==this)
+					handleBeingLookedAt(msg, false);
+				break;
+			case EXAMINE:
+				if(target==this)
+					handleBeingLookedAt(msg, true);
+				break;
 		}
 		myArea.executeMsg(this,msg);
 		for(ExcChecker O : excCheckers)
 			O.executeMsg(myHost,msg);
 // TODO
+	}
+	public void handleBeingLookedAt(CMMsg msg, boolean longLook)
+	{
+		for(Interactable I : msg.sourceArr())
+		{
+			if(!(I instanceof MOB)) continue;
+			MOB mob=(MOB)I;
+			if(mob.session()==null) continue; // no need for monsters to build all this data
+
+			StringBuilder Say=new StringBuilder("");
+			if(mob.playerStats().hasBits(PlayerStats.ATT_SYSOPMSGS))
+			{
+				if(getArea()!=null)
+					Say.append("Area  : "+getArea().name()+"\r\n");
+				Say.append("SaveNum: "+saveNum()+"  ("+ID()+")\r\n");
+			}
+			Say.append(displayText()).append("\r\n").append(description()).append("\r\n\r\n");
+
+			ArrayList<Item> viewItems=CMParms.toArrayList(getItemCollection().allItems());
+
+			//NOTE: Will probably redo these tags sometimes.
+			StringBuilder itemStr=CMLib.lister().lister(mob,viewItems,false,"RItem"," \"*\"",longLook);
+			if(itemStr.length()>0)
+				Say.append(itemStr);
+	
+			if(Say.length()==0)
+				mob.tell("You can't see anything!");
+			else
+				mob.tell(Say.toString());
+		}
 	}
 
 	public Tickable.TickStat getTickStatus(){return tickStatus;}
@@ -491,6 +530,11 @@ public class StdRoom implements Room
 		}
 	}
 
+	public String undoLock()
+	{
+		Thread T=activeThread.getAndSet(null);
+		return (T==null?"null":T.toString());
+	}
 	//0: Got a lock.
 	//1: Got a fresh lock, please return later.
 	//2: Failed to get a lock.
@@ -918,10 +962,13 @@ public class StdRoom implements Room
 			}
 			areaToLink=0;
 		}
+		InvFail:
 		if(itemCollectionToLoad!=0)
 		{
+			ItemCollection newInventory = SIDLib.ITEMCOLLECTION.get(itemCollectionToLoad);
+			if(newInventory==null) break InvFail;
 			ItemCollection oldInventory=inventory;
-			inventory = (ItemCollection)((Ownable)SIDLib.ITEMCOLLECTION.get(itemCollectionToLoad)).setOwner(this);
+			inventory=(ItemCollection)((Ownable)newInventory).setOwner(this);
 			itemCollectionToLoad=0;
 			//Ideally never happens
 			if(oldInventory!=null)

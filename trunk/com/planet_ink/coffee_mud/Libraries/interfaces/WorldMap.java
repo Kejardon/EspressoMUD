@@ -86,6 +86,7 @@ public interface WorldMap extends CMLibrary, Runnable
 //	public Room getStartRoom(Interactable E);
 //	public Area getStartArea(Interactable E);
 	public Room roomLocation(CMObject E);
+	public CMObject goUpOne(CMObject E);
 	public void emptyRoom(Room room, Room bringBackHere);
 	public void emptyArea(Area A);
 //	public boolean hasASky(Room room);

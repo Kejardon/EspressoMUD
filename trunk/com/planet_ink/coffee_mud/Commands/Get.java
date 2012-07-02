@@ -114,7 +114,7 @@ public class Get extends StdCommand
 				}
 				for(Item I : (Item[])getThese.toArray(Item.dummyItemArray))
 				{
-					CMMsg msg=CMClass.getMsg(mob,I,null,EnumSet.of(CMMsg.MsgCode.GET),"<S-NAME> get(s) <T-NAME>.");
+					CMMsg msg=CMClass.getMsg(mob,I,null,EnumSet.of(CMMsg.MsgCode.GET),"^[S-NAME] get^s ^[T-NAME].");
 					if(!R.doMessage(msg))
 					{
 						msg.returnMsg();
@@ -136,7 +136,7 @@ public class Get extends StdCommand
 				}
 				for(Item I : (Item[])getThese.toArray(Item.dummyItemArray))
 				{
-					CMMsg msg=CMClass.getMsg(mob,I,I.container(),EnumSet.of(CMMsg.MsgCode.GET),"<S-NAME> get(s) <T-NAME> from <O-NAME>.");
+					CMMsg msg=CMClass.getMsg(mob,I,I.container(),EnumSet.of(CMMsg.MsgCode.GET),"^[S-NAME] get^s ^[T-NAME] from ^[O-NAME].");
 					if(!R.doMessage(msg))
 					{
 						msg.returnMsg();
@@ -157,7 +157,7 @@ public class Get extends StdCommand
 					mob.tell("You don't see '"+unmodifiedWhatToGet+"' here.");
 					return false;
 				}
-				CMMsg msg=CMClass.getMsg(mob,getThis,null,EnumSet.of(CMMsg.MsgCode.GET),"<S-NAME> get(s) <T-NAME>.");
+				CMMsg msg=CMClass.getMsg(mob,getThis,null,EnumSet.of(CMMsg.MsgCode.GET),"^[S-NAME] get^s ^[T-NAME].");
 				R.doMessage(msg);
 				msg.returnMsg();
 			}
@@ -168,7 +168,7 @@ public class Get extends StdCommand
 					getThis=CMLib.english().fetchInteractable(whatToGet,false,1,C.getItemCollection());
 					if(getThis!=null)
 					{
-						CMMsg msg=CMClass.getMsg(mob,getThis,null,EnumSet.of(CMMsg.MsgCode.GET),"<S-NAME> get(s) <T-NAME>.");
+						CMMsg msg=CMClass.getMsg(mob,getThis,null,EnumSet.of(CMMsg.MsgCode.GET),"^[S-NAME] get^s ^[T-NAME].");
 						R.doMessage(msg);
 						msg.returnMsg();
 						break done;

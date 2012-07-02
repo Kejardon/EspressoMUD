@@ -363,8 +363,24 @@ public class DefaultSession extends Thread implements Session
 			}
 			if(I==null) {rawPrint("You have too many active prompts, finish some first.\r\n"); return;}
 			Future<Void> doneCheck=CMClass.threadPool.submit(command);
-			pendingPrompts.addRow(I, Thread.currentThread(), doneCheck, null, Boolean.TRUE);
+			pendingPrompts.addRow(I, command, doneCheck, null, Boolean.TRUE);
 			promptNumbers.add(I);
+		}
+	}
+	public void catchPromptFor(CommandCallWrap command)
+	{
+		synchronized(pendingPrompts)
+		{
+			for(int i=pendingPrompts.size()-1;i>=0;i--)
+			{
+				if(((Future<Void>)pendingPrompts.elementAt(i, 2)).isDone())
+					promptNumbers.remove((Integer)pendingPrompts.removeElementsAt(i)[0]);
+				else if(pendingPrompts.elementAt(i, 1)==command)
+				{
+					pendingPrompts.setElementAt(i, 1, Thread.currentThread());
+					return;
+				}
+			}
 		}
 	}
 	public String prompt(String Message, String Default, long maxTime)
@@ -1991,7 +2007,7 @@ public class DefaultSession extends Thread implements Session
 					+"'^>^<!EN TargetFocus '"+mob().charStats().getMaxPoints(CharStats.Points.FOCUS)
 					+"'^>^\r\n\r\n");
 		buf.append(CMLib.utensils().builtPrompt(mob));
-		print("^<Prompt^>"+CMLib.utensils().builtPrompt(mob)+"^</Prompt^>^.^N");
+		print(CMLib.utensils().builtPrompt(mob)+".^.");
 */
 		print(CMLib.utensils().builtPrompt(Mob)+(promptGA?("^.^N"+(char)TELNET_IAC+(char)TELNET_GA):("^.^N")));
 	}

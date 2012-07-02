@@ -28,7 +28,6 @@ public class Look extends StdCommand
 
 	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
-		String textMsg="<S-NAME> look(s) ";
 		Interactable thisThang=null;
 		if((commands!=null)&&(commands.size()>1))
 		{
@@ -44,10 +43,12 @@ public class Look extends StdCommand
 			thisThang=mob.location();
 		if(thisThang!=null)
 		{
-			String name="at <T-NAMESELF>";
+			String textMsg;
 			if(thisThang==mob.location())
-				name="around";
-			CMMsg msg=CMClass.getMsg(mob,thisThang,null,EnumSet.of(CMMsg.MsgCode.LOOK),textMsg+name+".");
+				textMsg="^[S-NAME] look^s around.";
+			else
+				textMsg="^[S-NAME] look^s at ^[T-NAMESELF].";
+			CMMsg msg=CMClass.getMsg(mob,thisThang,null,EnumSet.of(CMMsg.MsgCode.LOOK),textMsg);
 			if((mob.location().doMessage(msg))
 				&&(thisThang instanceof Room))
 				CMLib.commands().lookAtExits((Room)thisThang,mob);

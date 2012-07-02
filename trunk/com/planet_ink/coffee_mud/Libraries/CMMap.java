@@ -613,20 +613,41 @@ public class CMMap extends StdLibrary implements WorldMap
 	}
 	public Room roomLocation(CMObject E)
 	{
-		if(E==null||E instanceof Exit)
-			return null;
-		if(E instanceof Area)
-			return ((Area)E).getRandomProperRoom();
-		if(E instanceof Room)	//TODO: Expand this for item rooms? :s Not always appropriate though
-			return (Room)E;
-		if(E instanceof MOB)
-			return ((MOB)E).location();
+		while(true)
+		{
+			if(E==null||E instanceof Exit)
+				return null;
+			if(E instanceof Area)
+				return ((Area)E).getRandomProperRoom();
+			if(E instanceof Room)	//TODO: Expand this for item rooms? :s Not always appropriate though. Add a new function or argument to distinguish
+				return (Room)E;
+			if(E instanceof MOB)
+				return ((MOB)E).location();
+			
+			E=goUpOne(E);
+		}
+		/*
 		if((E instanceof Item)&&(((Item)E).container() != null))
 			return roomLocation(((Item)E).container());
 		if((E instanceof Effect)&&(((Effect)E).affecting() != null))
 			return roomLocation(((Effect)E).affecting());
 		if((E instanceof Behavior)&&(((Behavior)E).behaver() != null))
 			return roomLocation(((Behavior)E).behaver());
+		return null;
+		*/
+	}
+	public CMObject goUpOne(CMObject E)
+	{
+		if(E instanceof Room)	//TODO: Expand this for item rooms? :s Not always appropriate though
+			return ((Room)E).getArea();
+		if(E instanceof MOB)
+			return ((MOB)E).body();
+		if(E instanceof Item)
+			return ((Item)E).container();
+		if(E instanceof Effect)
+			return ((Effect)E).affecting();
+		if(E instanceof Behavior)
+			return ((Behavior)E).behaver();
 		return null;
 	}
 	public Area areaLocation(CMObject E)
