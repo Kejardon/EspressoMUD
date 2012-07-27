@@ -390,6 +390,38 @@ public class CoffeeMaker extends StdLibrary implements GenericBuilder
 		}
 		return V;
 	}
+	public ByteBuffer getEnumWVector(WVector<? extends Enum> V)
+	{
+		if(V==null) return emptyBuffer;
+		
+		int totalSize=0;
+		for(int i=0;i<V.size();i++)
+			totalSize+=8+V.get(i).name().length();
+		
+		ByteBuffer buf=ByteBuffer.wrap(new byte[totalSize]);
+		for(int i=0;i<V.size();i++)
+		{
+			String ID=V.get(i).name();
+			buf.putInt(V.weight(i)).putInt(ID.length()).put(ID.getBytes(DBManager.charFormat));
+		}
+		buf.rewind();
+		return buf;
+	}
+	public WVector<? extends Enum> setEnumWVector(Class enumClass, ByteBuffer S)
+	{
+		if(S.remaining()==0) return null;
+		WVector V=new WVector();
+		while(S.remaining()>0)
+		{
+			int weight=S.getInt();
+			byte[] enumBytes=new byte[S.getInt()];
+			S.get(enumBytes);
+			Enum R=CMClass.valueOf(enumClass, new String(enumBytes, DBManager.charFormat));
+			if(R!=null)
+				V.add(R, weight);
+		}
+		return V;
+	}
 /*
 	public String savStringsInterlaced(String[] ... val)
 	{

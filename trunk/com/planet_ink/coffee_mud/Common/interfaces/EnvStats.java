@@ -48,6 +48,11 @@ public interface EnvStats extends CMCommon, CMModifiable, CMSavable
 	public void delAmbiance(String ambiance);
 //	public boolean sameAs(EnvStats E);
 	public void copyInto(EnvStats intoStats);
+	public boolean isComposite();
+	public RawMaterial.Resource material();
+	public void setMaterial(RawMaterial.Resource material);
+	public WVector<RawMaterial.Resource> materialSet();
+	public void setMaterials(WVector<RawMaterial.Resource> newMaterials);
 
 /*
 	public final static int STAT_LEVEL=0;

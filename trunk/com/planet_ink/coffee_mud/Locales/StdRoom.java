@@ -996,13 +996,17 @@ public class StdRoom implements Room
 				if(E.myEnvironmental!=null) ((Ownable)E.myEnvironmental).setOwner(E);
 				if((old!=null)&&(old!=E.myEnvironmental)) old.destroy(); } },
 		DOM(){
-			public ByteBuffer save(StdRoom E){ return (ByteBuffer)ByteBuffer.wrap(new byte[4]).putInt(E.myDom.ordinal()).rewind(); }
-			public int size(){return 4;}
-			public void load(StdRoom E, ByteBuffer S){ E.myDom=Domain.getDomain(S.getInt()); } },
+			public ByteBuffer save(StdRoom E){ return CMLib.coffeeMaker().savString(E.myDom.name()); }
+			public int size(){return 0;}
+			public void load(StdRoom E, ByteBuffer S){
+				Domain newDom=(Domain)CMClass.valueOf(Domain.class, CMLib.coffeeMaker().loadString(S));
+				if(newDom!=null) E.myDom=newDom; } },
 		ENC(){
-			public ByteBuffer save(StdRoom E){ return (ByteBuffer)ByteBuffer.wrap(new byte[4]).putInt(E.myEnc.ordinal()).rewind(); }
+			public ByteBuffer save(StdRoom E){ return CMLib.coffeeMaker().savString(E.myEnc.name()); }
 			public int size(){return 4;}
-			public void load(StdRoom E, ByteBuffer S){ E.myEnc=Enclosure.getEnclosure(S.getInt()); } },
+			public void load(StdRoom E, ByteBuffer S){
+				Enclosure newEnc=(Enclosure)CMClass.valueOf(Enclosure.class, CMLib.coffeeMaker().loadString(S));
+				if(newEnc!=null) E.myEnc=newEnc; } },
 		DSP(){
 			public ByteBuffer save(StdRoom E){ return CMLib.coffeeMaker().savString(E.display); }
 			public int size(){return 0;}

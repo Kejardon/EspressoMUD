@@ -150,9 +150,10 @@ public class MUD extends Thread implements MudHost
 		while(!CMLib.database().doneLoading())
 		try{Thread.sleep(500);}catch(Exception e){}
 
+		CMLib.finalInitialize();
 		Log.sysOut(Thread.currentThread().getName(),"Mapped rooms      : "+CMLib.map().numRooms()+" in "+CMLib.map().numAreas()+" areas");
 
-		if(CMLib.map().numAreas()==0)
+		if(CMLib.map().numAreas()==1)
 		{
 			Log.sysOut("NO MAPPED ROOM?!  I'll make ya one!");
 			Area newArea=CMClass.AREA.getNew("StdArea");
@@ -162,6 +163,8 @@ public class MUD extends Thread implements MudHost
 			room.setArea(newArea);
 			room.setDisplayText("New Room");
 			room.setDescription("Brand new database room! You need to change this text with the MODIFY ROOM command.");
+			newArea.saveThis();
+			room.saveThis();
 		}
 
 		CMLib.login().initStartRooms(page);

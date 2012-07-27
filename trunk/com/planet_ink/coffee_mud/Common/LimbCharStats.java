@@ -28,23 +28,25 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
+//For a typical carbon-based lifeform
 @SuppressWarnings("unchecked")
-public class LimbCharStats implements CharStats
+public class LimbCharStats extends DefaultCharStats
 {
 	public String ID(){return "LimbCharStats";}
+	private static final Stat[] myStatOptions={Stat.CONSTITUTION, Stat.PRECISION, Stat.STRENGTH};
+	private static final Save[] mySaveOptions={};
+	private static final Points[] myPointOptions={Points.FATIGUE};
 
-	public CMObject newInstance(){try{return (CMObject)getClass().newInstance();}catch(Exception e){return new LimbCharStats();}}
-	public void initializeClass(){}
-	protected CMSavable parent=null;
-	protected short[] stat={10, 10, 10};
-	protected short[] save={};
-	protected int[] points={10};
-	protected int[] pointsMax={10};
+	{
+		stat=new short[]{10, 10, 10};
+		save=new short[]{};
+		points=new int[]{10};
+		pointsMax=new int[]{10};
+	}
 
-	//Ownable
-	public CMSavable owner(){return parent;}
-	public Ownable setOwner(CMSavable owner){parent=owner; return this;}
-//	protected Body myBody=null;
+	public Stat[] getStatOptions(){return myStatOptions;}
+	public Save[] getSaveOptions(){return mySaveOptions;}
+	public Points[] getPointOptions(){return myPointOptions;}
 
 	public int getStatIndex(Stat option)
 	{
@@ -69,43 +71,7 @@ public class LimbCharStats implements CharStats
 		return -1;
 	}
 
-	public LimbCharStats() { }
-//	public CharStats setBody(Body newBody){myBody=newBody; return this;}
-
-	public void copyInto(CharStats intoStats)
-	{
-		if(intoStats instanceof LimbCharStats)
-		{
-			LimbCharStats newStats=(LimbCharStats)intoStats;
-			copyStatic(newStats);
-			for(int i=0; i<points.length; i++)
-				newStats.points[i]=points[i];
-			if(newStats.parent!=null)
-				newStats.parent.saveThis();
-		}
-	}
-	public void copyStatic(CharStats intoStats)
-	{
-		if(intoStats instanceof LimbCharStats)
-		{
-			LimbCharStats newStats=(LimbCharStats)intoStats;
-			for(int i=0; i<stat.length; i++)
-				newStats.stat[i]=stat[i];
-			for(int i=0; i<pointsMax.length; i++)
-				newStats.pointsMax[i]=pointsMax[i];
-			for(int i=0; i<save.length; i++)
-				newStats.save[i]=save[i];
-			newStats.parent=parent;
-			if(parent!=null) parent.saveThis();
-		}
-	}
-	public void resetState()
-	{
-		for(int i=0; i<points.length; i++)
-			points[i]=pointsMax[i];
-		if(parent!=null) parent.saveThis();
-	}
-
+	/*
 	public CMObject copyOf()
 	{
 		//KINDA TODO
@@ -113,112 +79,16 @@ public class LimbCharStats implements CharStats
 		copyInto(newOne);
 		return newOne;
 	}
+	public void destroy(){}	//TODO?
+	public boolean amDestroyed()
+	{
+		if(parent!=null)
+			return parent.amDestroyed();
+		return true;
+	}
+	*/
 
-	public short getSave(Save option)
-	{
-		int i=getSaveIndex(option);
-		if(i>=0) return save[i];
-		return -1;
-	}
-	public void setSave(Save option, short value)
-	{
-		int i=getSaveIndex(option);
-		if(i>=0) { save[i]=value; if(parent!=null) parent.saveThis(); }
-	}
-
-	public short getStat(Stat option)
-	{
-		int i=getStatIndex(option);
-		if(i>=0) return stat[i];
-		return -1;
-	}
-
-	public void setStat(Stat option, short value)
-	{
-		int i=getStatIndex(option);
-		if(i>=0) { stat[i]=value; if(parent!=null) parent.saveThis();}
-	}
-
-	public int getPoints(Points option)
-	{
-		int i=getPointsIndex(option);
-		if(i>=0) return points[i];
-		return -1;
-	}
-	public double getPointsPercent(Points option)
-	{
-		int i=getPointsIndex(option);
-		if(i>=0) return ((double)points[i])/pointsMax[i];
-		return -1.0;
-	}
-	public boolean setPoints(Points option, int newVal)	//Return if it broke a min or max cap, do not cap yourself
-	{
-		int i=getPointsIndex(option);
-		if(i>=0) {points[i]=newVal; if(parent!=null) parent.saveThis(); return newVal>pointsMax[i];}
-		return false;
-	}
-	public boolean adjPoints(Points option, int byThisMuch)	//Cap, return if cap did something
-	{
-		int i=getPointsIndex(option);
-		if(i>=0)
-		{
-			points[i]+=byThisMuch;
-			if(points[i]>pointsMax[i])
-			{
-				points[i]=pointsMax[i];
-				if(parent!=null) parent.saveThis();
-				return true;
-			}
-			else if(points[i]<0)
-			{
-				points[i]=0;
-				if(parent!=null) parent.saveThis();
-				return true;
-			}
-			if(parent!=null) parent.saveThis();
-		}
-		return false;
-	}
-
-	public int getMaxPoints(Points option)
-	{
-		int i=getPointsIndex(option);
-		if(i>=0) return pointsMax[i];
-		return -1;
-	}
-	public boolean setMaxPoints(Points option, int newVal)	//Return if reduced below current, do not cap yourself
-	{
-		int i=getPointsIndex(option);
-		if(i<0) return false;
-		pointsMax[i]=newVal;
-		if(parent!=null) parent.saveThis();
-		if(newVal<points[i])
-			return true;
-		return false;
-	}
-	public boolean adjMaxPoints(Points option, int byThisMuch)	//Cap, return if cap did something
-	{
-		int i=getPointsIndex(option);
-		if(i>=0)
-		{
-			boolean change=false;
-			pointsMax[i]+=byThisMuch;
-			if(pointsMax[i]<0)
-			{
-				pointsMax[i]=0;
-				change=true;
-			}
-			if(points[i]>pointsMax[i])
-			{
-				points[i]=pointsMax[i];
-				if(parent!=null) parent.saveThis();
-				return true;
-			}
-			if(parent!=null) parent.saveThis();
-			return change;
-		}
-		return false;
-	}
+	/*
 	public void recoverTick(Body body)
 	{
 		//On second thought, this sort of logic should be in race data! Or at least accessible/overwritable by it.
@@ -250,35 +120,23 @@ public class LimbCharStats implements CharStats
 		sourceStats.adjPoints(Points.HUNGER, -hungerCost);
 		adjPoints(Points.FATIGUE, fatigueRegen);
 		/*if(parent!=null) parent.saveThis();
-		sourceStats.saveThis(); */
+		sourceStats.saveThis(); //*
 	}
+	*/
 
-//	public void expendEnergy(MOB mob, boolean expendMovement)
-	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
-
-	public boolean sameAs(CharStats E)
-	{
-		if (E.equals(this)) return true;
-		return false;
-	}
-	public void destroy(){}	//TODO?
-	public boolean amDestroyed()
-	{
-		if(parent!=null)
-			return parent.amDestroyed();
-		return true;
-	}
 	//CMModifiable and CMSavable
 	public SaveEnum[] totalEnumS(){return SCode.values();}
 	public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]};}
 	public ModEnum[] totalEnumM(){return MCode.values();}
 	public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
+	/*
 	public int saveNum(){return 0;}
 	public void setSaveNum(int num){}
 	public boolean needLink(){return false;}
 	public void link(){}
 	public void saveThis(){if(parent!=null) parent.saveThis();}
 	public void prepDefault(){}
+	*/
 
 	private enum SCode implements CMSavable.SaveEnum{
 		STT(){

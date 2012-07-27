@@ -274,6 +274,23 @@ public class DBManager implements DatabaseEngine	//extends Thread
 				catch(Exception e){Log.errOut("DBManager",e); return null;}
 			return variableChannel;
 		}
+		public void claimFreeEntry(int i)
+		{
+			SimpleInt old=freeEntries.get(0);
+			if(i==old.Int)
+				old.Int++;
+			else if(i>old.Int)
+			{
+				while(i>old.Int)
+				{
+					freeEntries.add(new SimpleInt(old.Int));
+					old.Int++;
+				}
+				old.Int++;
+			}
+			else
+				Log.errOut("DBManager", new RuntimeException("claimFreeEntry does not support values below current last value!"));
+		}
 		public int getFreeEntry()
 		{
 			if(freeEntries.size()>1) return freeEntries.remove(freeEntries.size()-1).Int;
@@ -579,6 +596,7 @@ public class DBManager implements DatabaseEngine	//extends Thread
 	public String ID(){return "DBManager";}
 	public CMObject newInstance(){return this;}
 	public void initializeClass(){}
+	public void finalInitialize(){}
 	public CMObject copyOf(){return this;}
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 	public boolean activate()
@@ -770,6 +788,7 @@ public class DBManager implements DatabaseEngine	//extends Thread
 					int saveNum=thisBuf.getInt();
 					if(saveNum==0) continue;	//Deleted entry, skip
 					format.fileMap.put(new SimpleInt(saveNum), new SimpleInt(fileIndex));
+					format.claimFreeEntry(fileIndex);
 					CMSavable thisObj=(CMSavable)format.myObject.newInstance();
 					thisObj.setSaveNum(saveNum);	//This will also register the object with its associated SID library.
 					for(int parserNum=0;parserNum<parsers.length;parserNum++)

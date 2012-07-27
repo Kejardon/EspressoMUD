@@ -795,7 +795,7 @@ public class CharCreation extends StdLibrary implements CharCreationLibrary
 		mob.setSession(session);
 		if(loginsDisabled(mob))
 			return LoginResult.NO_LOGIN;
-		mob.body().bringToLife(mob.location(),false);	//NOTE: Chars stats will remain whatever they were before because of this
+		//mob.body().bringToLife(mob.location(),false);	//NOTE: Chars stats will remain whatever they were before because of this
 		if(showMessage) mob.location().show(mob,"^[S-NAME] stirs!");
 		mob.playerStats().setLastIP(session.getByteAddress());
 		notifyFriends(mob,"^X"+mob.name()+" has logged on.^.^?");

@@ -57,8 +57,12 @@ public interface Body extends Item	//, Rideable
 	public void bringToLife(Room newLocation, boolean resetStats);
 	public void bringToLife();
 //	public Enumeration<Race> myRace();	//actually inconvenient to get and no need atm...
+	public boolean isComposite();
+	public Race race();
+	public WVector<Race> raceSet();
 	public boolean isRace(Race R);
-	public void setRace(Race... R);
+	public void setRace(Race R);
+	public void setRaces(WVector<Race> newRaces);
 	public void addRace(Race R);
 	public String raceName();
 	public void setGender(Gender G);

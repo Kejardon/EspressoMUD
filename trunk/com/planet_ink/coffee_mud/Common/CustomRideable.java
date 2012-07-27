@@ -178,7 +178,7 @@ public class CustomRideable implements Rideable, Ownable
 		public ByteBuffer save(CMSavable E){return save((CustomRideable)E);}
 		public CMSavable subObject(CMSavable fromThis){return null;}
 		public void load(CMSavable E, ByteBuffer S){load((CustomRideable)E, S);} }
-	private static enum MCode implements ModEnum{
+	private enum MCode implements ModEnum{
 		RIDERS() {
 			public String brief(CustomRideable E){return ""+E.numRiders();}
 			public String prompt(CustomRideable E){return "";}

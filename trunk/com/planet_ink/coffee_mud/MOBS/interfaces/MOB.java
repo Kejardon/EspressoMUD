@@ -99,6 +99,7 @@ public interface MOB extends ItemCollection.ItemHolder, Interactable, CMSavable,
 	public void setSession(Session newSession);
 	public void setTempSession(Session newSession);
 	public boolean isMonster();
+	//public boolean canReach(Interactable I);
 
 	// Alternate body stuff. I'll figure this out later.
 //	public boolean isPossessing();

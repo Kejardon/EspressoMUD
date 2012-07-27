@@ -24,6 +24,9 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 // A container for stats related to a variaety of animated objects.
 public interface CharStats extends CMCommon, CMModifiable, CMSavable, Ownable
 {
+	public static final Stat[] dummyStatArray={};
+	public static final Save[] dummySaveArray={};
+	public static final Points[] dummyPointsArray={};
 	/*
 	public static final int STAT_STRENGTH=0;
 	public static final int STAT_INTELLIGENCE=STAT_STRENGTH+1;
@@ -145,6 +148,14 @@ public interface CharStats extends CMCommon, CMModifiable, CMSavable, Ownable
 	/** constant for how many fatigue points are required to be considered exhausted */
 //	public final static long FATIGUED_EXHAUSTED_MILLIS=FATIGUED_MILLIS*10;
 
+	public Stat[] getStatOptions();
+	public Save[] getSaveOptions();
+	public Points[] getPointOptions();
+
+	public int getStatIndex(Stat option);
+	public int getPointsIndex(Points option);
+	public int getSaveIndex(Save option);
+
 	public int getPoints(Points option);
 	public double getPointsPercent(Points option);
 	public boolean setPoints(Points option, int newVal);	//Return if it broke a min or max cap, do not cap yourself
@@ -156,9 +167,9 @@ public interface CharStats extends CMCommon, CMModifiable, CMSavable, Ownable
 
 	public void resetState();
 
-	public void recoverTick(Body body);
+	//public void recoverTick(Body body);	//Moving this to Race.java
 
-//	public void expendEnergy(MOB mob, boolean expendMovement);
+	//public void expendEnergy(MOB mob, boolean expendMovement);
 
 	public boolean sameAs(CharStats E);
 }

@@ -74,6 +74,10 @@ public class SIDLib
 			values=null;
 			objVector.add(this);
 		}
+		public String name()
+		{
+			return CMClass.rawClassName(myClass);
+		}
 
 		public synchronized int getNumber(U forThis)
 		{

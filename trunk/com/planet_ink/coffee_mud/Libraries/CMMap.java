@@ -45,9 +45,12 @@ public class CMMap extends StdLibrary implements WorldMap
 	{
 		//openExit=CMClass.EXIT.get("OpenExit");
 		CMClass.LOCALE.add(LimboRoom);
+		SIDLib.ROOM.assignNumber(LimboRoom.saveNum(), LimboRoom);
+	}
+	public void finalInitialize()
+	{
 		LimboRoom.getArea();
 		LimboRoom.getItemCollection();
-		SIDLib.ROOM.assignNumber(LimboRoom.saveNum(), LimboRoom);
 	}
 	//TODO: Look at this after StdRoom
 	protected static Room LimboRoom=new com.planet_ink.coffee_mud.Locales.StdRoom()

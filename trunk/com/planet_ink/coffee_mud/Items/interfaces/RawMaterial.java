@@ -58,6 +58,7 @@ public interface RawMaterial extends Item
 		POULTRY(Material.FLESH, 3, 20, 1, 2000),
 		MUTTON(Material.FLESH, 4, 20, 1, 2800),
 		FISH(Material.FLESH, 5, 100, 1, 590, "strong fishy"),
+		INSECT(Material.FLESH, 6, 20, 2, 1100),
 		WHEAT(Material.VEGETATION, 1, 20, 1, 770),
 		CORN(Material.VEGETATION, 1, 20, 1, 720),
 		RICE(Material.VEGETATION, 1, 20, 1, 750),

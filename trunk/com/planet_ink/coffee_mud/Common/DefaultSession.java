@@ -453,6 +453,59 @@ public class DefaultSession extends Thread implements Session
 		catch(Exception e){}
 		return "";
 	}
+	public static class ManualFuture<E> implements Future<E>
+	{
+		protected boolean done=false;
+		public boolean cancel(boolean evenIfRunning) {done=true; return true;}
+		public E get(){return null;}
+		public E get(long time, TimeUnit unit){return null;}
+		public boolean isCanceled(){return false;}
+		public boolean isDone(){return done;}
+	}
+	public String newPrompt(String Message, long maxTime)
+	{
+		Thread caller=Thread.currentThread();
+		Object[] promptData=null;
+		Future<Void> doneCheck=null;
+		synchronized(pendingPrompts)
+		{
+			for(int i=pendingPrompts.size()-1;i>=0;i--)
+			{
+				if(((Future<Void>)pendingPrompts.elementAt(i, 2)).isDone())
+					promptNumbers.remove((Integer)pendingPrompts.removeElementsAt(i)[0]);
+			}
+			Integer I=null;
+			for(int i=1;i<10;i++)
+			{
+				if(promptNumbers.contains(i)) continue;
+				I=new Integer(i);
+				break;
+			}
+			if(I==null) {rawPrint("You have too many active prompts, finish some first.\r\n"); return;}
+			doneCheck=new ManualFuture<Void>();
+			//pendingPrompts.addRow(I, caller, doneCheck, null, Boolean.TRUE);
+			promptData=new Object[]{I, caller, doneCheck, null, Boolean.TRUE};
+			pendingPrompts.addRow(promptData);
+			promptNumbers.add(I);
+		}
+		try{
+			Message="-- Prompt "+promptData[0]+" --\r\n"+Message+"\r\n-- End Prompt "+promptData[0]+" --";
+			promptData[3]=Message;
+			promptData[4]=Boolean.FALSE;
+			print(Message);
+			try{Thread.sleep(maxTime>0?maxTime:DefaultPromptSleep);}catch(InterruptedException e){}
+			if(promptData[4]==Boolean.FALSE)
+			{
+				promptData[4]=Boolean.TRUE;
+				print("\r\n-- Prompt "+promptData[0]+" has expired --\r\n");
+				return "";
+			}
+			return (String)promptData[3];
+		}
+		catch(Exception e){}
+		finally{doneCheck.cancel();}
+		return "";
+	}
 	public String prompt(String Message)
 	{ return prompt(Message, -1); }
 /*

@@ -544,7 +544,7 @@ public class CMClass extends ClassLoader
 			if(e instanceof CMObject)
 				return ((CMObject)e).ID();
 			else
-				return rawClassName(e);
+				return rawClassName(e.getClass());
 		}
 		return "";
 	}

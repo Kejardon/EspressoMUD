@@ -57,7 +57,14 @@ public interface Race extends StatsAffecting, ListenHolder.MsgListener, CMObject
 //	public int[] weight(Gender g, int age);
 
 //	public int[] getAgingChart();
-
+	public void recoverTick(Body body, CharStats stats);
+	//Return possible nutritional value of material
+	public int diet(Body body, RawMaterial.Resource material);
+	//'body' consumes 'volume' amount of 'source'. This only affects body, source should be handled by caller (after this?). 'volume' is not necessarily (but usually) actual volume.
+	//Should source be an Item or something else? EnvStats maybe?
+	public void applyDiet(Body body, Item source, int volume);
+	//How much (volume) of the source should be consumed per eat action.
+	public int getBiteSize(Body body, Item source);
 	//ummmmm this is going to be complicated
 	public HashMap<String, Body.BodyPart> bodyMap();
 	// Chance of impregnation(0-100) when having sex with the given race. Can be negative- 0 means 'impossible naturally but possible with magic/science aid', -100 means 'completely impossible'

@@ -165,6 +165,14 @@ public class CMLib
 				libraries[L.ordinal()].activate();
 	}
 	
+	public static void finalInitialize() {
+		for(Library L : Library.values())
+			if(libraries[L.ordinal()]==null)
+				Log.errOut("CMLib","Unable to find library "+L.toString());
+			else
+				libraries[L.ordinal()].finalInitialize();
+	}
+	
 	public static CMLibrary library(int lcode) {
 		return libraries[lcode];
 	}

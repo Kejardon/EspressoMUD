@@ -133,6 +133,28 @@ public class CMParms
 		}
 		return commands;
 	}
+	public static String removeFirst(String str)
+	{
+		int spaceIndex=str.indexOf(" ");
+		int strIndex=str.indexOf("\"");
+		if((strIndex>=0)&&((strIndex<spaceIndex)||(spaceIndex<0)))
+		{
+			int endStrIndex=str.indexOf("\"",strIndex+1);
+			if(endStrIndex>strIndex)
+			{
+				return str.substring(endStrIndex+1).trim();
+			}
+			else
+			{
+				return "";
+			}
+		}
+		else if(spaceIndex>=0)
+		{
+			return str.substring(spaceIndex+1).trim();
+		}
+		return "";
+	}
 	public static Vector<String> parse(String str, int upTo)	//How many elements the Vector may have.
 	{
 		Vector<String> commands=new Vector();

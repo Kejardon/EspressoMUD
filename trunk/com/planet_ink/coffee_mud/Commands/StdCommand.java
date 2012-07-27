@@ -69,7 +69,6 @@ public class StdCommand implements Command
 	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	public boolean canBeOrdered(){return true;}
 	public boolean securityCheck(MOB mob){return true;}
-	public boolean staffCommand(){return false;}
 	public CMObject newInstance(){return this;}
 	public CMObject copyOf() { return this; }
 	public boolean prompter(){return false;}

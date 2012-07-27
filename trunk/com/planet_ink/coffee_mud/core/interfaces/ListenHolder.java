@@ -51,10 +51,33 @@ public interface ListenHolder extends Tickable {
 	public static interface OkChecker extends Listener
 	{ public boolean okMessage(OkChecker myHost, CMMsg msg); }
 	public static interface MsgListener extends ListenHolder.ExcChecker, ListenHolder.OkChecker
-	{ public boolean respondTo(CMMsg msg); }
+	{ public boolean respondTo(CMMsg msg); public boolean respondTo(CMMsg msg, Object data); }
 	public static interface TickActer extends Tickable, Listener {}
 	public static interface AllListener extends CharAffecter, EnvAffecter, MsgListener, TickActer {}
 
+	public static class DummyListener implements MsgListener	//Extend this for particular respondTo classes
+	{
+		public void registerListeners(ListenHolder forThis){}
+		public void registerAllListeners(){}
+		public void clearAllListeners(){}
+		public int priority(ListenHolder forThis){return 0;}
+		public EnumSet<Flags> listenFlags(){return null;}
+		public boolean okMessage(OkChecker myHost, CMMsg msg){return true;}
+		public void executeMsg(ExcChecker myHost, CMMsg msg){}
+		public boolean respondTo(CMMsg msg){return true;}
+		public boolean respondTo(CMMsg msg, Object data){return true;}
+	}
+	public static class InbetweenListener extends DummyListener
+	{
+		public MsgListener realListener;
+		public Object data;
+		
+		public InbetweenListener(MsgListener rL, Object d){realListener=rL; data=d;}
+		public InbetweenListener(){}
+		
+		public boolean respondTo(CMMsg msg) { return realListener.respondTo(msg, data); }
+	}
+	
 	public static class O
 	{
 		public static void removeListener(ListenHolder onThis, Listener oldAffect, EnumSet<Flags> flags)

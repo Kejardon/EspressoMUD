@@ -36,6 +36,7 @@ public class DefaultEnvStats implements EnvStats, Ownable
 	protected int weight;
 	protected int magic;
 	protected CMSavable parent;
+	protected RawMaterial.Resource material=RawMaterial.Resource.NOTHING;
 	//TODO: Material should probably be stored here? Still need to decide how
 
 	//Ownable
@@ -51,6 +52,9 @@ public class DefaultEnvStats implements EnvStats, Ownable
 	public int width(){return width;}
 	public double speed(){return Speed;}
 	public Iterator<String> ambiances(){ return ambiances.iterator();}
+	public boolean isComposite(){return false;}
+	public RawMaterial.Resource material(){return material;}
+	public WVector<RawMaterial.Resource> materialSet(){return null;}
 
 	public void setWeight(int newWeight){weight=newWeight; if(parent!=null)parent.saveThis();}
 	public void setSpeed(double newSpeed){Speed=newSpeed; if(parent!=null)parent.saveThis();}
@@ -58,6 +62,8 @@ public class DefaultEnvStats implements EnvStats, Ownable
 	public void setHeight(int newHeight){height=newHeight; if(parent!=null)parent.saveThis();}
 	public void setLength(int newLength){length=newLength; if(parent!=null)parent.saveThis();}
 	public void setWidth(int newWidth){weight=newWidth; if(parent!=null)parent.saveThis();}
+	public void setMaterial(RawMaterial.Resource newMaterial){material=newMaterial; if(parent!=null)parent.saveThis();}
+	public void setMaterials(WVector<RawMaterial.Resource>){}
 	public void addAmbiance(String ambiance)
 	{
 		synchronized(ambiances)
@@ -111,6 +117,7 @@ public class DefaultEnvStats implements EnvStats, Ownable
 			copy.magic=magic;
 			copy.Speed=Speed;
 			copy.ambiances=(CopyOnWriteArrayList<String>)ambiances.clone();
+			copy.material=material;
 			copy.saveThis();
 		}
 	}
@@ -150,6 +157,12 @@ public class DefaultEnvStats implements EnvStats, Ownable
 			public ByteBuffer save(DefaultEnvStats E){ return CMLib.coffeeMaker().savAString((String[])E.ambiances.toArray(CMClass.dummyStringArray)); }
 			public int size(){return 0;}
 			public void load(DefaultEnvStats E, ByteBuffer S){ E.ambiances=new CopyOnWriteArrayList(CMLib.coffeeMaker().loadAString(S)); } },
+		MAT(){
+			public ByteBuffer save(DefaultEnvStats E){ return CMLib.coffeeMaker().savString(E.material.name()); }
+			public int size(){return 0;}
+			public void load(DefaultEnvStats E, ByteBuffer S){
+				RawMaterial.Resource newMat=CMClass.valueOf(RawMaterial.Resource.class, CMLib.coffeeMaker().loadString(S));
+				if(newMat!=null) E.material=newMat; } },
 		;
 		public abstract ByteBuffer save(DefaultEnvStats E);
 		public abstract void load(DefaultEnvStats E, ByteBuffer S);
@@ -196,6 +209,10 @@ public class DefaultEnvStats implements EnvStats, Ownable
 			public String brief(DefaultEnvStats E){return ""+E.magic;}
 			public String prompt(DefaultEnvStats E){return ""+E.magic;}
 			public void mod(DefaultEnvStats E, MOB M){E.magic=CMLib.genEd().intPrompt(M, ""+E.magic);} },
+		MATERIAL(){
+			public String brief(DefaultEnvStats E){return E.material.toString();}
+			public String prompt(DefaultEnvStats E){return E.material.toString();}
+			public void mod(DefaultEnvStats E, MOB M){E.material=(RawMaterial.Resource)CMLib.genEd().enumPrompt(M, E.material.toString(), Enclosure.values());} },
 /*		DISPOSITION(){
 			public String brief(DefaultEnvStats E){return ""+E.disposition;}
 			public String prompt(DefaultEnvStats E){return ""+E.disposition;}

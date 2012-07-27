@@ -31,13 +31,14 @@ public class StdBody extends StdItem implements Body
 
 	protected CopyOnWriteArrayList<CharAffecter> charAffecters=new CopyOnWriteArrayList();
 	//protected WVector<Race> myRaces=new WVector();	//make HybridBody for this instead
-	protected Race myRace=null;
+	protected Race myRace=CMClass.RACE.get("StdRace");
 	protected Gender myGender=null;
-	protected boolean dead=false;
+	protected boolean dead=true;
 	protected MOB myMob=null;
 	protected CharStats baseCharStats;//=(CharStats)((Ownable)CMClass.COMMON.getNew("BodyCharStats")).setOwner(this);
 	protected CharStats charStats;//=(CharStats)((Ownable)CMClass.COMMON.getNew("BodyCharStats")).setOwner(this);
 	protected int[] birthday={-1, -1, -1};
+	public void initializeClass(){super.initializeClass(); myRace=CMClass.RACE.get("StdRace");} //Make sure CMClass's instance has non-null race
 
 	public StdBody()
 	{
@@ -126,19 +127,27 @@ public class StdBody extends StdItem implements Body
 				charStats().setMaxPoints(CharStats.Points.HIT, 1);
 		CMLib.database().saveObject(this);
 	}
+	public boolean isComposite(){return false;}
+	public Race race(){return myRace;}
+	public WVector<Race> raceSet(){return null;}
 	public boolean isRace(Race R){return myRace==R;}
 	public void setRace(Race[] R)
 	{
-		if(R.length==1)
+		myRace=R;
+		CMLib.database().saveObject(this);
+	}
+	public void setRaces(WVector<Race> R)
+	{
+		if(R.size()==1)
 		{
-			myRace=R[0];
+			myRace=R.get(0);
 			CMLib.database().saveObject(this);
 		}
 	}
 	public void addRace(Race R){}	//Not supported by StdBody, need HybridBody
 	public String raceName()
 	{
-		return (myRace==null?"":myRace.name());
+		return myRace.name();
 	}
 	public void setGender(Gender G){myGender=G; CMLib.database().saveObject(this);}
 	public Gender gender(){return ((myGender==null)?(CMClass.GENDER.get("StdGender")):myGender);}
@@ -184,6 +193,17 @@ public class StdBody extends StdItem implements Body
 	public void setWornOut(int worn) { }
 	public boolean damagable() {return false;}
 	public void setDamagable(boolean bool){}
+
+	protected boolean doTick()
+	{
+		tickStatus=Tickable.TickStat.Start;
+		if(!dead)
+		{
+			myRace.recoverTick(this, charStats);
+			//TODO: Limb stuff also!
+		}
+		return ((!dead)||(super.doTick()));
+	}
 
 	public boolean okMessage(ListenHolder.OkChecker myHost, CMMsg msg)
 	{
@@ -295,9 +315,7 @@ public class StdBody extends StdItem implements Body
 			public int size(){return 1;}
 			public void load(StdBody E, ByteBuffer S){ E.dead=(S.get()!=0); } },
 		RAC(){
-			public ByteBuffer save(StdBody E){
-				if(E.myRace==null) return GenericBuilder.emptyBuffer;
-				return CMLib.coffeeMaker().savString(E.myRace.ID()); }
+			public ByteBuffer save(StdBody E){ return CMLib.coffeeMaker().savString(E.myRace.ID()); }
 			public int size(){return 0;}
 			public void load(StdBody E, ByteBuffer S){ E.myRace=CMClass.RACE.get(CMLib.coffeeMaker().loadString(S)); } },
 		GEN(){
@@ -334,7 +352,7 @@ public class StdBody extends StdItem implements Body
 			public String prompt(StdBody E){return ""+E.birthday;}
 			public void mod(StdBody E, MOB M){CMLib.genEd().aintPrompt(M, E.birthday);} },
 		RACE(){
-			public String brief(StdBody E){return (E.myRace==null?"null":E.myRace.name());}
+			public String brief(StdBody E){return E.myRace.name();}
 			public String prompt(StdBody E){return "";}
 			public void mod(StdBody E, MOB M){E.myRace=CMLib.genEd().racePrompt(M);} },
 		;

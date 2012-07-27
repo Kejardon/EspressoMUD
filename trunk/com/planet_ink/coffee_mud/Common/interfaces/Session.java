@@ -351,7 +351,10 @@ public interface Session extends CMCommon
 	 * @return the string entered by the user
 	 * @throws IOException a disconnect or time out
 	 */
+	//Does a prepped Command non-active prompt or an active prompt.
 	public String prompt(String Message, long maxTime);
+	//Does an on-the-spot non-active prompt.
+	public String newPrompt(String Message, long maxTime);
 	
 	/**
 	 * Prompts the user to enter Y or N, and returns what they

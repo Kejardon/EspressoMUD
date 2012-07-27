@@ -90,7 +90,7 @@ public class Snoop extends StdCommand
 				mob.tell("This would create a snoop loop!");
 				return false;
 			}
-			snoopOn.startSnoopingOn(mob.session());
+			snooper.startSnoopingOn(snoopOn);
 			mob.tell("You start snooping on "+snoopOn.mob().name()+".");
 		}
 		return false;

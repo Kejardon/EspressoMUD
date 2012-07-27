@@ -39,6 +39,7 @@ public class ServiceEngine implements ThreadEngine
 
 	public CMObject newInstance(){try{return (CMObject)getClass().newInstance();}catch(Exception e){return new ServiceEngine();}}
 	public void initializeClass(){}
+	public void finalInitialize(){}
 	public CMObject copyOf(){try{return (CMObject)this.clone();}catch(Exception e){return newInstance();}}
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 	public void propertiesLoaded(){}

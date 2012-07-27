@@ -24,6 +24,7 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
+//Defaults for typical carbon-based lifeform (mainly recoverTick)
 @SuppressWarnings("unchecked")
 public class StdRace implements Race
 {
@@ -96,6 +97,20 @@ public class StdRace implements Race
 	{
 	}
 
+	public void recoverTick(Body body, CharStats stats)
+	{
+	}
+	public int diet(Body body, RawMaterial.Resource material)
+	{
+		return 0;
+	}
+	public void applyDiet(Body body, Item source, int volume)
+	{
+	}
+	public int getBiteSize(Body body, Item source)
+	{
+		return 0;
+	}
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 
 	public String getStatAdjDesc()

@@ -22,7 +22,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 	http://www.apache.org/licenses/LICENSE-2.0
 */
 @SuppressWarnings("unchecked")
-public class Human extends StdRace
+public class Human extends CarbonBased
 {
 	public String ID(){	return "Human"; }
 	public String name(){ return "Human"; }

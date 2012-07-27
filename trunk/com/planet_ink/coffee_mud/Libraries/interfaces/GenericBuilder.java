@@ -61,6 +61,8 @@ public interface GenericBuilder extends CMLibrary
 	public ByteBuffer savSaveNums(CMSavable[] e);
 	public ByteBuffer getRaceWVector(WVector<Race> V);
 	public WVector<Race> setRaceWVector(ByteBuffer S);
+	public ByteBuffer getEnumWVector(WVector<? extends Enum> V);
+	public WVector<? extends Enum> setEnumWVector(Class enumClass, ByteBuffer S);
 	public ByteBuffer savExits(Room.REMap[] exits);
 	public int[][] loadExits(ByteBuffer buf);
 //	public String savStringsInterlaced(String[] ... val);

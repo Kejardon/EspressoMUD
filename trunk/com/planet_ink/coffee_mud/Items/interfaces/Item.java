@@ -28,6 +28,9 @@ public interface Item extends Interactable, CMSavable, CMModifiable
 	public String stackableName();
 	public void setStackableName(String S);
 	
+	public boolean isComposite();
+	public ItemCollection subItems();
+	
 	//public void setMiscText(String newMiscText);
 	//public String text();
 	public CMObject container();

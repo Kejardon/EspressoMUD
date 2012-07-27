@@ -560,6 +560,19 @@ public class StdMOB implements MOB
 */
 	public boolean okMessage(ListenHolder.OkChecker myHost, CMMsg msg)
 	{
+		Interactable target=msg.target();
+		for(CMMsg.MsgCode code : msg.othersCode())
+		switch(code)
+		{
+			case EAT:
+				if(target==this || target==myBody)
+					msg.addResponse(new ListenHolder.InbetweenListener(EatResponse, this), 9);
+				break;
+			case DRINK:
+				if(target==this || target==myBody)
+					msg.addResponse(new ListenHolder.InbetweenListener(DrinkResponse, this), 9);
+				break;
+		}
 		for(OkChecker O : okCheckers)
 			if(!O.okMessage(myHost,msg))
 				return false;
@@ -600,7 +613,90 @@ public class StdMOB implements MOB
 	{
 		tell(this,this,msg);
 	}
-	public boolean respondTo(CMMsg msg){return true;}
+	protected static ListenHolder.DummyListener EatResponse
+	{
+		public boolean respondTo(CMMsg msg, Object data)
+		{
+			MOB mob=(StdMOB)data;
+			Body body=mob.myBody;
+			boolean always=msg.hasOthersCode(CMMsg.MsgCode.ALWAYS);
+			if(body.isComposite())
+			{
+				WVector<Race> myRaces=body.raceSet();
+				Log.errOut("StdMOB",new RuntimeException("Incomplete code!"));	//TODO eventually
+				mob.tell("Incomplete code!");
+				return false;
+			}
+			else
+			{
+				Race myRace=body.race();
+				Vector<CMObject> food=msg.tool();
+				if((food==null)||(food.size()==0))
+				{
+					mob.tell("There's nothing to eat!");
+					return false;
+				}
+				boolean found=false;	//Anything that could possible be eaten is found.
+				int totalWorth=0;	//'Score' for selection.
+				int totalAmount=0;
+				for(CMObject obj : food)
+				{
+					if(!(obj instanceof Item)) continue;
+					Item I=(Item)obj;
+					if(I.isComposite())
+					{
+						Log.errOut("StdMOB",new RuntimeException("Incomplete code!"));	//TODO eventually
+						mob.tell("Incomplete code!");
+						//return false;
+						continue;
+					}
+					Environmental env=Environmental.O.getFrom(I);
+					if(env==null) continue;
+					EnvStats stats=env.envStats();
+					if(stats.isComposite())
+					{
+						Log.errOut("StdMOB",new RuntimeException("Incomplete code!"));	//TODO eventually
+						mob.tell("Incomplete code!");
+						continue;
+					}
+					int amount=myRace.getBiteSize(body, I);
+					int worth=myRace.diet(body, stats.material());
+					found=true;
+					totalWorth+=worth;
+				}
+				if(!found)
+				{
+					mob.tell("There's nothing to eat!");
+					return false;
+				}
+				if(totalWorth<0)
+				{
+					Session S=mob.mySession;
+					if(S!=null)
+					{
+						String response=S.newPrompt("That doesn't look very appealing! Eat it anyways? (y/n)", 10000);
+						if(response.length()>0&&Character.toUpperCase(response.charAt(0))=='Y')
+							totalWorth=0;
+					}
+				}
+				if(totalWorth<0) return false;
+				
+				TODO NOW
+			}
+		}
+	}
+	protected static ListenHolder.DummyListener DrinkResponse
+	{
+		public void respondTo(CMMsg msg, Object data)
+		{
+			MOB mob=(MOB)data;
+			boolean always=msg.hasOthersCode(CMMsg.MsgCode.ALWAYS);
+			TODO NOW
+		}
+	}
+	
+	public boolean respondTo(CMMsg msg)
+	{ return true; }
 	public void executeMsg(ListenHolder.ExcChecker myHost, CMMsg msg)
 	{
 		if(msg.othersMessage()!=null)

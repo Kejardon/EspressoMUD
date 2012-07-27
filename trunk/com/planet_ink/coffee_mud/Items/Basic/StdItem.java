@@ -67,6 +67,8 @@ public class StdItem implements Item
 			synchronized(this){if(myEnvironmental==null) myEnvironmental=(Environmental)((Ownable)CMClass.COMMON.getNew("DefaultEnvironmental")).setOwner(this);}
 		return myEnvironmental;
 	}
+	public boolean isComposite(){return false;}
+	public ItemCollection subItems(){return null;}
 
 	public int priority(ListenHolder L){return Integer.MAX_VALUE;}
 	public void registerListeners(ListenHolder here) { here.addListener(this, lFlags); }
@@ -342,7 +344,7 @@ public class StdItem implements Item
 
 	public boolean okMessage(ListenHolder.OkChecker myHost, CMMsg msg)
 	{
-		Interactable target=msg.target();
+		//Interactable target=msg.target();
 		for(CMMsg.MsgCode code : msg.othersCode())
 		switch(code)
 		{

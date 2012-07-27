@@ -33,4 +33,5 @@ public interface CMLibrary extends CMObject
 	//none get called by it. Not that it matters as none of them do anything at the moment. TODO
 	public void propertiesLoaded();
 	public ThreadEngine.SupportThread getSupportThread();
+	public void finalInitialize();
 }
