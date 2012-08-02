@@ -887,52 +887,180 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 
 	//Return max_value if not specified. Return a value + command "all" if specified. Return -1 if fail.
 	//TODO: Reprogram this and make it sensible.
-	public int calculateMaxToGive(MOB mob, Vector<String> commands, Interactable checkWhat, boolean getOnly)	//boolean breakPackages, 
+	public int calculateMaxToGive(MOB mob, Vector<String> commands, Interactable checkWhat, boolean getOnly)
 	{
 		int maxToGive=Integer.MAX_VALUE;
 		if((commands.size()>1)
-//		&&(numPossibleGold(mob,CMParms.combine(commands,0))==0)
 		&&(CMath.s_int(commands.firstElement())>0))
 		{
 			maxToGive=CMath.s_int(commands.firstElement());
 			commands.add(0, "all");
-			/*if(breakPackages)
-			{
-				String packCheckName=CMParms.combine(commands,1);
-				Interactable fromWhat=null;
-				if(checkWhat instanceof MOB)
-					fromWhat=mob.fetchInventory(packCheckName);
-				else
-				if(checkWhat instanceof Room)
-					fromWhat=((Room)checkWhat).fetchItem(packCheckName);
-				if(fromWhat instanceof Item)
-				{
-					int max=3000;
-					if(maxToGive>max)
-					{
-						mob.tell("You can only handle "+max+" at a time.");
-						return -1;
-					}
-					/*Interactable toWhat=CMLib.materials().unbundle((Item)fromWhat,maxToGive);
-					if(getOnly&&mob.isMine(fromWhat)&&mob.isMine(toWhat))
-					{
-						mob.tell("Ok");
-						return -1;
-					}
-					else
-					if(commands.size()==1)
-						commands.addElement(toWhat.name());
-					else
-					{
-						Object o=commands.firstElement();
-						commands.clear();
-						commands.addElement(o);
-						commands.addElement(toWhat.name());
-					} //*
-				}
-			}*/
 		}
 		return maxToGive;
+	}
+	public int calculateMaxToGive(MOB mob, String commands, Interactable checkWhat, boolean getOnly)
+	{
+		int maxToGive=Integer.MAX_VALUE;
+		if((commands.size()>1)
+		&&(CMath.s_int(commands.firstElement())>0))
+		{
+			maxToGive=CMath.s_int(commands.firstElement());
+		}
+		return maxToGive;
+	}
+
+	public Vector<Interactable> getTargets(MOB mob, Vector<String> commands, String partitioner, boolean TRideFContainer)
+	{
+		Room R=mob.location();
+		String whatToGet=null;
+		Vector<Interactable> containers=null;
+		int partition=0;
+		if((partitioner!=null)&&((partition=getPartitionIndex(commands, partitioner))!=-1))
+		{
+			String containerName=CMParms.combine(commands,partition);
+			String upper=containerName.toUpperCase();
+			containerAll=upper.startsWith("ALL ");
+			if(upper.startsWith("ALL.")){ containerAll=true; containerName="ALL "+containerName.substring(4);}
+			if(upper.endsWith(".ALL")){ containerAll=true; containerName="ALL "+containerName.substring(0,containerName.length()-4);}
+			if(containerAll)
+			{
+				Vector<Interactable> V=fetchInteractables(containerName,false,1,Integer.MAX_VALUE,mob.getItemCollection(),R.getItemCollection());
+				if(V.size()==0)
+				{
+					mob.tell("You don't see '"+containerName+"' here.");
+					return null;
+				}
+				if(TRideFContainer)
+				{
+					for(int i=V.size()-1;i>=0;i--)
+						if(!(V.get(i) instanceof Rideable))
+							V.remove(i);
+				}
+				else
+				{
+					for(int i=V.size()-1;i>=0;i--)
+						if(!(V.get(i) instanceof Container))
+							V.remove(i);
+				}
+				if(V.size()==0)
+				{
+					mob.tell(TRideFContainer?"None of those have anything on them!":"None of those have anything in them!");
+					return null;
+				}
+				containers=V;
+			}
+			else
+			{
+				Interactable I=fetchInteractable(containerName,false,1,mob.getItemCollection(),R.getItemCollection());
+				if(I==null)
+				{
+					mob.tell("You don't see '"+containerName+"' here.");
+					return null;
+				}
+				if(TRideFContainer)
+				{
+					if(!(I instanceof Rideable))
+					{
+						mob.tell("That doesn't have anything on it.");
+						return null;
+					}
+				}
+				else
+				{
+					if(!(I instanceof Closeable))
+					{
+						mob.tell("That doesn't have anything in it.");
+						return null;
+					}
+				}
+				containers=new Vector(1);
+				containers.add(I);
+			}
+			whatToGet=CMParms.combine(commands,0,partition);
+		}
+		else
+		{
+			whatToGet=CMParms.combine(commands,0);
+		}
+
+		int maxToGet=calculateMaxToGive(mob,commands,R,true);
+		if(maxToGet<0) return null;
+
+		String unmodifiedWhatToGet=whatToGet;
+		whatToGet=whatToGet.toUpperCase();
+		boolean allFlag=whatToGet.startsWith("ALL ");
+		if(whatToGet.toUpperCase().startsWith("ALL.")){ allFlag=true; whatToGet="ALL "+whatToGet.substring(4);}
+		if(whatToGet.toUpperCase().endsWith(".ALL")){ allFlag=true; whatToGet="ALL "+whatToGet.substring(0,whatToGet.length()-4);}
+		//Vector<Interactable> results=new Vector();
+		done:
+		if(allFlag)
+		{
+			Vector<Interactable> getThese=null;
+			if(containers==null)
+			{
+				getThese=fetchInteractables(whatToGet,false,1,maxToGet,R.getItemCollection());
+				if(getThese.size()==0)
+				{
+					mob.tell("You don't see '"+unmodifiedWhatToGet+"' here.");
+					return null;
+				}
+				return getThese;
+			}
+			else
+			{
+				getThese=new Vector();
+				//NOTE: Loops like these won't entirely work how I like with stuff like '6.potion'
+				for(Container C : (Container[])containers.toArray(Container.dummyContainerArray))
+				{
+					Vector<Interactable> subGetThese=fetchInteractables(whatToGet,false,1,maxToGet,C.getItemCollection());
+					getThese.addAll(subGetThese);
+					maxToGet-=subGetThese.size();
+					if(maxToGet==0) break;
+				}
+				for(Item I : (Item[])getThese.toArray(Item.dummyItemArray))
+				{
+					CMMsg msg=CMClass.getMsg(mob,I,I.container(),EnumSet.of(CMMsg.MsgCode.GET),"^[S-NAME] get^s ^[T-NAME] from ^[O-NAME].");
+					if(!R.doMessage(msg))
+					{
+						msg.returnMsg();
+						break;
+					}
+					msg.returnMsg();
+				}
+			}
+		}
+		else
+		{
+			Interactable getThis=null;
+			if(containers==null)
+			{
+				getThis=fetchInteractable(whatToGet,false,1,R.getItemCollection());
+				if(getThis==null)
+				{
+					mob.tell("You don't see '"+unmodifiedWhatToGet+"' here.");
+					return false;
+				}
+				CMMsg msg=CMClass.getMsg(mob,getThis,null,EnumSet.of(CMMsg.MsgCode.GET),"^[S-NAME] get^s ^[T-NAME].");
+				R.doMessage(msg);
+				msg.returnMsg();
+			}
+			else
+			{
+				for(Container C : (Container[])containers.toArray(Container.dummyContainerArray))
+				{
+					getThis=fetchInteractable(whatToGet,false,1,C.getItemCollection());
+					if(getThis!=null)
+					{
+						CMMsg msg=CMClass.getMsg(mob,getThis,null,EnumSet.of(CMMsg.MsgCode.GET),"^[S-NAME] get^s ^[T-NAME].");
+						R.doMessage(msg);
+						msg.returnMsg();
+						break done;
+					}
+				}
+				mob.tell("You don't see '"+unmodifiedWhatToGet+"' here.");
+				return false;
+			}
+		}
 	}
 
 /*

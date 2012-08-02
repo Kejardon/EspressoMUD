@@ -37,7 +37,7 @@ public class Get extends StdCommand
 		}
 		commands.removeElementAt(0);
 
-		Object getFrom=null;
+		//Object getFrom=null;
 		String whatToGet=null;
 		boolean containerAll=false;
 		Vector<Interactable> containers=null;
@@ -45,7 +45,7 @@ public class Get extends StdCommand
 		int partition=CMLib.english().getPartitionIndex(commands, "from");
 		if(partition==-1)
 		{
-			getFrom=R;
+			//getFrom=R;
 			whatToGet=CMParms.combine(commands,0);
 		}
 		else

@@ -52,6 +52,15 @@ public class CarbonBased extends StdRace
 			{
 				String ID=CMParms.removeFirst(commands.cmdString);
 				
+				int maxToGet=CMLib.english().calculateMaxToGive(mob,ID,R,true);
+				if(maxToGet<0) return false;
+				
+				String unmodifiedID=ID;
+				ID=ID.toUpperCase();
+				boolean allFlag=ID.startsWith("ALL ");
+				if(ID.toUpperCase().startsWith("ALL.")){ allFlag=true; ID="ALL "+ID.substring(4);}
+				if(ID.toUpperCase().endsWith(".ALL")){ allFlag=true; ID="ALL "+ID.substring(0,ID.length()-4);}
+				
 				target=(Item)CMLib.english().fetchInteractable(ID, false, 1, mob.getItemCollection(), mob.location());
 				if(target==null)
 				{
@@ -134,9 +143,16 @@ public class CarbonBased extends StdRace
 		}
 	}
 
+	public int getMaxBiteSize(Body body)
+	{
+		//TODO eventually: Base bite size off of head size or something more specific
+		return 5000;
+	}
 	public int getBiteSize(Body body, Item source)
 	{
-		//TODO eventually: Base bite size off of head size or something more specific.
+		//TODO eventually: Base bite size off of head size or something more specific. Also source's hardness?
+		int max=source.getEnvObject().envStats().volume();
+		if(max<5000) return -max;
 		return 5000;
 	}
 	protected static class RTInfo

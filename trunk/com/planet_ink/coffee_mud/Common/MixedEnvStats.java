@@ -34,6 +34,7 @@ public class MixedEnvStats implements EnvStats, Ownable
 	protected int length;
 	protected int height;
 	protected int weight;
+	protected long volume;
 	protected int magic;
 	protected CMSavable parent;
 	protected WVector<RawMaterial.Resource> materials=new WVector();
@@ -61,6 +62,7 @@ public class MixedEnvStats implements EnvStats, Ownable
 		return null;
 	}
 	public WVector<RawMaterial.Resource> materialSet(){return materials;}
+	public long volume(){return volume;}
 
 	public void setWeight(int newWeight){weight=newWeight; if(parent!=null)parent.saveThis();}
 	public void setSpeed(double newSpeed){Speed=newSpeed; if(parent!=null)parent.saveThis();}
@@ -75,6 +77,7 @@ public class MixedEnvStats implements EnvStats, Ownable
 		if(parent!=null) parent.saveThis();
 	}
 	public void setMaterials(WVector<RawMaterial.Resource> newMaterials){materials = MixedEnvStatsnewMaterials; if(parent!=null)parent.saveThis();}
+	public void setVolume(int newVolume){volume=newVolume;}
 	public void addAmbiance(String ambiance)
 	{
 		synchronized(ambiances)

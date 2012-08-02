@@ -34,6 +34,7 @@ public class DefaultEnvStats implements EnvStats, Ownable
 	protected int length;
 	protected int height;
 	protected int weight;
+	protected long volume;
 	protected int magic;
 	protected CMSavable parent;
 	protected RawMaterial.Resource material=RawMaterial.Resource.NOTHING;
@@ -55,6 +56,7 @@ public class DefaultEnvStats implements EnvStats, Ownable
 	public boolean isComposite(){return false;}
 	public RawMaterial.Resource material(){return material;}
 	public WVector<RawMaterial.Resource> materialSet(){return null;}
+	public long volume(){return volume;}
 
 	public void setWeight(int newWeight){weight=newWeight; if(parent!=null)parent.saveThis();}
 	public void setSpeed(double newSpeed){Speed=newSpeed; if(parent!=null)parent.saveThis();}
@@ -64,6 +66,7 @@ public class DefaultEnvStats implements EnvStats, Ownable
 	public void setWidth(int newWidth){weight=newWidth; if(parent!=null)parent.saveThis();}
 	public void setMaterial(RawMaterial.Resource newMaterial){material=newMaterial; if(parent!=null)parent.saveThis();}
 	public void setMaterials(WVector<RawMaterial.Resource>){}
+	public void setVolume(int newVolume){volume=newVolume;}
 	public void addAmbiance(String ambiance)
 	{
 		synchronized(ambiances)

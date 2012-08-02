@@ -639,6 +639,7 @@ public class StdMOB implements MOB
 				boolean found=false;	//Anything that could possible be eaten is found.
 				int totalWorth=0;	//'Score' for selection.
 				int totalAmount=0;
+				int maxAmount=myRace.getMaxBiteSize(body);
 				for(CMObject obj : food)
 				{
 					if(!(obj instanceof Item)) continue;
@@ -660,7 +661,26 @@ public class StdMOB implements MOB
 						continue;
 					}
 					int amount=myRace.getBiteSize(body, I);
+					boolean wholeBite;
+					if(amount<0)
+					{
+						wholeBite=true;
+						amount=-amount;
+					}
+					else
+						wholeBite=false;
 					int worth=myRace.diet(body, stats.material());
+					if(amount==0 || (found&&wholeBite&&worth<=0)) continue;
+					if(!found&&worth<=0)
+					{
+						Session S=mob.mySession;
+						if(S!=null)
+						{
+							String response=S.newPrompt("That doesn't look very appealing! Eat it anyways? (y/n)", 10000);
+							if(response.length()>0&&Character.toUpperCase(response.charAt(0))=='Y')
+								worth=0;
+						}
+					}
 					found=true;
 					totalWorth+=worth;
 				}
