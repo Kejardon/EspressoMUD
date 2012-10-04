@@ -44,7 +44,7 @@ public interface GenericEditor extends CMLibrary
 	public String stringPrompt(MOB mob, String defaultTo, boolean allowNull);
 	public void acharPrompt(MOB mob, char[] values);
 	public char charPrompt(MOB mob, String defaultTo);
-	public Enum enumPrompt(MOB M, String defaultTo, Enum[] options); //IMPORTANT: ALL CALLS TO THIS MUST HAVE UPPERCASE ENUM OPTIONS.
+	public <T extends Enum> T enumPrompt(MOB M, String defaultTo, T[] options); //IMPORTANT: ALL CALLS TO THIS MUST HAVE UPPERCASE ENUM OPTIONS.
 	public void enumSetPrompt(MOB M, Enum[] options, EnumSet set); //IMPORTANT: ALL CALLS TO THIS MUST HAVE UPPERCASE ENUM OPTIONS.
 
 	public void modBehavable(Behavable E, MOB M);

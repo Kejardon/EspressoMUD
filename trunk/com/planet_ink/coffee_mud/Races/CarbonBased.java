@@ -9,6 +9,7 @@ import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 import com.planet_ink.coffee_mud.Commands.StdCommand;
@@ -45,32 +46,22 @@ public class CarbonBased extends StdRace
 		
 		public boolean execute(MOB mob, MOB.QueuedCommand commands)
 		{
-			if(commands.nextAct==0)
+			Body body=mob.body();
+			boolean didPrereqFlag=(commands.nextAct==1); //MOBEatFlag
+			if(commands.nextAct==0 || didPrereqFlag)
 				commands.nextAct=System.currentTimeMillis();
-			Item target;
+			Vector<Interactable> targets;
 			if(commands.data==null)
 			{
 				String ID=CMParms.removeFirst(commands.cmdString);
-				
-				int maxToGet=CMLib.english().calculateMaxToGive(mob,ID,R,true);
-				if(maxToGet<0) return false;
-				
-				String unmodifiedID=ID;
-				ID=ID.toUpperCase();
-				boolean allFlag=ID.startsWith("ALL ");
-				if(ID.toUpperCase().startsWith("ALL.")){ allFlag=true; ID="ALL "+ID.substring(4);}
-				if(ID.toUpperCase().endsWith(".ALL")){ allFlag=true; ID="ALL "+ID.substring(0,ID.length()-4);}
-				
-				target=(Item)CMLib.english().fetchInteractable(ID, false, 1, mob.getItemCollection(), mob.location());
-				if(target==null)
-				{
-					mob.tell("You don't see that here!");
-					return false;
-				}
+				targets=CMLib.english().getTargets(mob, ID, "from", EnglishParsing.SRCH_ALL, EnglishParsing.SUB_ALL);
+				if(targets==null) return false;
+				commands.data=targets;
+				//if(targets.size()==0)	//Shouldn't happen I think
 			}
 			else
 			{
-				target=(Item)commands.data;
+				targets=(Vector)commands.data;
 				/*
 				if(!mob.isMine(target)&&target.container()!=mob.location())
 				{
@@ -79,13 +70,43 @@ public class CarbonBased extends StdRace
 				}
 				*/
 			}
+			//EatCode MOBEat=mob.getEat();
+			//Vector<Item> failed=(MOBEat==null?null:new Vector());
+			if(!didPrereqFlag)
+			{
+				ArrayList<MOB.QueuedCommand> prereqs=body.getEat().eatPrereqs(mob, body, targets);	//failed
+				if(prereqs==null)
+				{
+					//if(MOBEat==null)
+						return false;
+					//prereqs=MOBEat.eatPrereqs(mob, body, failed, null);
+					//if(prereqs==null) return false;
+				}
+				if(prereqs.size()>0)
+				{
+					commands.nextAct=1;
+					/* Enque command at end.
+					   I think proper way to do this is have eatPrereqs enque its commands, have this enque itself after those commands,
+					   and then return false to remove the first instance of this command and immediately do the next command. */
+					mob.enqueCommand(commands, prereqs.get(prereqs.size()-1));
+					return false;
+				}
+			}
+			//else check if prereqs exist. sendEat should check as well so that works instead I guess.
 			
+			long results=body.getEat().sendEat(mob, body, targets);
+			//if((results==-1)||(results==0)) return false;
+			if(results<=0) return false;
+			
+			/*
 			boolean success=mob.location().doAndReturnMsg(CMClass.getMsg(mob,target,null,EnumSet.of(CMMsg.MsgCode.EAT),"^[S-NAME] eat^s ^[T-NAME]."));
 			if(!success||target.amDestroyed()||mob.body().charStats().getPointsPercent(CharStats.Points.HUNGER)>=1)
 				return false;
-			
 			commands.data=target;
-			commands.nextAct+=Tickable.TIME_TICK;
+			*/
+
+			//commands.nextAct+=Tickable.TIME_TICK;
+			commands.nextAct+=results;
 			return true;
 		}
 		public int commandType(MOB mob, String cmds){return CT_LOW_P_ACTION;}
@@ -143,17 +164,316 @@ public class CarbonBased extends StdRace
 		}
 	}
 
+	public long sendEat(MOB mob, Body body, Vector<Interactable> items)
+	{
+		if(items.size()==0) return 0;
+		Item I=(Item)items.get(0);
+		
+		if(body.isComposite())
+		{
+			WVector<Race> myRaces=body.raceSet();
+			Log.errOut("StdMOB",new RuntimeException("Incomplete code!"));	//TODO eventually
+			mob.tell("Incomplete code!");
+			return -1;
+		}
+		Race myRace=body.race();
+		int amount=myRace.getBiteSize(body, I);
+		boolean wholeBite;
+		if(amount<0)
+		{
+			wholeBite=true;
+			amount=-amount;
+		}
+		else
+			wholeBite=false;
+		CMMsg msg=CMClass.getMsg(mob,body,I,EnumSet.of(CMMsg.MsgCode.EAT),"^[S-NAME] eat^s ^[O-NAME].");
+		msg.setValue(amount);
+		boolean success=mob.location().doAndReturnMsg(msg);
+		if(!success)
+			return -1;
+		
+		if(body.charStats().getPointsPercent(CharStats.Points.HUNGER)>=1)
+		{
+			mob.tell("You're full now.");
+			return 0;
+		}
+		
+		if(!wholeBite) return Tickable.TIME_TICK*amount/myRace.getMaxBiteSize(body);
+		return Tickable.TIME_TICK;
+	}
+	//Execute msg sort of code. Should not need any sanity checks.
+	public boolean handleEat(CMMsg msg)
+	{
+		int amountToEat=msg.value();
+		if(amountToEat == 0) return false;
+		//if(!satisfyPrereqs(msg)) return false;
+		Interactable target=msg.target();
+		if(!(target instanceof Body)) return false;
+		Body body=(Body)target;
+		//Vector<CMObject> tools=msg.tool();
+		//NOTE: Right now there is no way to eat multiple items at the same time so this may be changed if that is added.
+		CMObject tool=msg.firstTool();
+		if(!(tool instanceof Item)) return false;
+
+		Item I=(Item)tool;
+		Environmental E=I.getEnvObject();
+		EnvStats env=E.baseEnvStats();
+		/*
+		int total=0;
+		if(env.isComposite())
+		{
+			WVector<RawMaterial.Resource> mats=env.materialSet();
+			for(int j=0;j<mats.size();j++)
+				total+=(int)(diet(body, mats.get(j))*msg.value()*mats.pct(j));
+		}
+		else
+		{
+			total=diet(body, env.material())*msg.value();
+		}
+		*/
+		
+		applyDiet(body, (Item)tool, amountToEat);
+		long remains=env.volume() - amountToEat;
+		if(remains==0)
+		{
+			I.destroy();
+		}
+		else
+		{
+			env.setVolume(remains);
+			env.recalcLengthsFromVolume();
+			env.recalcWeightFromVolume();
+			E.recoverEnvStats();
+		}
+		return true;
+	}
+	public void applyDiet(Body body, Item source, int volume)
+	{
+		if(source.isComposite())
+		{
+			Log.errOut(ID(),new RuntimeException("Incomplete code!"));	//TODO eventually
+			MOB mob=body.mob();
+			if(mob!=null)
+				mob.tell("Incomplete code to handle "+source.name()+"!");
+			return;
+		}
+		EnvStats env=source.getEnvObject().baseEnvStats();
+		CharStats stats=body.charStats();
+		if(env.isComposite())
+		{
+			WVector<RawMaterial.Resource> mats=env.materialSet();
+			for(int j=0;j<mats.size();j++)
+			{
+				RawMaterial.Resource mat=mats.get(j);
+				//float gain=diet(body, mat)*msg.value()*mats.pct(j);
+				stats.adjPoints(CharStats.Points.HUNGER, (int)(volume*mats.pct(j)*nutrition(mat)));
+				stats.adjPoints(CharStats.Points.HUNGER, (int)(volume*mats.pct(j)*waterContent(mat)));
+			}
+		}
+		else
+		{
+			RawMaterial.Resource mat=env.material();
+			//int gain=diet(body, mat)*msg.value();
+			stats.adjPoints(CharStats.Points.HUNGER, (int)(volume*nutrition(mat)));
+			stats.adjPoints(CharStats.Points.HUNGER, (int)(volume*waterContent(mat)));
+		}
+	}
+	public int diet(Body body, RawMaterial.Resource mat)
+	{
+		/*
+		switch(mat)
+		{
+		}
+		*/
+		switch(mat.material)
+		{
+			case UNKNOWN: return 0;
+			case CLOTH: return 0;
+			case LEATHER: return 0;
+			case METAL: return -100;
+			case MITHRIL: return -100;
+			case WOODEN: return 0;
+			case GLASS: return -100;
+			case VEGETATION: return 100;
+			case FLESH: return 100;
+			case PAPER: return 0;
+			case ROCK: return -100;
+			case LIQUID: return 100;
+			case PRECIOUS: return -100;
+			case ENERGY: return -100;
+			case PLASTIC: return -100;
+		}
+		return -100;
+	}
+	//Default to basic omnivore
+	public float nutrition(RawMaterial.Resource mat)
+	{
+		/*
+		switch(mat)
+		{
+		}
+		*/
+		switch(mat.material)
+		{
+			//case CLOTH: return 0.0;
+			//case LEATHER: return 0.0;
+			//case WOODEN: return 0.0;
+			case VEGETATION: return (float)0.9;
+			case FLESH: return (float)0.98;
+			//case PAPER: return 0.0;
+			//case LIQUID: return 0.0;
+		}
+		return (float)0.0;
+	}
+	public float waterContent(RawMaterial.Resource mat)
+	{
+		/*
+		switch(mat)
+		{
+		}
+		*/
+		switch(mat.material)
+		{
+			//case CLOTH: return 0.0;
+			//case LEATHER: return 0.0;
+			//case WOODEN: return 0.0;
+			case VEGETATION: return (float)0.1;
+			case FLESH: return (float)0.02;
+			//case PAPER: return 0.0;
+			case LIQUID: return (float)1.0;
+		}
+		return (float)0.0;
+	}
+	public boolean satisfiesEatReqs(CMMsg msg)
+	{
+		Interactable target=msg.target();
+		Body body=(target instanceof Body)?(Body)target:null;
+		if(body==null) return false;
+		CMObject toEat=msg.firstTool();
+		Item I=(toEat instanceof Item)?(Item)toEat:null;
+		if(I==null) return false;
+		EnvStats env=I.getEnvObject().envStats();
+		int total=0;
+		if(env.isComposite())
+		{
+			WVector<RawMaterial.Resource> mats=env.materialSet();
+			for(int j=0;j<mats.size();j++)
+				total+=(int)(diet(body, mats.get(j))*mats.pct(j));
+		}
+		else
+		{
+			total=diet(body, env.material());
+		}
+		if(total<=-100)
+		{
+			/*
+			Interactable source=msg.firstSource();
+			MOB mob=(source instanceof MOB)?source:null;
+			if(mob!=null)
+				mob.tell(" simply cannot eat "+I.name()+".");
+			*/
+			return false;
+		}
+		return true;
+	}
+	public boolean satisfiesEatPrereqs(CMMsg msg)
+	{
+		Interactable source=msg.firstSource();
+		MOB mob=(source instanceof MOB)?(MOB)source:null;
+		if(mob==null) return false;
+		Interactable target=msg.target();
+		Body body=(target instanceof Body)?(Body)target:null;
+		if(body==null) return false;
+		if((mob.body()!=body) && (mob.location() != body.container()))
+		{
+			return false;
+		}
+		CMObject toEat=msg.firstTool();
+		Item I=(toEat instanceof Item)?(Item)toEat:null;
+		if(I==null) return false;
+		if((!mob.getItemCollection().hasItem(I, true)) && (I.container()!=mob.location()))
+		{
+			return false;
+		}
+		return true;
+	}
+	public ArrayList<MOB.QueuedCommand> eatPrereqs(MOB mob, Body body, Vector<Interactable> items)
+	{
+		//TODO: Go to object. Pick up if needed?
+		for(int i=0;i<items.size();i++)
+		{
+			Interactable thing=items.get(i);
+			Item I = (thing instanceof Item)?(Item)thing:null;
+			if(I==null) continue;
+			if((!mob.getItemCollection().hasItem(I, true)) && (I.container()!=mob.location()))
+			{
+				items.remove(i);
+				i--;
+				continue;
+			}
+			if(I.isComposite())
+			{
+				Log.errOut(ID(),new RuntimeException("Incomplete code!"));	//TODO eventually
+				mob.tell("Incomplete code to handle "+I.name()+"!");
+				items.remove(i);
+				i--;
+				continue;
+			}
+			else
+			{
+				EnvStats env=I.getEnvObject().envStats();
+				int total=0;
+				if(env.isComposite())
+				{
+					WVector<RawMaterial.Resource> mats=env.materialSet();
+					for(int j=0;j<mats.size();j++)
+						total+=(int)(diet(body, mats.get(j))*mats.pct(j));
+				}
+				else
+				{
+					total=diet(body, env.material());
+				}
+				if(total<=0)
+				{
+					//NOTE: I am not sure how thread-safe a prompt here is, but it SHOULD be thread-safe if it isn't yet.
+					String response;
+					if(total<=-100)
+					{
+						response="N";
+						mob.tell("You simply cannot eat "+I.name()+".");
+					}
+					else
+					{
+						Session S=mob.session();
+						if(S==null)
+							response="N";
+						else
+							response=S.newPrompt(I.name()+" doesn't look very appealing! Eat it anyways? (y/N)", 10000);
+					}
+					if(response.length()>0&&Character.toUpperCase(response.charAt(0))!='Y')
+					{
+						items.remove(i);
+						i--;
+						continue;
+					}
+				}
+			}
+			break;
+		}
+		if(items.size()==0) return null;
+		return CMClass.emptyAL;
+	}
 	public int getMaxBiteSize(Body body)
 	{
 		//TODO eventually: Base bite size off of head size or something more specific
-		return 5000;
+		return 10;
 	}
 	public int getBiteSize(Body body, Item source)
 	{
 		//TODO eventually: Base bite size off of head size or something more specific. Also source's hardness?
-		int max=source.getEnvObject().envStats().volume();
-		if(max<5000) return -max;
-		return 5000;
+		long max=source.getEnvObject().envStats().volume();
+		if(max<=10) return (int)-max;
+		return 10;
 	}
 	protected static class RTInfo
 	{

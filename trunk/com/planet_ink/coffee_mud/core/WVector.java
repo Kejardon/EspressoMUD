@@ -21,7 +21,7 @@ public class WVector<E> implements Cloneable
 		public WeightedObject(E O, int weight)
 		{ this.obj=O; this.weight=weight; return; }
 		public WeightedObject(E O) {this.obj=O; return;}
-		public String toString() {return weight+": "+CMClass.classID(object.obj);}
+		public String toString() {return weight+": "+CMClass.classID(obj);}
 //		public int weight(){return weight;}
 //		public void setWeight(int weight){this.weight=weight;}
 	}
@@ -274,7 +274,7 @@ public class WVector<E> implements Cloneable
 	}
 	public void toArrays(E[] objs, int[] weights)
 	{
-		WeightedObject<E>[] src=(WeightedObject<E>[])objects.toArray(new WeightedObject[objs.size()]);
+		WeightedObject<E>[] src=(WeightedObject<E>[])objects.toArray(new WeightedObject[objs.length]);
 		for(int i=0;i<objs.length;i++)
 		{
 			objs[i]=src[i].obj;

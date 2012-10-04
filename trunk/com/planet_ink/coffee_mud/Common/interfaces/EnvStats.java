@@ -43,7 +43,9 @@ public interface EnvStats extends CMCommon, CMModifiable, CMSavable
 	public void setWidth(int newHeight);
 	//Volume will take priority. Consider volume exact and accurate, weight/height/length are estimates.
 	public long volume();
-	public void setVolume(int newVolume);
+	public void setVolume(long newVolume);
+	public void recalcLengthsFromVolume();
+	public void recalcWeightFromVolume();
 	public double speed();
 	public void setSpeed(double newSpeed);
 	public Iterator<String> ambiances(); // everything

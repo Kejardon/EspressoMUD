@@ -194,6 +194,7 @@ public class StdArea implements Area
 		*/
 		return true;
 	}
+	public boolean respondTo(CMMsg msg, Object data){return true;}
 	public boolean respondTo(CMMsg msg){return true;}
 
 	public void sendMessageEverywhere(CMMsg msg)

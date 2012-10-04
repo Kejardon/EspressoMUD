@@ -46,15 +46,10 @@ public class StdMOB implements MOB
 
 	protected PlayerStats playerStats=null;
 
-//	protected boolean amDead=false;
-
 	protected Session mySession=null;
 	protected Session myTempSession=null;
-//	protected boolean pleaseDestroy=false;
 
 	protected Tickable.TickStat actStatus=Tickable.TickStat.Not;
-	//protected long lastTick=0;
-	//protected long lastAct=0;
 
 	/* containers of items and attributes*/
 	protected EnumSet<ListenHolder.Flags> lFlags=EnumSet.of(ListenHolder.Flags.OK,ListenHolder.Flags.EXC,ListenHolder.Flags.TICK);
@@ -67,19 +62,16 @@ public class StdMOB implements MOB
 	protected int tickCount=0;
 	protected Tickable.TickStat tickStatus=Tickable.TickStat.Not;
 
+	//protected EatCode myEatAction=null;//defaultEatCode;
+
 	protected ItemCollection inventory=null;//(ItemCollection)((Ownable)CMClass.COMMON.getNew("DefaultItemCol")).setOwner(this);
 
 	// gained attributes
 	private double freeActions=0.0;
 
 	// the core state values
-
-//	protected Room startRoomPossibly=null;
-//	protected int WimpHitPoint=0;
 	protected Interactable victim=null;
 	protected boolean amDestroyed=false;
-//	protected boolean kickFlag=false;
-//	protected boolean imMobile=false;
 
 	protected Vector<String> titles=new Vector();
 	protected Body myBody=null;
@@ -96,6 +88,23 @@ public class StdMOB implements MOB
 //		((Ownable)inventory).setOwner(this);
 	}
 
+	/*
+	public static final EatCode defaultEatCode=new EatCode()
+	{
+		public int eatPrereqs(MOB mob, Body body, Vector<Item> items)
+		{
+			//TODO: Figure out what to do for composite races.
+			return body.race().eatPrereqs(mob, body, items);
+		}
+		public ArrayList<MOB.QueuedCommand> eatPrereqs(MOB mob, Body body, Vector<Item> items, Vector<Item> failed)
+		{
+			//TODO: Figure out what to do for composite races.
+			return body.race().handleEat(mob, body, items, failed);
+		}
+	}
+	*/
+	//public EatCode getEat(){return myEatAction;}
+
 	public void initializeClass(){}
 	public CMObject newInstance()
 	{
@@ -109,13 +118,6 @@ public class StdMOB implements MOB
 		}
 		return new StdMOB();
 	}
-
-/*	public Room getStartRoom(){
-		return CMLib.map().getRoom(startRoomPossibly);
-	}
-	public void setStartRoom(Room room){
-		startRoomPossibly=room;
-	} */
 
 	public void setName(String newName)
 	{
@@ -383,7 +385,8 @@ public class StdMOB implements MOB
 				}
 				else
 				{
-					nextAct=qCom.nextAct;
+					//nextAct=qCom.nextAct;
+					nextAct=commandQue.get(0).nextAct;	//This is qCom 99% of the time
 					CMLib.threads().startTickDown(this);
 				}
 				break;
@@ -476,6 +479,22 @@ public class StdMOB implements MOB
 	}*/
 	public long nextAct(){synchronized(commandQue){return nextAct;}}
 
+	public void enqueCommand(QueuedCommand qCom, QueuedCommand afterCommand)
+	{
+		synchronized(commandQue)
+		{
+			int index=0;
+			if(afterCommand!=null) index=commandQue.indexOf(afterCommand);
+			if(index==-1) index=0;
+			commandQue.add(index, qCom);
+			if((index==0)&&(nextAct>System.currentTimeMillis()+100)&&(CMLib.threads().deleteTick(this)))
+			{
+				nextAct=qCom.nextAct;
+				CMLib.threads().startTickDown(this);
+			}
+		}
+	}
+
 	public void enqueCommand(String commands, int metaFlags)
 	{
 		if(commands==null) return;
@@ -560,19 +579,13 @@ public class StdMOB implements MOB
 */
 	public boolean okMessage(ListenHolder.OkChecker myHost, CMMsg msg)
 	{
+		/*
 		Interactable target=msg.target();
 		for(CMMsg.MsgCode code : msg.othersCode())
 		switch(code)
 		{
-			case EAT:
-				if(target==this || target==myBody)
-					msg.addResponse(new ListenHolder.InbetweenListener(EatResponse, this), 9);
-				break;
-			case DRINK:
-				if(target==this || target==myBody)
-					msg.addResponse(new ListenHolder.InbetweenListener(DrinkResponse, this), 9);
-				break;
 		}
+		*/
 		for(OkChecker O : okCheckers)
 			if(!O.okMessage(myHost,msg))
 				return false;
@@ -613,6 +626,7 @@ public class StdMOB implements MOB
 	{
 		tell(this,this,msg);
 	}
+	/*
 	protected static ListenHolder.DummyListener EatResponse
 	{
 		public boolean respondTo(CMMsg msg, Object data)
@@ -714,9 +728,10 @@ public class StdMOB implements MOB
 			TODO NOW
 		}
 	}
+	*/
 	
-	public boolean respondTo(CMMsg msg)
-	{ return true; }
+	public boolean respondTo(CMMsg msg, Object data){return true;}
+	public boolean respondTo(CMMsg msg) { return true; }
 	public void executeMsg(ListenHolder.ExcChecker myHost, CMMsg msg)
 	{
 		if(msg.othersMessage()!=null)

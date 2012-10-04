@@ -17,6 +17,30 @@ public class CMParms
 	private static CMParms inst=new CMParms();
 	public static CMParms instance(){return inst;}
 
+	public static String firstWord(String str)
+	{
+		int spaceIndex=str.indexOf(" ");
+		if(spaceIndex>=0)
+			return str.substring(0, spaceIndex);
+		return str;
+	}
+	public static String firstWord(String str, boolean includeQuotes)
+	{
+		int spaceIndex=str.indexOf(" ");
+		if(includeQuotes)
+		{
+			int strIndex=str.indexOf("\"");
+			if((strIndex>=0)&&((strIndex<spaceIndex)||(spaceIndex<0)))
+			{
+				int endStrIndex=str.indexOf("\"",strIndex+1);
+				if(endStrIndex>strIndex)
+					return str.substring(0, endStrIndex);
+			}
+		}
+		if(spaceIndex>=0)
+			return str.substring(0, spaceIndex);
+		return str;
+	}
 	//Combine methods: Take a Collection (usually Vector<String>), and mesh them into a single String
 	public static String combine(Vector commands, int startAt, int endAt)
 	{
@@ -160,43 +184,43 @@ public class CMParms
 		Vector<String> commands=new Vector();
 		if(str==null) return commands;
 		str=str.trim();
-		while(!str.equals(""))
+		int spaceIndex=str.indexOf(" ");
+		int strIndex=str.indexOf("\"");
+		done:
+		while(str.length()>0)
 		{
-			int spaceIndex=str.indexOf(" ");
-			int strIndex=str.indexOf("\"");
-			String CMD="";
-			if((strIndex>=0)&&((strIndex<spaceIndex)||(spaceIndex<0)))
+			String CMD;
+			while((strIndex>=0)&&((strIndex<spaceIndex)||(spaceIndex<0)))
 			{
 				int endStrIndex=str.indexOf("\"",strIndex+1);
-				if(endStrIndex>strIndex)
+				if(endStrIndex<0)
 				{
-					CMD=str.substring(strIndex+1,endStrIndex).trim();
-					str=str.substring(endStrIndex+1).trim();
+					commands.add(str);
+					break done;
 				}
-				else
-				{
-					CMD=str.substring(strIndex+1).trim();
-					str="";
-				}
+				spaceIndex=str.indexOf(" ", endStrIndex+1);
+				strIndex=str.indexOf("\"", endStrIndex+1);
 			}
-			else
 			if(spaceIndex>=0)
 			{
 				CMD=str.substring(0,spaceIndex).trim();
 				str=str.substring(spaceIndex+1).trim();
+				spaceIndex=str.indexOf(" ");
+				if(strIndex>=0)
+					strIndex=str.indexOf("\"");
 			}
 			else
 			{
 				CMD=str.trim();
 				str="";
 			}
-			if(!CMD.equals(""))
+			if(CMD.length()>0)
 			{	//TODO: Ponder if these should be intern.
-				commands.addElement(CMD);
+				commands.add(CMD);
 				if((upTo>=0)&&(commands.size()>=upTo))
 				{
 					if(str.length()>0)
-						commands.addElement(str);
+						commands.add(str);
 					break;
 				}
 			}

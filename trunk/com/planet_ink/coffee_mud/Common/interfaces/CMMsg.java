@@ -177,7 +177,7 @@ DISMOUNT: Same as MOUNT but optional target* (if null, immediately below source.
 PUT: Same as GIVE but target is optional (no target means the ground where the mob is at)
 FILL: Same as THROW (tool is what it is filled with/by) but value is an optional amount..? What to do about obviousness... this is probably important for assassins poisoning drinks!
 DROP: Same as THROW but optional target.
-EAT/DRINK: Basically same as THROW, value* specifies amount to eat/drink.
+EAT/DRINK: Basically same as THROW, value* specifies amount to eat/drink. Source typically MOB, target typically Body, tool typically Food.
 WEAR/REMOVE: Basically same as THROW. Target(optional for remove) is the limb it's worn on (or if mob, find best-fit limb to put it on), tool is what's being put on (first is first handled(inmost for wear, outmost for remove)).
 //ENTER/LEAVE: Source is the thing(s) moving, target is the thing being entered/left, tool* is the spell used/object ridden. Value is obviousness.
 LEAVE: Source is the thing(s) moving, target is the REMap being entered, tool* is the spell used/object ridden. Value is obviousness.

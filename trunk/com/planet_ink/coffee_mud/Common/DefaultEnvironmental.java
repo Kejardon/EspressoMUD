@@ -175,6 +175,7 @@ public class DefaultEnvironmental implements Environmental, Ownable
 				return false;
 		return true;
 	}
+	public boolean respondTo(CMMsg msg, Object data){return true;}
 	public boolean respondTo(CMMsg msg){return true;}	//shouldn't actually ever be called
 	public int priority(ListenHolder L){return Integer.MAX_VALUE;}
 	public void registerListeners(ListenHolder here)

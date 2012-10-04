@@ -90,6 +90,7 @@ public interface Room extends ItemCollection.ItemHolder, Interactable, CMSavable
 		public boolean tick(int tickTo){return false;}
 		public int tickCounter(){return 0;}
 		public boolean respondTo(CMMsg msg){return true;}
+		public boolean respondTo(CMMsg msg, Object data){return true;}
 		public boolean okMessage(OkChecker myHost, CMMsg msg){return true;}
 		public void executeMsg(ExcChecker myHost, CMMsg msg){return;}
 	}
@@ -148,10 +149,12 @@ public interface Room extends ItemCollection.ItemHolder, Interactable, CMSavable
 //	public int getExitIndex(Exit E, Room R);
 //	public void initExits();
 
+	public boolean hasLock(Thread T);
+	public boolean hasLock();
 	public String undoLock();
 	public int getLock(long time);
 	public void returnLock();
-	
+
 	public boolean doMessage(CMMsg msg);
 	public boolean doAndReturnMsg(CMMsg msg);
 	public void send(CMMsg msg);

@@ -68,6 +68,8 @@ public interface Body extends Item	//, Rideable
 	public void setGender(Gender G);
 	public Gender gender();
 
+	public EatCode getEat();
+
 //	TODO: Make Gender object in this folder
 //	public Gender gender();
 //	public void setGender(Gender g);

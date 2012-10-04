@@ -90,6 +90,7 @@ public class StdRace implements Race
 	{
 		return true;
 	}
+	public boolean respondTo(CMMsg msg, Object data){return true;}
 	//This really isn't supported! Don't call this respondTo
 	public boolean respondTo(CMMsg msg){return true;}
 	public boolean respondTo(Body myBody, CMMsg msg){return true;}
@@ -100,6 +101,33 @@ public class StdRace implements Race
 	public void recoverTick(Body body, CharStats stats)
 	{
 	}
+	public long sendEat(MOB mob, Body body, Vector<Interactable> items)
+	{
+		return -1;
+	}
+	public boolean handleEat(CMMsg msg)
+	{
+		return false;
+	}
+	public ArrayList<MOB.QueuedCommand> eatPrereqs(MOB mob, Body body, Vector<Interactable> items) //Vector<Item> failed
+	{
+		mob.tell("You don't need to eat.");
+		return null;
+	}
+	public boolean satisfiesEatReqs(CMMsg msg)
+	{
+		Interactable source=msg.firstSource();
+		if(source instanceof MOB)
+			((MOB)source).tell("You don't need to eat.");
+		return false;
+	}
+	public boolean satisfiesEatPrereqs(CMMsg msg)
+	{
+		Interactable source=msg.firstSource();
+		if(source instanceof MOB)
+			((MOB)source).tell("You don't need to eat.");
+		return false;
+	}
 	public int diet(Body body, RawMaterial.Resource material)
 	{
 		return 0;
@@ -108,6 +136,10 @@ public class StdRace implements Race
 	{
 	}
 	public int getBiteSize(Body body, Item source)
+	{
+		return 0;
+	}
+	public int getMaxBiteSize(Body body)
 	{
 		return 0;
 	}

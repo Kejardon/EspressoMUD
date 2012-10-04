@@ -31,14 +31,27 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public interface EnglishParsing extends CMLibrary
 {
-	public static final int FLAG_STR=0;
-	public static final int FLAG_DOT=1;
-	public static final int FLAG_ALL=2;
+	//public static final int SRCH_ONLY=1;	//Only one other bit should be set if this one is set
+	public static final int SRCH_MOBINV=1;	//'held' items
+	public static final int SRCH_MOBEQ=SRCH_MOBINV*2;	//Items worn on body
+	public static final int SRCH_MOB=SRCH_MOBEQ*2;	//Body parts
+	public static final int SRCH_ROOM=SRCH_MOB*2;	//Any item lying in the room.
+	public static final int SRCH_ALL=SRCH_MOBINV|SRCH_MOBINV|SRCH_MOBEQ|SRCH_MOB;
+
+	public static final int SUB_ITEMCOLL=1;	//Search items stored inside
+	public static final int SUB_RIDERS=SUB_ITEMCOLL*2;	//Search items stored on top
+	public static final int SUB_ALL=SUB_ITEMCOLL|SUB_RIDERS;
+
+	//public static final int FLAG_STR=0;
+	//public static final int FLAG_DOT=1;
+	//public static final int FLAG_ALL=2;
 	public static class StringFlags
 	{
 		public boolean allFlag;
+		public boolean myFlag;
 		public String srchStr;
-		public int occurrance;
+		public int occurrance=1;
+		public int toFind=1;
 	}
 
 	public boolean isAnArticle(String s);
@@ -50,52 +63,20 @@ public interface EnglishParsing extends CMLibrary
 	public Command findCommand(MOB mob, String commands, String firstWord);
 	public boolean containsString(String toSrchStr, String srchStr);
 	public boolean isCalled(Interactable thing, String name, boolean exact);
-	//public String bumpDotNumber(String srchStr);
 	public StringFlags fetchFlags(String srchStr);
 	public CMObject fetchObject(Vector<? extends CMObject> list, String srchStr, boolean exactOnly);
-//	public int fetchInteractableIndex(Vector<? extends Interactable> list, String srchStr, boolean exactOnly);
-//	public Interactable fetchAvailable   (Vector<? extends Interactable> list, String srchStr, boolean exactOnly);
 	public Interactable fetchInteractable(Vector<? extends Interactable> list, String srchStr, boolean exactOnly);
 	public Interactable fetchInteractable(Iterator<? extends Interactable> list, String srchStr, boolean exactOnly);
-//	public Interactable fetchInteractable(Hashtable<String, Interactable> list, String srchStr, boolean exactOnly);
 	public Interactable fetchInteractable(Interactable[] list, String srchStr, boolean exactOnly);
 	public Interactable fetchInteractable(String srchStr, boolean exactOnly, int maxDepth, Object... list);
 	public Vector<Interactable> fetchInteractables(String srchStr, boolean exactOnly, int maxDepth, int toFind, Object... list);
 	public Vector<Interactable> fetchInteractables(Vector<? extends Interactable> list, String srchStr, boolean exactOnly);
 	public Vector<Interactable> fetchInteractables(Iterator<? extends Interactable> list, String srchStr, boolean exactOnly);
-//	public Item fetchAvailableItem(Vector list, String srchStr, boolean exactOnly);
-//	public Vector fetchAvailableItems(Vector list, String srchStr, boolean exactOnly);
-	//public Vector fetchItemList(Interactable from, MOB mob, Item container, Vector commands, boolean visionMatters);
-	//public int getContextNumber(Object[] list, Interactable E);
-	//public int getContextNumber(Vector<? extends Interactable> list, Interactable E);
-	//public String getContextName(Vector<? extends Interactable> list, Interactable E);
-	//public String getContextName(Object[] list, Interactable E);
-	//public int getContextSameNumber(Object[] list, Interactable E);
-	//public int getContextSameNumber(Vector<? extends Interactable> list, Interactable E);
-	//public String getContextSameName(Vector<? extends Interactable> list, Interactable E);
-	//public String getContextSameName(Object[] list, Interactable E);
-//	public long numPossibleGold(MOB mine, String itemID);
-//	public String numPossibleGoldCurrency(Interactable mine, String itemID);
-//	public double numPossibleGoldDenomination(Environmental mine, String currency, String itemID);
-//	public Object[] parseMoneyStringSDL(MOB mob, String amount, String correctCurrency);
-//	public String matchAnyCurrencySet(String itemID);
-//	public double matchAnyDenomination(String currency, String itemID);
-//	public Item possibleRoomGold(MOB seer, Room room, Item container, String itemID);
-//	public Item bestPossibleGold(MOB mob, Container container, String itemID);
-	//public Vector possibleContainers(MOB mob, Vector commands, boolean withContentOnly);
-	//public Item possibleContainer(MOB mob, Vector commands, boolean withStuff);
 	public String returnTime(long millis, long ticks);
 	public int calculateMaxToGive(MOB mob, Vector<String> commands, Interactable checkWhat, boolean getOnly);
+	public Vector<Interactable> getTargets(MOB mob, String commands, String partitioner, int searchFlags, int subObjectFlags);
+	public Vector<Interactable> getTargets(MOB mob, Vector<String> commands, String partitioner, int searchFlags, int subObjectFlags);
 	public int getPartitionIndex(Vector<String> commands, String partitionName);
 	public int getPartitionIndex(Vector<String> commands, String partitionName, int defaultTo);
-	
-/*
-	public Interactable parseShopkeeper(MOB mob, Vector commands, String error);
-	public boolean evokedBy(Ability thisAbility, String thisWord);
-	public boolean evokedBy(Ability thisAbility, String thisWord, String secondWord);
-	public String getAnEvokeWord(MOB mob, String word);
-	public Ability getToEvoke(MOB mob, Vector commands);
-	public boolean preEvoke(MOB mob, Vector commands, int secondsElapsed, double actionsRemaining);
-	public void evoke(MOB mob, Vector commands);
-*/
+
 }

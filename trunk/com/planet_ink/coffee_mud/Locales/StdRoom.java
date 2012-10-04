@@ -335,6 +335,7 @@ public class StdRoom implements Room
 		return true;
 // TODO
 	}
+	public boolean respondTo(CMMsg msg, Object data){return true;} //Should never be called
 	public boolean respondTo(CMMsg msg)
 	{
 		boolean always=false;
@@ -528,6 +529,15 @@ public class StdRoom implements Room
 				//msg2.msg.returnMsg();
 			}
 		}
+	}
+
+	public boolean hasLock(Thread T)
+	{
+		return (activeThread.get()==T);
+	}
+	public boolean hasLock()
+	{
+		return (activeThread.get()==Thread.currentThread());
 	}
 
 	public String undoLock()

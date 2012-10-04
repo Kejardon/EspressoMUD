@@ -76,8 +76,43 @@ public class MixedEnvStats implements EnvStats, Ownable
 		materials.add(newMaterial);
 		if(parent!=null) parent.saveThis();
 	}
-	public void setMaterials(WVector<RawMaterial.Resource> newMaterials){materials = MixedEnvStatsnewMaterials; if(parent!=null)parent.saveThis();}
-	public void setVolume(int newVolume){volume=newVolume;}
+	public void setMaterials(WVector<RawMaterial.Resource> newMaterials){materials = newMaterials; if(parent!=null)parent.saveThis();}
+	public void setVolume(long newVolume){volume=newVolume;}
+	public void recalcLengthsFromVolume()
+	{
+		if(height <= 0 || width <= 0 || length <= 0) return;
+		if(volume == 0)
+		{
+			height = 0;
+			width = 0;
+			length = 0;
+			return;
+		}
+		float c1 = ((float)height) / length;
+		float c2 = ((float)height) / width;
+		height = Math.round((float)Math.pow(volume * c1 * c2, 1.0/3));
+		if(height == 0) height = 1;
+		width = Math.round(height/c1);
+		if(width == 0) width = 1;
+		length = Math.round(height/c2);
+		if(length == 0) length = 1;
+	}
+	public void recalcWeightFromVolume()
+	{
+		long density=0;
+		RawMaterial.Resource[] mats=new RawMaterial.Resource[materials.size()];
+		int[] weights=new int[mats.length];
+		materials.toArrays(mats, weights);
+		int totalWeights=materials.weight();
+		for(int i=0;i<mats.length;i++)
+			density += mats[i].density * weights[i];
+		density /= totalWeights;	//Density now contains the average density of all material parts
+		long tempVal=density * volume;
+		if(tempVal>0 && tempVal<1000)
+			weight=1;
+		else
+			weight=(int)(tempVal/1000);
+	}
 	public void addAmbiance(String ambiance)
 	{
 		synchronized(ambiances)
@@ -168,6 +203,10 @@ public class MixedEnvStats implements EnvStats, Ownable
 			public void load(MixedEnvStats E, ByteBuffer S){
 				int[] ints=CMLib.coffeeMaker().loadAInt(S);
 				E.width=ints[0]; E.length=ints[1]; E.height=ints[2]; E.weight=ints[3]; E.magic=ints[4]; } },
+		VOL(){
+			public ByteBuffer save(MixedEnvStats E){ return (ByteBuffer)ByteBuffer.wrap(new byte[8]).putLong(E.volume).rewind(); }
+			public int size(){return 8;}
+			public void load(MixedEnvStats E, ByteBuffer S){ E.volume=S.getLong(); } },
 		AMB(){
 			public ByteBuffer save(MixedEnvStats E){ return CMLib.coffeeMaker().savAString((String[])E.ambiances.toArray(CMClass.dummyStringArray)); }
 			public int size(){return 0;}
@@ -214,6 +253,13 @@ public class MixedEnvStats implements EnvStats, Ownable
 			public String brief(MixedEnvStats E){return ""+E.height;}
 			public String prompt(MixedEnvStats E){return ""+E.height;}
 			public void mod(MixedEnvStats E, MOB M){E.height=CMLib.genEd().intPrompt(M, ""+E.height);} },
+		VOLUME(){
+			public String brief(MixedEnvStats E){return ""+E.volume;}
+			public String prompt(MixedEnvStats E){return ""+E.volume;}
+			public void mod(MixedEnvStats E, MOB M){
+				E.volume=CMLib.genEd().longPrompt(M, ""+E.volume); 
+				if(M.session().confirm("Recalculate lengths from volume? (Y/n)","Y")) E.recalcLengthsFromVolume();
+				if(M.session().confirm("Recalculate weight from volume? (Y/n)","Y")) E.recalcWeightFromVolume(); } },
 		WEIGHT(){
 			public String brief(MixedEnvStats E){return ""+E.weight;}
 			public String prompt(MixedEnvStats E){return ""+E.weight;}
@@ -228,7 +274,7 @@ public class MixedEnvStats implements EnvStats, Ownable
 			public void mod(MixedEnvStats E, MOB M){
 				boolean done=false;
 				while((M.session()!=null)&&(!M.session().killFlag())&&(!done)) {
-					WVector V=(WVector)E.materials.clone();
+					WVector<RawMaterial.Resource> V=(WVector)E.materials.clone();
 					int i=CMLib.genEd().promptWVector(M, V, true);
 					if(--i<0) done=true;
 					else if(i==V.size()) {
@@ -238,7 +284,7 @@ public class MixedEnvStats implements EnvStats, Ownable
 						if(!E.materials.replace(S, S, weight)) E.materials.add(S, weight); }
 					else if(i<V.size()) {
 						char action=M.session().prompt("(D)elete material or edit (W)eight or (M)aterial?","").trim().toUpperCase().charAt(0);
-						if(action=='D') materials.remove(V.get(i));
+						if(action=='D') E.materials.remove(V.get(i));
 						else if(action=='W') { 
 							int weight=CMLib.genEd().intPrompt(M, ""+V.weight(i));
 							if(!E.materials.replace(V.get(i), V.get(i), weight)) E.materials.add(V.get(i), weight); }

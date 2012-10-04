@@ -12,9 +12,7 @@ import com.planet_ink.coffee_mud.Locales.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
-import java.util.Enumeration;
-import java.util.HashSet;
-import java.util.Vector;
+import java.util.*;
 
 
 /*
@@ -48,6 +46,8 @@ public interface MOB extends ItemCollection.ItemHolder, Interactable, CMSavable,
 	public Body body();
 	public void setBody(Body newBody);
 
+	//public EatCode getEat();
+
 	public String[] getTitles();
 	public String getActiveTitle();
 	public void setActiveTitle(String S);
@@ -72,9 +72,7 @@ public interface MOB extends ItemCollection.ItemHolder, Interactable, CMSavable,
 	public CharStats baseCharStats();
 	public CharStats charStats();
 	public void recoverCharStats();
-//	public void resetToMaxState();
 	public void setBaseCharStats(CharStats newBaseCharStats);
-//	public void resetVectors();
 
 	/** Combat and death */
 //	public void removeFromGame(boolean killSession);
@@ -86,9 +84,8 @@ public interface MOB extends ItemCollection.ItemHolder, Interactable, CMSavable,
 	public void tell(Interactable source, Interactable target, CMObject tool, String msg);
 	public void tell(Interactable source, Interactable target, String msg);
 	public void tell(String msg);
+	public void enqueCommand(QueuedCommand qCom, QueuedCommand afterCommand);
 	public void enqueCommand(String commands, int metaFlags);
-	//public void prequeCommand(Vector commands, int metaFlags, double tickDelay);
-	//public boolean dequeCommand();
 	public int commandQueSize();
 	public boolean doCommand(QueuedCommand command);	//currently return is sorta meaningless
 	public double actions();
@@ -111,21 +108,10 @@ public interface MOB extends ItemCollection.ItemHolder, Interactable, CMSavable,
 //	public long getAgeHours();
 //	public void setAgeHours(long newVal);
 
-	// the core state values
-//	public Weapon myNaturalWeapon();	//will be in body if anything
-
 	// misc characteristics
-/*	public String getLiegeID();
-	public boolean isMarriedToLiege();
-	public void setLiegeID(String newVal);
-	public int getWimpHitPoint();
-	public void setWimpHitPoint(int newVal);
-	public long lastTickedDateTime(); */
 	public boolean willFollowOrdersOf(MOB mob);
 
 	// location!
-//	public Room getStartRoom();
-//	public void setStartRoom(Room newRoom);
 	public Room location();
 	public void setLocation(Room newPlace);
 /*

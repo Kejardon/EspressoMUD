@@ -181,16 +181,16 @@ public class CMGenEditor extends StdLibrary implements GenericEditor
 		return newString;
 	}
 	//IMPORTANT: ALL CALLS TO THIS MUST HAVE UPPERCASE ENUM OPTIONS.
-	public Enum enumPrompt(MOB M, String defaultTo, Enum[] options)
+	public <T extends Enum> T enumPrompt(MOB M, String defaultTo, T[] options)
 	{
 		M.session().rawPrintln("Options: ");
-		for(Enum E : options)
-			M.session().rawPrint(E.toString());
+		for(T E : options)
+			M.session().rawPrint(E.toString()+" ");
 		
 		String newString=M.session().prompt("Enter a new value: ",((defaultTo==null)?"":defaultTo));
-		Enum E=CMClass.valueOf(options[0].getClass(), newString);
+		T E=CMClass.valueOf((Class<T>)options[0].getClass(), newString);
 		if((E==null)&&(defaultTo!=null))
-			E=CMClass.valueOf(options[0].getClass(), defaultTo);
+			E=CMClass.valueOf((Class<T>)options[0].getClass(), defaultTo);
 		return E;
 	}
 	public void acharPrompt(MOB mob, char[] values)

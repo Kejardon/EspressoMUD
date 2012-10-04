@@ -456,40 +456,91 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 		if(srchStr.length()==0) return null;
 		srchStr=srchStr.toUpperCase();
 		if((srchStr.length()<2)||(srchStr.equals("THE")))
-		   return null;
+			return null;
 		EnglishParsing.StringFlags flags=new EnglishParsing.StringFlags();
+
+		//Clip excess past quotes
+		boolean doQuotes=false;
+		quoteCheck:
+		{
+			int index=srchStr.indexOf("\"");
+			if(index<0) break quoteCheck;	//No quotes to clip
+			int index2=srchStr.indexOf("\"", index+1);
+			if(index2<0) return null;	//No matching quote. This is bad input
+			int index3=srchStr.indexOf(" ", index2+1);
+			if(index3<0) break quoteCheck;	//Nothing after the matching quote, no excess to clip.
+			srchStr=srchStr.substring(0, index3);
+			doQuotes=true;
+		}
 
 		if(srchStr.startsWith("ALL "))
 		{
 			srchStr=srchStr.substring(4);
 			flags.allFlag=true;
+			flags.toFind=Integer.MAX_VALUE;
 		}
 		else if(srchStr.equals("ALL"))
 		{
 			flags.allFlag=true;
+			flags.toFind=Integer.MAX_VALUE;
 			srchStr="ALL";	//For == check elsewhere
 		}
 		else
+		{
 			flags.allFlag=false;
+			noValue:
+			{
+				int index=srchStr.indexOf(" ");
+				if(index<=0) break noValue;
+				int toFind=CMath.s_int(srchStr.substring(0,index));
+				if(toFind<=0) break noValue;
+				flags.toFind=toFind;
+				flags.allFlag=true;
+				srchStr=srchStr.substring(index+1);
+			}
+		}
+		if(srchStr.startsWith("MY "))
+		{
+			srchStr=srchStr.substring(3);
+			flags.myFlag=true;
+		}
+		else
+			flags.myFlag=false;
 
 		int dot=srchStr.lastIndexOf(".");
-		int occurrance=0;
+		int occurrance=1;
 		if(dot>0)
 		{
 			String sub=srchStr.substring(dot+1);
 			occurrance=CMath.s_int(sub);
 			if(occurrance>0)
+			{
 				srchStr=srchStr.substring(0,dot);
+			}
 			else
 			{
 				dot=srchStr.indexOf(".");
 				sub=srchStr.substring(0,dot);
 				occurrance=CMath.s_int(sub);
 				if(occurrance>0)
+				{
 					srchStr=srchStr.substring(dot+1);
+					if(srchStr.startsWith("MY "))
+					{
+						srchStr=srchStr.substring(3);
+						flags.myFlag=true;
+					}
+				}
 				else
-					occurrance=0;
+					occurrance=1;
 			}
+		}
+		if(doQuotes)
+		{
+			if(!srchStr.startsWith("\"")) return null;
+			if(!srchStr.endsWith("\"")) return null;
+			srchStr=srchStr.substring(1, srchStr.length()-1);
+			if(srchStr.indexOf("\"")>=0) return null;
 		}
 		flags.srchStr=srchStr;
 		flags.occurrance=occurrance;
@@ -573,43 +624,46 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 	{ return fetchInteractable((Interactable[])CMParms.toArrayList(list).toArray(Interactable.dummyInteractableArray), srchStr, exactOnly); }
 	protected boolean thingCheck(Vector<Interactable> V, Interactable thisThang, EnglishParsing.StringFlags flags, boolean exact, int maxDepth)
 	{
-		boolean added=false;
-		if(flags.srchStr=="ALL")
+		if(!V.contains(thisThang))
 		{
-			V.add(thisThang);
-			if((--flags.occurrance)<=0) return true;
-			added=true;
-		}
-		else if(exact)
-		{
-			if((thisThang.ID().equalsIgnoreCase(flags.srchStr)
-			  ||thisThang.plainName().equalsIgnoreCase(flags.srchStr)
-			  ||displayCheckExact(thisThang, flags.srchStr)))
+			boolean added=false;
+			if(flags.srchStr=="ALL")
 			{
 				V.add(thisThang);
 				if((--flags.occurrance)<=0) return true;
 				added=true;
 			}
-		}
-		else
-		{
-			if(containsRawString(thisThang.plainName(),flags.srchStr)||displayCheck(thisThang,flags.srchStr))
+			else if(exact)
 			{
-				V.add(thisThang);
-				if((--flags.occurrance)<=0) return true;
-				added=true;
-			}
-		}
-		if(!added)
-		{
-			MOB M;
-			if((thisThang instanceof Body)&&((M=((Body)thisThang).mob())!=null))
-			{
-				M=(MOB)thingCheck(M, flags, exact, 0);
-				if(M!=null)
+				if((thisThang.ID().equalsIgnoreCase(flags.srchStr)
+				  ||thisThang.plainName().equalsIgnoreCase(flags.srchStr)
+				  ||displayCheckExact(thisThang, flags.srchStr)))
 				{
 					V.add(thisThang);
 					if((--flags.occurrance)<=0) return true;
+					added=true;
+				}
+			}
+			else
+			{
+				if(containsRawString(thisThang.plainName(),flags.srchStr)||displayCheck(thisThang,flags.srchStr))
+				{
+					V.add(thisThang);
+					if((--flags.occurrance)<=0) return true;
+					added=true;
+				}
+			}
+			if(!added)
+			{
+				MOB M;
+				if((thisThang instanceof Body)&&((M=((Body)thisThang).mob())!=null))
+				{
+					M=(MOB)thingCheck(M, flags, exact, 0);
+					if(M!=null)
+					{
+						V.add(thisThang);
+						if((--flags.occurrance)<=0) return true;
+					}
 				}
 			}
 		}
@@ -646,6 +700,101 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 		while(stuff.hasNext())
 			if(thingCheck(V, stuff.next(), flags, exact, maxDepth)) return true;
 		return false;
+	}
+	public Vector<Interactable> fetchInteractables(MOB mob, String srchStr, int searchFlags, boolean exactOnly, Object... list)//, int maxDepth, int toFind, Object... list)
+	{
+		Vector<Interactable> V=new Vector();
+		EnglishParsing.StringFlags flags=fetchFlags(srchStr);
+		if(flags==null) return null;
+		if(flags.myFlag)
+		{
+			searchFlags&=(SRCH_MOBINV|SRCH_MOBEQ|SRCH_MOB);
+			list=null;
+		}
+		int toSkip=flags.occurrance;
+		//flags.occurrance=toFind+toSkip;	//It wasn't used at all before so... hmm.
+		flags.occurrance+=flags.toFind-1;
+		if(flags.occurrance<0) flags.occurrance=Integer.MAX_VALUE;	//An overflow check actually, not a negative value check.
+		if(list!=null)
+		for(Object O : list)
+		{
+			if(O instanceof Interactable)
+				{ if(thingCheck(V, (Interactable)O, flags, exactOnly, 0)) return V; }
+			if(O instanceof ItemCollection)
+				{ if(thingArrayCheck(V, ((ItemCollection)O).allItems(), flags, exactOnly, 0)) return V; }
+			//else if(O instanceof ItemCollection.ItemHolder)
+			//	{ if(thingArrayCheck(V, ((ItemCollection.ItemHolder)O).getItemCollection().allItems(), flags, exactOnly, 0)) return V; }
+			else if(O instanceof Vector)
+				{ if(thingArrayCheck(V, (Interactable[])((Vector)O).toArray(Interactable.dummyInteractableArray), flags, exactOnly, 0)) return V; }
+		}
+		if((searchFlags&SRCH_MOBINV)!=0)
+		{
+			if(thingArrayCheck(V, mob.getItemCollection().allItems(), flags, exactOnly, 0)) return V;
+		}
+		if((searchFlags&SRCH_MOBEQ)!=0)
+		{
+			//TODO. Nothing for now
+		}
+		if((searchFlags&SRCH_MOB)!=0)
+		{
+			//TODO. Incomplete for now.
+			if(thingCheck(V, mob.body(), flags, exactOnly, 1)) return V;
+		}
+		if((searchFlags&SRCH_ROOM)!=0)
+		{
+			if(thingCheck(V, mob.location(), flags, exactOnly, 1)) return V;
+		}
+		if(toSkip>V.size()-1)
+			V.clear();
+		else for(toSkip-=2;toSkip>=0;toSkip--)
+			V.remove(toSkip);
+		return V;
+	}
+	public Interactable fetchInteractable(MOB mob, String srchStr, int searchFlags, boolean exactOnly, Object... list)//, int maxDepth, int toFind, Object... list)
+	{
+		Interactable thisThang=null;
+		EnglishParsing.StringFlags flags=fetchFlags(srchStr);
+		if(flags==null) return null;
+		if(flags.myFlag)
+		{
+			searchFlags&=(SRCH_MOBINV|SRCH_MOBEQ|SRCH_MOB);
+			list=null;
+		}
+		if(list!=null)
+		for(Object O : list)
+		{
+			if(O instanceof Interactable)
+				thisThang=thingCheck((Interactable)O, flags, exactOnly, 0);
+			//if(thisThang!=null) return thisThang;
+			else if(O instanceof ItemCollection)
+				thisThang=thingArrayCheck(((ItemCollection)O).allItems(), flags, exactOnly, 0);
+			//else if(O instanceof ItemCollection.ItemHolder)
+			//	thisThang=thingArrayCheck(((ItemCollection.ItemHolder)O).getItemCollection().allItems(), flags, exactOnly, 0);
+			else if(O instanceof Vector)
+				thisThang=thingArrayCheck((Interactable[])((Vector)O).toArray(Interactable.dummyInteractableArray), flags, exactOnly, 0);
+			if(thisThang!=null) return thisThang;
+		}
+		if((searchFlags&SRCH_MOBINV)!=0)
+		{
+			thisThang=thingArrayCheck(mob.getItemCollection().allItems(), flags, exactOnly, 0);
+			if(thisThang!=null) return thisThang;
+		}
+		if((searchFlags&SRCH_MOBEQ)!=0)
+		{
+			//TODO. Nothing for now
+		}
+		if((searchFlags&SRCH_MOB)!=0)
+		{
+			//TODO. Incomplete for now.
+			thisThang=thingCheck(mob.body(), flags, exactOnly, 1);
+			if(thisThang!=null) return thisThang;
+		}
+		if((searchFlags&SRCH_ROOM)!=0)
+		{
+			thisThang=thingCheck(mob.location(), flags, exactOnly, 1);
+			if(thisThang!=null) return thisThang;
+		}
+		return null;
 	}
 	public Vector<Interactable> fetchInteractables(String srchStr, boolean exactOnly, int maxDepth, int toFind, Object... list)
 	{
@@ -901,80 +1050,62 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 	public int calculateMaxToGive(MOB mob, String commands, Interactable checkWhat, boolean getOnly)
 	{
 		int maxToGive=Integer.MAX_VALUE;
-		if((commands.size()>1)
-		&&(CMath.s_int(commands.firstElement())>0))
+		String first=CMParms.firstWord(commands);
+		if((first!=commands)&&(CMath.s_int(first)>0))	//!= is efficient and easy way to see if first is a substring of commands
 		{
-			maxToGive=CMath.s_int(commands.firstElement());
+			maxToGive=CMath.s_int(first);
 		}
 		return maxToGive;
 	}
 
-	public Vector<Interactable> getTargets(MOB mob, Vector<String> commands, String partitioner, boolean TRideFContainer)
+	public Vector<Interactable> getTargets(MOB mob, String commands, String partitioner, int searchFlags, int subObjectFlags)
+	{
+		return getTargets(mob, CMParms.parse(commands), partitioner, searchFlags, subObjectFlags);
+	}
+	public Vector<Interactable> getTargets(MOB mob, Vector<String> commands, String partitioner, int searchFlags, int subObjectFlags)
 	{
 		Room R=mob.location();
 		String whatToGet=null;
-		Vector<Interactable> containers=null;
+		Vector containers=null;
 		int partition=0;
 		if((partitioner!=null)&&((partition=getPartitionIndex(commands, partitioner))!=-1))
 		{
 			String containerName=CMParms.combine(commands,partition);
-			String upper=containerName.toUpperCase();
-			containerAll=upper.startsWith("ALL ");
-			if(upper.startsWith("ALL.")){ containerAll=true; containerName="ALL "+containerName.substring(4);}
-			if(upper.endsWith(".ALL")){ containerAll=true; containerName="ALL "+containerName.substring(0,containerName.length()-4);}
-			if(containerAll)
+			Vector<Interactable> V=fetchInteractables(mob,containerName,searchFlags,false);
+			if(V==null)
 			{
-				Vector<Interactable> V=fetchInteractables(containerName,false,1,Integer.MAX_VALUE,mob.getItemCollection(),R.getItemCollection());
-				if(V.size()==0)
-				{
-					mob.tell("You don't see '"+containerName+"' here.");
-					return null;
-				}
-				if(TRideFContainer)
-				{
-					for(int i=V.size()-1;i>=0;i--)
-						if(!(V.get(i) instanceof Rideable))
-							V.remove(i);
-				}
-				else
-				{
-					for(int i=V.size()-1;i>=0;i--)
-						if(!(V.get(i) instanceof Container))
-							V.remove(i);
-				}
-				if(V.size()==0)
-				{
-					mob.tell(TRideFContainer?"None of those have anything on them!":"None of those have anything in them!");
-					return null;
-				}
-				containers=V;
+				mob.tell("'"+containerName+"' is not understood by the parser.");
+				return null;
 			}
-			else
+			if(V.size()==0)
 			{
-				Interactable I=fetchInteractable(containerName,false,1,mob.getItemCollection(),R.getItemCollection());
-				if(I==null)
-				{
-					mob.tell("You don't see '"+containerName+"' here.");
-					return null;
-				}
-				if(TRideFContainer)
-				{
-					if(!(I instanceof Rideable))
-					{
-						mob.tell("That doesn't have anything on it.");
-						return null;
-					}
-				}
+				mob.tell("You don't see '"+containerName+"' here.");
+				return null;
+			}
+			containers=new Vector();
+			if((subObjectFlags&SUB_RIDERS)!=0)
+			{
+				//Replace Rideable with the list of Rideables
+				Rideable ride;
+				for(int i=V.size()-1;i>=0;i--)
+					if((ride=Rideable.O.getFrom(V.get(i)))!=null)
+						containers.add(ride.allRiders());
+			}
+			if((subObjectFlags&SUB_ITEMCOLL)!=0)
+			{
+				//Replace Container with its ItemCollection
+				ItemCollection col;
+				for(int i=V.size()-1;i>=0;i--)
+					if((col=ItemCollection.O.getFrom(V.get(i)))!=null)
+						containers.add(i, col.allItems());
+			}
+			if(containers.size()==0)
+			{
+				if((subObjectFlags&SUB_ITEMCOLL)!=0)
+					mob.tell("None of those have anything in them!");
 				else
-				{
-					if(!(I instanceof Closeable))
-					{
-						mob.tell("That doesn't have anything in it.");
-						return null;
-					}
-				}
-				containers=new Vector(1);
-				containers.add(I);
+					mob.tell("None of those have anything on them!");
+				return null;
 			}
 			whatToGet=CMParms.combine(commands,0,partition);
 		}
@@ -983,84 +1114,22 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 			whatToGet=CMParms.combine(commands,0);
 		}
 
-		int maxToGet=calculateMaxToGive(mob,commands,R,true);
-		if(maxToGet<0) return null;
-
-		String unmodifiedWhatToGet=whatToGet;
-		whatToGet=whatToGet.toUpperCase();
-		boolean allFlag=whatToGet.startsWith("ALL ");
-		if(whatToGet.toUpperCase().startsWith("ALL.")){ allFlag=true; whatToGet="ALL "+whatToGet.substring(4);}
-		if(whatToGet.toUpperCase().endsWith(".ALL")){ allFlag=true; whatToGet="ALL "+whatToGet.substring(0,whatToGet.length()-4);}
-		//Vector<Interactable> results=new Vector();
-		done:
-		if(allFlag)
-		{
-			Vector<Interactable> getThese=null;
-			if(containers==null)
-			{
-				getThese=fetchInteractables(whatToGet,false,1,maxToGet,R.getItemCollection());
-				if(getThese.size()==0)
-				{
-					mob.tell("You don't see '"+unmodifiedWhatToGet+"' here.");
-					return null;
-				}
-				return getThese;
-			}
-			else
-			{
-				getThese=new Vector();
-				//NOTE: Loops like these won't entirely work how I like with stuff like '6.potion'
-				for(Container C : (Container[])containers.toArray(Container.dummyContainerArray))
-				{
-					Vector<Interactable> subGetThese=fetchInteractables(whatToGet,false,1,maxToGet,C.getItemCollection());
-					getThese.addAll(subGetThese);
-					maxToGet-=subGetThese.size();
-					if(maxToGet==0) break;
-				}
-				for(Item I : (Item[])getThese.toArray(Item.dummyItemArray))
-				{
-					CMMsg msg=CMClass.getMsg(mob,I,I.container(),EnumSet.of(CMMsg.MsgCode.GET),"^[S-NAME] get^s ^[T-NAME] from ^[O-NAME].");
-					if(!R.doMessage(msg))
-					{
-						msg.returnMsg();
-						break;
-					}
-					msg.returnMsg();
-				}
-			}
-		}
+		Vector<Interactable> getThese=null;
+		if(containers!=null)
+			getThese=fetchInteractables(mob,whatToGet,0,false,containers);
 		else
+			getThese=fetchInteractables(mob,whatToGet,searchFlags,false);
+		if(getThese==null)
 		{
-			Interactable getThis=null;
-			if(containers==null)
-			{
-				getThis=fetchInteractable(whatToGet,false,1,R.getItemCollection());
-				if(getThis==null)
-				{
-					mob.tell("You don't see '"+unmodifiedWhatToGet+"' here.");
-					return false;
-				}
-				CMMsg msg=CMClass.getMsg(mob,getThis,null,EnumSet.of(CMMsg.MsgCode.GET),"^[S-NAME] get^s ^[T-NAME].");
-				R.doMessage(msg);
-				msg.returnMsg();
-			}
-			else
-			{
-				for(Container C : (Container[])containers.toArray(Container.dummyContainerArray))
-				{
-					getThis=fetchInteractable(whatToGet,false,1,C.getItemCollection());
-					if(getThis!=null)
-					{
-						CMMsg msg=CMClass.getMsg(mob,getThis,null,EnumSet.of(CMMsg.MsgCode.GET),"^[S-NAME] get^s ^[T-NAME].");
-						R.doMessage(msg);
-						msg.returnMsg();
-						break done;
-					}
-				}
-				mob.tell("You don't see '"+unmodifiedWhatToGet+"' here.");
-				return false;
-			}
+			mob.tell("'"+whatToGet+"' is not understood by the parser.");
+			return null;
 		}
+		if(getThese.size()==0)
+		{
+			mob.tell("You don't see '"+whatToGet+"' here.");
+			return null;
+		}
+		return getThese;
 	}
 
 /*

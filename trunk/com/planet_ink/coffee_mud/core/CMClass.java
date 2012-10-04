@@ -40,6 +40,7 @@ public class CMClass extends ClassLoader
 	public static final byte[] dummybyteArray=new byte[0];
 
 	public static final Vector emptyVector=new Vector();
+	public static final ArrayList emptyAL=new ArrayList();
 	//public static final Enumeration emptyEnumeration=emptyVector.elements();
 	//public static final Iterator emptyIterator=emptyVector.iterator();
 
@@ -707,19 +708,19 @@ public class CMClass extends ClassLoader
 		initializeClasses();
 		return true;
 	}
-	public static Enum valueOf(Enum E, String S)
+	public static <T extends Enum> T valueOf(T E, String S)
 	{
-		try{return E.valueOf(E.getClass(), S);}
+		try{return (T)E.valueOf(E.getClass(), S);}
 		catch(IllegalArgumentException e){if(e.getMessage().startsWith("No")) return null;}
-		try{return E.valueOf((Class)E.getClass().getSuperclass(), S);}
+		try{return (T)E.valueOf((Class<T>)E.getClass().getSuperclass(), S);}
 		catch(IllegalArgumentException e){}
 		return null;
 	}
-	public static Enum valueOf(Class E, String S)
+	public static <T extends Enum> T valueOf(Class<T> E, String S)
 	{
-		try{return Enum.valueOf(E, S);}
+		try{return (T)Enum.valueOf(E, S);}
 		catch(IllegalArgumentException e){if(e.getMessage().startsWith("No")) return null;}
-		try{return Enum.valueOf((Class)E.getSuperclass(), S);}
+		try{return (T)Enum.valueOf((Class<T>)E.getSuperclass(), S);}
 		catch(IllegalArgumentException e){}
 		return null;
 	}

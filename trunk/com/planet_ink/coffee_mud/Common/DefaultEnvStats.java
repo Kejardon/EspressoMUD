@@ -65,8 +65,50 @@ public class DefaultEnvStats implements EnvStats, Ownable
 	public void setLength(int newLength){length=newLength; if(parent!=null)parent.saveThis();}
 	public void setWidth(int newWidth){weight=newWidth; if(parent!=null)parent.saveThis();}
 	public void setMaterial(RawMaterial.Resource newMaterial){material=newMaterial; if(parent!=null)parent.saveThis();}
-	public void setMaterials(WVector<RawMaterial.Resource>){}
-	public void setVolume(int newVolume){volume=newVolume;}
+	public void setMaterials(WVector<RawMaterial.Resource> newMats){}
+	public void setVolume(long newVolume){volume=newVolume; if(parent!=null)parent.saveThis();}
+	public void recalcLengthsFromVolume()
+	{
+		/*
+		x1a / x2a = x1b / x2b = c1
+			x2b = x1b * (x2a / x1a)
+		x1a / x3a = x1b / x3b = c2
+			x3b = x1b * (x3a / x1a)
+		x1b * x2b * x3b = volume
+		x1b^3 * (x2a * x3a / x1a^2) = volume
+		
+		x1b = (volume * (x1a^2) / (x2a * x3a))^(1/3)
+			c1 = x1a / x2a
+			c2 = x1a / x3a
+			x1b = (volume * c1 * c2)^(1/3)
+			x2b = x1b / c1
+			x3b = x1b / c2
+		*/
+		if(height <= 0 || width <= 0 || length <= 0) return;
+		if(volume == 0)
+		{
+			height = 0;
+			width = 0;
+			length = 0;
+			return;
+		}
+		float c1 = ((float)height) / length;
+		float c2 = ((float)height) / width;
+		height = Math.round((float)Math.pow(volume * c1 * c2, 1.0/3));
+		if(height == 0) height = 1;
+		width = Math.round(height/c1);
+		if(width == 0) width = 1;
+		length = Math.round(height/c2);
+		if(length == 0) length = 1;
+	}
+	public void recalcWeightFromVolume()
+	{
+		long tempVal=material.density * volume;
+		if(tempVal>0 && tempVal<1000)
+			weight=1;
+		else
+			weight=(int)(tempVal/1000);
+	}
 	public void addAmbiance(String ambiance)
 	{
 		synchronized(ambiances)
@@ -156,6 +198,10 @@ public class DefaultEnvStats implements EnvStats, Ownable
 			public void load(DefaultEnvStats E, ByteBuffer S){
 				int[] ints=CMLib.coffeeMaker().loadAInt(S);
 				E.width=ints[0]; E.length=ints[1]; E.height=ints[2]; E.weight=ints[3]; E.magic=ints[4]; } },
+		VOL(){
+			public ByteBuffer save(DefaultEnvStats E){ return (ByteBuffer)ByteBuffer.wrap(new byte[8]).putLong(E.volume).rewind(); }
+			public int size(){return 8;}
+			public void load(DefaultEnvStats E, ByteBuffer S){ E.volume=S.getLong(); } },
 		AMB(){
 			public ByteBuffer save(DefaultEnvStats E){ return CMLib.coffeeMaker().savAString((String[])E.ambiances.toArray(CMClass.dummyStringArray)); }
 			public int size(){return 0;}
@@ -204,6 +250,13 @@ public class DefaultEnvStats implements EnvStats, Ownable
 			public String brief(DefaultEnvStats E){return ""+E.height;}
 			public String prompt(DefaultEnvStats E){return ""+E.height;}
 			public void mod(DefaultEnvStats E, MOB M){E.height=CMLib.genEd().intPrompt(M, ""+E.height);} },
+		VOLUME(){
+			public String brief(DefaultEnvStats E){return ""+E.volume;}
+			public String prompt(DefaultEnvStats E){return ""+E.volume;}
+			public void mod(DefaultEnvStats E, MOB M){
+				E.volume=CMLib.genEd().longPrompt(M, ""+E.volume); 
+				if(M.session().confirm("Recalculate lengths from volume? (Y/n)","Y")) E.recalcLengthsFromVolume();
+				if(M.session().confirm("Recalculate weight from volume? (Y/n)","Y")) E.recalcWeightFromVolume(); } },
 		WEIGHT(){
 			public String brief(DefaultEnvStats E){return ""+E.weight;}
 			public String prompt(DefaultEnvStats E){return ""+E.weight;}
@@ -215,7 +268,7 @@ public class DefaultEnvStats implements EnvStats, Ownable
 		MATERIAL(){
 			public String brief(DefaultEnvStats E){return E.material.toString();}
 			public String prompt(DefaultEnvStats E){return E.material.toString();}
-			public void mod(DefaultEnvStats E, MOB M){E.material=(RawMaterial.Resource)CMLib.genEd().enumPrompt(M, E.material.toString(), Enclosure.values());} },
+			public void mod(DefaultEnvStats E, MOB M){E.material=(RawMaterial.Resource)CMLib.genEd().enumPrompt(M, E.material.toString(), RawMaterial.Resource.values());} },
 /*		DISPOSITION(){
 			public String brief(DefaultEnvStats E){return ""+E.disposition;}
 			public String prompt(DefaultEnvStats E){return ""+E.disposition;}

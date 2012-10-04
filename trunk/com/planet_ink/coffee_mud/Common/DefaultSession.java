@@ -459,7 +459,7 @@ public class DefaultSession extends Thread implements Session
 		public boolean cancel(boolean evenIfRunning) {done=true; return true;}
 		public E get(){return null;}
 		public E get(long time, TimeUnit unit){return null;}
-		public boolean isCanceled(){return false;}
+		public boolean isCancelled(){return false;}
 		public boolean isDone(){return done;}
 	}
 	public String newPrompt(String Message, long maxTime)
@@ -481,7 +481,7 @@ public class DefaultSession extends Thread implements Session
 				I=new Integer(i);
 				break;
 			}
-			if(I==null) {rawPrint("You have too many active prompts, finish some first.\r\n"); return;}
+			if(I==null) {rawPrint("You have too many active prompts, finish some first.\r\n"); return "";}
 			doneCheck=new ManualFuture<Void>();
 			//pendingPrompts.addRow(I, caller, doneCheck, null, Boolean.TRUE);
 			promptData=new Object[]{I, caller, doneCheck, null, Boolean.TRUE};
@@ -503,7 +503,7 @@ public class DefaultSession extends Thread implements Session
 			return (String)promptData[3];
 		}
 		catch(Exception e){}
-		finally{doneCheck.cancel();}
+		finally{doneCheck.cancel(false);}
 		return "";
 	}
 	public String prompt(String Message)

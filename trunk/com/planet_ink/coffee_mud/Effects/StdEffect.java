@@ -168,6 +168,7 @@ public class StdEffect implements Effect
 				return false;
 		return true;
 	}
+	public boolean respondTo(CMMsg msg, Object data){return true;}
 	public boolean respondTo(CMMsg msg){return true;}
 	public void executeMsg(ListenHolder.ExcChecker myHost, CMMsg msg)
 	{

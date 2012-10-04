@@ -407,7 +407,7 @@ public class CoffeeMaker extends StdLibrary implements GenericBuilder
 		buf.rewind();
 		return buf;
 	}
-	public WVector<? extends Enum> setEnumWVector(Class enumClass, ByteBuffer S)
+	public <T extends Enum> WVector<T> setEnumWVector(Class<T> enumClass, ByteBuffer S)
 	{
 		if(S.remaining()==0) return null;
 		WVector V=new WVector();

@@ -359,6 +359,7 @@ public class StdItem implements Item
 				return false;
 		return true;
 	}
+	public boolean respondTo(CMMsg msg, Object data){return true;}
 	public boolean respondTo(CMMsg msg)
 	{
 		Interactable target=msg.target();

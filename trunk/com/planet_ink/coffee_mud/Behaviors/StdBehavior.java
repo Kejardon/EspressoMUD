@@ -89,6 +89,7 @@ public class StdBehavior implements Behavior
 	{
 		return;
 	}
+	public boolean respondTo(CMMsg msg, Object data){return true;}
 	public boolean respondTo(CMMsg msg){return true;}
 	public boolean okMessage(ListenHolder.OkChecker myHost, CMMsg msg)
 	{

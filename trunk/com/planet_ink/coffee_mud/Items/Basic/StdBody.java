@@ -39,6 +39,7 @@ public class StdBody extends StdItem implements Body
 	protected CharStats charStats;//=(CharStats)((Ownable)CMClass.COMMON.getNew("BodyCharStats")).setOwner(this);
 	protected int[] birthday={-1, -1, -1};
 	public void initializeClass(){super.initializeClass(); myRace=CMClass.RACE.get("StdRace");} //Make sure CMClass's instance has non-null race
+	protected EatCode myEatAction=null;//defaultEatCode;
 
 	public StdBody()
 	{
@@ -48,6 +49,7 @@ public class StdBody extends StdItem implements Body
 //		desc="";
 	}
 
+	public EatCode getEat(){return (myEatAction==null?myRace:myEatAction);}
 //	public Environmental getEnvObject() {return myEnvironmental;}
 
 	public MOB mob(){return myMob;}
@@ -131,7 +133,7 @@ public class StdBody extends StdItem implements Body
 	public Race race(){return myRace;}
 	public WVector<Race> raceSet(){return null;}
 	public boolean isRace(Race R){return myRace==R;}
-	public void setRace(Race[] R)
+	public void setRace(Race R)
 	{
 		myRace=R;
 		CMLib.database().saveObject(this);
@@ -205,10 +207,80 @@ public class StdBody extends StdItem implements Body
 		return ((!dead)||(super.doTick()));
 	}
 
+	protected static ListenHolder.DummyListener RefuseEatResponseLive = new ListenHolder.DummyListener()
+	{
+		public boolean respondTo(CMMsg msg, Object data)
+		{
+			StdBody body=(StdBody)data;
+			MOB mob=body.myMob;
+			Interactable target=msg.target();
+			Room room=mob.location();
+			if((mob!=null) && (target!=null) && (room.hasLock()))
+			{
+				room.doAndReturnMsg(CMClass.getMsg(mob, target, null, EnumSet.of(CMMsg.MsgCode.VISUAL), "^[S-NAME] prevent^s ^[T-NAME] from trying to eat ^[S-HIM-HER]"));
+			}
+			return false;
+		}
+	};
+	protected static ListenHolder.DummyListener CheckBiteResponse = new ListenHolder.DummyListener()
+	{
+		public boolean respondTo(CMMsg msg, Object data)
+		{
+			StdBody body=(StdBody)data;
+			if(!body.getEat().satisfiesEatReqs(msg))
+			{
+				Room room=CMLib.map().roomLocation(body);
+				CMObject thing=msg.firstTool();
+				Interactable target=(thing instanceof Interactable)?(Interactable)thing:null;
+				if((target!=null)&&(room.hasLock()))
+				{
+					room.doAndReturnMsg(CMClass.getMsg(body, target, null, EnumSet.of(CMMsg.MsgCode.VISUAL), "^[S-NAME] tr^y to chew on ^[T-NAME] but can't eat ^[T-HIM-HER]."));
+				}
+				return false;
+			}
+			return true;
+		}
+	};
+
+
+
 	public boolean okMessage(ListenHolder.OkChecker myHost, CMMsg msg)
 	{
 		if(!super.okMessage(myHost, msg))
 			return false;
+
+		Interactable target=msg.target();
+		boolean always=msg.hasOthersCode(CMMsg.MsgCode.ALWAYS);
+		for(CMMsg.MsgCode code : msg.othersCode())
+		switch(code)
+		{
+			case EAT:
+				if(target==this)
+				{
+					if(!always)
+					{
+						if(!getEat().satisfiesEatPrereqs(msg))
+							return false;
+						msg.addResponse(new ListenHolder.InbetweenListener(CheckBiteResponse,this), 10);
+					}
+				}
+				if(msg.isTool(this) && (myMob!=null) && (!dead))
+				{
+					msg.addResponse(new ListenHolder.InbetweenListener(RefuseEatResponseLive, this), 9);
+				}
+				break;
+			/*
+			case DRINK:
+				if(target==this)
+				{
+					if((!always)&&(!getDrink().satisfiesDrinkPrereqs(msg)))
+						return false;
+					//msg.addResponse(new ListenHolder.InbetweenListener(DrinkResponse, this), 9);
+				}
+				break;
+			*/
+		}
+
 		if(myMob==null) return true;
 		return myMob.okMessage(myHost, msg);
 	}
@@ -222,6 +294,29 @@ public class StdBody extends StdItem implements Body
 	public void executeMsg(ListenHolder.ExcChecker myHost, CMMsg msg)
 	{
 		super.executeMsg(myHost, msg);
+		Interactable target=msg.target();
+		boolean always=msg.hasOthersCode(CMMsg.MsgCode.ALWAYS);
+		for(CMMsg.MsgCode code : msg.othersCode())
+		switch(code)
+		{
+			case EAT:
+				if(target==this)
+				{
+					getEat().handleEat(msg);
+				}
+				break;
+			/*
+			case DRINK:
+				if(target==this)
+				{
+					DrinkCode dCode=getDrink();
+					if((!always)&&(!dCode.satisfiesDrinkPrereqs(msg)))
+						break;
+					dCode.handleDrink(msg);
+				}
+				break;
+			*/
+		}
 		if(myMob!=null) myMob.executeMsg(myHost, msg);
 	}
 
