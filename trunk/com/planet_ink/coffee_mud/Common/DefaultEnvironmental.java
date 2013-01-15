@@ -158,7 +158,37 @@ public class DefaultEnvironmental implements Environmental, Ownable
 	//CMObject
 	public String ID(){return "DefaultEnvironmental";}
 	public CMObject newInstance(){return new DefaultEnvironmental();}
-	public CMObject copyOf(){return null;}	//TODO
+	public CMObject copyOf()
+	{
+		try
+		{
+			DefaultEnvironmental E=(DefaultEnvironmental)this.clone();
+			E.cloneFix(this);
+			return E;
+		}
+		catch(CloneNotSupportedException e)
+		{
+			return this.newInstance();
+		}
+	}
+	protected void cloneFix(DefaultEnvironmental E)
+	{
+		//parent=null;	//Undecided if this is appropriate or not.
+		tickStatus=Tickable.TickStat.Not;
+		tickCount=0;
+		envAffecters=new CopyOnWriteArrayList();
+		okCheckers=new CopyOnWriteArrayList();
+		excCheckers=new CopyOnWriteArrayList();
+		tickActers=new CopyOnWriteArrayList();
+		affects=new CopyOnWriteArrayList();
+		lFlags=lFlags.clone();
+
+		baseEnvStats=(EnvStats)((Ownable)E.baseEnvStats.copyOf()).setOwner(this);
+		envStats=(EnvStats)baseEnvStats.copyOf();
+
+		for(Effect A : E.affects)
+			affects.add(A.copyOnto(this));
+	}
 	public void initializeClass(){}
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 

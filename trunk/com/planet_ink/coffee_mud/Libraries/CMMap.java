@@ -92,10 +92,10 @@ public class CMMap extends StdLibrary implements WorldMap
 			found:
 			if(myArea==null) synchronized(this){
 				if(myArea!=null) break found;
-				myArea=SIDLib.AREA.get(1);
+				myArea=SIDLib.AREA.get(SIDLib.LimboAreaSaveNum);
 				if(myArea!=null) break found;
 				myArea=CMClass.AREA.getNew("StdArea");
-				myArea.setSaveNum(1);
+				myArea.setSaveNum(SIDLib.LimboAreaSaveNum);
 				myArea.setName("Limbo");
 				myArea.addProperRoom(this);
 				CMLib.map().addArea(myArea); }
@@ -151,17 +151,17 @@ public class CMMap extends StdLibrary implements WorldMap
 			found:
 			if(inventory==null) synchronized(this){
 				if(inventory!=null) break found;
-				inventory=SIDLib.ITEMCOLLECTION.get(1);
+				inventory=SIDLib.ITEMCOLLECTION.get(SIDLib.LimboICSaveNum);
 				if(inventory!=null) break found;
 				inventory=(ItemCollection)((Ownable)CMClass.COMMON.getNew("DefaultItemCol")).setOwner(this);
-				inventory.setSaveNum(1); }
+				inventory.setSaveNum(SIDLib.LimboICSaveNum); }
 			return inventory; }
 		public boolean sameAs(Interactable E){return E==this;}
 		public SaveEnum[] totalEnumS(){return CMSavable.dummySEArray;}
 		public Enum[] headerEnumS(){return CMClass.dummyEnumArray;}
 		public ModEnum[] totalEnumM(){return CMModifiable.dummyMEArray;}
 		public Enum[] headerEnumM(){return CMClass.dummyEnumArray;}
-		public int saveNum(){ return 1; }
+		public int saveNum(){ return SIDLib.LimboRoomSaveNum; }
 		public void setSaveNum(int num){}
 		public boolean needLink(){return true;}
 		public void link(){

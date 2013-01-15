@@ -41,8 +41,8 @@ public class StdMOB implements MOB
 	protected long nextAct=0;
 	//protected DVector commandQue=new DVector(6);
 
-	protected CharStats baseCharStats=(CharStats)((Ownable)CMClass.COMMON.getNew("MOBCharStats")).setOwner(this);
-	protected CharStats charStats=(CharStats)((Ownable)CMClass.COMMON.getNew("MOBCharStats")).setOwner(this);
+	protected CharStats baseCharStats=null;//(CharStats)((Ownable)CMClass.COMMON.getNew("MOBCharStats")).setOwner(this);
+	protected CharStats charStats=null;//(CharStats)((Ownable)CMClass.COMMON.getNew("MOBCharStats")).setOwner(this);
 
 	protected PlayerStats playerStats=null;
 
@@ -239,11 +239,26 @@ public class StdMOB implements MOB
 		}
 	}
 
-	public CharStats baseCharStats(){return baseCharStats;}
-	public CharStats charStats(){return charStats;}
+	public CharStats baseCharStats()
+	{
+		if(baseCharStats==null) synchronized(this){
+			if(baseCharStats==null)
+				setBaseCharStats((CharStats)CMClass.COMMON.getNew("MOBCharStats"));
+		}
+
+		return baseCharStats;
+	}
+	public CharStats charStats()
+	{
+		if(charStats==null) synchronized(this){
+			if(charStats==null)
+				setBaseCharStats((CharStats)CMClass.COMMON.getNew("MOBCharStats"));
+		}
+		return charStats;
+	}
 	public void recoverCharStats()
 	{
-		baseCharStats.copyStatic(charStats);
+		baseCharStats().copyStatic(charStats());
 		for(CharAffecter A : charAffecters)
 			A.affectCharStats(this,charStats);
 		CMLib.database().saveObject(this);
@@ -989,19 +1004,25 @@ public class StdMOB implements MOB
 			ItemCollection oldInventory=inventory;
 			inventory = SIDLib.ITEMCOLLECTION.get(itemCollectionToLoad);
 			if(inventory!=null)
-				((Ownable)inventory).setOwner(this);
-			itemCollectionToLoad=0;
-			//Ideally never happens
-			if(oldInventory!=null)
 			{
-				getItemCollection();
-				for(Iterator<Item> iter=oldInventory.allItems();iter.hasNext();)
+				((Ownable)inventory).setOwner(this);
+				//Ideally never happens
+				if(oldInventory!=null)
 				{
-					Item next=iter.next();
-					next.setContainer(null);
-					inventory.addItem(next);
+					//getItemCollection();
+					for(Iterator<Item> iter=oldInventory.allItems();iter.hasNext();)
+					{
+						Item next=iter.next();
+						oldInventory.removeItem(next);
+						next.setContainer(null);
+						inventory.addItem(next);
+					}
+					oldInventory.destroy();
 				}
+			} else {
+				inventory = oldInventory;
 			}
+			itemCollectionToLoad=0;
 		}
 		if(playerStatsToLink!=0)
 		{
@@ -1024,14 +1045,14 @@ public class StdMOB implements MOB
 			public int size(){return 0;}
 			public void load(StdMOB E, ByteBuffer S){ E.name=CMLib.coffeeMaker().loadString(S); } },
 		BCS(){
-			public ByteBuffer save(StdMOB E){ return CMLib.coffeeMaker().savSubFull(E.baseCharStats); }
+			public ByteBuffer save(StdMOB E){ return CMLib.coffeeMaker().savSubFull(E.baseCharStats()); }
 			public int size(){return -1;}
-			public CMSavable subObject(CMSavable fromThis){return ((StdMOB)fromThis).baseCharStats;}
+			public CMSavable subObject(CMSavable fromThis){return ((StdMOB)fromThis).baseCharStats();}
 			public void load(StdMOB E, ByteBuffer S){ E.baseCharStats=(CharStats)((Ownable)CMLib.coffeeMaker().loadSub(S, E, this)).setOwner(E); } },
 		CHS(){
-			public ByteBuffer save(StdMOB E){ return CMLib.coffeeMaker().savSubFull(E.charStats); }
+			public ByteBuffer save(StdMOB E){ return CMLib.coffeeMaker().savSubFull(E.charStats()); }
 			public int size(){return -1;}
-			public CMSavable subObject(CMSavable fromThis){return ((StdMOB)fromThis).charStats;}
+			public CMSavable subObject(CMSavable fromThis){return ((StdMOB)fromThis).charStats();}
 			public void load(StdMOB E, ByteBuffer S){ E.charStats=(CharStats)((Ownable)CMLib.coffeeMaker().loadSub(S, E, this)).setOwner(E); } },
 		PLS(){
 			public ByteBuffer save(StdMOB E){ return (ByteBuffer)ByteBuffer.wrap(new byte[4]).putInt(E.playerStats==null?0:E.playerStats.saveNum()).rewind(); }
@@ -1078,11 +1099,11 @@ public class StdMOB implements MOB
 				String newName=CMLib.genEd().stringPrompt(M, ""+E.name, false);
 				if(!E.name.equals(newName)) E.setName(newName); } },
 		CHARSTATS(){
-			public String brief(StdMOB E){return E.charStats.ID();}
+			public String brief(StdMOB E){return E.charStats().ID();}
 			public String prompt(StdMOB E){return "";}
 			public void mod(StdMOB E, MOB M){CMLib.genEd().genMiscSet(M, E.charStats);} },
 		BASECHARSTATS(){
-			public String brief(StdMOB E){return E.baseCharStats.ID();}
+			public String brief(StdMOB E){return E.baseCharStats().ID();}
 			public String prompt(StdMOB E){return "";}
 			public void mod(StdMOB E, MOB M){CMLib.genEd().genMiscSet(M, E.baseCharStats);} },
 		PLAYERSTATS(){

@@ -418,12 +418,22 @@ public class CMClass extends ClassLoader
 			if(file.isDirectory())
 			{
 				CMFile[] list=file.listFiles();
+//				if(!quiet)
+//					Log.sysOut("Adding Directory "+filePath+", "+list.length+" files.");
 				for(int l=0;l<list.length;l++)
 					if((list[l].getName().indexOf("$")<0)&&(list[l].getName().toUpperCase().endsWith(".CLASS")))
+					{
+//						if(!quiet)
+//							Log.sysOut("Adding File "+list[l].getLocalPathAndName());
 						fileList.add(list[l].getVFSPathAndName());
+					}
 			}
 			else
+			{
+//				if(!quiet)
+//					Log.sysOut("Adding File "+filePath);
 				fileList.add(file.getVFSPathAndName());
+			}
 		}
 		else
 		{
@@ -579,27 +589,26 @@ public class CMClass extends ClassLoader
 		}
 		if((result=findLoadedClass(className))!=null)
 			return result;
-		if((className.indexOf("com.planet_ink.coffee_mud.")<0)
-		||(className.startsWith("com.planet_ink.coffee_mud.core."))
-		||(className.startsWith("com.planet_ink.coffee_mud.application."))
-		||(className.indexOf(".interfaces.")>=0))
-		{
 */
-			//try{
-				Class result=super.findSystemClass(className);
-				if(result!=null)
-				{
-					if(debugging) Log.debugOut("CMClass","Loaded: "+result.getName());
-					return result;
-				}
-			//} catch(Throwable t){}
-/*		}
-		CMFile CF=new CMFile(pathName,null,false);
+		try{
+			Class result=super.findSystemClass(className);
+			if(result!=null)
+			{
+				if(debugging) Log.debugOut("CMClass","Loaded: "+result.getName());
+				return result;
+			}
+		} catch(Throwable t){}
+		/*
+		if(CMFile.mainJAR!=null && className.startsWith("com.planet_ink.coffee_mud"))
+		{
+			
+		}
+		*/
+		CMFile CF=new CMFile(className,null,false);
 		byte[] classData=CF.raw();
 		if((classData==null)||(classData.length==0))
-			throw new ClassNotFoundException("File "+pathName+" not readable!");
-		result=finishDefineClass(className,classData,null,resolveIt);
-*/
+			throw new ClassNotFoundException("File "+className+" not readable!");
+		Class result=finishDefineClass(className,classData,null,resolveIt);
 		return null;
 	}
 
@@ -609,6 +618,9 @@ public class CMClass extends ClassLoader
 		try
 		{
 			String prefix="com/planet_ink/coffee_mud/";
+			//String prefix = CMClass.class.getResource("CMClass.class").toString();
+			//prefix = prefix.substring(0, prefix.length()-18); //clip 'core/CMClass.class'
+			//Log.sysOut(Thread.currentThread().getName(),"File path: "+prefix);
 			debugging=CMSecurity.isDebugging("CLASSLOADER");
 
 			Objects O=LIBRARY;
@@ -690,9 +702,9 @@ public class CMClass extends ClassLoader
 			Log.sysOut(Thread.currentThread().getName(),"Commands loaded   : "+O.size());
 			if(O.size()==0) return false;
 		}
-		catch(Throwable t)
+		catch(Exception e)
 		{
-			t.printStackTrace();
+			Log.errOut("CMClass",e);
 			return false;
 		}
 
@@ -732,7 +744,6 @@ public class CMClass extends ClassLoader
 			dump.append("\n   "+s[i].getClassName()+": "+s[i].getMethodName()+"("+s[i].getFileName()+": "+s[i].getLineNumber()+")");
 		return dump.toString();
 	}
-/*
 	public Class finishDefineClass(String className, byte[] classData, String overPackage, boolean resolveIt)
 		throws ClassFormatError
 	{
@@ -763,9 +774,10 @@ public class CMClass extends ClassLoader
 		if (result==null){throw new ClassFormatError();}
 		if (resolveIt){resolveClass(result);}
 		if(debugging) Log.debugOut("CMClass","Loaded: "+result.getName());
-		classes.put(className, result);
+		//classes.put(className, result);
 		return result;
 	}
+/*
 	public static Vector loadClassList(String filePath, String auxPath, String subDir, Class ancestorC1, boolean quiet)
 	{
 		Vector v=new Vector();

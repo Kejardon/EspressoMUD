@@ -672,6 +672,11 @@ public class DBManager implements DatabaseEngine	//extends Thread
 	{
 //		myThread=Thread.currentThread();
 		try{
+			{
+				File mainDir=new File(saveDirectoryName);
+				if(!mainDir.exists())
+					mainDir.mkdirs();
+			}
 			ByteBuffer mainInfo=ByteBuffer.wrap(new byte[2]);
 			FileChannel input=new RandomAccessFile(mainFile(), "rw").getChannel();
 			input.read(mainInfo);
@@ -820,15 +825,20 @@ public class DBManager implements DatabaseEngine	//extends Thread
 						for(int j=0;(j<options.length)&&(thisEnum==null);j++)
 							thisEnum=getParser(options[j], option);
 						int size=varData.getInt();
-						if(thisEnum==null)
-						{
+						//try{
+							if(thisEnum==null)
+							{
+								varData.position(varData.position()+size);
+								continue;
+							}
+							ByteBuffer saveBuffer=varData.slice();
 							varData.position(varData.position()+size);
-							continue;
-						}
-						ByteBuffer saveBuffer=varData.slice();
-						varData.position(varData.position()+size);
-						saveBuffer.limit(size);
-						thisEnum.load(thisObj, saveBuffer);
+							saveBuffer.limit(size);
+							thisEnum.load(thisObj, saveBuffer);
+						//}catch(IllegalArgumentException e){
+						//	Log.errOut("DBManager","Hit cap for "+format.myObject.ID()+" "+option+" "+saveNum+": "+varData.position()+" "+size+" "+varData.limit());
+						//	throw e; //varData.position(varData.limit());
+						//}
 					}
 				}
 				
@@ -884,7 +894,7 @@ public class DBManager implements DatabaseEngine	//extends Thread
 			input.write(mainInfo);
 			input.close();
 		}
-		catch(Exception e){Log.errOut("DBManager",e); return;}
+		catch(Exception e){Log.errOut("DBManager",e); doneLoading=true; return;}
 		publicQueue.clear();	//Ignore requests to save that may have been triggered from booting the mud
 		doneLoading=true;
 		{

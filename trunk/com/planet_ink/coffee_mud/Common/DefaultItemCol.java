@@ -113,20 +113,22 @@ public class DefaultItemCol implements ItemCollection, Ownable
 	//ItemCollection
 	public boolean canHold(Item item)
 	{
-		if((maxweight==0)&&(maxsize==0)) return true;
-		int totalW=0;
-		int totalS=0;
-		for(Item I : inventory)
+		if((maxweight!=0)||(maxsize!=0))
 		{
-			EnvStats E=I.getEnvObject().envStats();
-			totalW+=E.weight();
-			totalS+=E.height();
+			int totalW=0;
+			int totalS=0;
+			for(Item I : inventory)
+			{
+				EnvStats E=I.getEnvObject().envStats();
+				totalW+=E.weight();
+				totalS+=E.height();
+			}
+			EnvStats E=item.getEnvObject().envStats();
+			if((maxweight!=0)&&(totalW+E.weight()>maxweight))
+				return false;
+			if((maxsize!=0)&&(totalS+E.height()>maxsize))
+				return false;
 		}
-		EnvStats E=item.getEnvObject().envStats();
-		if((maxweight!=0)&&(totalW+E.weight()>maxweight))
-			return false;
-		if((maxsize!=0)&&(totalS+E.height()>maxsize))
-			return false;
 		return recurseCheck(parent, item);
 	}
 	public boolean recurseCheck(CMObject E, Item I)
@@ -157,6 +159,8 @@ public class DefaultItemCol implements ItemCollection, Ownable
 		{
 			//if(parent instanceof ListenHolder)
 				//item.registerListeners((ListenHolder)parent);
+			//if(item.container()==this)
+			//	item.setContainer(null);
 			item.setContainer(parent);
 			CMLib.database().saveObject(this);
 		}

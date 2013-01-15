@@ -59,6 +59,8 @@ public interface GenericEditor extends CMLibrary
 	public Effect newAnyEffect(MOB mob, Vector<Effect> notThese);
 	public Behavior newAnyBehavior(MOB mob);
 	public Behavior newAnyBehavior(MOB mob, Vector<Behavior> notThese);
+	public Item getOrMakeItem(MOB mob);
 	public Item newAnyItem(MOB mob);
+	public Bind newAnyBind(MOB mob);
 	public Closeable newAnyCloseable(MOB mob);
 }

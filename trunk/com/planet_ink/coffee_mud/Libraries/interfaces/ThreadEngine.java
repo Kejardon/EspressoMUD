@@ -144,7 +144,7 @@ public interface ThreadEngine extends CMLibrary, Runnable
 					} }
 					catch(Exception e)
 					{
-						if(e instanceof InterruptedException) throw e;
+						if(e instanceof InterruptedException) throw (InterruptedException)e;
 						Log.errOut(getName(),e);
 					}
 				} }

@@ -132,7 +132,9 @@ public class MUD extends Thread implements MudHost
 		numChannelsLoaded=CMLib.channels().loadChannels(page.getStr("CHANNELS"),
 														page.getStr("ICHANNELS"));
 		Log.sysOut(Thread.currentThread().getName(),"Channels loaded   : "+(numChannelsLoaded));
-
+		RawMaterial.Resource.NOTHING.toString(); //Force initialization of resources.
+		RawMaterial.ThermalReaction.TRResult.initAll();
+		Log.sysOut(Thread.currentThread().getName(),"Resources loaded.");
 		Log.sysOut(Thread.currentThread().getName(),"Loading map...");
 		CMProps.Strings.MUDSTATUS.setProperty("Booting: loading rooms....");
 		try
@@ -700,7 +702,7 @@ public class MUD extends Thread implements MudHost
 			nameID=CMParms.combine(CMParms.paramParse(nameID),0);
 		}
 		new CMLib(); // initialize this threads libs
-
+		
 		if(nameID.length()==0) nameID="Unnamed EspressoMUD";
 		CMProps page=CMProps.loadPropPage("espressomud.ini");
 		if ((page==null)||(!page.loaded))

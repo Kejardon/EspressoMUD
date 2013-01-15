@@ -195,6 +195,7 @@ public class CMProps extends Properties
 		}
 		catch(IOException e)
 		{
+			System.out.println(e.toString());
 			loaded=false;
 		}
 	}

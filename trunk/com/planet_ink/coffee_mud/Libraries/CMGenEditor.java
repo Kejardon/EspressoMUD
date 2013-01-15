@@ -333,11 +333,58 @@ public class CMGenEditor extends StdLibrary implements GenericEditor
 		}
 		return null;
 	}
+	public Item getOrMakeItem(MOB mob)
+	{
+		while((mob.session()!=null)&&(!mob.session().killFlag()))
+		{
+			int SID;
+			String input=mob.session().prompt("Enter an item SID, nearby item's name, or 'new' to make a new item:\r\n","");
+			if(input.length()==0) break;
+			if(input.equalsIgnoreCase("new"))
+			{
+				Item item=(Item)genMiscSet(mob, newAnyItem(mob));
+				if(item!=null) return item;
+			}
+			else if((SID=CMath.s_int(input))!=0)
+			{
+				Item item=SIDLib.ITEM.get(SID);
+				if(item!=null) return item;
+			}
+			else
+			{
+				Vector<Interactable> items=CMLib.english().getTargets(mob, input, null, EnglishParsing.SRCH_ALL, EnglishParsing.SUB_ALL);
+				if(items==null)
+				{
+					mob.tell("No items found of that name.");
+					continue;
+				}
+				for(int i=items.size()-1;i>=0;i--)
+					if(!(items.get(i) instanceof Item))
+						items.remove(i);
+				Item item=null;
+				if(items.size()==0)
+					mob.tell("No items found of that name.");
+				else if(items.size()==1)
+					item=(Item)items.get(0);
+				else
+				{
+					mob.tell("Multiple items found, pick one:\r\n0: None.");
+					for(int i=0;i<items.size();i++)
+						mob.tell((i+1)+": "+items.get(i).name() + "(found in "+((Item)items.get(i)).container()+")");
+					int i = CMath.s_int(mob.session().prompt("(0 - "+(items.size()+1)+")","0"))-1;
+					if(i>=0 && i<items.size())
+						item=(Item)items.get(i);
+				}
+				if(item!=null) return item;
+			}
+		}
+		return null;
+	}
 	public Item newAnyItem(MOB mob)
 	{
 		while((mob.session()!=null)&&(!mob.session().killFlag()))
 		{
-			String behave=mob.session().prompt("Enter an item to add (?)\r\n:","");
+			String behave=mob.session().prompt("Enter an item type (? for options)\r\n:","");
 			if(behave.length()>0)
 			{
 				if(behave.equalsIgnoreCase("?"))
@@ -366,6 +413,10 @@ public class CMGenEditor extends StdLibrary implements GenericEditor
 				return null;
 		}
 		return null;
+	}
+	public Bind newAnyBind(MOB mob)
+	{
+		return new com.planet_ink.coffee_mud.Common.DefaultBind();
 	}
 	public Exit newAnyExit(MOB mob)
 	{

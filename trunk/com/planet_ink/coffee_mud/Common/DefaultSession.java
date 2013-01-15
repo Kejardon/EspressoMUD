@@ -450,7 +450,11 @@ public class DefaultSession extends Thread implements Session
 			}
 			return (String)promptData[3];
 		}
-		catch(Exception e){}
+		catch(Exception e)
+		{
+			Log.errOut("DefaultSession",e);
+			rawPrint("Oops!\r\n");
+		}
 		return "";
 	}
 	public static class ManualFuture<E> implements Future<E>

@@ -1,24 +1,19 @@
 package com.planet_ink.coffee_mud.core;
 //import com.planet_ink.coffee_mud.core.database.DBConnections;
-import com.planet_ink.coffee_mud.core.interfaces.*;
-import com.planet_ink.coffee_mud.Effects.interfaces.*;
-import com.planet_ink.coffee_mud.Areas.interfaces.*;
-import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-import com.planet_ink.coffee_mud.Commands.interfaces.*;
-import com.planet_ink.coffee_mud.Common.interfaces.*;
-import com.planet_ink.coffee_mud.Exits.interfaces.*;
-import com.planet_ink.coffee_mud.Items.interfaces.*;
-import com.planet_ink.coffee_mud.Locales.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
-import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.*;
 import java.nio.channels.*;
-import java.util.*;
-import java.util.regex.Pattern;
 import java.lang.*;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -37,10 +32,44 @@ public class CMFile
 	} */
 	//public EnumSet<Flags> Savable=EnumSet.of(Flags.DIRECTORY, Flags.HIDDEN);
 	//public static final int VFS_MASK_MASKSAVABLE=1+2+4;
-
 	private static final char pathSeparator=File.separatorChar;
 	private static final Charset inCharSet = Charset.defaultCharset();
 	private static final Charset outCharSet = Charset.defaultCharset();
+
+	public static final URL codeURL;
+	public static final URL baseURL;
+	public static final URI codeURI;
+	public static final URI baseURI;
+	public static final JarFile mainJAR;
+	static {
+		String codePath = CMFile.class.getResource("CMFile.class").toString();
+		codePath = codePath.substring(0, codePath.length()-(5+1+6+1+4)); //class . CMFile / core
+		String basePath = codePath.substring(0, codePath.length()-(1+10+1+10+1+3)); // / coffee_mud / planet_ink / com
+		URL tempCodeURL = null;
+		URI tempCodeURI = null;
+		URL tempBaseURL = null;
+		URI tempBaseURI = null;
+		JarFile tempJAR = null;
+		try {
+			if(basePath.endsWith(".jar!/") && basePath.startsWith("jar:")) {
+				tempJAR = new JarFile(basePath.substring(10, basePath.length()-2));
+				basePath = basePath.substring(4, basePath.lastIndexOf('/', basePath.length()-5)+1);
+			}
+			tempCodeURL = new URL(codePath);
+			tempCodeURI = new URI(codePath);
+			tempBaseURL = new URL(basePath);
+			tempBaseURI = new URI(basePath);
+		} catch(URISyntaxException | IOException e) {
+			System.exit(-1);
+		}
+		codeURL = tempCodeURL;
+		codeURI = tempCodeURI;
+		baseURL = tempBaseURL;
+		baseURI = tempBaseURI;
+		mainJAR = tempJAR;
+	}
+        
+
 
 	private boolean logErrors=false;
 
@@ -53,6 +82,7 @@ public class CMFile
 	private MOB accessor=null;
 	//private long modifiedDateTime=System.currentTimeMillis();
 	private File localFile=null;
+	private JarEntry jarFile=null;
 	//private String parentDir=null;
 
 	public CMFile(String filename, MOB user, boolean pleaseLogErrors)
@@ -60,6 +90,7 @@ public class CMFile
 	public CMFile(String filename, MOB user, boolean pleaseLogErrors, boolean forceAllow)
 	{ super(); buildCMFile(filename,user,pleaseLogErrors,forceAllow);}
 
+	/* TODO: handle JAR paths
 	public static String getProperExistingPath(String absolutePath)
 	{
 		absolutePath=localizeFilename(absolutePath);
@@ -102,6 +133,7 @@ public class CMFile
 		}
 		return absolutePath;
 	}
+	*/
 	private void buildCMFile(String absolutePath, MOB user, boolean pleaseLogErrors, boolean forceAllow)
 	{
 		accessor=user;
@@ -122,9 +154,32 @@ public class CMFile
 		// fill in all we can
 		//vfsBits=EnumSet.noneOf(Flags.class);
 		String ioPath=getIOReadableLocalPathAndName();
-		localFile=new File(ioPath);
-		if(!localFile.exists())
+		try{
+			URI thisURI = new URI(absolutePath);
+			if(!thisURI.isAbsolute()) {
+				thisURI = baseURI.resolve(thisURI);
+			}
+			if(thisURI.getScheme().equals("jar")) {
+				if(mainJAR!=null)
+					jarFile=mainJAR.getJarEntry(thisURI.toString().substring(thisURI.toString().lastIndexOf('!')+2));
+			} else
+				localFile=new File(thisURI);
+		}catch (URISyntaxException e){
+			//localFile=new File(ioPath);
+		}
+		//Log.instance().sysOut("CMFile","Asked for file "+absolutePath);
+		found:
+		if(localFile!=null && !localFile.exists())
 		{
+//			Log.sysOut("CMFile","Looking for missing file "+absolutePath);
+			if(mainJAR!=null) {
+				jarFile=mainJAR.getJarEntry(absolutePath);
+				if(jarFile!=null) {
+//					Log.sysOut("CMFile","Found "+jarFile.getName()+" in JAR");
+					localFile=null;
+					break found;
+				}
+			}
 			File localDir=new File(".");
 			int endZ=-1;
 			boolean found=true;
@@ -168,53 +223,66 @@ public class CMFile
 			else
 				name=ioPath;
 			localFile=new File(getIOReadableLocalPathAndName());
-
+		} else if(jarFile!=null) {
+//			Log.sysOut("CMFile","Found "+absolutePath+" in JAR");
+		}
+		if(localFile==null && jarFile==null && logErrors) {
+			Log.errOut("CMFile","Invalid file: "+absolutePath);
 		}
 
-		//modifiedDateTime=localFile.lastModified();
-		//if(localFile.isHidden()) vfsBits.add(Flags.HIDDEN);
-
-		//boolean isADirectory=((localFile.exists()&&(localFile.isDirectory()));
-		//boolean allowedToTraverseAsDirectory=isADirectory&&((accessor==null)||CMSecurity.canTraverseDir(accessor,absolutePath));
 		mayAccess=((forceAllow)||(accessor==null)||(CMSecurity.canAccessFile(accessor,absolutePath)));
-		/*boolean allowedToReadLocal=//(localFile!=null)&&
-									//(localFile.exists())&&
-									(allowedToWriteLocal||isADirectory);
 
-		if(!allowedToReadLocal) vfsBits.add(Flags.NOREADLOCAL);
-*/
-		//if(!allowedToWriteLocal) vfsBits.add(Flags.NOWRITELOCAL);
-
-		//if(isADirectory) vfsBits.add(Flags.DIRECTORY);
 	}
 
 	public CMFile getParent(){return new CMFile(path,accessor,false,false);}
 
 	public boolean mustOverwrite()
 	{
-		if(localFile.isDirectory())
-			return true;
-		return canRead();
+		if(localFile!=null){
+			if(localFile.isDirectory())
+				return true;
+			return canRead();
+		} else return false;
 	}
 
 	public boolean canRead()
 	{
 		if(!mayAccess) return false;
-		return localFile.exists();
+		if(localFile!=null)
+			return localFile.exists();
+		else return (jarFile!=null);
 	}
 	public boolean canWrite()
 	{
-		return mayAccess;
+		if(localFile!=null)
+			return mayAccess;
+		return false;
 	}
 
-	public boolean isDirectory(){return localFile.isDirectory();}
-	public boolean exists(){ return localFile.exists();}
+	public boolean isDirectory()
+	{
+		boolean isDir;
+		if(localFile!=null)
+			isDir=localFile.isDirectory();
+		else if(jarFile!=null)
+			isDir=jarFile.isDirectory();
+		else
+			isDir=false;
+//		Log.sysOut(path+" "+name+" isDir:"+isDir);
+		return isDir;
+	}
+	public boolean exists()
+	{
+		if(localFile!=null)
+			return localFile.exists();
+		return jarFile!=null;
+	}
 	//public boolean isFile(){return canRead()&&(!vfsBits.contains(Flags.DIRECTORY));}
-	public long lastModified(){return localFile.lastModified();}
+	//public long lastModified(){return localFile.lastModified();}
 	public String accessor(){return ((accessor!=null)?accessor.name():"SYS_UNK");}
 	//public boolean canLocalEquiv(){return (!vfsBits.contains(Flags.NOREADLOCAL));}
 	public String getName(){return name;}	//NOTE: Not 100% sure this will equal(localFile.name())
-	public String getAbsolutePath(){return "/"+getLocalPathAndName();}
+	//public String getAbsolutePath(){return "/"+getLocalPathAndName();}
 	public String getLocalPathAndName()
 	{
 		if(localPath.length()==0)
@@ -236,7 +304,7 @@ public class CMFile
 
 	public boolean delete()
 	{
-		if(mayAccess)
+		if(mayAccess && localFile!=null)
 			return localFile.delete();
 		return false;
 	}
@@ -254,7 +322,15 @@ public class CMFile
 		BufferedReader reader = null;
 		try
 		{
-			reader=new BufferedReader(new InputStreamReader(new FileInputStream(getIOReadableLocalPathAndName()),inCharSet));
+			if(localFile!=null)
+				reader=new BufferedReader(new InputStreamReader(new FileInputStream(getIOReadableLocalPathAndName()),inCharSet));
+			else if(jarFile!=null)
+				reader=new BufferedReader(new InputStreamReader(mainJAR.getInputStream(jarFile),inCharSet));
+			else {
+				if(logErrors)
+					Log.errOut("CMFile","Attempted read from no file.");
+				return buf;
+			}
 			while(reader.ready())
 			{
 				String line=reader.readLine();
@@ -298,7 +374,15 @@ public class CMFile
 		Reader F = null;
 		try
 		{
-			F=new BufferedReader(new InputStreamReader(new FileInputStream(getIOReadableLocalPathAndName()),inCharSet));
+			if(localFile!=null)
+				F=new BufferedReader(new InputStreamReader(new FileInputStream(getIOReadableLocalPathAndName()),inCharSet));
+			else if(jarFile!=null)
+				F=new BufferedReader(new InputStreamReader(mainJAR.getInputStream(jarFile),inCharSet));
+			else {
+				if(logErrors)
+					Log.errOut("CMFile","Attempted read from no file.");
+				return buf;
+			}
 			char c=' ';
 			while(F.ready())
 			{
@@ -337,7 +421,15 @@ public class CMFile
 		DataInputStream fileIn = null;
 		try
 		{
-			fileIn = new DataInputStream( new BufferedInputStream( new FileInputStream(getIOReadableLocalPathAndName()) ) );
+			if(localFile!=null)
+				fileIn = new DataInputStream( new BufferedInputStream( new FileInputStream(getIOReadableLocalPathAndName()) ) );
+			else if(jarFile!=null)
+				fileIn=new DataInputStream(new BufferedInputStream(mainJAR.getInputStream(jarFile)));
+			else {
+				if(logErrors)
+					Log.errOut("CMFile","Attempted read from no file.");
+				return buf;
+			}
 			buf = new byte [ fileIn.available() ];
 			fileIn.readFully(buf);
 			fileIn.close();
@@ -377,7 +469,7 @@ public class CMFile
 			Log.errOut("CMFile","Unable to save file '"+getLocalPathAndName()+"': No Data.");
 			return false;
 		}
-		if((localFile.isDirectory())||(!mayAccess))
+		if(localFile==null||localFile.isDirectory()||(!mayAccess))
 		{
 			Log.errOut("CMFile","Access error saving file '"+getLocalPathAndName()+"'.");
 			return false;
@@ -417,7 +509,7 @@ public class CMFile
 			Log.errOut("CMFile","Unable to save file '"+getLocalPathAndName()+"': No Data.");
 			return false;
 		}
-		if((localFile.isDirectory())||(!mayAccess))
+		if(localFile==null||localFile.isDirectory()||(!mayAccess))
 		{
 			Log.errOut("CMFile","Access error saving file '"+getLocalPathAndName()+"'.");
 			return false;
@@ -459,7 +551,7 @@ public class CMFile
 			Log.errOut("CMFile","Unable to save file '"+getLocalPathAndName()+"': No Data.");
 			return false;
 		}
-		if((localFile.isDirectory())||(!mayAccess))
+		if(localFile==null||localFile.isDirectory()||(!mayAccess))
 		{
 			Log.errOut("CMFile","Access error saving file '"+getLocalPathAndName()+"'.");
 			return false;
@@ -501,7 +593,7 @@ public class CMFile
 			Log.errOut("CMFile","File exists '"+getLocalPathAndName()+"'.");
 			return false;
 		}
-		if(!mayAccess)
+		if(!mayAccess||localFile==null)
 		{
 			Log.errOut("CMFile","Access error making directory '"+getLocalPathAndName()+"'.");
 			return false;
@@ -514,23 +606,56 @@ public class CMFile
 
 	public String[] list()
 	{
-		return localFile.list();
+		if(localFile!=null)
+			return localFile.list();
+		if(jarFile!=null && jarFile.getName().endsWith("/")) {
+			return listJAR().toArray(CMClass.dummyStringArray);
+		}
+		return null;
+	}
+	//This method assumes jarFile exists.
+	protected ArrayList<String> listJAR()
+	{
+		ArrayList<String> foundFiles=new ArrayList();
+		for(Enumeration<JarEntry> possibleFiles = mainJAR.entries();possibleFiles.hasMoreElements();) {
+			JarEntry next = possibleFiles.nextElement();
+			if(next.getName().length()>jarFile.getName().length() &&
+				next.getName().startsWith(jarFile.getName()) &&
+				!next.getName().substring(jarFile.getName().length(),next.getName().length()-1).contains("/"))
+				foundFiles.add(next.getName().substring(jarFile.getName().length()));
+		}
+		return foundFiles;
 	}
 
 	public CMFile[] listFiles()
 	{
-		File[] list=localFile.listFiles();
-		if(list==null) return null;
-		CMFile[] finalDir=new CMFile[list.length];
-		File F2;
-		String subPath=getVFSPathAndName()+"/";
-		for(int i=0;i<list.length;i++)
-		{
-			F2=list[i];
-			CMFile CF=new CMFile(subPath+F2.getName(),accessor,false);
-			finalDir[i]=CF;
+		if(localFile!=null) {
+			File[] list=localFile.listFiles();
+			String subPath=getVFSPathAndName();//+"/";
+			if(!subPath.endsWith("/"))
+				subPath=subPath+"/";
+			if(list==null) return null;
+			CMFile[] finalDir=new CMFile[list.length];
+			File F2;
+			for(int i=0;i<list.length;i++)
+			{
+				F2=list[i];
+				CMFile CF=new CMFile(subPath+F2.getName(),accessor,false);
+				finalDir[i]=CF;
+			}
+			return finalDir;
 		}
-		return finalDir;
+		if(jarFile!=null && jarFile.getName().endsWith("/")) {
+			ArrayList<String> foundFiles=listJAR();
+			String subPath=getVFSPathAndName();
+			CMFile[] finalDir=new CMFile[foundFiles.size()];
+			for(int i=0;i<foundFiles.size();i++) {
+				//Try to find real files first, then go to JAR files
+				finalDir[i]=new CMFile(subPath+foundFiles.get(i), accessor, false);
+			}
+			return finalDir;
+		}
+		return null;
 	}
 
 	public static String localizeFilename(String filename)
@@ -563,10 +688,12 @@ public class CMFile
 			filename=filename.substring(2);
 		while(filename.startsWith("/")) filename=filename.substring(1);
 		while(filename.startsWith("\\")) filename=filename.substring(1);
+		/*
 		while(filename.endsWith("/"))
 			filename=filename.substring(0,filename.length()-1);
 		while(filename.endsWith("\\"))
 			filename=filename.substring(0,filename.length()-1);
+		*/
 		return filename.replace(pathSeparator,'/');
 	}
 

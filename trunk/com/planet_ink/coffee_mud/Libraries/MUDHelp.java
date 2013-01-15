@@ -341,7 +341,7 @@ public class MUDHelp extends StdLibrary implements HelpLibrary
 	{
 		Properties arcHelpFile=(Properties)Resources.getResource("ARCHON HELP FILE");
 		if(arcHelpFile==null)
-		try
+		//try
 		{
 			arcHelpFile=new Properties();
 			CMFile directory=new CMFile("resources/help/",null,true);
@@ -351,7 +351,9 @@ public class MUDHelp extends StdLibrary implements HelpLibrary
 				for(String item : list)
 				{
 					if((item!=null)&&(item.toUpperCase().endsWith(".INI"))&&(item.toUpperCase().startsWith("ARC_")))
-						arcHelpFile.load(new BufferedInputStream(new FileInputStream(CMFile.getProperExistingPath("resources/help/"+item))));
+						{}
+						//arcHelpFile.load(new BufferedInputStream(new FileInputStream(CMFile.getProperExistingPath("resources/help/"+item))));
+						//TODO
 				}
 			}
 			//DVector suspiciousPairs=suspiciousTags(arcHelpFile);
@@ -372,11 +374,13 @@ public class MUDHelp extends StdLibrary implements HelpLibrary
 			}*/
 			Resources.submitResource("ARCHON HELP FILE",arcHelpFile);
 		}
+		/*
 		catch(IOException e)
 		{
 			Log.errOut("MUDHelp",e);
 			return new Properties();
 		}
+		*/
 		return arcHelpFile;
 	}
 
@@ -384,7 +388,7 @@ public class MUDHelp extends StdLibrary implements HelpLibrary
 	{
 		Properties helpFile=(Properties)Resources.getResource("MAIN HELP FILE");
 		if(helpFile==null)
-		try
+		//try
 		{
 			helpFile=new Properties();
 			CMFile directory=new CMFile("resources/help/",null,true);
@@ -393,18 +397,22 @@ public class MUDHelp extends StdLibrary implements HelpLibrary
 				String[] list=directory.list();
 				for(String item : list)
 					if((item!=null)&&(item.toUpperCase().endsWith(".INI"))&&(!item.toUpperCase().startsWith("ARC_")))
-						helpFile.load(new BufferedInputStream(new FileInputStream(CMFile.getProperExistingPath("resources/help/"+item))));
+						{}
+						//helpFile.load(new BufferedInputStream(new FileInputStream(CMFile.getProperExistingPath("resources/help/"+item))));
+						//TODO
 			}
 			//DVector suspiciousPairs=suspiciousTags(helpFile);
 			//for(int d=0;d<suspiciousPairs.size();d++)
 			//	Syst/em.out.pri/ntln(suspiciousPairs.elementAt(d,1)+": "+suspiciousPairs.elementAt(d,2));
 			Resources.submitResource("MAIN HELP FILE",helpFile);
 		}
+		/*
 		catch(IOException e)
 		{
 			Log.errOut("MUDHelp",e);
 			return new Properties();
 		}
+		*/
 		return helpFile;
 	}
 	

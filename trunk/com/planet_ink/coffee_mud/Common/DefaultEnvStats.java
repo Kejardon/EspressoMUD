@@ -37,7 +37,7 @@ public class DefaultEnvStats implements EnvStats, Ownable
 	protected long volume;
 	protected int magic;
 	protected CMSavable parent;
-	protected RawMaterial.Resource material=RawMaterial.Resource.NOTHING;
+	protected RawMaterial.Resource material=null;//RawMaterial.Resource.NOTHING;
 	//TODO: Material should probably be stored here? Still need to decide how
 
 	//Ownable
@@ -54,7 +54,14 @@ public class DefaultEnvStats implements EnvStats, Ownable
 	public double speed(){return Speed;}
 	public Iterator<String> ambiances(){ return ambiances.iterator();}
 	public boolean isComposite(){return false;}
-	public RawMaterial.Resource material(){return material;}
+	public RawMaterial.Resource material()
+	{
+		if(material==null) synchronized(this) {
+			if(material==null)
+				material=RawMaterial.Resource.NOTHING;
+		}
+		return material;
+	}
 	public WVector<RawMaterial.Resource> materialSet(){return null;}
 	public long volume(){return volume;}
 
@@ -207,7 +214,7 @@ public class DefaultEnvStats implements EnvStats, Ownable
 			public int size(){return 0;}
 			public void load(DefaultEnvStats E, ByteBuffer S){ E.ambiances=new CopyOnWriteArrayList(CMLib.coffeeMaker().loadAString(S)); } },
 		MAT(){
-			public ByteBuffer save(DefaultEnvStats E){ return CMLib.coffeeMaker().savString(E.material.name()); }
+			public ByteBuffer save(DefaultEnvStats E){ return CMLib.coffeeMaker().savString(E.material().name()); }
 			public int size(){return 0;}
 			public void load(DefaultEnvStats E, ByteBuffer S){
 				RawMaterial.Resource newMat=CMClass.valueOf(RawMaterial.Resource.class, CMLib.coffeeMaker().loadString(S));
@@ -266,7 +273,7 @@ public class DefaultEnvStats implements EnvStats, Ownable
 			public String prompt(DefaultEnvStats E){return ""+E.magic;}
 			public void mod(DefaultEnvStats E, MOB M){E.magic=CMLib.genEd().intPrompt(M, ""+E.magic);} },
 		MATERIAL(){
-			public String brief(DefaultEnvStats E){return E.material.toString();}
+			public String brief(DefaultEnvStats E){return E.material().toString();}
 			public String prompt(DefaultEnvStats E){return E.material.toString();}
 			public void mod(DefaultEnvStats E, MOB M){E.material=(RawMaterial.Resource)CMLib.genEd().enumPrompt(M, E.material.toString(), RawMaterial.Resource.values());} },
 /*		DISPOSITION(){

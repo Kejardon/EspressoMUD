@@ -36,7 +36,7 @@ public interface EnglishParsing extends CMLibrary
 	public static final int SRCH_MOBEQ=SRCH_MOBINV*2;	//Items worn on body
 	public static final int SRCH_MOB=SRCH_MOBEQ*2;	//Body parts
 	public static final int SRCH_ROOM=SRCH_MOB*2;	//Any item lying in the room.
-	public static final int SRCH_ALL=SRCH_MOBINV|SRCH_MOBINV|SRCH_MOBEQ|SRCH_MOB;
+	public static final int SRCH_ALL=SRCH_ROOM|SRCH_MOBINV|SRCH_MOBEQ|SRCH_MOB;
 
 	public static final int SUB_ITEMCOLL=1;	//Search items stored inside
 	public static final int SUB_RIDERS=SUB_ITEMCOLL*2;	//Search items stored on top

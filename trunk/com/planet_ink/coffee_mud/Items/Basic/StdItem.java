@@ -68,7 +68,7 @@ public class StdItem implements Item
 		return myEnvironmental;
 	}
 	public boolean isComposite(){return false;}
-	public ItemCollection subItems(){return null;}
+	public BindCollection subItems(){return null;}
 
 	public int priority(ListenHolder L){return Integer.MAX_VALUE;}
 	public void registerListeners(ListenHolder here) { here.addListener(this, lFlags); }
@@ -139,9 +139,11 @@ public class StdItem implements Item
 	public CMObject container(){return container;}
 	public void setContainer(CMObject E)
 	{
-		if(E==container) return;
-		clearAllListeners();
-		container=E;
+		if(E!=container)
+		{
+			clearAllListeners();
+			container=E;
+		}
 		registerAllListeners();
 		//CMLib.database().saveObject(this);
 	}
@@ -300,6 +302,7 @@ public class StdItem implements Item
 		ride=null;
 		tickStatus=Tickable.TickStat.Not;
 		tickCount=0;
+		container=null;
 		if(myEnvironmental!=null) myEnvironmental=(Environmental)((Ownable)myEnvironmental.copyOf()).setOwner(this);
 
 		for(Effect A : E.affects)
@@ -424,11 +427,11 @@ public class StdItem implements Item
 				break;
 			case LOOK:
 				if(target==this)
-					handleBeingLookedAt(msg, false);
+					Item.O.handleBeingLookedAt(this, msg, false);
 				break;
 			case EXAMINE:
 				if(target==this)
-					handleBeingLookedAt(msg, true);
+					Item.O.handleBeingLookedAt(this, msg, true);
 				break;
 		}
 		getEnvObject().executeMsg(myHost, msg);

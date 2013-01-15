@@ -28,7 +28,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 public class OpenExit implements Exit
 {
 	//NOTE: myEnvironmental needs to be protected somehow. It should be immutable.
-	protected Environmental myEnvironmental=(Environmental)((Ownable)CMClass.COMMON.getNew("DefaultEnvironmental")).setOwner(this);
+	protected Environmental myEnvironmental=null;//(Environmental)((Ownable)CMClass.COMMON.getNew("DefaultEnvironmental")).setOwner(this);
 	protected EnumSet<ListenHolder.Flags> lFlags=EnumSet.of(ListenHolder.Flags.OK,ListenHolder.Flags.EXC);
 	private static OpenExit myInstance;	//To make sure it doesn't get garbagecollected even when no instances of it are in the MUD.
 
@@ -52,7 +52,15 @@ public class OpenExit implements Exit
 	public void setDisplayText(String newDisplayText){}
 	public void setDescription(String newDescription){}
 
-	public Environmental getEnvObject() {return myEnvironmental;}
+	public Environmental getEnvObject()
+	{
+		if(myEnvironmental==null) synchronized(this)
+		{
+			if(myEnvironmental==null)
+				myEnvironmental=(Environmental)((Ownable)CMClass.COMMON.getNew("DefaultEnvironmental")).setOwner(this);
+		}
+		return myEnvironmental;
+	}
 	public Closeable getLidObject() {return null;}
 
 	public int priority(ListenHolder L){return Integer.MAX_VALUE;}

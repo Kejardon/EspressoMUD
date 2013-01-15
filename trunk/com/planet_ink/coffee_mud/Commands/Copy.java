@@ -157,6 +157,7 @@ public class Copy extends StdCommand
 				if(dest instanceof MOB)
 					end="into "+((MOB)dest).name()+"'s arms";
 				dest.getItemCollection().addItem(newItem);
+				newItem.saveThis();
 				if(i==0)
 				{
 					if(number>1)

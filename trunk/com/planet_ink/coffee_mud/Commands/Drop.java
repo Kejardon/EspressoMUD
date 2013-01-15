@@ -9,6 +9,7 @@ import com.planet_ink.coffee_mud.Common.interfaces.*;
 import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.interfaces.*;
 import com.planet_ink.coffee_mud.Locales.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 import com.planet_ink.coffee_mud.Races.interfaces.*;
 
@@ -46,6 +47,7 @@ public class Drop extends StdCommand
 		}
 		commands.removeElementAt(0);
 
+		/*
 		int maxToDrop=CMLib.english().calculateMaxToGive(mob,commands,mob,false);
 		if(maxToDrop<0) return false;
 
@@ -53,9 +55,11 @@ public class Drop extends StdCommand
 		boolean allFlag=(commands.size()>0)?commands.elementAt(0).equalsIgnoreCase("all"):false;
 		if(whatToDrop.toUpperCase().startsWith("ALL.")){ allFlag=true; whatToDrop="ALL "+whatToDrop.substring(4);}
 		if(whatToDrop.toUpperCase().endsWith(".ALL")){ allFlag=true; whatToDrop="ALL "+whatToDrop.substring(0,whatToDrop.length()-4);}
+		*/
 
-		Vector<Item> V=(Vector)CMLib.english().fetchInteractables(whatToDrop, false, 1, allFlag?maxToDrop:1, mob.getItemCollection());
-		if(V.size()==0)
+		Vector<Item> V=(Vector)CMLib.english().getTargets(mob, commands, "from", EnglishParsing.SRCH_MOBINV|EnglishParsing.SRCH_MOBEQ|EnglishParsing.SRCH_MOB, EnglishParsing.SUB_ALL);
+		//Vector<Item> V=(Vector)CMLib.english().fetchInteractables(whatToDrop, false, 1, allFlag?maxToDrop:1, mob.getItemCollection());
+		if(V==null||V.size()==0)
 			mob.tell("You don't seem to be carrying that.");
 		else
 		for(int i=0;i<V.size();i++)
