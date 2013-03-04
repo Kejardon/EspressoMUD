@@ -1,17 +1,7 @@
 package com.planet_ink.coffee_mud.Items.Basic;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Effects.interfaces.*;
-import com.planet_ink.coffee_mud.Areas.interfaces.*;
-import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-import com.planet_ink.coffee_mud.Commands.interfaces.*;
-import com.planet_ink.coffee_mud.Common.interfaces.*;
-import com.planet_ink.coffee_mud.Exits.interfaces.*;
-import com.planet_ink.coffee_mud.Items.interfaces.*;
-import com.planet_ink.coffee_mud.Locales.interfaces.*;
 import com.planet_ink.coffee_mud.Libraries.interfaces.*;
-import com.planet_ink.coffee_mud.MOBS.interfaces.*;
-import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
 import java.nio.ByteBuffer;
@@ -202,6 +192,13 @@ public class MixedItem implements Item
 				V.add(E);
 		return V;
 	}
+	public Effect fetchFirstEffect(String ID)
+	{
+		for(Effect E : affects)
+			if(E.ID().equals(ID))
+				return E;
+		return null;
+	}
 	public Iterator<Effect> allEffects() { return affects.iterator(); }
 
 	//Behavable
@@ -382,12 +379,13 @@ public class MixedItem implements Item
 
 	public boolean okMessage(ListenHolder.OkChecker myHost, CMMsg msg)
 	{
-		//Interactable target=msg.target();
+		Interactable target=msg.target();
 		for(CMMsg.MsgCode code : msg.othersCode())
 		switch(code)
 		{
 			case GET:
-				msg.addResponse(this, 9);
+				if(target==this)
+					msg.addResponse(ListenHolder.InbetweenListener.newListener(ItemGetResponse, this), 9);
 				break;
 		}
 		if(!getEnvObject().okMessage(myHost, msg))
@@ -397,34 +395,25 @@ public class MixedItem implements Item
 				return false;
 		return true;
 	}
-	public boolean respondTo(CMMsg msg, Object data){return true;}
-	public boolean respondTo(CMMsg msg)
+	protected static ListenHolder.DummyListener ItemGetResponse = new ListenHolder.DummyListener()
 	{
-		Interactable target=msg.target();
-		boolean always=false;
-		for(CMMsg.MsgCode code : msg.othersCode())
-		switch(code)
+		public boolean respondTo(CMMsg msg, Object data)
 		{
-			case ALWAYS:
-				always=true;
-				break;
-			case GET:
-				if(target==this)
-				{
-					Interactable I = msg.firstSource();
-					if(!(I instanceof MOB)) return false;
-					if(always) break;
-					MOB mob=(MOB)I;
-					if(!mob.getItemCollection().canHold(this))
-					{
-						mob.tell("You can't pick it up!");
-						return false;
-					}
-				}
-				break;
+			MixedItem item = (MixedItem)data;
+			Interactable I = msg.firstSource();
+			if(!(I instanceof MOB)) return false;
+			if(msg.hasOthersCode(CMMsg.MsgCode.ALWAYS)) return true;
+			MOB mob=(MOB)I;
+			if(!mob.getItemCollection().canHold(item))
+			{
+				mob.tell("You can't pick it up!");
+				return false;
+			}
+			return true;
 		}
-		return true;
-	}
+	};
+	public boolean respondTo(CMMsg msg, Object data){return true;}
+	public boolean respondTo(CMMsg msg){ return true;}
 	public void executeMsg(ListenHolder.ExcChecker myHost, CMMsg msg)
 	{
 		Interactable target=msg.target();

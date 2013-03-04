@@ -1,16 +1,6 @@
 package com.planet_ink.coffee_mud.Effects.Languages;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Effects.interfaces.*;
-import com.planet_ink.coffee_mud.Areas.interfaces.*;
-import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-import com.planet_ink.coffee_mud.Commands.interfaces.*;
-import com.planet_ink.coffee_mud.Common.interfaces.*;
-import com.planet_ink.coffee_mud.Exits.interfaces.*;
-import com.planet_ink.coffee_mud.Items.interfaces.*;
-import com.planet_ink.coffee_mud.Locales.interfaces.*;
-import com.planet_ink.coffee_mud.MOBS.interfaces.*;
-import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
 
@@ -35,12 +25,12 @@ public class Drowish extends StdLanguage
 	{
 		if(wordLists==null)
 		{
-			String[] one={"a","e","i","o","á","é","í","ó"};
+			String[] one={"a","e","i","o","ï¿½","ï¿½","ï¿½","ï¿½"};
 			String[] two={"os","vi","ne","vo","li","eh","no","ai","by","et","ce","un","il"};
-			String[] three={"ána","cil","sar","tan","hel","loa","si'r","hep","yur","nol","hol","qua","éth"};
-			String[] four={"séya","qual","quel","lara","uqua","sana","yava","mas'se","yan'na","quettaparma","manna","manan","merme","carma","harno","harne","varno","essar","saira","cilta","veuma","norta","turme","saita"};
-			String[] five={"cuiva","cuina","nonwa","imire","nauta","cilta","entuc","norta","latin","lòtea","veuya","veuro","apama","hampa","nurta","firta","saira","holle","herwa","uquen","arcoa","calte","cemma","hanta","tan'en"};
-			String[] six={"mahtale","porisal'que","hairie","tararan","amba'rwa","lati'na","olòtie","amawil","apacen","yavinqua","apalume","lin'quil'ea","menelwa","alassea","nurmea","parmasse","ceniril","heldasse","imirin","eari'na","calaten'gew","lapselunga","ria'nna","eneques"};
+			String[] three={"ï¿½na","cil","sar","tan","hel","loa","si'r","hep","yur","nol","hol","qua","ï¿½th"};
+			String[] four={"sï¿½ya","qual","quel","lara","uqua","sana","yava","mas'se","yan'na","quettaparma","manna","manan","merme","carma","harno","harne","varno","essar","saira","cilta","veuma","norta","turme","saita"};
+			String[] five={"cuiva","cuina","nonwa","imire","nauta","cilta","entuc","norta","latin","lï¿½tea","veuya","veuro","apama","hampa","nurta","firta","saira","holle","herwa","uquen","arcoa","calte","cemma","hanta","tan'en"};
+			String[] six={"mahtale","porisal'que","hairie","tararan","amba'rwa","lati'na","olï¿½tie","amawil","apacen","yavinqua","apalume","lin'quil'ea","menelwa","alassea","nurmea","parmasse","ceniril","heldasse","imirin","eari'na","calaten'gew","lapselunga","ria'nna","eneques"};
 			wordLists=new Vector();
 			wordLists.addElement(one);
 			wordLists.addElement(two);

@@ -1,9 +1,8 @@
 package com.planet_ink.coffee_mud.core.interfaces;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Common.interfaces.*;
-import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /*
@@ -71,11 +70,23 @@ public interface ListenHolder extends Tickable {
 	{
 		public MsgListener realListener;
 		public Object data;
+		protected static final ConcurrentLinkedQueue<InbetweenListener> ListenerCache=new ConcurrentLinkedQueue();
+
 		
 		public InbetweenListener(MsgListener rL, Object d){realListener=rL; data=d;}
-		public InbetweenListener(){}
+		protected InbetweenListener(){}
 		
 		public boolean respondTo(CMMsg msg) { return realListener.respondTo(msg, data); }
+		public static InbetweenListener newListener(MsgListener rL, Object d)
+		{
+			InbetweenListener lstn = ListenerCache.poll();
+			if(lstn==null)
+				lstn=new InbetweenListener();
+			lstn.realListener=rL;
+			lstn.data=d;
+			return lstn;
+		}
+		public void returnThis(){realListener=null; data=null; ListenerCache.offer(this);}
 	}
 	
 	public static class O

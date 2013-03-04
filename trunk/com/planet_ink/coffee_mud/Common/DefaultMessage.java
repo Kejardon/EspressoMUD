@@ -1,17 +1,7 @@
 package com.planet_ink.coffee_mud.Common;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Effects.interfaces.*;
-import com.planet_ink.coffee_mud.Areas.interfaces.*;
-import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-import com.planet_ink.coffee_mud.Commands.interfaces.*;
-import com.planet_ink.coffee_mud.Common.interfaces.*;
-import com.planet_ink.coffee_mud.Exits.interfaces.*;
-import com.planet_ink.coffee_mud.Items.interfaces.*;
-import com.planet_ink.coffee_mud.Locales.interfaces.*;
 import com.planet_ink.coffee_mud.Libraries.interfaces.*;
-import com.planet_ink.coffee_mud.MOBS.interfaces.*;
-import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
 import java.nio.ByteBuffer;
@@ -90,8 +80,18 @@ public class DefaultMessage implements CMMsg
 			trailHpns=null;
 		}
 		value=0;
-		responders=null;
-		obvious=new int[SenseFlags_SIZE];
+		if(responders!=null)
+		{
+			for(ListIterator<SortedList.SortableObject<ListenHolder.MsgListener>> L=responders.listIterator();L.hasNext();)
+			{
+				ListenHolder.MsgListener next = L.next().myObj;
+				if(next instanceof ListenHolder.InbetweenListener)
+					((ListenHolder.InbetweenListener)next).returnThis();
+			}
+			responders=null;
+		}
+		for(int i=0;i<SenseFlags_SIZE;i++)
+			obvious[i]=0;
 		CMClass.returnMsg(this);
 		//if(!CMClass.returnMsg(this))
 		//	super.finalize();

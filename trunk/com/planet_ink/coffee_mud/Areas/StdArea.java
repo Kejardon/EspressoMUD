@@ -1,18 +1,8 @@
 package com.planet_ink.coffee_mud.Areas;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Effects.interfaces.*;
-import com.planet_ink.coffee_mud.Areas.interfaces.*;
-import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-import com.planet_ink.coffee_mud.Commands.interfaces.*;
-import com.planet_ink.coffee_mud.Common.interfaces.*;
-import com.planet_ink.coffee_mud.Exits.interfaces.*;
 import com.planet_ink.coffee_mud.Items.Basic.StdItem;
-import com.planet_ink.coffee_mud.Items.interfaces.*;
 import com.planet_ink.coffee_mud.Libraries.interfaces.*;
-import com.planet_ink.coffee_mud.Locales.interfaces.*;
-import com.planet_ink.coffee_mud.MOBS.interfaces.*;
-import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
 import java.nio.ByteBuffer;
@@ -50,6 +40,7 @@ public class StdArea implements Area
 
 	protected String author="";
 	protected TimeClock myClock=null;
+	protected int lastHour=0;
 
 	protected volatile boolean interruptGMC=false;
 
@@ -61,6 +52,26 @@ public class StdArea implements Area
 
 	public void initializeClass(){}
 
+	public int ambientTemperature()
+	{
+		TimeClock clock=getTimeObj();
+		int time=clock.getTimeOfDay();
+		int[] times=clock.getDawnToDusk();
+		int TOD=clock.getTODCode();
+		int nextTOD = TOD==TimeClock.TIME_NIGHT?TimeClock.TIME_DAWN:(TOD+1);
+		float TODLength;
+		if(TOD==TimeClock.TIME_NIGHT)
+			TODLength=clock.getHoursInDay()+times[TimeClock.TIME_DAWN]-times[TOD];
+		else
+			TODLength=times[nextTOD]-times[TOD];
+		float percent = ((time>times[TOD]?time:(clock.getHoursInDay()+time))-times[TOD])/TODLength;
+		//percent is now between 0 and 1 how far the current TOD is.
+		int temperature=(int)
+			((TimeClock.defaultTemperatures[clock.getSeasonCode()][TOD]*(1-percent)
+			  +TimeClock.defaultTemperatures[clock.getSeasonCode()][nextTOD]*percent)
+			 /2);
+		return temperature;
+	}
 	public void setTimeObj(TimeClock obj){myClock=obj;}
 	public TimeClock getTimeObj()
 	{
@@ -240,8 +251,19 @@ public class StdArea implements Area
 	}
 	protected boolean doTick()
 	{
-		//tickStatus=Tickable.TickStat.Start;
-		//getTimeObj().tick(this,tickID);	//NOTE: This isn't ideal, but it'll work. Ideally TimeClocks are directly ticked by the service engine..
+		tickStatus=Tickable.TickStat.Start;
+		int newTime;
+		if(lastHour!=(newTime=getTimeObj().getTimeOfDay()))
+		{
+			int newTemp=ambientTemperature();
+			getEnvObject().setTemperature(newTemp);
+			Effect E=CMClass.EFFECT.getNew("Temperature");
+			if(E!=null) for(Room R : getMetroCollection())
+				if(R.getEnvObject().temperature()!=newTemp)
+					E.invoke(R.getEnvObject(), -1);
+			//TODO: 
+			lastHour=newTime;
+		}
 		tickStatus=Tickable.TickStat.Listener;
 		for(TickActer T : tickActers)
 			if(!T.tick(tickCount))
@@ -289,6 +311,13 @@ public class StdArea implements Area
 			if(E.ID().equals(ID))
 				V.add(E);
 		return V;
+	}
+	public Effect fetchFirstEffect(String ID)
+	{
+		for(Effect E : affects)
+			if(E.ID().equals(ID))
+				return E;
+		return null;
 	}
 	public Iterator<Effect> allEffects() { return affects.iterator(); }
 	public boolean inMyMetroArea(Area A)

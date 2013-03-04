@@ -1,17 +1,7 @@
 package com.planet_ink.coffee_mud.Items.Basic;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Effects.interfaces.*;
-import com.planet_ink.coffee_mud.Areas.interfaces.*;
-import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-import com.planet_ink.coffee_mud.Commands.interfaces.*;
-import com.planet_ink.coffee_mud.Common.interfaces.*;
-import com.planet_ink.coffee_mud.Exits.interfaces.*;
-import com.planet_ink.coffee_mud.Items.interfaces.*;
-import com.planet_ink.coffee_mud.Locales.interfaces.*;
 import com.planet_ink.coffee_mud.Libraries.interfaces.*;
-import com.planet_ink.coffee_mud.MOBS.interfaces.*;
-import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
 import java.nio.ByteBuffer;
@@ -261,12 +251,12 @@ public class StdBody extends StdItem implements Body
 					{
 						if(!getEat().satisfiesEatPrereqs(msg))
 							return false;
-						msg.addResponse(new ListenHolder.InbetweenListener(CheckBiteResponse,this), 10);
+						msg.addResponse(ListenHolder.InbetweenListener.newListener(CheckBiteResponse,this), 10);
 					}
 				}
 				if(msg.isTool(this) && (myMob!=null) && (!dead))
 				{
-					msg.addResponse(new ListenHolder.InbetweenListener(RefuseEatResponseLive, this), 9);
+					msg.addResponse(ListenHolder.InbetweenListener.newListener(RefuseEatResponseLive, this), 9);
 				}
 				break;
 			/*
@@ -284,13 +274,7 @@ public class StdBody extends StdItem implements Body
 		if(myMob==null) return true;
 		return myMob.okMessage(myHost, msg);
 	}
-	public boolean respondTo(CMMsg msg)
-	{
-		if(!super.respondTo(msg))
-			return false;
-		if(myMob==null) return true;
-		return myMob.respondTo(msg);
-	}
+	public boolean respondTo(CMMsg msg){ return true; }
 	public void executeMsg(ListenHolder.ExcChecker myHost, CMMsg msg)
 	{
 		super.executeMsg(myHost, msg);

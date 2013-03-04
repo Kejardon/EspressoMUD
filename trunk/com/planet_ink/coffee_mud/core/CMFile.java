@@ -1,6 +1,6 @@
 package com.planet_ink.coffee_mud.core;
+import com.planet_ink.coffee_mud.core.interfaces.*;
 //import com.planet_ink.coffee_mud.core.database.DBConnections;
-import com.planet_ink.coffee_mud.MOBS.interfaces.*;
 
 import java.io.*;
 import java.nio.charset.Charset;

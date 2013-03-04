@@ -1,18 +1,8 @@
 package com.planet_ink.coffee_mud.Common;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Effects.interfaces.*;
-import com.planet_ink.coffee_mud.Areas.interfaces.*;
-import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-import com.planet_ink.coffee_mud.Commands.interfaces.*;
-import com.planet_ink.coffee_mud.Common.interfaces.*;
-import com.planet_ink.coffee_mud.Exits.interfaces.*;
-import com.planet_ink.coffee_mud.Items.interfaces.*;
 import com.planet_ink.coffee_mud.Libraries.interfaces.*;
 import com.planet_ink.coffee_mud.Libraries.interfaces.CharCreationLibrary.LoginResult;
-import com.planet_ink.coffee_mud.Locales.interfaces.*;
-import com.planet_ink.coffee_mud.MOBS.interfaces.*;
-import com.planet_ink.coffee_mud.Races.interfaces.*;
 import com.jcraft.jzlib.*;
 import java.io.*;
 import java.util.*;
@@ -2171,8 +2161,12 @@ public class DefaultSession extends Thread implements Session
 								.append(", login: "+mob.name());
 						Log.sysOut("Session",loginMsg.toString());
 						if(loginResult != CharCreationLibrary.LoginResult.NO_LOGIN)
-							if(!CMLib.map().sendGlobalMessage(mob,EnumSet.of(CMMsg.MsgCode.LOGIN),CMClass.getMsg(mob,null,null,EnumSet.of(CMMsg.MsgCode.LOGIN),null)))
+						{
+							CMMsg loginMessage = CMClass.getMsg(mob,null,null,EnumSet.of(CMMsg.MsgCode.LOGIN),null);
+							if(!CMLib.map().sendGlobalMessage(mob,EnumSet.of(CMMsg.MsgCode.LOGIN),loginMessage))
 								killFlag=true;
+							loginMessage.returnMsg();
+						}
 					}
 					needPrompt=true;
 					status=Session.STATUS_OK;

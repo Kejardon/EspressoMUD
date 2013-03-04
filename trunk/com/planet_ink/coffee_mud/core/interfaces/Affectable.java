@@ -1,7 +1,5 @@
 package com.planet_ink.coffee_mud.core.interfaces;
 
-import com.planet_ink.coffee_mud.Effects.interfaces.Effect;
-
 import java.util.*;
 
 /*
@@ -22,6 +20,7 @@ public interface Affectable extends ListenHolder, ListenHolder.MsgListener, List
 	public int numEffects();
 	public Effect fetchEffect(int index);
 	public Vector<Effect> fetchEffect(String ID);
+	public Effect fetchFirstEffect(String ID);
 	public Iterator<Effect> allEffects();
 /*	Typical setup for Affectables below (Shared code and variables often varies! Make sure it's applicable to the object)
 	protected CopyOnWriteArrayList<Effect> affects=new CopyOnWriteArrayList();
@@ -105,6 +104,13 @@ public interface Affectable extends ListenHolder, ListenHolder.MsgListener, List
 			if(E.ID().equals(ID))
 				V.add(E);
 		return V;
+	}
+	public Effect fetchFirstEffect(String ID)
+	{
+		for(Effect E : affects)
+			if(E.ID().equals(ID))
+				return E;
+		return null;
 	}
 	public Iterator<Effect> allEffects() { return affects.iterator(); }
 	//Affectable/Behavable shared

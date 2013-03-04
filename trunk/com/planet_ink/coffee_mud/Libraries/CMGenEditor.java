@@ -1,18 +1,7 @@
 package com.planet_ink.coffee_mud.Libraries;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Effects.interfaces.*;
-import com.planet_ink.coffee_mud.Areas.interfaces.*;
-import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-import com.planet_ink.coffee_mud.Commands.interfaces.*;
-import com.planet_ink.coffee_mud.Common.interfaces.*;
-import com.planet_ink.coffee_mud.Exits.interfaces.*;
-import com.planet_ink.coffee_mud.Items.interfaces.*;
-import com.planet_ink.coffee_mud.Locales.interfaces.*;
 import com.planet_ink.coffee_mud.Libraries.interfaces.*;
-import com.planet_ink.coffee_mud.MOBS.interfaces.*;
-import com.planet_ink.coffee_mud.Races.interfaces.*;
-
 import com.planet_ink.coffee_mud.core.exceptions.*;
 import com.planet_ink.coffee_mud.Libraries.interfaces.MoneyLibrary.MoneyDenomination;
 
@@ -39,13 +28,31 @@ public class CMGenEditor extends StdLibrary implements GenericEditor
 		if(E==null)
 			return null;
 		boolean done=false;
+		StringBuilder promptText = new StringBuilder();
+		if(E instanceof CMSavable)
+			promptText.append(((CMSavable)E).saveNum()).append('\n');
+		if(E instanceof Ownable)
+			promptText.append(((Ownable)E).owner().ID()).append(": ").append(((Ownable)E).owner().saveNum()).append('\n');
+		if(E instanceof Item)
+		{
+			CMObject cont=((Item)E).container();
+			if(cont==null)
+				promptText.append("null");
+			else
+			{
+				if(cont instanceof CMSavable)
+					promptText.append(cont.ID()).append(": ").append(((CMSavable)cont).saveNum()).append('\n');
+				else
+					promptText.append(cont.ID()).append('\n');
+			}
+		}
 		CMModifiable.ModEnum[] options=E.totalEnumM();
 		while((mob.session()!=null)&&(!mob.session().killFlag())&&(!done))
 		{
 			for(int i=0;i<options.length;i++)
-				mob.session().rawPrintln((1+i)+". "+options[i]+": '"+options[i].brief(E)+"'.");
-			
-			int pickOption=CMath.s_int(mob.session().prompt("Edit which? ",""));
+				promptText.append(1+i).append(". ").append(options[i]).append(": '").append(options[i].brief(E)).append("'.\n");
+			promptText.append("Edit which? ");
+			int pickOption=CMath.s_int(mob.session().prompt(promptText.toString(),""));
 			if(--pickOption<0) done=true;
 			else if(pickOption<options.length)
 			{
@@ -645,6 +652,29 @@ public class CMGenEditor extends StdLibrary implements GenericEditor
 				continue;
 			}
 			return R;
+		}
+		return null;
+	}
+	public Skill skillPrompt(MOB M)
+	{
+		while((M.session()!=null)&&(!M.session().killFlag()))
+		{
+			String skillName=M.session().prompt("Enter a skill name: ","");
+			if(skillName.equals("")) return null;
+			if(skillName.equals("?"))
+			{
+				for(Iterator<Skill> e=CMClass.SKILL.all();e.hasNext();)
+					M.session().rawPrintln(e.next().ID());
+				
+				continue;
+			}
+			Skill S=CMClass.SKILL.get(skillName);
+			if(S==null)
+			{
+				M.session().rawPrintln("No skill with that name found.");
+				continue;
+			}
+			return S;
 		}
 		return null;
 	}

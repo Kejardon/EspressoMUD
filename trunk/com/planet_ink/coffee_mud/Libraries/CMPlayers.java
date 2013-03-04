@@ -1,17 +1,7 @@
 package com.planet_ink.coffee_mud.Libraries;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Effects.interfaces.*;
-import com.planet_ink.coffee_mud.Areas.interfaces.*;
-import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-import com.planet_ink.coffee_mud.Commands.interfaces.*;
-import com.planet_ink.coffee_mud.Common.interfaces.*;
-import com.planet_ink.coffee_mud.Exits.interfaces.*;
-import com.planet_ink.coffee_mud.Items.interfaces.*;
-import com.planet_ink.coffee_mud.Locales.interfaces.*;
 import com.planet_ink.coffee_mud.Libraries.interfaces.*;
-import com.planet_ink.coffee_mud.MOBS.interfaces.*;
-import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
 import java.nio.ByteBuffer;
@@ -107,9 +97,10 @@ public class CMPlayers extends StdLibrary implements PlayerLibrary
 		}*/
 		CMMsg msg=CMClass.getMsg(deadMOB,null,null,EnumSet.of(CMMsg.MsgCode.RETIRE),(quiet)?null:"A horrible death cry is heard throughout the land.");
 		CMLib.map().sendGlobalMessage(deadMOB, EnumSet.of(CMMsg.MsgCode.RETIRE), msg);
-		Room deadLoc=deadMOB.location();
-		if(deadLoc!=null)
-			deadLoc.send(msg);
+		//TODO: If this is done it should use a different message
+		//Room deadLoc=deadMOB.location();
+		//if(deadLoc!=null)
+		//	deadLoc.send(msg);
 
 		//CMLib.database().deleteObject(deadMOB);	//in the destroy()
 		if(deadMOB.session()!=null)

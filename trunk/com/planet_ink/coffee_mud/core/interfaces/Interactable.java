@@ -1,6 +1,5 @@
 package com.planet_ink.coffee_mud.core.interfaces;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Common.interfaces.*;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman

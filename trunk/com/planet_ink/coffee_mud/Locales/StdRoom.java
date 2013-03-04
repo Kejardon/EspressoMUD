@@ -1,17 +1,7 @@
 package com.planet_ink.coffee_mud.Locales;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Effects.interfaces.*;
-import com.planet_ink.coffee_mud.Areas.interfaces.*;
-import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-import com.planet_ink.coffee_mud.Commands.interfaces.*;
-import com.planet_ink.coffee_mud.Common.interfaces.*;
-import com.planet_ink.coffee_mud.Exits.interfaces.*;
-import com.planet_ink.coffee_mud.Items.interfaces.*;
-import com.planet_ink.coffee_mud.Locales.interfaces.*;
 import com.planet_ink.coffee_mud.Libraries.interfaces.*;
-import com.planet_ink.coffee_mud.MOBS.interfaces.*;
-import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
 import java.nio.ByteBuffer;
@@ -232,6 +222,13 @@ public class StdRoom implements Room
 		if(exit!=null) return exit;
 		return (REMap)CMLib.english().fetchInteractable(exits.iterator(),S,false);
 	}
+	public REMap getREMap(Exit E, Room R)
+	{
+		for(REMap exit : exits)
+			if(exit.exit == E && exit.room == R)
+				return exit;
+		return null;
+	}
 	public Iterator<REMap> getAllExits() { return exits.iterator(); }
 	public boolean changeExit(REMap R, Exit newExit)
 	{
@@ -251,39 +248,10 @@ public class StdRoom implements Room
 		}
 		return false;
 	}
-/*	public int getExitIndex(String target)
-	{
-//		int i=CMLib.english().fetchInteractableIndex(exits, target, true);
-//		if(i==-1) i=CMLib.english().fetchInteractableIndex(exits, target, false);
-//		return i;
-		return -1;
-	}
-	public int getExitIndex(Exit E, Room R)
-	{
-		return exits.indexOf(new REMap(R, E));
-	}
-*/
 
 	public Domain domain(){return myDom;} 
 	public Enclosure enclosure(){return myEnc;}
-/*
-	public void setRoomID(String newID)
-	{
-/*		if((myID!=null)&&(!myID.equals(newID)))
-		{
-			myID=newID;
-			if(myArea!=null)
-			{ 
-				// force the re-sort TODO
-				myArea.delProperRoom(this);
-				myArea.addProperRoom(this);
-			}
-		}
-		else /*	//backwords end-comment
-		myID=newID;
-		CMLib.database().saveObject(this);
-	}
-*/
+
 	public Area getArea()
 	{
 		return myArea;
@@ -324,7 +292,7 @@ public class StdRoom implements Room
 		{
 			//case ALWAYS: always=true; break;
 			case LEAVE:
-				msg.addResponse(this, 10);
+				msg.addResponse(ListenHolder.InbetweenListener.newListener(LeaveResponse, this), 10);
 				break;
 		}
 		if(!myArea.okMessage(this,msg))
@@ -335,42 +303,39 @@ public class StdRoom implements Room
 		return true;
 // TODO
 	}
-	public boolean respondTo(CMMsg msg, Object data){return true;} //Should never be called
-	public boolean respondTo(CMMsg msg)
+	protected static ListenHolder.DummyListener LeaveResponse = new ListenHolder.DummyListener()
 	{
-		boolean always=false;
-		//Interactable target=msg.target();
-		for(CMMsg.MsgCode code : msg.othersCode())
-		switch(code)
+		public boolean respondTo(CMMsg msg, Object data)
 		{
-			case ALWAYS: always=true; break;
-			case LEAVE:
+			StdRoom room = (StdRoom)data;
+			boolean always = msg.hasOthersCode(CMMsg.MsgCode.ALWAYS);
+			for(CMObject O : msg.tool())
+			if(O instanceof Room.REMap)
 			{
-				for(CMObject O : msg.tool())
-				if(O instanceof Room.REMap)
+				Room.REMap map=(Room.REMap)O;
+				Room destination=map.room;
+				if(destination!=null)
 				{
-					Room.REMap map=(Room.REMap)O;
-					Room destination=map.room;
-					if(destination!=null)
+					Room.REMap entrance=destination.getREMap(map.exit, room);
+					if(entrance==null)
+						entrance=Room.REMap.newMap(room, map.exit);
+					//TODO: What if destination.hasREMap(entrance)==false ?
+					EnumSet<CMMsg.MsgCode> codeSet=always?EnumSet.of(CMMsg.MsgCode.ENTER,CMMsg.MsgCode.ALWAYS):EnumSet.of(CMMsg.MsgCode.ENTER);
+					CMMsg enterMessage=CMClass.getMsg(msg.source().clone(),null,entrance,codeSet,"^[S-NAME] enter(s).");
+					if(destination.okMessage(destination, enterMessage)&&enterMessage.handleResponses())
 					{
-						Room.REMap entrance=new Room.REMap(this, map.exit);
-						//TODO: What if destination.hasREMap(entrance)==false ?
-						EnumSet<CMMsg.MsgCode> codeSet=always?EnumSet.of(CMMsg.MsgCode.ENTER,CMMsg.MsgCode.ALWAYS):EnumSet.of(CMMsg.MsgCode.ENTER);
-						CMMsg enterMessage=CMClass.getMsg(msg.source().clone(),null,entrance,codeSet,"^[S-NAME] enter(s).");
-						if(destination.okMessage(destination, enterMessage)&&enterMessage.handleResponses())
-						{
-							msg.addTrailerHappens(destination, enterMessage);
-							break;
-						}
+						msg.addTrailerHappens(destination, enterMessage);
+						break;
 					}
-					return false;
 				}
-				//TODO: Else if target instanceof Room for teleportation spells?
+				return false;
 			}
-			break;
+			//TODO: Else if target instanceof Room for teleportation spells?
+			return true;
 		}
-		return true;
-	}
+	};
+	public boolean respondTo(CMMsg msg, Object data){return true;} //Should never be called
+	public boolean respondTo(CMMsg msg){ return true; }
 	//TODO NOTE FOR ITEM ROOMS:
 	//Room: If host is not a room, you are new host. Send to container and to items.
 	//Room: If host is a room (and not you), do not send to container, but do send to items.
@@ -508,25 +473,25 @@ public class StdRoom implements Room
 		{
 			if(depth>30)
 				Log.errOut("Messages",new RuntimeException("Excessive message happens depth: "+msg.toString()));
-			else for(int i=0;i<V.size();i++)
+			else while(V.size()>0)
 			{
-				CMMsg.TrailMessage msg2=V.get(i);
+				CMMsg.TrailMessage msg2=V.remove(V.size()-1);
 				if(msg2.room instanceof StdRoom)
 					((StdRoom)msg2.room).reallySend(msg2.msg,depth+1);
-				//msg2.msg.returnMsg();
+				msg2.msg.returnMsg();
 			}
 		}
 		if((V=msg.trailerMsgs())!=null)
 		{
 			if(depth>30)
 				Log.errOut("Messages",new RuntimeException("Excessive message trail depth: "+msg.toString()));
-			else for(int i=0;i<V.size();i++)
+			else while(V.size()>0)
 			{
-				CMMsg.TrailMessage msg2=V.get(i);
+				CMMsg.TrailMessage msg2=V.remove(V.size()-1);
 				if(msg2.room instanceof StdRoom)
 					if((msg2.room.okMessage(msg2.room,msg2.msg))&&(msg2.msg.handleResponses()))
 						((StdRoom)msg2.room).reallySend(msg2.msg,depth+1);
-				//msg2.msg.returnMsg();
+				msg2.msg.returnMsg();
 			}
 		}
 	}
@@ -837,6 +802,13 @@ public class StdRoom implements Room
 			if(E.ID().equals(ID))
 				V.add(E);
 		return V;
+	}
+	public Effect fetchFirstEffect(String ID)
+	{
+		for(Effect E : affects)
+			if(E.ID().equals(ID))
+				return E;
+		return null;
 	}
 	public Iterator<Effect> allEffects() { return affects.iterator(); }
 

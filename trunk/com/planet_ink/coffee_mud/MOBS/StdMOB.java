@@ -1,17 +1,8 @@
 package com.planet_ink.coffee_mud.MOBS;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Effects.interfaces.*;
-import com.planet_ink.coffee_mud.Areas.interfaces.*;
-import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-import com.planet_ink.coffee_mud.Commands.interfaces.*;
-import com.planet_ink.coffee_mud.Common.interfaces.*;
-import com.planet_ink.coffee_mud.Exits.interfaces.*;
-import com.planet_ink.coffee_mud.Items.interfaces.*;
-import com.planet_ink.coffee_mud.Locales.interfaces.*;
 import com.planet_ink.coffee_mud.Libraries.interfaces.*;
-import com.planet_ink.coffee_mud.MOBS.interfaces.*;
-import com.planet_ink.coffee_mud.Races.interfaces.*;
+import com.planet_ink.coffee_mud.core.database.DBManager;
 
 import java.util.*;
 import java.nio.ByteBuffer;
@@ -75,6 +66,8 @@ public class StdMOB implements MOB
 
 	protected Vector<String> titles=new Vector();
 	protected Body myBody=null;
+
+	protected Skilltable skillSet=new Skilltable();
 
 	protected int saveNum=0;
 	protected int[] effectsToLoad=null;
@@ -213,7 +206,7 @@ public class StdMOB implements MOB
 		myTempSession=null;
 		tickStatus=Tickable.TickStat.Not;
 		tickCount=0;
-		if(inventory!=null) inventory=(ItemCollection)inventory.copyOf();
+		if(inventory!=null) inventory=(ItemCollection)((Ownable)inventory.copyOf()).setOwner(this);
 		victim=null;
 		titles=(Vector<String>)titles.clone();
 		
@@ -279,6 +272,9 @@ public class StdMOB implements MOB
 		if(newStats!=null)
 			newStats.setMOB(this);
 	}
+	public MOBSkill getSkill(Skill S) { return skillSet.get(S); }
+	public Set<Skill> knownSkills() { return skillSet.keySet(); }
+	public boolean changeSkillState(Skill key, int state) {return skillSet.changeState(key, state);}
 
 	public void destroy()
 	{
@@ -879,6 +875,13 @@ public class StdMOB implements MOB
 				V.add(E);
 		return V;
 	}
+	public Effect fetchFirstEffect(String ID)
+	{
+		for(Effect E : affects)
+			if(E.ID().equals(ID))
+				return E;
+		return null;
+	}
 	public Iterator<Effect> allEffects() { return affects.iterator(); }
 
 	//Behavable
@@ -1085,6 +1088,28 @@ public class StdMOB implements MOB
 				return data; }
 			public int size(){return 4;}
 			public void load(StdMOB E, ByteBuffer S){ E.bodyToLink=S.getInt(); } },
+		SKL(){
+			public ByteBuffer save(StdMOB E){
+				if(E.skillSet.isEmpty()) return GenericBuilder.emptyBuffer;
+				Set<Skill> keys = E.skillSet.keySet();
+				int size=0;
+				for(Skill skill : keys)
+					size+=9+skill.ID().length();
+				ByteBuffer data=ByteBuffer.wrap(new byte[size]);
+				for(Skill skill : keys) {
+					MOBSkill skillData=E.skillSet.get(skill);
+					data.putInt(skill.ID().length()).put(skill.ID().getBytes(DBManager.charFormat)).putInt(skillData.EXP).put((byte)skillData.learningState); }
+				data.rewind();
+				return data; }
+			public int size(){return 0;}
+			public void load(StdMOB E, ByteBuffer S){
+				while(S.hasRemaining()) {
+					byte[] stringBytes=new byte[S.getInt()];
+					S.get(stringBytes);
+					Skill skill=CMClass.SKILL.get(new String(stringBytes, DBManager.charFormat));
+					int exp=S.getInt();
+					byte state=S.get();
+					if(skill!=null) E.skillSet.add(skill, exp, state); } } },
 		;
 		public abstract ByteBuffer save(StdMOB E);
 		public abstract void load(StdMOB E, ByteBuffer S);
@@ -1130,15 +1155,48 @@ public class StdMOB implements MOB
 			public String brief(StdMOB E){return ""+E.titles.size();}
 			public String prompt(StdMOB E){return E.titles.toString();}
 			public void mod(StdMOB E, MOB M){
-				boolean done=false;
-				while((M.session()!=null)&&(!M.session().killFlag())&&(!done)) {
+				while((M.session()!=null)&&(!M.session().killFlag())) {
 					Vector V=(Vector)E.titles.clone();
 					int i=CMLib.genEd().promptVector(M, V, true);
-					if(--i<0) done=true;
+					if(--i<0) break;
 					else if(i==V.size()) {
 						String S=CMLib.genEd().stringPrompt(M, "", false).trim().toUpperCase();
 						if((S.length()>0)&&(!E.titles.contains(S))) E.titles.add(S); }
 					else if(i<V.size()) E.titles.remove(V.get(i)); } } },
+		SKILLS(){
+			public String brief(StdMOB E){return ""+E.skillSet.size();}
+			public String prompt(StdMOB E){
+				StringBuilder tellSkills=new StringBuilder();
+				Set<Skill> skills = E.knownSkills();
+				tellSkills.append("Learning:^^ Maintaining:* Forgetting:-\n");
+				tellSkills.append("Knows the following skills:\n");
+				for(Skill skill : skills) {
+					MOB.MOBSkill instance = E.getSkill(skill);
+					//TODO: Formatting in columns or something?
+					tellSkills.append(skill.playerFriendlyName());
+					tellSkills.append("(");
+					tellSkills.append(skill.ID());
+					tellSkills.append("): ");
+					tellSkills.append(instance.level()).append('(').append(instance.EXP).append(" EXP)");
+					tellSkills.append(com.planet_ink.coffee_mud.Commands.Skills.learnSymbols[instance.learningState]);
+					tellSkills.append('\n'); }
+				return tellSkills.toString(); }
+			public void mod(StdMOB E, MOB M){
+				while((M.session()!=null)&&(!M.session().killFlag())) {
+					Skill skill = CMLib.genEd().skillPrompt(M);
+					if(skill==null) break;
+					String S = M.session().prompt("New EXP value for "+skill.playerFriendlyName()+": ");
+					if(S.length()==0) continue;
+					if(S.equals("0")) {
+						MOBSkill instance = E.getSkill(skill);
+						if(instance == null) continue;
+						E.skillSet.put(skill, 0);
+						if(instance.levelBoost == 0) E.skillSet.remove(skill);
+					} else {
+						int i=CMath.s_int(S);
+						if(i<=0) continue;
+						if(i>MOBSkill.levelTiers[skill.maxLevel()]) i=MOBSkill.levelTiers[skill.maxLevel()];
+						E.skillSet.put(skill, i); } } } },
 		;
 		public abstract String brief(StdMOB fromThis);
 		public abstract String prompt(StdMOB fromThis);

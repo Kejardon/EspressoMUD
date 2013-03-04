@@ -1,22 +1,13 @@
 package com.planet_ink.coffee_mud.Common;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Effects.interfaces.*;
-import com.planet_ink.coffee_mud.Areas.interfaces.*;
-import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-import com.planet_ink.coffee_mud.Commands.interfaces.*;
-import com.planet_ink.coffee_mud.Common.interfaces.*;
-import com.planet_ink.coffee_mud.Exits.interfaces.*;
-import com.planet_ink.coffee_mud.Items.interfaces.*;
-import com.planet_ink.coffee_mud.Locales.interfaces.*;
 import com.planet_ink.coffee_mud.Libraries.interfaces.*;
-import com.planet_ink.coffee_mud.MOBS.interfaces.*;
-import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.io.IOException;
+import com.planet_ink.coffee_mud.Effects.Temperature;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -41,6 +32,7 @@ public class DefaultEnvironmental implements Environmental, Ownable
 	//protected long lastTick=0;
 	protected EnumSet<ListenHolder.Flags> lFlags=EnumSet.noneOf(ListenHolder.Flags.class);
 	protected int[] effectsToLoad=null;
+	protected int lastTemperature=-1;
 
 	//Ownable
 	public CMSavable owner(){return parent;}
@@ -79,6 +71,13 @@ public class DefaultEnvironmental implements Environmental, Ownable
 			if(E.ID().equals(ID))
 				V.add(E);
 		return V;
+	}
+	public Effect fetchFirstEffect(String ID)
+	{
+		for(Effect E : affects)
+			if(E.ID().equals(ID))
+				return E;
+		return null;
 	}
 	public Iterator<Effect> allEffects() { return affects.iterator(); }
 	
@@ -240,6 +239,94 @@ public class DefaultEnvironmental implements Environmental, Ownable
 	public void prepDefault(){}	//baseEnvStats will already default fine.
 
 	//Environmental
+	protected int parentTemperature()
+	{
+		CMObject obj = CMLib.map().goUpOne(parent);
+		if(obj instanceof Area)
+			return ((Area)obj).ambientTemperature();
+		Environmental env = Environmental.O.getFrom(obj);
+		if(env!=null)
+			return env.temperature();
+		return -1;
+	}
+	public int temperature()
+	{
+		//TODO
+		if(lastTemperature==-1)
+			lastTemperature=parentTemperature();
+		return lastTemperature;
+	}
+	public void setTemperature(int temperature)
+	{
+		if(lastTemperature == temperature) return;
+		//TODO: Handle children
+		int reactTemperature=Integer.MAX_VALUE;
+		long boil;
+		long melt;
+		if(envStats.isComposite())
+		{
+			WVector.CachedLists<RawMaterial.Resource> materials=envStats.materialSet().lists();
+			boil=0;
+			melt=0;
+			for(int i=0;i<materials.objects.length;i++)
+			{
+				RawMaterial.Resource mat = materials.objects[i];
+				int weight = materials.weights[i];
+				if(mat.reaction.temperature < temperature)
+				{ //React
+
+				}
+				boil+=weight*mat.phases.boiling;
+				melt+=weight*mat.phases.melting;
+			}
+			boil/=materials.total;
+			melt/=materials.total;
+		}
+		else
+		{
+			RawMaterial.Resource mat=envStats.material();
+			if(mat.reaction.temperature < temperature)
+			{ //React
+				
+			}
+			boil=mat.phases.boiling;
+			melt=mat.phases.melting;
+		}
+		
+		if(boil < temperature && boil > lastTemperature && fetchFirstEffect("VaporPhase")==null)
+		{ //Boil to vapor
+			Effect e = CMClass.EFFECT.getNew("VaporPhase");
+			if(e!=null)
+				e.invoke(this, 0);
+		}
+		else if(melt < temperature && fetchFirstEffect("LiquidPhase")==null)
+		{
+			Effect e = CMClass.EFFECT.getNew("LiquidPhase");
+			if(e!=null)
+				e.invoke(this, 0);
+			/*
+			if(melt > lastTemperature)
+			{ //Melt to liquid
+				
+			}
+			else if(boil < lastTemperature)
+			{ //Condense to liquid
+				
+			}
+			*/
+		}
+		else if(melt < lastTemperature)
+		{ //Solidify to solid
+			Effect e = fetchFirstEffect("VaporPhase");
+			if(e!=null)
+				e.unInvoke();
+			e = fetchFirstEffect("LiquidPhase");
+			if(e!=null)
+				e.unInvoke();
+		}
+		
+		lastTemperature=temperature;
+	}
 	public EnvStats baseEnvStats(){return baseEnvStats;}
 	public void setBaseEnvStats(EnvStats newBaseEnvStats)
 	{
@@ -276,6 +363,10 @@ public class DefaultEnvironmental implements Environmental, Ownable
 	}
 
 	private enum SCode implements CMSavable.SaveEnum{
+		TMP(){
+			public ByteBuffer save(DefaultEnvironmental E){ return (ByteBuffer)ByteBuffer.allocate(4).putInt(E.lastTemperature).rewind(); }
+			public int size(){return 4;}
+			public void load(DefaultEnvironmental E, ByteBuffer S){ E.lastTemperature = S.getInt(); } },
 		ENV(){
 			public ByteBuffer save(DefaultEnvironmental E){ return CMLib.coffeeMaker().savSubFull(E.baseEnvStats); }
 			public int size(){return -1;}

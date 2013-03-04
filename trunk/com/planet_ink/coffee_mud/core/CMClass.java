@@ -2,16 +2,6 @@ package com.planet_ink.coffee_mud.core;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.database.*;
 import com.planet_ink.coffee_mud.Libraries.interfaces.*;
-import com.planet_ink.coffee_mud.Effects.interfaces.*;
-import com.planet_ink.coffee_mud.Areas.interfaces.*;
-import com.planet_ink.coffee_mud.Behaviors.interfaces.*;
-import com.planet_ink.coffee_mud.Commands.interfaces.*;
-import com.planet_ink.coffee_mud.Common.interfaces.*;
-import com.planet_ink.coffee_mud.Exits.interfaces.*;
-import com.planet_ink.coffee_mud.Items.interfaces.*;
-import com.planet_ink.coffee_mud.Locales.interfaces.*;
-import com.planet_ink.coffee_mud.MOBS.interfaces.*;
-import com.planet_ink.coffee_mud.Races.interfaces.*;
 
 import java.util.*;
 import java.io.File;
@@ -48,7 +38,7 @@ public class CMClass extends ClassLoader
 	protected static boolean debugging=false;
 	//protected static Hashtable<String, Object> classes=new Hashtable();
 	//public static EnumSet<Objects> ItemTypes = EnumSet.of(Objects.ITEM, Objects.WEARABLE, Objects.WEAPON);
-	protected static final Vector<CMMsg> MSGS_CACHE=new Vector();
+	protected static final ConcurrentLinkedQueue<CMMsg> MSGS_CACHE=new ConcurrentLinkedQueue();
 	protected static CMClass instance=new CMClass();
 	public static CMClass instance(){return instance;}
 	protected static final byte[] charTranslatorTable=
@@ -105,10 +95,6 @@ public class CMClass extends ClassLoader
 			objectsNames.put(name, this);
 		}
 		
-		//A little hackish but probably the best solution.
-		public Command getCommand(String word, boolean exactOnly, MOB mob){return null;}
-		public void compileCommands(){}
-
 		public Class ancestor(){return ancestor;}
 		public U getAny() {
 			Iterator<U> I=options.values().iterator();
@@ -130,6 +116,35 @@ public class CMClass extends ClassLoader
 		public int size(){return options.size();}
 		public Iterator<U> all(){ return options.values().iterator(); }
 	}
+	public static final class ObjectsSkill extends Objects<Skill>
+	{
+		public ObjectsSkill(Class S, String name){super(S, name);}
+		private HashMap<String, Skill> friendlyNameMap=new HashMap<String, Skill>();
+		public Skill getSkill(String S)
+		{
+			S=S.toUpperCase();
+			Skill skill=friendlyNameMap.get(S);
+			found:
+			if(skill==null)
+			{
+				for(String str : friendlyNameMap.keySet())
+				{
+					if(str.startsWith(S))
+					{
+						skill = friendlyNameMap.get(str);
+						break found;
+					}
+				}
+			}
+			return skill;
+		}
+		public void add(Skill O)
+		{
+			super.add(O);
+			friendlyNameMap.put(O.playerFriendlyName().toUpperCase(), O);
+		}
+	}
+	public static final ObjectsSkill SKILL=new ObjectsSkill(Skill.class, "SKILL");
 	public static final Objects<Gender> GENDER=new Objects<Gender>(Gender.class, "GENDER"){};
 	public static final Objects<Race> RACE=new Objects<Race>(Race.class, "RACE"){};
 	public static final Objects<Effect> EFFECT=new Objects<Effect>(Effect.class, "EFFECT"){};
@@ -143,7 +158,9 @@ public class CMClass extends ClassLoader
 	public static final Objects<Wearable> WEARABLE=new Objects<Wearable>(Wearable.class, "WEARABLE"){};
 	public static final Objects<Weapon> WEAPON=new Objects<Weapon>(Weapon.class, "WEAPON"){};
 	public static final Objects<Item> ITEM=new Objects<Item>(Item.class, "ITEM"){};
-	public static final Objects<Command> COMMAND=new Objects<Command>(Command.class, "COMMAND"){
+	public static final class ObjectsCommand extends Objects<Command>
+	{
+		public ObjectsCommand(Class S, String name){super(S, name);}
 		private HashMap<String, Command> commandWordsMap=new HashMap<String, Command>();
 		private HashMap<String, Command> tempWordsMap=new HashMap<String, Command>();
 		private String[] commandWordsList=new String[0];
@@ -216,7 +233,9 @@ public class CMClass extends ClassLoader
 					if((i==requestBytes.length)||(option.startsWith(word))) {
 						C=commandWordsMap.get(option);
 						if((mob==null)||(C.securityCheck(mob))) return C; } } }catch(IndexOutOfBoundsException e){}	//This exception can happen normally when the player enters a command that doesn't exist
-			return null; } };
+			return null; }
+	}
+	public static final ObjectsCommand COMMAND=new ObjectsCommand(Command.class, "COMMAND");
 	public static final Objects<CMLibrary> LIBRARY=new Objects<CMLibrary>(CMLibrary.class, "LIBRARY"){
 			public void add(CMLibrary O){
 				super.add(O);
@@ -226,6 +245,7 @@ public class CMClass extends ClassLoader
 
 	public static Objects getType(CMObject O)
 	{
+		if(O instanceof Skill) return SKILL;
 		if(O instanceof Gender) return GENDER;
 		if(O instanceof Race) return RACE;
 		if(O instanceof Effect) return EFFECT;
@@ -317,27 +337,15 @@ public class CMClass extends ClassLoader
 	//TODO: I'm curious if this actually happens and works. Should log and see sometime.
 	public static boolean returnMsg(CMMsg msg)
 	{
-		if(MSGS_CACHE.size()<10000)
-		{
-			//if(MSGS_CACHE.remove(msg))
-			//	Log.errOut("CMClass",new RuntimeException("Returned an already cached message!"));
-			MSGS_CACHE.add(msg);	//This should be ok without synchronization, really.
-			return true;
-		}
-		return false;
+//		if(MSGS_CACHE.size()<10000)
+		return MSGS_CACHE.offer(msg);
 	}
 
 	public static CMMsg MsgFactory()
 	{
-		CMMsg msg=null;
-		synchronized(CMClass.MSGS_CACHE)
-		{
-			int i=MSGS_CACHE.size();
-			if(i==0)
-				msg=(CMMsg)COMMON.getNew("DefaultMessage");
-			else
-				msg=MSGS_CACHE.remove(i-1);
-		}
+		CMMsg msg=MSGS_CACHE.poll();
+		if(msg==null)
+			msg=(CMMsg)COMMON.getNew("DefaultMessage");
 		return msg;
 	}
 
@@ -454,6 +462,12 @@ public class CMClass extends ClassLoader
 				Class<CMObject> C=instance.loadClass(item,true);
 				if(C!=null)
 				{
+					if(Modifier.isAbstract(C.getModifiers()))
+					{
+						if(!quiet)
+							Log.sysOut("CMClass","Not loading abstract class: "+item);
+						continue;
+					}
 					if(!checkAncestry(C,ancestorCl))
 					{
 						if(!quiet)
@@ -642,8 +656,12 @@ public class CMClass extends ClassLoader
 			Log.sysOut(Thread.currentThread().getName(),"Races loaded      : "+O.size());
 			if(O.size()==0) return false;
 
+			O=SKILL;
+			loadListToObj(O, prefix+"Skills/", O.ancestor(), false);
+			Log.sysOut(Thread.currentThread().getName(),"Skills loaded     : "+O.size());
+			
 			O=EFFECT;
-			loadListToObj(O, prefix+"Effects/", O.ancestor(), false);
+			loadListToObj(O, prefix+"Effects/", O.ancestor(), true);
 			loadListToObj(O, prefix+"Effects/Languages/", O.ancestor(), false);
 //			loadListToObj(O, prefix+"Effects/Archon/", O.ancestor(), false);
 			Log.sysOut(Thread.currentThread().getName(),"Effects loaded    : "+O.size());

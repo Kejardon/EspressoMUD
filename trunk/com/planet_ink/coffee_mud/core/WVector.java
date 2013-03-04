@@ -9,9 +9,16 @@ import java.util.*;
 @SuppressWarnings("unchecked")
 public class WVector<E> implements Cloneable
 {
+	public static class CachedLists<U>
+	{
+		public int[] weights;
+		public U[] objects;
+		public int total;
+	}
 	private Vector<WeightedObject<E>> objects;
 	private int totalWeight=0;
 	private int largest=-1;
+	private CachedLists<E> cache=null;
 
 	private static final WeightedObject[] dummyWOArray=new WeightedObject[0];
 	private static class WeightedObject<E>
@@ -29,6 +36,21 @@ public class WVector<E> implements Cloneable
 	public WVector(){objects=new Vector<WeightedObject<E>>();}
 	public WVector(int size){objects=new Vector<WeightedObject<E>>(size);}
 
+	public CachedLists<E> lists()
+	{
+		CachedLists<E> list = cache;
+		if(list==null)
+		{
+			list=new CachedLists<E>();
+			list.weights=new int[objects.size()];
+			list.objects=(E[])new Object[list.weights.length];
+			toArrays(list.objects, list.weights);
+			cache = list;
+			for(int i : list.weights)
+				list.total+=i;
+		}
+		return list;
+	}
 	public int weight() {return totalWeight;}
 	public int size() {return objects.size();}
 
@@ -67,6 +89,7 @@ public class WVector<E> implements Cloneable
 		totalWeight+=weight;
 		if((largest==-1)||(weight>objects.get(largest).weight))
 			largest=objects.size()-1;
+		cache=null;
 	}
 	public void add(E O)
 	{
@@ -74,6 +97,7 @@ public class WVector<E> implements Cloneable
 		totalWeight++;
 		if((largest==-1)||(1>objects.get(largest).weight))
 			largest=objects.size()-1;
+		cache=null;
 	}
 	public void insert(int i, E O, int weight)
 	{
@@ -82,6 +106,7 @@ public class WVector<E> implements Cloneable
 		if((largest==-1)||(weight>objects.get(largest).weight))
 			largest=i;
 		else if(largest>=i) largest++;
+		cache=null;
 	}
 	public void insert(int i, E O)
 	{
@@ -90,6 +115,7 @@ public class WVector<E> implements Cloneable
 		if((largest==-1)||(1>objects.get(largest).weight))
 			largest=i;
 		else if(largest>=i) largest++;
+		cache=null;
 	}
 	public boolean contains(E O)
 	{
@@ -118,6 +144,7 @@ public class WVector<E> implements Cloneable
 						}
 				}
 				else if(largest>i) largest--;
+				cache=null;
 				return true;
 			}
 		return false;
@@ -145,6 +172,7 @@ public class WVector<E> implements Cloneable
 				}
 				else if(w>objects.get(largest).weight)
 					largest=i;
+				cache=null;
 				return true;
 			}
 		return false;
@@ -171,6 +199,7 @@ public class WVector<E> implements Cloneable
 			}
 			else if(w>objects.get(largest).weight)
 				largest=i;
+			cache=null;
 			return true;
 		}
 		return false;
@@ -191,6 +220,7 @@ public class WVector<E> implements Cloneable
 				}
 		}
 		else if(largest>i) largest--;
+		cache=null;
 		return obj;
 	}
 	public int setWeight(E O, int weight)
@@ -214,6 +244,7 @@ public class WVector<E> implements Cloneable
 				}
 				else if(weight>objects.get(largest).weight)
 					largest=i;
+				cache=null;
 				return old;
 			}
 		return -1;
@@ -236,6 +267,7 @@ public class WVector<E> implements Cloneable
 		}
 		else if(weight>objects.get(largest).weight)
 			largest=i;
+		cache=null;
 		return old;
 	}
 	public E getFromPct(double pct)
@@ -271,6 +303,7 @@ public class WVector<E> implements Cloneable
 		for(WeightedObject<E> O : (WeightedObject<E>[])objects.toArray(dummyWOArray))
 			O.weight=O.weight/gcd;
 		totalWeight/=gcd;
+		cache=null;
 	}
 	public void toArrays(E[] objs, int[] weights)
 	{
@@ -287,6 +320,7 @@ public class WVector<E> implements Cloneable
 		objects.clear();
 		totalWeight=0;
 		largest=-1;
+		cache=null;
 	}
 	public String toString()
 	{
