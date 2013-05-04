@@ -24,9 +24,16 @@ public class Enter extends Go
 			return false;
 		}
 		String enterWhat=CMParms.combine(commands,1).toUpperCase();
-		Room.REMap map=mob.location().getREMap(enterWhat);
+		Room R=mob.location();
+		Room.REMap map=R.getREMap(enterWhat);
 		if(map!=null)
-			move(mob,map,false,false);
+		{
+			Room destination=map.room;
+			Room.REMap entrance=null;
+			if(destination.hasPositions())
+				entrance=destination.getREMap(map.exit, R);
+			move(mob,map,entrance,false,false);
+		}
 		else
 			mob.tell("There is no exit like that.");
 		return false;

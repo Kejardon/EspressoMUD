@@ -106,7 +106,7 @@ public class DefaultLid implements Closeable, Ownable
 		return true;
 	}
 
-	private enum SCode implements CMSavable.SaveEnum{
+	private enum SCode implements SaveEnum<DefaultLid>{
 		KEY(){
 			public ByteBuffer save(DefaultLid E){
 				if(E.key=="skeleton") return GenericBuilder.emptyBuffer;
@@ -131,12 +131,8 @@ public class DefaultLid implements Closeable, Ownable
 				E.locked=((bools&(1<<3))!=0);
 				E.obvious=((bools&(1<<4))!=0);} },
 		;
-		public abstract ByteBuffer save(DefaultLid E);
-		public abstract void load(DefaultLid E, ByteBuffer S);
-		public ByteBuffer save(CMSavable E){return save((DefaultLid)E);}
-		public CMSavable subObject(CMSavable fromThis){return null;}
-		public void load(CMSavable E, ByteBuffer S){load((DefaultLid)E, S);} }
-	private enum MCode implements CMModifiable.ModEnum{
+		public CMSavable subObject(DefaultLid fromThis){return null;} }
+	private enum MCode implements ModEnum<DefaultLid>{
 		KEYNAME(){
 			public String brief(DefaultLid E){return E.key;}
 			public String prompt(DefaultLid E){return E.key;}
@@ -161,11 +157,5 @@ public class DefaultLid implements Closeable, Ownable
 			public String brief(DefaultLid E){return ""+E.obvious;}
 			public String prompt(DefaultLid E){return ""+E.obvious;}
 			public void mod(DefaultLid E, MOB M){E.obvious=CMLib.genEd().booleanPrompt(M, ""+E.obvious);} }
-		;
-		public abstract String brief(DefaultLid fromThis);
-		public abstract String prompt(DefaultLid fromThis);
-		public abstract void mod(DefaultLid toThis, MOB M);
-		public String brief(CMModifiable fromThis){return brief((DefaultLid)fromThis);}
-		public String prompt(CMModifiable fromThis){return prompt((DefaultLid)fromThis);}
-		public void mod(CMModifiable toThis, MOB M){mod((DefaultLid)toThis, M);} }
+		; }
 }

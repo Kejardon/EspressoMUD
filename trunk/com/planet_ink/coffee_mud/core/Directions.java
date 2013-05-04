@@ -13,24 +13,28 @@ public class Directions
 {
 	public enum Dirs
 	{
-		NORTH("N","the north","to the north"),
-		SOUTH("S","the south","to the south"),
-		EAST("E","the east","to the east"),
-		WEST("W","the west","to the west"),
-		NORTHEAST("NE","the northeast","to the northeast"),
-		NORTHWEST("NW","the northwest","to the northwest"),
-		SOUTHEAST("SE","the southeast","to the southeast"),
-		SOUTHWEST("SW","the southwest","to the southwest"),
-		UP("U","above","above you"),
-		DOWN("D","below","below"),
-		GATE("V","out of nowhere","there"),
+		NORTH("N","the north","to the north",0,1,0),
+		SOUTH("S","the south","to the south",0,-1,0),
+		EAST("E","the east","to the east",1,0,0),
+		WEST("W","the west","to the west",-1,0,0),
+		NORTHEAST("NE","the northeast","to the northeast",1,1,0),
+		NORTHWEST("NW","the northwest","to the northwest",-1,1,0),
+		SOUTHEAST("SE","the southeast","to the southeast",1,-1,0),
+		SOUTHWEST("SW","the southwest","to the southwest",-1,-1,0),
+		UP("U","above","above you",0,0,1),
+		DOWN("D","below","below",0,0,-1),
+		GATE("V","out of nowhere","there",0,0,0),
 		;
 		private static boolean parsed=false;
 		private String chars;
 		private String from;
 		private String to;
 		private Dirs opposite;
-		private Dirs(String S1, String S2, String S3){chars=S1;from=S2;to=S3;}
+		public final int xMulti;
+		public final int yMulti;
+		public final int zMulti;
+		private Dirs(String S1, String S2, String S3, int xM, int yM, int zM)
+		{chars=S1;from=S2;to=S3;xMulti=xM;yMulti=yM;zMulti=zM;}
 		public String chars(){return chars;}
 		public String from(){return from;}
 		public String to(){return to;}

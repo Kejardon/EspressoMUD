@@ -149,7 +149,7 @@ public class BodyCharStats extends DefaultCharStats
 	public void prepDefault(){}
 	*/
 	
-	private enum SCode implements CMSavable.SaveEnum{
+	private enum SCode implements SaveEnum<BodyCharStats>{
 		STT(){
 			public ByteBuffer save(BodyCharStats E){ return CMLib.coffeeMaker().savAShort(E.stat); }
 			public int size(){return 2*6;}
@@ -163,12 +163,8 @@ public class BodyCharStats extends DefaultCharStats
 			public int size(){return 4*5;}
 			public void load(BodyCharStats E, ByteBuffer S){ E.pointsMax=CMLib.coffeeMaker().loadAInt(S); } },
 		;
-		public abstract ByteBuffer save(BodyCharStats E);
-		public abstract void load(BodyCharStats E, ByteBuffer S);
-		public ByteBuffer save(CMSavable E){return save((BodyCharStats)E);}
-		public CMSavable subObject(CMSavable fromThis){return null;}
-		public void load(CMSavable E, ByteBuffer S){load((BodyCharStats)E, S);} }
-	private enum MCode implements CMModifiable.ModEnum{
+		public CMSavable subObject(BodyCharStats fromThis){return null;} }
+	private enum MCode implements ModEnum<BodyCharStats>{
 		CONSTITUTION(){
 			public String brief(BodyCharStats E){return ""+E.stat[0];}
 			public String prompt(BodyCharStats E){return ""+E.stat[0];}
@@ -233,11 +229,5 @@ public class BodyCharStats extends DefaultCharStats
 			public String brief(BodyCharStats E){return ""+E.pointsMax[4];}
 			public String prompt(BodyCharStats E){return ""+E.pointsMax[4];}
 			public void mod(BodyCharStats E, MOB M){E.pointsMax[4]=CMLib.genEd().intPrompt(M, ""+E.pointsMax[4]);} },
-		;
-		public abstract String brief(BodyCharStats fromThis);
-		public abstract String prompt(BodyCharStats fromThis);
-		public abstract void mod(BodyCharStats toThis, MOB M);
-		public String brief(CMModifiable fromThis){return brief((BodyCharStats)fromThis);}
-		public String prompt(CMModifiable fromThis){return prompt((BodyCharStats)fromThis);}
-		public void mod(CMModifiable toThis, MOB M){mod((BodyCharStats)toThis, M);} }
+		; }
 }

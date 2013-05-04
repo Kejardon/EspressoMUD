@@ -174,6 +174,13 @@ public class StdMOB implements MOB
 			return myBody.getEnvObject();
 		return null;
 	}
+	public void setItemCollection(ItemCollection newInv, boolean copyInto)
+	{
+		ItemCollection oldInv=inventory;
+		inventory=newInv;
+		if(copyInto && oldInv!=null)
+			newInv.copyFrom(oldInv);
+	}
 
 	//TODO: Put this in body and fix it.
 	public String genericName()
@@ -336,6 +343,27 @@ public class StdMOB implements MOB
 		if(myBody==null) return;
 		myBody.setContainer(newPlace);
 	}
+	public boolean goDistance(int[] distance, EnvMap.EnvLocation start, Room room)
+	{
+		//TODO. Instantaneous for now, needs to be gradual and depend on MOB's speed/move type eventually
+		room.placeHere(myBody, true, distance[0]+start.x, distance[1]+start.y, distance[2]+start.z);
+		return true;
+	}
+	//Eventually, return QueuedCommands? Or make this queue the commands itself?
+	public boolean goToThing(EnvMap.EnvLocation thing, EnvMap.EnvLocation start, Room room)
+	{
+		//TODO. Instantaneous for now, needs to be gradual and depend on MOB's speed/move type eventually
+		if(thing.item instanceof Room.REMap)
+		{
+			Room.REMap exit=(Room.REMap)thing.item;
+			Room targetRoom=exit.room;
+			Room.REMap entrance=targetRoom.getREMap(exit.exit, room);
+			if(!com.planet_ink.coffee_mud.Commands.Go.move(this, exit, entrance, false, false)) return false;
+		}
+		else
+			room.placeHere(myBody, true, thing.x, thing.y, thing.z);
+		return true;
+	}
 	public Session session()
 	{
 		if(myTempSession!=null) return myTempSession;
@@ -490,6 +518,26 @@ public class StdMOB implements MOB
 	}*/
 	public long nextAct(){synchronized(commandQue){return nextAct;}}
 
+	public void enqueCommand(QueuedCommand qCom, boolean alwaysAtEnd)
+	{
+		synchronized(commandQue)
+		{
+			boolean mustStartTick=commandQue.isEmpty();
+			if(!alwaysAtEnd && qCom.commandType==Command.CT_HIGH_P_ACTION)
+			{
+				commandQue.add(0, qCom);
+				if((nextAct>System.currentTimeMillis()+100)&&(CMLib.threads().deleteTick(this)))
+				{
+					nextAct=qCom.nextAct;
+					mustStartTick=true;
+				}
+			}
+			else
+				commandQue.add(qCom);
+			if(mustStartTick)
+				CMLib.threads().startTickDown(this);
+		}
+	}
 	public void enqueCommand(QueuedCommand qCom, QueuedCommand afterCommand)
 	{
 		synchronized(commandQue)
@@ -1042,7 +1090,7 @@ public class StdMOB implements MOB
 	public void saveThis(){CMLib.database().saveObject(this);}
 	public void prepDefault(){getItemCollection();}
 
-	private enum SCode implements CMSavable.SaveEnum{
+	private enum SCode implements SaveEnum<StdMOB>{
 		NAM(){
 			public ByteBuffer save(StdMOB E){ return CMLib.coffeeMaker().savString(E.name); }
 			public int size(){return 0;}
@@ -1050,12 +1098,12 @@ public class StdMOB implements MOB
 		BCS(){
 			public ByteBuffer save(StdMOB E){ return CMLib.coffeeMaker().savSubFull(E.baseCharStats()); }
 			public int size(){return -1;}
-			public CMSavable subObject(CMSavable fromThis){return ((StdMOB)fromThis).baseCharStats();}
+			public CMSavable subObject(StdMOB fromThis){return fromThis.baseCharStats();}
 			public void load(StdMOB E, ByteBuffer S){ E.baseCharStats=(CharStats)((Ownable)CMLib.coffeeMaker().loadSub(S, E, this)).setOwner(E); } },
 		CHS(){
 			public ByteBuffer save(StdMOB E){ return CMLib.coffeeMaker().savSubFull(E.charStats()); }
 			public int size(){return -1;}
-			public CMSavable subObject(CMSavable fromThis){return ((StdMOB)fromThis).charStats();}
+			public CMSavable subObject(StdMOB fromThis){return fromThis.charStats();}
 			public void load(StdMOB E, ByteBuffer S){ E.charStats=(CharStats)((Ownable)CMLib.coffeeMaker().loadSub(S, E, this)).setOwner(E); } },
 		PLS(){
 			public ByteBuffer save(StdMOB E){ return (ByteBuffer)ByteBuffer.wrap(new byte[4]).putInt(E.playerStats==null?0:E.playerStats.saveNum()).rewind(); }
@@ -1111,12 +1159,8 @@ public class StdMOB implements MOB
 					byte state=S.get();
 					if(skill!=null) E.skillSet.add(skill, exp, state); } } },
 		;
-		public abstract ByteBuffer save(StdMOB E);
-		public abstract void load(StdMOB E, ByteBuffer S);
-		public ByteBuffer save(CMSavable E){return save((StdMOB)E);}
-		public CMSavable subObject(CMSavable fromThis){return null;}
-		public void load(CMSavable E, ByteBuffer S){load((StdMOB)E, S);} }
-	private enum MCode implements CMModifiable.ModEnum{
+		public CMSavable subObject(StdMOB fromThis){return null;} }
+	private enum MCode implements ModEnum<StdMOB>{
 		NAME(){
 			public String brief(StdMOB E){return E.name;}
 			public String prompt(StdMOB E){return E.name;}
@@ -1197,13 +1241,20 @@ public class StdMOB implements MOB
 						if(i<=0) continue;
 						if(i>MOBSkill.levelTiers[skill.maxLevel()]) i=MOBSkill.levelTiers[skill.maxLevel()];
 						E.skillSet.put(skill, i); } } } },
-		;
-		public abstract String brief(StdMOB fromThis);
-		public abstract String prompt(StdMOB fromThis);
-		public abstract void mod(StdMOB toThis, MOB M);
-		public String brief(CMModifiable fromThis){return brief((StdMOB)fromThis);}
-		public String prompt(CMModifiable fromThis){return prompt((StdMOB)fromThis);}
-		public void mod(CMModifiable toThis, MOB M){mod((StdMOB)toThis, M);} }
+		QUEUE(){
+			public String brief(StdMOB E){return ""+E.commandQue.size();}
+			public String prompt(StdMOB E){return "";}
+			public void mod(StdMOB E, MOB M){
+				StringBuilder tellMob=new StringBuilder("Current Time: ");
+				synchronized(E.commandQue) {
+					tellMob.append(new Date().toString()).append("\r\n");
+					for(QueuedCommand qCom : E.commandQue) {
+						tellMob.append(qCom.command.ID()).append(" (").append(qCom.cmdString).append(")\r\n");
+						tellMob.append(qCom.nextAct);
+						if(qCom.nextAct>0) tellMob.append(new Date(qCom.nextAct).toString());
+						tellMob.append("\r\n"); } }
+				M.tell(tellMob.toString()); } },
+		; }
 
 	public boolean sameAs(Interactable E)
 	{

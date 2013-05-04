@@ -24,6 +24,7 @@ public class DefaultEnvStats implements EnvStats, Ownable
 	protected int length;
 	protected int height;
 	protected int weight;
+	protected EnvShape shape;
 	protected long volume;
 	protected int magic;
 	protected CMSavable parent;
@@ -36,6 +37,7 @@ public class DefaultEnvStats implements EnvStats, Ownable
 
 	public DefaultEnvStats(){}
 
+	public EnvShape shape(){return shape;}
 	public int ability(){return magic;}
 	public int weight(){return weight;}
 	public int height(){return height;}
@@ -55,6 +57,7 @@ public class DefaultEnvStats implements EnvStats, Ownable
 	public WVector<RawMaterial.Resource> materialSet(){return null;}
 	public long volume(){return volume;}
 
+	public void setShape(EnvShape newShape){shape=newShape; if(parent!=null)parent.saveThis();}
 	public void setWeight(int newWeight){weight=newWeight; if(parent!=null)parent.saveThis();}
 	public void setSpeed(double newSpeed){Speed=newSpeed; if(parent!=null)parent.saveThis();}
 	public void setAbility(int newAdjustment){magic=newAdjustment; if(parent!=null)parent.saveThis();}
@@ -184,7 +187,7 @@ public class DefaultEnvStats implements EnvStats, Ownable
 	public void saveThis(){if(parent!=null)parent.saveThis();}
 	public void prepDefault(){}
 
-	private enum SCode implements CMSavable.SaveEnum{
+	private enum SCode implements SaveEnum<DefaultEnvStats>{
 		SPD(){
 			public ByteBuffer save(DefaultEnvStats E){ return (ByteBuffer)ByteBuffer.wrap(new byte[8]).putDouble(E.Speed).rewind(); }
 			public int size(){return 8;}
@@ -210,12 +213,8 @@ public class DefaultEnvStats implements EnvStats, Ownable
 				RawMaterial.Resource newMat=CMClass.valueOf(RawMaterial.Resource.class, CMLib.coffeeMaker().loadString(S));
 				if(newMat!=null) E.material=newMat; } },
 		;
-		public abstract ByteBuffer save(DefaultEnvStats E);
-		public abstract void load(DefaultEnvStats E, ByteBuffer S);
-		public ByteBuffer save(CMSavable E){return save((DefaultEnvStats)E);}
-		public CMSavable subObject(CMSavable fromThis){return null;}
-		public void load(CMSavable E, ByteBuffer S){load((DefaultEnvStats)E, S);} }
-	private enum MCode implements CMModifiable.ModEnum{
+		public CMSavable subObject(DefaultEnvStats fromThis){return null;} }
+	private enum MCode implements ModEnum<DefaultEnvStats>{
 		AMBIENCES(){
 			public String brief(DefaultEnvStats E){ return ""+E.ambiances.size();}
 			public String prompt(DefaultEnvStats E){ return "";}
@@ -270,13 +269,7 @@ public class DefaultEnvStats implements EnvStats, Ownable
 			public String brief(DefaultEnvStats E){return ""+E.disposition;}
 			public String prompt(DefaultEnvStats E){return ""+E.disposition;}
 			public void mod(DefaultEnvStats E, MOB M){E.disposition=CMLib.genEd().intPrompt(M, ""+E.disposition);} }, */
-		;
-		public abstract String brief(DefaultEnvStats fromThis);
-		public abstract String prompt(DefaultEnvStats fromThis);
-		public abstract void mod(DefaultEnvStats toThis, MOB M);
-		public String brief(CMModifiable fromThis){return brief((DefaultEnvStats)fromThis);}
-		public String prompt(CMModifiable fromThis){return prompt((DefaultEnvStats)fromThis);}
-		public void mod(CMModifiable toThis, MOB M){mod((DefaultEnvStats)toThis, M);} }
+		; }
 /*
 	public boolean sameAs(EnvStats E){ return true; }
 */}

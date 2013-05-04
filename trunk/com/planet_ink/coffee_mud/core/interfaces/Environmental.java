@@ -15,7 +15,11 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 @SuppressWarnings("unchecked")
 public interface Environmental extends Affectable, CMModifiable, CMSavable, CMCommon
 {
-	public static interface EnvHolder extends ListenHolder { public Environmental getEnvObject(); }
+	public static interface EnvHolder extends ListenHolder
+	{
+		public static final EnvHolder[] dummyEHArray=new EnvHolder[0];
+		public Environmental getEnvObject();
+	}
 
 	public boolean sameAs(Environmental E);
 	public EnvStats baseEnvStats();

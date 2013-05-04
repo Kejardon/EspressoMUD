@@ -173,7 +173,10 @@ public class CMClass extends ClassLoader
 				for(String S : O.getAccessWords()){
 					//S=S.trim().toUpperCase();	//No, ideally this should not be needed. Just make sure the input to this is always good.
 					tempWordsMap.put(S,O);
-					tempWordsList.addRandom(S); } } }
+					tempWordsList.addRandom(S); }
+				if(rootTable!=null) {
+					compileCommands();
+					Log.sysOut("CMClass","Recompiled table for "+O.ID()); } } }
 		public synchronized boolean remove(Command O){
 			if(!super.remove(O)) return false;
 			synchronized(tempWordsMap){
@@ -419,6 +422,7 @@ public class CMClass extends ClassLoader
 	public static boolean loadListToObj(Objects toThis, String filePath, Class ancestorCl, boolean quiet)
 	{
 		//CMClass loader=new CMClass();
+		//Log.sysOut("CMClass","Loading path "+filePath);
 		CMFile file=new CMFile(filePath,null,true);
 		LinkedList<String> fileList=new LinkedList();
 		if(file.canRead())

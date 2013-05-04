@@ -362,7 +362,7 @@ public class DefaultEnvironmental implements Environmental, Ownable
 		return false;
 	}
 
-	private enum SCode implements CMSavable.SaveEnum{
+	private enum SCode implements SaveEnum<DefaultEnvironmental>{
 		TMP(){
 			public ByteBuffer save(DefaultEnvironmental E){ return (ByteBuffer)ByteBuffer.allocate(4).putInt(E.lastTemperature).rewind(); }
 			public int size(){return 4;}
@@ -370,7 +370,7 @@ public class DefaultEnvironmental implements Environmental, Ownable
 		ENV(){
 			public ByteBuffer save(DefaultEnvironmental E){ return CMLib.coffeeMaker().savSubFull(E.baseEnvStats); }
 			public int size(){return -1;}
-			public CMSavable subObject(CMSavable fromThis){return ((DefaultEnvironmental)fromThis).baseEnvStats;}
+			public CMSavable subObject(DefaultEnvironmental fromThis){return ((DefaultEnvironmental)fromThis).baseEnvStats;}
 			public void load(DefaultEnvironmental E, ByteBuffer S){
 				E.setBaseEnvStats((EnvStats)CMLib.coffeeMaker().loadSub(S, E, this)); } },
 		EFC(){
@@ -380,12 +380,8 @@ public class DefaultEnvironmental implements Environmental, Ownable
 			public int size(){return 0;}
 			public void load(DefaultEnvironmental E, ByteBuffer S){ E.effectsToLoad=CMLib.coffeeMaker().loadAInt(S); } },
 		;
-		public abstract ByteBuffer save(DefaultEnvironmental E);
-		public abstract void load(DefaultEnvironmental E, ByteBuffer S);
-		public ByteBuffer save(CMSavable E){return save((DefaultEnvironmental)E);}
-		public CMSavable subObject(CMSavable fromThis){return null;}
-		public void load(CMSavable E, ByteBuffer S){load((DefaultEnvironmental)E, S);} }
-	private enum MCode implements CMModifiable.ModEnum{
+		public CMSavable subObject(DefaultEnvironmental fromThis){return null;} }
+	private enum MCode implements ModEnum<DefaultEnvironmental>{
 		ENVSTATS(){
 			public String brief(DefaultEnvironmental E){return E.baseEnvStats.ID();}
 			public String prompt(DefaultEnvironmental E){return "";}
@@ -394,11 +390,5 @@ public class DefaultEnvironmental implements Environmental, Ownable
 			public String brief(DefaultEnvironmental E){return ""+E.affects.size();}
 			public String prompt(DefaultEnvironmental E){return "";}
 			public void mod(DefaultEnvironmental E, MOB M){CMLib.genEd().modAffectable(E, M);} }
-		;
-		public abstract String brief(DefaultEnvironmental fromThis);
-		public abstract String prompt(DefaultEnvironmental fromThis);
-		public abstract void mod(DefaultEnvironmental toThis, MOB M);
-		public String brief(CMModifiable fromThis){return brief((DefaultEnvironmental)fromThis);}
-		public String prompt(CMModifiable fromThis){return prompt((DefaultEnvironmental)fromThis);}
-		public void mod(CMModifiable toThis, MOB M){mod((DefaultEnvironmental)toThis, M);} }
+		; }
 }

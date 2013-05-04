@@ -47,6 +47,7 @@ public interface Room extends ItemCollection.ItemHolder, Interactable, CMSavable
 			return false;
 		}
 		public String ID(){return "REMap";}
+		public Environmental getEnvObject() { return exit.getEnvObject(); }
 		public CMObject newInstance(){return null;}
 		public CMObject copyOf(){return new REMap(room, exit);}
 		public void initializeClass(){}
@@ -91,7 +92,6 @@ public interface Room extends ItemCollection.ItemHolder, Interactable, CMSavable
 		public void clearAllListeners(){}
 		public int priority(ListenHolder forThis){return 0;}
 		public EnumSet<ListenHolder.Flags> listenFlags() {return EnumSet.noneOf(ListenHolder.Flags.class);}
-		public Environmental getEnvObject(){return null;}
 		public Tickable.TickStat getTickStatus(){return Tickable.TickStat.Not;}
 		public boolean tick(int tickTo){return false;}
 		public int tickCounter(){return 0;}
@@ -100,10 +100,19 @@ public interface Room extends ItemCollection.ItemHolder, Interactable, CMSavable
 		public boolean okMessage(OkChecker myHost, CMMsg msg){return true;}
 		public void executeMsg(ExcChecker myHost, CMMsg msg){return;}
 	}
+/*
+	public enum Substance
+	{
+		AIR, WATER, DIRT;
+	}
+	*/
 	public enum Domain
 	{
+		AIR, WATER, DIRT
+		/*
 		UNDERWATER, AIR, WATERSURFACE,
-		WOODS, JUNGLE, SWAMP, PLAINS, DESERT, ROCKS, MOUNTAINS, CITY
+		WOODS, JUNGLE, SWAMP, PLAINS, DESERT, ROCKS, MOUNTAINS, CITY,
+		*/
 		;
 		protected static Domain[] options;
 		public static Domain getDomain(int i)
@@ -161,6 +170,9 @@ public interface Room extends ItemCollection.ItemHolder, Interactable, CMSavable
 	public String undoLock();
 	public int getLock(long time);
 	public void returnLock();
+	public boolean hasPositions();
+	public EnvMap.EnvLocation findObject(String findThis, MOB finder, EnvMap.EnvLocation lookingFromHere);
+	public EnvMap.EnvLocation positionOf(Environmental.EnvHolder ofThis);
 
 	public boolean doMessage(CMMsg msg);
 	public boolean doAndReturnMsg(CMMsg msg);
@@ -178,6 +190,7 @@ public interface Room extends ItemCollection.ItemHolder, Interactable, CMSavable
 						String othMessage);
 
 	public void bringHere(Item I, boolean andRiders);
+	public void placeHere(Environmental.EnvHolder I, boolean andRiders, int x, int y, int z);
 
 	public boolean isContent(Item item, boolean checkSubItems);
 	public Item fetchItem(String itemID);

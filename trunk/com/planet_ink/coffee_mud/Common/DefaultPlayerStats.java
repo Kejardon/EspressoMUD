@@ -297,7 +297,7 @@ public class DefaultPlayerStats implements PlayerStats
 		if(set)
 			bitmap|=bits;
 		else
-			bitmap&=bits;
+			bitmap&=~bits;
 		CMLib.database().saveObject(this);
 	}
 	public boolean hasBits(int bits)
@@ -409,7 +409,7 @@ public class DefaultPlayerStats implements PlayerStats
 	public void saveThis(){CMLib.database().saveObject(this);}
 	public void prepDefault(){}
 
-	private enum SCode implements CMSavable.SaveEnum{
+	private enum SCode implements SaveEnum<DefaultPlayerStats>{
 		FRN(){
 			public ByteBuffer save(DefaultPlayerStats E){ return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.getOwnFriends()); }
 			public int size(){return 0;}
@@ -469,12 +469,8 @@ public class DefaultPlayerStats implements PlayerStats
 			public int size(){return 4;}
 			public void load(DefaultPlayerStats E, ByteBuffer S){ E.bitmap=S.getInt(); } },
 		;
-		public abstract ByteBuffer save(DefaultPlayerStats E);
-		public abstract void load(DefaultPlayerStats E, ByteBuffer S);
-		public ByteBuffer save(CMSavable E){return save((DefaultPlayerStats)E);}
-		public CMSavable subObject(CMSavable fromThis){return null;}
-		public void load(CMSavable E, ByteBuffer S){load((DefaultPlayerStats)E, S);} }
-	private enum MCode implements CMModifiable.ModEnum{
+		public CMSavable subObject(DefaultPlayerStats fromThis){return null;} }
+	private enum MCode implements ModEnum<DefaultPlayerStats>{
 		ACCOUNT(){
 			public String brief(DefaultPlayerStats E){if(E.account==null) return ""; return E.account.accountName();}
 			public String prompt(DefaultPlayerStats E){if(E.account==null) return ""; return E.account.accountName();}
@@ -509,13 +505,7 @@ public class DefaultPlayerStats implements PlayerStats
 						if(E.introductions.contains(newI)&&(M.session().confirm("Remove this name?", "N"))) synchronized(E.introductions){E.introductions.remove(newI);}
 						else if(M.session().confirm("Add this name?", "N")) synchronized(E.introductions){E.introductions.add(newI);} }
 					else done=true; } } },
-		;
-		public abstract String brief(DefaultPlayerStats fromThis);
-		public abstract String prompt(DefaultPlayerStats fromThis);
-		public abstract void mod(DefaultPlayerStats toThis, MOB M);
-		public String brief(CMModifiable fromThis){return brief((DefaultPlayerStats)fromThis);}
-		public String prompt(CMModifiable fromThis){return prompt((DefaultPlayerStats)fromThis);}
-		public void mod(CMModifiable toThis, MOB M){mod((DefaultPlayerStats)toThis, M);} }
+		; }
 
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 /*	public RoomnumberSet roomSet()

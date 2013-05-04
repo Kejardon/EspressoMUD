@@ -59,7 +59,7 @@ public interface Behavable extends ListenHolder, ListenHolder.TickActer
 			behavesToLoad=null;
 		}
 	}
-	private enum SCode implements CMSavable.SaveEnum{
+	private enum SCode implements SaveEnum{
 		BHV(){
 			public ByteBuffer save(CMSavable E){
 				if(E.behaviors.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.behaviors.toArray(CMSavable.dummyCMSavableArray));
@@ -67,7 +67,7 @@ public interface Behavable extends ListenHolder, ListenHolder.TickActer
 			public int size(){return 0;}
 			public void load(CMSavable E, ByteBuffer S){ E.behavesToLoad=CMLib.coffeeMaker().loadAInt(S); } },
 	}
-	private enum MCode implements CMModifiable.ModEnum{
+	private enum MCode implements ModEnum{
 		BEHAVIORS(){
 			public String brief(CMModifiable E){return ""+E.behaviors.size();}
 			public String prompt(CMModifiable E){return "";}

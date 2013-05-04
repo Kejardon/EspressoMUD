@@ -19,7 +19,7 @@ public class List extends StdCommand
 {
 	public List(){access=new String[]{"LIST"};}
 
-	public static void dumpThreadGroup(StringBuffer lines,ThreadGroup tGroup)
+	public static void dumpThreadGroup(StringBuffer lines,ThreadGroup tGroup, boolean activeStacks)
 	{
 		int ac = tGroup.activeCount();
 		int agc = tGroup.activeGroupCount();
@@ -41,10 +41,13 @@ public class List extends StdCommand
 					lines.append("Tickable ").append(T.ID()).append("-").append(T.getTickStatus()).append("\r\n"); }
 				else {
 					String status=CMLib.threads().getServiceThreadSummary(tArray[i]);
-					lines.append("Thread ").append(tArray[i].getName()).append(status).append("\r\n"); } } }
+					lines.append("Thread ").append(tArray[i].getName()).append(status).append("\r\n"); }
+				if(activeStacks) {
+					Thread.State state=tArray[i].getState();
+					if(state==Thread.State.RUNNABLE || state==Thread.State.BLOCKED) lines.append(ThreadEngine.SupportThread.getStack(tArray[i])).append("\r\n"); } } }
 		if (agc > 0) {
 			lines.append("{\r\n");
-			for (int i = 0; i<agc; ++i) if (tgArray[i] != null) dumpThreadGroup(lines,tgArray[i]);
+			for (int i = 0; i<agc; ++i) if (tgArray[i] != null) dumpThreadGroup(lines,tgArray[i],activeStacks);
 			lines.append("}\r\n"); }
 	}
 /*
@@ -297,6 +300,34 @@ public class List extends StdCommand
 					lineNum++;
 					line=log.nextLine(); }
 				log.close(); } },
+		SID(new String[] {"LISTADMIN"}){
+			 public void list(MOB mob, String rest) {
+				if(rest.length()!=0) {
+					SIDLib.Objects set=SIDLib.classCode(rest);
+					if(set==null) mob.tell("No set by the name of "+rest+"was found.\r\n");
+					else {
+						StringBuilder text=new StringBuilder();
+						for(Iterator<CMSavable> iter=set.getAll();iter.hasNext();) {
+							CMSavable next=iter.next();
+							text.append(next.ID()).append(": ").append(next.saveNum()).append("\r\n"); }
+						mob.tell(text.toString());
+						return; } }
+				StringBuilder text=new StringBuilder("Available sets: ");
+				for(SIDLib.Objects obj : SIDLib.Objects.values()) text.append(obj.name).append(", ");
+				mob.tell(text.toString()); } },
+		OBJECTS(new String[] {"LISTADMIN"}){
+			 public void list(MOB mob, String rest) {
+				if(rest.length()!=0) {
+					CMClass.Objects set=CMClass.classCode(rest);
+					if(set==null) mob.tell("No set by the name of "+rest+"was found.\r\n");
+					else {
+						StringBuilder text=new StringBuilder();
+						for(Iterator<CMObject> iter=set.all();iter.hasNext();) text.append(iter.next().ID()).append("\r\n");
+						mob.tell(text.toString());
+						return; } }
+				StringBuilder text=new StringBuilder("Available sets: ");
+				for(CMClass.Objects obj : CMClass.Objects.values()) text.append(obj.name).append(", ");
+				mob.tell(text.toString()); } },
 		USERS(new String[] {"CMDPLAYERS","STAT"}){
 			public void list(MOB mob, String rest){
 				StringBuffer head=new StringBuffer("");
@@ -373,9 +404,11 @@ public class List extends StdCommand
 			public void list(MOB mob, String rest){
 				StringBuffer lines=new StringBuffer("^xStatus|Name				 ^.^?\r\n");
 				try {
+					boolean activeStacks=false;
+					if(rest.equalsIgnoreCase("stacks")) activeStacks=true;
 					ThreadGroup topTG = Thread.currentThread().getThreadGroup();
 					while (topTG != null && topTG.getParent() != null) topTG = topTG.getParent();
-					if (topTG != null) dumpThreadGroup(lines,topTG); }
+					if (topTG != null) dumpThreadGroup(lines,topTG,activeStacks); }
 				catch (Exception e) {
 					lines.append ("\r\nBastards! Exception while listing threads: " + e.getMessage() + "\r\n"); }
 				mob.session().wraplessPrintln(lines.toString()); } },

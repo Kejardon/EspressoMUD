@@ -226,6 +226,40 @@ public class CMParms
 		}
 		return commands;
 	}
+	public static Vector<String> parse(String str, int startFrom, int upTo)
+	{
+		if(startFrom <= 0) return parse(str, upTo);
+		str=str.trim();
+		int spaceIndex=str.indexOf(" ");
+		int strIndex=str.indexOf("\"");
+		done:
+		while(str.length()>0)
+		{
+			while((strIndex>=0)&&((strIndex<spaceIndex)||(spaceIndex<0)))
+			{
+				int endStrIndex=str.indexOf("\"",strIndex+1);
+				if(endStrIndex<0)
+					break done;
+				spaceIndex=str.indexOf(" ", endStrIndex+1);
+				strIndex=str.indexOf("\"", endStrIndex+1);
+			}
+			if(spaceIndex<0)
+				return new Vector();
+			String CMD=str.substring(0,spaceIndex).trim();
+			str=str.substring(spaceIndex+1).trim();
+			if(CMD.length()>0)
+			{
+				startFrom--;
+				if(startFrom==0)
+					return parse(str, upTo);
+			}
+			spaceIndex=str.indexOf(" ");
+			if(strIndex>=0)
+				strIndex=str.indexOf("\"");
+		}
+		return new Vector();
+	}
+	
 	public static Vector<String> parseCommas(String s, boolean ignoreNulls)	//If true, does not add empty ("") strings
 	{
 		Vector<String> V=new Vector();

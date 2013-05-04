@@ -21,10 +21,53 @@ in an object if desired.
 */
 public interface EnvStats extends CMCommon, CMModifiable, CMSavable
 {
+	public enum EnvShape
+	{
+		FitType //One of Wearable.FitType
+		{
+			public long volume(int a, int b, int c)
+			{
+				return -1;
+			}
+			public long volume(EnvStats E)
+			{
+				return -1;
+			}
+		},
+		Ellipsoid //includes perfect spheres
+		{
+			protected static final double VolumeConstant = 4/3 * Math.PI;
+			public long volume(int a, int b, int c)
+			{
+				return (long)(VolumeConstant*a*b*c);
+			}
+			public long volume(EnvStats E)
+			{
+				return (long)(VolumeConstant*E.width()*E.height()*E.length());
+			}
+		},
+		Rectangular //includes perfect cubes
+		{
+			public long volume(int a, int b, int c)
+			{
+				return ((long)a)*b*c;
+			}
+			public long volume(EnvStats E)
+			{
+				return ((long)E.width())*E.height()*E.length();
+			}
+		},
+		;
+		public abstract long volume(int a, int b, int c);
+		public abstract long volume(EnvStats E);
+	}
+	
 	public int ability();
 	public void setAbility(int newAdjustment);
 	public int weight();
 	public void setWeight(int newWeight);
+	public EnvShape shape();
+	public void setShape(EnvShape newShape);
 	public int height();
 	public void setHeight(int newHeight);
 	public int length();

@@ -62,7 +62,7 @@ public class MiscLib extends StdLibrary implements MiscLibrary
 	public void saveThis(){CMLib.database().saveObject(this);}
 	public void prepDefault(){}
 
-	private static enum SCode implements SaveEnum{
+	private static enum SCode implements SaveEnum<MiscLib>{
 		SID() {
 			public ByteBuffer save(MiscLib fromThis) {
 				SIDLib.Objects[] SIDs=SIDLib.Objects.values();
@@ -77,13 +77,9 @@ public class MiscLib extends StdLibrary implements MiscLibrary
 		GTC(){
 			public ByteBuffer save(MiscLib E){ return CMLib.coffeeMaker().savSubFull(E.globalClock()); }
 			public int size(){return -1;}
-			public CMSavable subObject(CMSavable E){return ((MiscLib)E).globalClock();}
+			public CMSavable subObject(MiscLib E){return ((MiscLib)E).globalClock();}
 			public void load(MiscLib E, ByteBuffer S){ E.globalClock=(TimeClock)((Ownable)CMLib.coffeeMaker().loadSub(S, E, this)).setOwner(E); } },
 		;
-		public abstract ByteBuffer save(MiscLib fromThis);
-		public abstract void load(MiscLib toThis, ByteBuffer S);
-		public ByteBuffer save(CMSavable E){return save((MiscLib)E);}
-		public CMSavable subObject(CMSavable fromThis){return null;}
-		public void load(CMSavable E, ByteBuffer S){load((MiscLib)E, S);} }
+		public CMSavable subObject(MiscLib fromThis){return null;} }
 
 }

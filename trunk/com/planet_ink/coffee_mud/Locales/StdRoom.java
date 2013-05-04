@@ -50,7 +50,8 @@ public class StdRoom implements Room
 	//protected long lastTick=0;
 	//TODO: This needs a custom item collection! Eventually. For grids. Some day.
 	protected ItemCollection inventory=null;//(ItemCollection)((Ownable)CMClass.COMMON.getNew("DefaultItemCol")).setOwner(this);
-	protected Domain myDom=Domain.PLAINS;
+	protected EnvMap positions=null;
+	protected Domain myDom=Domain.AIR;
 	protected Enclosure myEnc=Enclosure.OPEN;
 	protected boolean amDestroyed=false;
 	protected Environmental myEnvironmental=null;//(Environmental)((Ownable)CMClass.COMMON.getNew("DefaultEnvironmental")).setOwner(this);
@@ -61,6 +62,7 @@ public class StdRoom implements Room
 	protected int[][] exitsToLoad=null;
 	protected int areaToLink=0;
 	protected int itemCollectionToLoad=0;
+	protected int envMapToLoad=0;
 
 	public StdRoom(){}
 
@@ -282,6 +284,8 @@ public class StdRoom implements Room
 		myArea=newArea;
 		CMLib.database().saveObject(this);
 	}
+	public boolean hasPositions(){return positions!=null;}
+	public EnvMap.EnvLocation positionOf(Environmental.EnvHolder of){return positions.position(of);}
 
 	public boolean okMessage(OkChecker myHost, CMMsg msg)
 	{
@@ -388,8 +392,14 @@ public class StdRoom implements Room
 			if(mob.playerStats().hasBits(PlayerStats.ATT_SYSOPMSGS))
 			{
 				if(getArea()!=null)
-					Say.append("Area  : "+getArea().name()+"\r\n");
+					Say.append("Area   : "+getArea().name()+"\r\n");
 				Say.append("SaveNum: "+saveNum()+"  ("+ID()+")\r\n");
+			}
+			if(hasPositions())
+			{
+				EnvMap.EnvLocation mobLoc=positionOf(mob.body());
+				if(mobLoc!=null)
+					Say.append("(").append(mobLoc.x).append(", ").append(mobLoc.y).append(", ").append(mobLoc.z).append(")\r\n");
 			}
 			Say.append(displayText()).append("\r\n").append(description()).append("\r\n\r\n");
 
@@ -454,14 +464,18 @@ public class StdRoom implements Room
 		if(!(andRiders))
 		{
 			Rideable R=Rideable.O.getFrom(I);
-			if(R!=null)
-				for(Iterator<Item> iter=R.allRiders();iter.hasNext();)
-					R.removeRider(iter.next());
+			if(R!=null) R.dropRiders();
 		}
 		ItemCollection col=ItemCollection.O.getFrom(o);
 		if(col!=null) col.removeItem(I);
 
 		getItemCollection().addItem(I);
+	}
+	public void placeHere(Environmental.EnvHolder I, boolean andRiders, int x, int y, int z)
+	{
+		if(I==null) return;
+		if(I instanceof Item) bringHere((Item)I, andRiders);
+		positions.placeThing(I, x, y, z);
 	}
 
 	protected void reallySend(CMMsg msg, int depth)
@@ -690,6 +704,25 @@ public class StdRoom implements Room
 			items=CMLib.english().fetchInteractables(inventory.allItems(),itemID,false);
 		return items;
 	}
+	/*
+	 * TODO
+	 * Eventually this should take the MOB's source location, objects hide value, interfering objects,
+	 * and MOB's skills into consideration. Also be able to look in nearby rooms.
+	 * 
+	 */
+	public EnvMap.EnvLocation findObject(String findThis, MOB finder, EnvMap.EnvLocation lookingFromHere)
+	{
+		Vector<Interactable> targets=new Vector();
+		for(Iterator<Environmental.EnvHolder> iter=positions.allThings();iter.hasNext();)
+		{
+			Environmental.EnvHolder next=iter.next();
+			if(next instanceof Interactable)
+				targets.add((Interactable)next);
+		}
+		Interactable thing=CMLib.english().fetchInteractable(targets,findThis,true);
+		if(thing==null) thing=CMLib.english().fetchInteractable(targets,findThis,false);
+		return (thing==null?null:positions.position(thing));
+	}
 	public MOB fetchInhabitant(String inhabitantID)
 	{
 		MOB M=null;
@@ -865,6 +898,13 @@ public class StdRoom implements Room
 		}
 		return inventory;
 	}
+	public void setItemCollection(ItemCollection newInv, boolean copyInto)
+	{
+		ItemCollection oldInv=inventory;
+		inventory=newInv;
+		if(copyInto && oldInv!=null)
+			newInv.copyFrom(oldInv);
+	}
 
 	public boolean sameAs(Interactable E)
 	{
@@ -963,15 +1003,26 @@ public class StdRoom implements Room
 				}
 			}
 		}
+		mapFail:
+		if(envMapToLoad!=0)
+		{
+			EnvMap envMap = SIDLib.ENVMAP.get(envMapToLoad);
+			if(envMap==null) break mapFail;
+			EnvMap oldMap = positions;
+			positions=(EnvMap)((Ownable)envMap).setOwner(this);
+			envMapToLoad=0;
+			if(oldMap!=null)
+				envMap.copyFrom(oldMap);
+		}
 	}
 	public void saveThis(){CMLib.database().saveObject(this);}
 	public void prepDefault(){getEnvObject(); getItemCollection();} //TODO: Env
 
-	private enum SCode implements CMSavable.SaveEnum{
+	private enum SCode implements SaveEnum<StdRoom>{
 		ENV(){
 			public ByteBuffer save(StdRoom E){ return CMLib.coffeeMaker().savSubFull(E.getEnvObject()); }
 			public int size(){return -1;}
-			public CMSavable subObject(CMSavable fromThis){return ((StdRoom)fromThis).myEnvironmental;}
+			public CMSavable subObject(StdRoom fromThis){return fromThis.myEnvironmental;}
 			public void load(StdRoom E, ByteBuffer S){
 				Environmental old=E.myEnvironmental;
 				E.myEnvironmental=(Environmental)CMLib.coffeeMaker().loadSub(S, E, this);
@@ -1025,14 +1076,14 @@ public class StdRoom implements Room
 			public ByteBuffer save(StdRoom E){ return CMLib.coffeeMaker().savString(E.name); }
 			public int size(){return 0;}
 			public void load(StdRoom E, ByteBuffer S){ E.name=CMLib.coffeeMaker().loadString(S); } },
+		MAP(){
+			public ByteBuffer save(StdRoom E){ return (ByteBuffer)ByteBuffer.wrap(new byte[4]).putInt(E.positions==null?0:E.positions.saveNum()).rewind(); }
+			public int size(){return 4;}
+			public void load(StdRoom E, ByteBuffer S){ E.envMapToLoad=S.getInt(); } },
 		//TODO: EXT()
 		;
-		public abstract ByteBuffer save(StdRoom E);
-		public abstract void load(StdRoom E, ByteBuffer S);
-		public ByteBuffer save(CMSavable E){return save((StdRoom)E);}
-		public CMSavable subObject(CMSavable fromThis){return null;}
-		public void load(CMSavable E, ByteBuffer S){load((StdRoom)E, S);} }
-	private enum MCode implements CMModifiable.ModEnum{
+		public CMSavable subObject(StdRoom fromThis){return null;} }
+	private enum MCode implements ModEnum<StdRoom>{
 /*		ID(){
 			public String brief(StdRoom E){return E.myID;}
 			public String prompt(StdRoom E){return E.myID;}
@@ -1084,11 +1135,23 @@ public class StdRoom implements Room
 			public String brief(StdRoom E){return E.getItemCollection().ID()+" "+E.inventory.numItems();}
 			public String prompt(StdRoom E){return "";}
 			public void mod(StdRoom E, MOB M){CMLib.genEd().genMiscSet(M, E.inventory);} },
-		;
-		public abstract String brief(StdRoom fromThis);
-		public abstract String prompt(StdRoom fromThis);
-		public abstract void mod(StdRoom toThis, MOB M);
-		public String brief(CMModifiable fromThis){return brief((StdRoom)fromThis);}
-		public String prompt(CMModifiable fromThis){return prompt((StdRoom)fromThis);}
-		public void mod(CMModifiable toThis, MOB M){mod((StdRoom)toThis, M);} }
+		ROOMMAP(){
+			public String brief(StdRoom E){return E.positions==null?"null":(""+E.positions.size());}
+			public String prompt(StdRoom E){return "";}
+			public void mod(StdRoom E, MOB M){
+				char action=M.session().prompt("(F)ill with missing objects, (D)estroy, (C)reate, or (M)odify room map (default M)? ","M").trim().toUpperCase().charAt(0);
+				if(action=='F' && E.positions!=null) {
+					for(REMap exit : E.exits) if(E.positions.position(exit)==null) E.positions.placeThing(exit, 0, 0, 0);
+					for(Iterator<Item> items=E.inventory.allItems();items.hasNext();) {
+						Item item=items.next();
+						if(E.positions.position(item)==null) E.positions.placeThing(item, 0, 0, 0); } }
+				else if(action=='D') {E.positions.destroy(); E.positions=null;}
+				else if(action=='C') {
+					EnvMap map=CMLib.genEd().mapPrompt(M);
+					EnvMap oldMap=E.positions;
+					if(map!=null){
+						if(oldMap!=null&&M.session().prompt("Copy old map into new? Y/n","Y").trim().toUpperCase().charAt(0)=='Y') map.copyFrom(oldMap);
+						E.positions=map; } }
+				else if(action=='M') CMLib.genEd().genMiscSet(M, E.positions); } },
+		; }
 }

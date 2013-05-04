@@ -330,7 +330,7 @@ public class StdEffect implements Effect
 	public void saveThis(){CMLib.database().saveObject(this);}
 	public void prepDefault(){}
 
-	private enum SCode implements CMSavable.SaveEnum{
+	private enum SCode implements SaveEnum<StdEffect>{
 		TIC(){
 			public ByteBuffer save(StdEffect E){ return (ByteBuffer)ByteBuffer.wrap(new byte[4]).putInt(E.tickDown).rewind(); }
 			public int size(){return 4;}
@@ -342,12 +342,8 @@ public class StdEffect implements Effect
 			public int size(){return 0;}
 			public void load(StdEffect E, ByteBuffer S){ E.effectsToLoad=CMLib.coffeeMaker().loadAInt(S); } },
 		;
-		public abstract ByteBuffer save(StdEffect E);
-		public abstract void load(StdEffect E, ByteBuffer S);
-		public ByteBuffer save(CMSavable E){return save((StdEffect)E);}
-		public CMSavable subObject(CMSavable fromThis){return null;}
-		public void load(CMSavable E, ByteBuffer S){load((StdEffect)E, S);} }
-	private enum MCode implements CMModifiable.ModEnum{
+		public CMSavable subObject(StdEffect fromThis){return null;} }
+	private enum MCode implements ModEnum<StdEffect>{
 		TICKDOWN(){
 			public String brief(StdEffect E){return ""+E.tickDown;}
 			public String prompt(StdEffect E){return ""+E.tickDown;}
@@ -356,11 +352,5 @@ public class StdEffect implements Effect
 			public String brief(StdEffect E){return ""+E.affects.size();}
 			public String prompt(StdEffect E){return "";}
 			public void mod(StdEffect E, MOB M){CMLib.genEd().modAffectable(E, M);} },
-		;
-		public abstract String brief(StdEffect fromThis);
-		public abstract String prompt(StdEffect fromThis);
-		public abstract void mod(StdEffect toThis, MOB M);
-		public String brief(CMModifiable fromThis){return brief((StdEffect)fromThis);}
-		public String prompt(CMModifiable fromThis){return prompt((StdEffect)fromThis);}
-		public void mod(CMModifiable toThis, MOB M){mod((StdEffect)toThis, M);} }
+		; }
 }

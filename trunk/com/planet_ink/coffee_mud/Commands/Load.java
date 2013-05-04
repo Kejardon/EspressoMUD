@@ -19,7 +19,15 @@ public class Load extends StdCommand
 	protected String list;
 	protected String list()
 	{
-		if(list==null) list="RESOURCE, "+CMParms.toStringList(CMClass.Objects.values().toArray(new CMClass.Objects[0]));
+		if(list==null)
+		{
+			StringBuilder listBuild=new StringBuilder("RESOURCE");
+			for(CMClass.Objects obj : CMClass.Objects.values())
+			{
+				listBuild.append(", ").append(obj.name);
+			}
+			list=listBuild.toString();
+		}
 		return list;
 	}
 

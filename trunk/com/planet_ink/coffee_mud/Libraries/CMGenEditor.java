@@ -27,12 +27,16 @@ public class CMGenEditor extends StdLibrary implements GenericEditor
 	{
 		if(E==null)
 			return null;
-		boolean done=false;
 		StringBuilder promptText = new StringBuilder();
 		if(E instanceof CMSavable)
 			promptText.append(((CMSavable)E).saveNum()).append('\n');
 		if(E instanceof Ownable)
-			promptText.append(((Ownable)E).owner().ID()).append(": ").append(((Ownable)E).owner().saveNum()).append('\n');
+		{
+			if(((Ownable)E).owner()==null)
+				promptText.append("Null owner!!\n");
+			else
+				promptText.append(((Ownable)E).owner().ID()).append(": ").append(((Ownable)E).owner().saveNum()).append('\n');
+		}
 		if(E instanceof Item)
 		{
 			CMObject cont=((Item)E).container();
@@ -47,13 +51,16 @@ public class CMGenEditor extends StdLibrary implements GenericEditor
 			}
 		}
 		CMModifiable.ModEnum[] options=E.totalEnumM();
-		while((mob.session()!=null)&&(!mob.session().killFlag())&&(!done))
+		String promptHeader=promptText.toString();
+		while((mob.session()!=null)&&(!mob.session().killFlag()))
 		{
+			promptText.setLength(0);
+			promptText.append(promptHeader);
 			for(int i=0;i<options.length;i++)
 				promptText.append(1+i).append(". ").append(options[i]).append(": '").append(options[i].brief(E)).append("'.\n");
 			promptText.append("Edit which? ");
 			int pickOption=CMath.s_int(mob.session().prompt(promptText.toString(),""));
-			if(--pickOption<0) done=true;
+			if(--pickOption<0) break;
 			else if(pickOption<options.length)
 			{
 				mob.session().rawPrintln((1+pickOption)+". "+options[pickOption]+": '"+options[pickOption].prompt(E)+"'.");
@@ -215,7 +222,7 @@ public class CMGenEditor extends StdLibrary implements GenericEditor
 	}
 	public char charPrompt(MOB mob, String defaultTo)
 	{
-		return mob.session().prompt("Enter a new character: ",((defaultTo==null)?"":defaultTo)).charAt(0);
+		return mob.session().prompt("Enter a new character: ",((defaultTo==null)?" ":defaultTo)).charAt(0);
 	}
 
 	public int promptVector(MOB mob, Vector V, boolean newOption)
@@ -514,7 +521,7 @@ public class CMGenEditor extends StdLibrary implements GenericEditor
 			}
 			else if(i<V.size())
 			{
-				char action=M.session().prompt("Edit (E)xit, target (R)oom, or (D)estroy link?","").trim().toUpperCase().charAt(0);
+				char action=M.session().prompt("Edit (E)xit, target (R)oom, or (D)estroy link?"," ").trim().toUpperCase().charAt(0);
 				if(action=='D') { exits.remove(V.get(i)); }
 				else if(action=='E') CMLib.genEd().genMiscSet(M, V.get(i).exit);
 				else if(action=='R')
@@ -675,6 +682,32 @@ public class CMGenEditor extends StdLibrary implements GenericEditor
 				continue;
 			}
 			return S;
+		}
+		return null;
+	}
+	public EnvMap mapPrompt(MOB M)
+	{
+		while((M.session()!=null)&&(!M.session().killFlag()))
+		{
+			String skillName=M.session().prompt("Enter an EnvMap type: ","");
+			if(skillName.equals("")) return null;
+			if(skillName.equals("?"))
+			{
+				for(Iterator<CMCommon> e=CMClass.COMMON.all();e.hasNext();)
+				{
+					CMCommon next=e.next();
+					if(next instanceof EnvMap)
+						M.session().rawPrintln(e.next().ID());
+				}
+				continue;
+			}
+			CMCommon S=CMClass.COMMON.get(skillName);
+			if(!(S instanceof EnvMap))
+			{
+				M.session().rawPrintln("No EnvMap with that name found.");
+				continue;
+			}
+			return (EnvMap)S;
 		}
 		return null;
 	}

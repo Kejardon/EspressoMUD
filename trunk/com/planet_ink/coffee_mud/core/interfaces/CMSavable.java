@@ -27,14 +27,14 @@ public interface CMSavable extends CMObject
 	//ALL BYTEBUFFERS MUST BE REWOUND BEFORE BEING RETURNED OR SENT
 	public static final CMSavable[] dummyCMSavableArray=new CMSavable[0];
 	public static final SaveEnum[] dummySEArray=new SaveEnum[0];
-	public static interface SaveEnum
+	public static interface SaveEnum<U extends CMSavable>
 	{
 		//save() will be called on CMSubSavables (SaveEnums with size==-1) iff they have no fixed data;
 		//in other words save() on CMSubSavables needs to get ALL data for the subobject(including ID in case format mismatch!), as var data for the superobject, and start with a 2
-		public ByteBuffer save(CMSavable fromThis);
-		public void load(CMSavable toThis, ByteBuffer val);
+		public ByteBuffer save(U fromThis);
+		public void load(U toThis, ByteBuffer val);
 		public int size();
-		public CMSavable subObject(CMSavable fromThis);
+		public CMSavable subObject(U fromThis);
 //		public ByteBuffer namePrefix();
 		public String name();	//to autofind enum's name()
 		//public boolean isActive();

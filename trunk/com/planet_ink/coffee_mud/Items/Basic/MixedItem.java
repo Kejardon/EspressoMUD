@@ -607,7 +607,7 @@ public class MixedItem implements Item
 	public void saveThis(){CMLib.database().saveObject(this);}
 	public void prepDefault(){} //TODO: Env
 
-	private enum SCode implements CMSavable.SaveEnum{
+	private enum SCode implements SaveEnum<MixedItem>{
 		NAM(){
 			public ByteBuffer save(MixedItem E){ return CMLib.coffeeMaker().savString(E.name); }
 			public int size(){return 0;}
@@ -639,7 +639,7 @@ public class MixedItem implements Item
 		ENV(){
 			public ByteBuffer save(MixedItem E){ return CMLib.coffeeMaker().savSubFull(E.getEnvObject()); }
 			public int size(){return -1;}
-			public CMSavable subObject(CMSavable fromThis){return ((MixedItem)fromThis).myEnvironmental;}
+			public CMSavable subObject(MixedItem fromThis){return fromThis.myEnvironmental;}
 			public void load(MixedItem E, ByteBuffer S){
 				Environmental old=E.myEnvironmental;
 				E.myEnvironmental=(Environmental)CMLib.coffeeMaker().loadSub(S, E, this);
@@ -663,12 +663,8 @@ public class MixedItem implements Item
 			public int size(){return 4;}
 			public void load(MixedItem E, ByteBuffer S){ E.bindsToLoad=S.getInt(); } },
 		;
-		public abstract ByteBuffer save(MixedItem E);
-		public abstract void load(MixedItem E, ByteBuffer S);
-		public ByteBuffer save(CMSavable E){return save((MixedItem)E);}
-		public CMSavable subObject(CMSavable fromThis){return null;}
-		public void load(CMSavable E, ByteBuffer S){load((MixedItem)E, S);} }
-	private enum MCode implements CMModifiable.ModEnum{
+		public CMSavable subObject(MixedItem fromThis){return null;} }
+	private enum MCode implements ModEnum<MixedItem>{
 		NAME(){
 			public String brief(MixedItem E){return ""+E.name;}
 			public String prompt(MixedItem E){return ""+E.name;}
@@ -705,13 +701,7 @@ public class MixedItem implements Item
 			public String brief(MixedItem E){return E.subItems().ID();}
 			public String prompt(MixedItem E){return "";}
 			public void mod(MixedItem E, MOB M){CMLib.genEd().genMiscSet(M, E.binds);} },
-		;
-		public abstract String brief(MixedItem fromThis);
-		public abstract String prompt(MixedItem fromThis);
-		public abstract void mod(MixedItem toThis, MOB M);
-		public String brief(CMModifiable fromThis){return brief((MixedItem)fromThis);}
-		public String prompt(CMModifiable fromThis){return prompt((MixedItem)fromThis);}
-		public void mod(CMModifiable toThis, MOB M){mod((MixedItem)toThis, M);} }
+		; }
 	public boolean sameAs(Interactable E)
 	{
 /*TODO

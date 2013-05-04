@@ -674,6 +674,7 @@ public class CoffeeFilter extends StdLibrary implements TelnetFilter
 							}
 							case 'S': case 'T': case 'O':
 							{
+								if(i==loop+2) break;
 								String substring=handleSTO(msg.substring(loop+1, i), mob, source, target, tool);
 								if((!firstSdone)&&(substring=="you")) doSagain=true;	//Safe because java compiler
 								if(substring.length()>0)

@@ -108,34 +108,24 @@ public class StdTimeZone extends StdArea
 		super.link();
 	}
 
-	private enum SCode implements CMSavable.SaveEnum{
+	private enum SCode implements SaveEnum<StdTimeZone>{
 		TIM(){
 			public ByteBuffer save(StdTimeZone E){
 				if(E.myClock==null) return GenericBuilder.emptyBuffer;
 				return CMLib.coffeeMaker().savSubFull(E.myClock); }
 			public int size(){return -1;}
-			public CMSavable subObject(CMSavable fromThis){return ((StdArea)fromThis).myClock;}
+			public CMSavable subObject(StdTimeZone fromThis){return fromThis.myClock;}
 			public void load(StdTimeZone E, ByteBuffer S){
 				TimeClock old=E.myClock;
 				E.myClock=(TimeClock)((Ownable)CMLib.coffeeMaker().loadSub(S, E, this)).setOwner(E);
 				if((old!=null)&&(old!=E.myClock)) old.destroy(); } }
 		;
-		public abstract ByteBuffer save(StdTimeZone E);
-		public abstract void load(StdTimeZone E, ByteBuffer S);
-		public ByteBuffer save(CMSavable E){return save((StdTimeZone)E);}
-		public CMSavable subObject(CMSavable fromThis){return null;}
-		public void load(CMSavable E, ByteBuffer S){load((StdTimeZone)E, S);} }
-	private enum MCode implements CMModifiable.ModEnum{
+		public CMSavable subObject(StdTimeZone fromThis){return null;} }
+	private enum MCode implements ModEnum<StdTimeZone>{
 		TIMEOBJECT(){
 			public String brief(StdTimeZone E){return E.myClock.ID();}
 			public String prompt(StdTimeZone E){return "";}
 			public void mod(StdTimeZone E, MOB M){CMLib.genEd().genMiscSet(M, E.myClock);} }
-		;
-		public abstract String brief(StdTimeZone fromThis);
-		public abstract String prompt(StdTimeZone fromThis);
-		public abstract void mod(StdTimeZone toThis, MOB M);
-		public String brief(CMModifiable fromThis){return brief((StdTimeZone)fromThis);}
-		public String prompt(CMModifiable fromThis){return prompt((StdTimeZone)fromThis);}
-		public void mod(CMModifiable toThis, MOB M){mod((StdTimeZone)toThis, M);} }
+		; }
 
 }

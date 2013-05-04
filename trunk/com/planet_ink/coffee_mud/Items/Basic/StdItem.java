@@ -684,7 +684,7 @@ public class StdItem implements Item
 	public void saveThis(){CMLib.database().saveObject(this);}
 	public void prepDefault(){} //TODO: Env
 
-	private enum SCode implements CMSavable.SaveEnum{
+	private enum SCode implements SaveEnum<StdItem>{
 		VAL(){
 			public ByteBuffer save(StdItem E){ return (ByteBuffer)ByteBuffer.wrap(new byte[4]).putInt(E.baseGoldValue).rewind(); }
 			public int size(){return 4;}
@@ -692,7 +692,7 @@ public class StdItem implements Item
 		ENV(){
 			public ByteBuffer save(StdItem E){ return CMLib.coffeeMaker().savSubFull(E.getEnvObject()); }
 			public int size(){return -1;}
-			public CMSavable subObject(CMSavable fromThis){return ((StdItem)fromThis).myEnvironmental;}
+			public CMSavable subObject(StdItem fromThis){return fromThis.myEnvironmental;}
 			public void load(StdItem E, ByteBuffer S){
 				Environmental old=E.myEnvironmental;
 				E.myEnvironmental=(Environmental)CMLib.coffeeMaker().loadSub(S, E, this);
@@ -747,12 +747,8 @@ public class StdItem implements Item
 			public int size(){return 0;}
 			public void load(StdItem E, ByteBuffer S){ E.name=CMLib.coffeeMaker().loadString(S); } },
 		;
-		public abstract ByteBuffer save(StdItem E);
-		public abstract void load(StdItem E, ByteBuffer S);
-		public ByteBuffer save(CMSavable E){return save((StdItem)E);}
-		public CMSavable subObject(CMSavable fromThis){return null;}
-		public void load(CMSavable E, ByteBuffer S){load((StdItem)E, S);} }
-	private enum MCode implements CMModifiable.ModEnum{
+		public CMSavable subObject(StdItem fromThis){return null;} }
+	private enum MCode implements ModEnum<StdItem>{
 		VALUE(){
 			public String brief(StdItem E){return ""+E.baseGoldValue;}
 			public String prompt(StdItem E){return ""+E.baseGoldValue;}
@@ -797,13 +793,7 @@ public class StdItem implements Item
 			public String brief(StdItem E){return ""+E.name;}
 			public String prompt(StdItem E){return ""+E.name;}
 			public void mod(StdItem E, MOB M){E.setName(CMLib.genEd().stringPrompt(M, ""+E.name, false));} }
-		;
-		public abstract String brief(StdItem fromThis);
-		public abstract String prompt(StdItem fromThis);
-		public abstract void mod(StdItem toThis, MOB M);
-		public String brief(CMModifiable fromThis){return brief((StdItem)fromThis);}
-		public String prompt(CMModifiable fromThis){return prompt((StdItem)fromThis);}
-		public void mod(CMModifiable toThis, MOB M){mod((StdItem)toThis, M);} }
+		; }
 	public boolean sameAs(Interactable E)
 	{
 /*TODO

@@ -35,6 +35,7 @@ public class MixedEnvStats implements EnvStats, Ownable
 
 	public MixedEnvStats(){}
 
+	public EnvShape shape(){return null;}
 	public int ability(){return magic;}
 	public int weight(){return weight;}
 	public int height(){return height;}
@@ -54,6 +55,7 @@ public class MixedEnvStats implements EnvStats, Ownable
 	public WVector<RawMaterial.Resource> materialSet(){return materials;}
 	public long volume(){return volume;}
 
+	public void setShape(EnvShape newShape){}
 	public void setWeight(int newWeight){weight=newWeight; if(parent!=null)parent.saveThis();}
 	public void setSpeed(double newSpeed){Speed=newSpeed; if(parent!=null)parent.saveThis();}
 	public void setAbility(int newAdjustment){magic=newAdjustment; if(parent!=null)parent.saveThis();}
@@ -182,7 +184,7 @@ public class MixedEnvStats implements EnvStats, Ownable
 	public void saveThis(){if(parent!=null)parent.saveThis();}
 	public void prepDefault(){}
 
-	private enum SCode implements CMSavable.SaveEnum{
+	private enum SCode implements SaveEnum<MixedEnvStats>{
 		SPD(){
 			public ByteBuffer save(MixedEnvStats E){ return (ByteBuffer)ByteBuffer.wrap(new byte[8]).putDouble(E.Speed).rewind(); }
 			public int size(){return 8;}
@@ -206,12 +208,8 @@ public class MixedEnvStats implements EnvStats, Ownable
 			public int size(){return 0;}
 			public void load(MixedEnvStats E, ByteBuffer S){ E.materials=CMLib.coffeeMaker().setEnumWVector(RawMaterial.Resource.class, S); } },
 		;
-		public abstract ByteBuffer save(MixedEnvStats E);
-		public abstract void load(MixedEnvStats E, ByteBuffer S);
-		public ByteBuffer save(CMSavable E){return save((MixedEnvStats)E);}
-		public CMSavable subObject(CMSavable fromThis){return null;}
-		public void load(CMSavable E, ByteBuffer S){load((MixedEnvStats)E, S);} }
-	private enum MCode implements CMModifiable.ModEnum{
+		public CMSavable subObject(MixedEnvStats fromThis){return null;} }
+	private enum MCode implements ModEnum<MixedEnvStats>{
 		AMBIENCES(){
 			public String brief(MixedEnvStats E){ return ""+E.ambiances.size();}
 			public String prompt(MixedEnvStats E){ return "";}
@@ -273,7 +271,7 @@ public class MixedEnvStats implements EnvStats, Ownable
 						int weight=CMLib.genEd().intPrompt(M, "1");
 						if(!E.materials.replace(S, S, weight)) E.materials.add(S, weight); }
 					else if(i<V.size()) {
-						char action=M.session().prompt("(D)elete material or edit (W)eight or (M)aterial?","").trim().toUpperCase().charAt(0);
+						char action=M.session().prompt("(D)elete material or edit (W)eight or (M)aterial?"," ").trim().toUpperCase().charAt(0);
 						if(action=='D') E.materials.remove(V.get(i));
 						else if(action=='W') { 
 							int weight=CMLib.genEd().intPrompt(M, ""+V.weight(i));
@@ -285,13 +283,7 @@ public class MixedEnvStats implements EnvStats, Ownable
 			public String brief(MixedEnvStats E){return ""+E.disposition;}
 			public String prompt(MixedEnvStats E){return ""+E.disposition;}
 			public void mod(MixedEnvStats E, MOB M){E.disposition=CMLib.genEd().intPrompt(M, ""+E.disposition);} }, */
-		;
-		public abstract String brief(MixedEnvStats fromThis);
-		public abstract String prompt(MixedEnvStats fromThis);
-		public abstract void mod(MixedEnvStats toThis, MOB M);
-		public String brief(CMModifiable fromThis){return brief((MixedEnvStats)fromThis);}
-		public String prompt(CMModifiable fromThis){return prompt((MixedEnvStats)fromThis);}
-		public void mod(CMModifiable toThis, MOB M){mod((MixedEnvStats)toThis, M);} }
+		; }
 /*
 	public boolean sameAs(EnvStats E){ return true; }
 */}

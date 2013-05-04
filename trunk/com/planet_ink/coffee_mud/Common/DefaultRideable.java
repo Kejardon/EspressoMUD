@@ -107,6 +107,17 @@ public class DefaultRideable implements Rideable, Ownable
 //		E.getEnvObject().recoverEnvStats();
 		return E;
 	}
+	public void dropRiders()
+	{
+		if(riders.size()>0)
+		{
+			Item[] items=riders.toArray(Item.dummyItemArray);
+			IterCollection itemCol=IterCollection.ICFactory(items);
+			riders.removeAll(itemCol);
+			for(Item I : items)
+				I.setRide(null);
+		}
+	}
 	public Item getRider(int index)
 	{
 		try { return riders.get(index); }
@@ -125,18 +136,14 @@ public class DefaultRideable implements Rideable, Ownable
 	public void setMountString(String S) {}
 	public void setDismountString(String S) {}
 	public void setStateStringSubject(String S) {}
-	private enum SCode implements CMSavable.SaveEnum{
+	private enum SCode implements SaveEnum<DefaultRideable>{
 		MBL(){
 			public ByteBuffer save(DefaultRideable E){return ByteBuffer.wrap(new byte[] {(E.mobile?(byte)1:(byte)0)}); }
 			public int size(){return 1;}
 			public void load(DefaultRideable E, ByteBuffer S){E.mobile=(S.get()!=0);} },
 		;
-		public abstract ByteBuffer save(DefaultRideable E);
-		public abstract void load(DefaultRideable E, ByteBuffer S);
-		public ByteBuffer save(CMSavable E){return save((DefaultRideable)E);}
-		public CMSavable subObject(CMSavable fromThis){return null;}
-		public void load(CMSavable E, ByteBuffer S){load((DefaultRideable)E, S);} }
-	private static enum MCode implements ModEnum{
+		public CMSavable subObject(DefaultRideable fromThis){return null;} }
+	private static enum MCode implements ModEnum<DefaultRideable>{
 		RIDERS() {
 			public String brief(DefaultRideable E){return ""+E.numRiders();}
 			public String prompt(DefaultRideable E){return "";}
@@ -158,11 +165,5 @@ public class DefaultRideable implements Rideable, Ownable
 			public String brief(DefaultRideable E){return ""+E.isMobileRide();}
 			public String prompt(DefaultRideable E){return ""+E.isMobileRide();}
 			public void mod(DefaultRideable E, MOB M){E.setMobileRide(CMLib.genEd().booleanPrompt(M, ""+E.isMobileRide()));} },
-		;
-		public abstract String brief(DefaultRideable fromThis);
-		public abstract String prompt(DefaultRideable fromThis);
-		public abstract void mod(DefaultRideable toThis, MOB M);
-		public String brief(CMModifiable fromThis){return brief((DefaultRideable)fromThis);}
-		public String prompt(CMModifiable fromThis){return prompt((DefaultRideable)fromThis);}
-		public void mod(CMModifiable toThis, MOB M){mod((DefaultRideable)toThis, M);} }
+		; }
 }

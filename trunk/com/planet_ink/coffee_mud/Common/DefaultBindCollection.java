@@ -326,7 +326,7 @@ public class DefaultBindCollection implements BindCollection, Ownable
 		return new CMParms.IteratorWrapper<Item>(itemArray());
 	}
 
-	private enum SCode implements CMSavable.SaveEnum{
+	private enum SCode implements SaveEnum<DefaultBindCollection>{
 		INV(){
 			public ByteBuffer save(DefaultBindCollection E){
 				if(E.inventory.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.inventory.toArray(CMSavable.dummyCMSavableArray));
@@ -334,12 +334,8 @@ public class DefaultBindCollection implements BindCollection, Ownable
 			public int size(){return 4;}
 			public void load(DefaultBindCollection E, ByteBuffer S){ E.bindsToLoad=CMLib.coffeeMaker().loadAInt(S); } },
 		;
-		public abstract ByteBuffer save(DefaultBindCollection E);
-		public abstract void load(DefaultBindCollection E, ByteBuffer S);
-		public ByteBuffer save(CMSavable E){return save((DefaultBindCollection)E);}
-		public CMSavable subObject(CMSavable fromThis){return null;}
-		public void load(CMSavable E, ByteBuffer S){load((DefaultBindCollection)E, S);} }
-	private enum MCode implements CMModifiable.ModEnum{
+		public CMSavable subObject(DefaultBindCollection fromThis){return null;} }
+	private enum MCode implements ModEnum<DefaultBindCollection>{
 		INVENTORY() {
 			public String brief(DefaultBindCollection E){return ""+E.inventory.size();}
 			public String prompt(DefaultBindCollection E){return "";}
@@ -358,11 +354,5 @@ public class DefaultBindCollection implements BindCollection, Ownable
 						char action=M.session().prompt("(D)estroy or (M)odify it (default M)? ","M").trim().toUpperCase().charAt(0);
 						if(action=='D') { Bind I = V.get(i); E.removeBind(I); I.destroy(); }
 						else if(action=='M') CMLib.genEd().genMiscSet(M, V.get(i)); } } } },
-		;
-		public abstract String brief(DefaultBindCollection fromThis);
-		public abstract String prompt(DefaultBindCollection fromThis);
-		public abstract void mod(DefaultBindCollection toThis, MOB M);
-		public String brief(CMModifiable fromThis){return brief((DefaultBindCollection)fromThis);}
-		public String prompt(CMModifiable fromThis){return prompt((DefaultBindCollection)fromThis);}
-		public void mod(CMModifiable toThis, MOB M){mod((DefaultBindCollection)toThis, M);} }
+		; }
 }

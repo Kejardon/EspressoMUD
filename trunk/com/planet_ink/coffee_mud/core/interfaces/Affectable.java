@@ -56,7 +56,7 @@ public interface Affectable extends ListenHolder, ListenHolder.MsgListener, List
 			effectsToLoad=null;
 		}
 	}
-	private enum SCode implements CMSavable.SaveEnum{
+	private enum SCode implements SaveEnum{
 		EFC(){
 			public ByteBuffer save(CMSavable E){
 				if(E.affects.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.affects.toArray(CMSavable.dummyCMSavableArray));
@@ -64,7 +64,7 @@ public interface Affectable extends ListenHolder, ListenHolder.MsgListener, List
 			public int size(){return 0;}
 			public void load(CMSavable E, ByteBuffer S){ E.effectsToLoad=CMLib.coffeeMaker().loadAInt(S); } },
 	}
-	private enum MCode implements CMModifiable.ModEnum{
+	private enum MCode implements ModEnum{
 		EFFECTS(){
 			public String brief(CMModifiable E){return ""+E.affects.size();}
 			public String prompt(CMModifiable E){return "";}

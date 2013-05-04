@@ -16,11 +16,11 @@ public interface CMModifiable extends CMObject
 {
 	public static final ModEnum[] dummyMEArray=new ModEnum[0];
 
-	public static interface ModEnum
+	public static interface ModEnum<U extends CMModifiable>
 	{
-		public String brief(CMModifiable fromThis);
-		public String prompt(CMModifiable fromThis);
-		public void mod(CMModifiable toThis, MOB mob);
+		public String brief(U fromThis);
+		public String prompt(U fromThis);
+		public void mod(U toThis, MOB mob);
 	}
 
 	public ModEnum[] totalEnumM();

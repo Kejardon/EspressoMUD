@@ -165,7 +165,7 @@ public class DefaultPlayerAccount implements PlayerAccount
 		if(set)
 			bitmap|=bits;
 		else
-			bitmap&=bits;
+			bitmap&=~bits;
 		CMLib.database().saveObject(this);
 	}
 	public boolean hasBits(int bits)
@@ -281,7 +281,7 @@ public class DefaultPlayerAccount implements PlayerAccount
 	public void saveThis(){CMLib.database().saveObject(this);}
 	public void prepDefault(){}
 
-	private enum SCode implements CMSavable.SaveEnum{
+	private enum SCode implements SaveEnum<DefaultPlayerAccount>{
 		FRN(){
 			public ByteBuffer save(DefaultPlayerAccount E){ return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.friends.toArray(CMSavable.dummyCMSavableArray)); }
 			public int size(){return 0;}
@@ -312,12 +312,8 @@ public class DefaultPlayerAccount implements PlayerAccount
 			public void load(DefaultPlayerAccount E, ByteBuffer S){ for(String newF : CMLib.coffeeMaker().loadAString(S)) E.acctFlags.add(newF); } },
 */
 		;
-		public abstract ByteBuffer save(DefaultPlayerAccount E);
-		public abstract void load(DefaultPlayerAccount E, ByteBuffer S);
-		public ByteBuffer save(CMSavable E){return save((DefaultPlayerAccount)E);}
-		public CMSavable subObject(CMSavable fromThis){return null;}
-		public void load(CMSavable E, ByteBuffer S){load((DefaultPlayerAccount)E, S);} }
-	private enum MCode implements CMModifiable.ModEnum{
+		public CMSavable subObject(DefaultPlayerAccount fromThis){return null;} }
+	private enum MCode implements ModEnum<DefaultPlayerAccount>{
 		CHARACTERS(){
 			public String brief(DefaultPlayerAccount E){ return ""+E.fullPlayers.size();}
 			public String prompt(DefaultPlayerAccount E){ return "";}
@@ -347,11 +343,5 @@ public class DefaultPlayerAccount implements PlayerAccount
 						else if(M.session().confirm("Add this flag?", "N")) E.acctFlags.add(S); }
 					else done=true; } } },
 */
-		;
-		public abstract String brief(DefaultPlayerAccount fromThis);
-		public abstract String prompt(DefaultPlayerAccount fromThis);
-		public abstract void mod(DefaultPlayerAccount toThis, MOB M);
-		public String brief(CMModifiable fromThis){return brief((DefaultPlayerAccount)fromThis);}
-		public String prompt(CMModifiable fromThis){return prompt((DefaultPlayerAccount)fromThis);}
-		public void mod(CMModifiable toThis, MOB M){mod((DefaultPlayerAccount)toThis, M);} }
+		; }
 }

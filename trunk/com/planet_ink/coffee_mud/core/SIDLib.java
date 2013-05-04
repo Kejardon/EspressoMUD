@@ -31,22 +31,23 @@ public class SIDLib
 	//AREA
 	public static final int LimboAreaSaveNum=1;
 	
-	public static final Objects<MOB> CREATURE=new Objects<MOB>(MOB.class);
-	public static final Objects<Rideable> RIDEABLE=new Objects<Rideable>(Rideable.class);
-	public static final Objects<Behavior> BEHAVIOR=new Objects<Behavior>(Behavior.class);
-	public static final Objects<Effect> EFFECT=new Objects<Effect>(Effect.class);
-	public static final Objects<Room> ROOM=new Objects<Room>(Room.class);
-	public static final Objects<Item> ITEM=new Objects<Item>(Item.class);
-	public static final Objects<Area> AREA=new Objects<Area>(Area.class);
-	public static final Objects<Exit> EXIT=new Objects<Exit>(Exit.class);
-	public static final Objects<ItemCollection> ITEMCOLLECTION=new Objects<ItemCollection>(ItemCollection.class);
-	public static final Objects<AccountStats> ACCOUNTSTATS=new Objects<AccountStats>(AccountStats.class);
-	public static final Objects<BindCollection> BINDCOLLECTION=new Objects<BindCollection>(BindCollection.class);
-	public static final Objects<Bind> BIND=new Objects<Bind>(Bind.class);
+	public static final Objects<MOB> CREATURE=new Objects<MOB>(MOB.class,"CREATURE");
+	public static final Objects<Rideable> RIDEABLE=new Objects<Rideable>(Rideable.class,"RIDEABLE");
+	public static final Objects<Behavior> BEHAVIOR=new Objects<Behavior>(Behavior.class,"BEHAVIOR");
+	public static final Objects<Effect> EFFECT=new Objects<Effect>(Effect.class,"EFFECT");
+	public static final Objects<Room> ROOM=new Objects<Room>(Room.class,"ROOM");
+	public static final Objects<Item> ITEM=new Objects<Item>(Item.class,"ITEM");
+	public static final Objects<Area> AREA=new Objects<Area>(Area.class,"AREA");
+	public static final Objects<Exit> EXIT=new Objects<Exit>(Exit.class,"EXIT");
+	public static final Objects<ItemCollection> ITEMCOLLECTION=new Objects<ItemCollection>(ItemCollection.class,"ITEMCOLLECTION");
+	public static final Objects<EnvMap> ENVMAP=new Objects<EnvMap>(EnvMap.class,"ENVMAP");
+	public static final Objects<AccountStats> ACCOUNTSTATS=new Objects<AccountStats>(AccountStats.class,"ACCOUNTSTATS");
+	public static final Objects<BindCollection> BINDCOLLECTION=new Objects<BindCollection>(BindCollection.class,"BINDCOLLECTION");
+	public static final Objects<Bind> BIND=new Objects<Bind>(Bind.class,"BIND");
+	public static final Objects<ExitInstance> EXITINSTANCE=new Objects<ExitInstance>(ExitInstance.class,"EXITINSTANCE");
 	public static class Objects<U extends CMSavable>
 	{
-		//public static final HashMap<String, Objects> objectsNames=new HashMap<String, Objects>();
-		//public static Objects valueOf(String S){return objectsNames.get(S);}
+		private static final HashMap<String, Objects> objectsNames=new HashMap<String, Objects>();
 		private static Vector<Objects> objVector=new Vector(10);
 		private static Objects[] values;
 		public static Objects[] values()
@@ -55,15 +56,18 @@ public class SIDLib
 				values=objVector.toArray(new Objects[0]);
 			return values;
 		}
+		public static Objects valueOf(String S){return objectsNames.get(S);}
 
 		public final Class myClass;
+		public final String name;
 		private int saveNumber=10000;	//1-9999 reserved for non-transient objects that may exist in several places at once.
 		private HashMap<Integer, WeakReference<U>> assignedNumbers=new HashMap();
 
-		public Objects(Class S)
+		public Objects(Class S, String name)
 		{
 			myClass=S;
-			//this.name=name;
+			this.name=name;
+			objectsNames.put(name, this);
 			values=null;
 			objVector.add(this);
 		}
@@ -110,7 +114,7 @@ public class SIDLib
 		{ 
 			WeakReference<U> ref=assignedNumbers.get(i);
 			U obj=(ref==null)?null:ref.get();
-			//if(obj==null) Log.sysOut("SID "+name(),"No number "+i);
+			if(obj==null) Log.sysOut("SID "+name(),"No number "+i);
 			//else Log.sysOut("SID "+name(),"Found number "+i);
 			return obj;
 		}
@@ -125,7 +129,11 @@ public class SIDLib
 		}
 		public Iterator<U> getAll(){return ((HashMap)assignedNumbers.clone()).values().iterator(); }
 	}
-
+	public static Objects classCode(String name)
+	{
+		try{ return Objects.valueOf(name); }
+		catch(IllegalArgumentException e){return null;}
+	}
 	public static Objects getType(CMSavable O)
 	{
 		for(Objects type : Objects.values())

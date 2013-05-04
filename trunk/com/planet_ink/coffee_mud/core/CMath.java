@@ -137,9 +137,16 @@ public class CMath
 		if(s.length()==0) return false;
 		if((s.length()>1)&&(s.startsWith("-")))
 			s=s.substring(1);
+		boolean foundDot=false;
 		for(int i=0;i<s.length();i++)
-			if("0123456789.,".indexOf(s.charAt(i))<0)
-				return false;
+		{
+			if("0123456789,".indexOf(s.charAt(i))<0)
+			{
+				if(s.charAt(i)!='.' || foundDot)
+					return false;
+				foundDot=true;
+			}
+		}
 		return true;
 	}
 

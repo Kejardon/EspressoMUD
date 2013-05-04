@@ -59,30 +59,34 @@ public class CharCreation extends StdLibrary implements CharCreationLibrary
 		if(mob==null) return;
 
 		Session S=mob.session();
-		if(S==null) return;
+		reloadTerminal(mob.playerStats(), S);
+	}
+	public void reloadTerminal(AccountStats stats, Session S)
+	{
+		if(S==null || stats==null) return;
 
 		//TODO
-		S.initTelnetMode(mob.playerStats().getBitmap());
-		if(mob.playerStats().hasBits(PlayerStats.ATT_MXP))
+		S.initTelnetMode(stats.getBitmap());
+		if(stats.hasBits(PlayerStats.ATT_MXP))
 		{
 			if(S.clientTelnetMode(Session.TELNET_MXP))
 			{
 				StringBuffer mxpText=Resources.getFileResource("text/mxp.txt",true);
 				if(mxpText!=null)
-					S.rawOut("\033[7z"+mxpText.toString()+"\r\n");
+					S.out("\033[7z"+mxpText.toString()+"\r\n");
 			}
 			else
-				mob.tell("MXP codes have been disabled for this session.");
+				S.rawPrint("MXP codes have been disabled for this session.\n");
 		}
 		else if(S.clientTelnetMode(Session.TELNET_MXP))
 		{
 			S.changeTelnetMode(Session.TELNET_MXP,false);
 			S.setClientTelnetMode(Session.TELNET_MXP,false);
 		}
-		if(mob.playerStats().hasBits(PlayerStats.ATT_SOUND))
+		if(stats.hasBits(PlayerStats.ATT_SOUND))
 		{
 			if(!S.clientTelnetMode(Session.TELNET_MSP))
-				mob.tell("MSP sounds have been disabled for this session.");
+				S.rawPrint("MSP sounds have been disabled for this session.\n");
 		}
 		else if(S.clientTelnetMode(Session.TELNET_MSP))
 		{
@@ -576,7 +580,7 @@ public class CharCreation extends StdLibrary implements CharCreationLibrary
 			thisSession.setMob(null);
 			thisSession.kill(false);
 			Log.sysOut("FrontDoor","Session swap for "+player.name()+".");
-			reloadTerminal(player);
+			//reloadTerminal(player);
 			//session.mob().body().bringToLife(oldRoom,false);
 			CMLib.commands().postLook(player);
 			return LoginResult.SESSION_SWAP;
@@ -636,7 +640,7 @@ public class CharCreation extends StdLibrary implements CharCreationLibrary
 			return LoginResult.NO_LOGIN;
 		if(login.equalsIgnoreCase("MSSP-REQUEST")&&(!CMSecurity.isDisabled("MSSP")))
 		{
-			session.rawOut(CMProps.getMSSPPacket());
+			session.out(CMProps.getMSSPPacket());
 //			session.kill(false);
 			return LoginResult.NO_LOGIN;
 		}

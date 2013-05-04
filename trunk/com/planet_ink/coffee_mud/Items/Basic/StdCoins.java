@@ -130,7 +130,7 @@ public class StdCoins extends StdItem implements Coins
 		return headerEnumS;
 	}
 
-	private enum SCode implements CMSavable.SaveEnum{
+	private enum SCode implements SaveEnum<StdCoins>{
 		CUR(){
 			public ByteBuffer save(StdCoins E){ return CMLib.coffeeMaker().savString(E.currency); }
 			public int size(){return 0;}
@@ -144,12 +144,8 @@ public class StdCoins extends StdItem implements Coins
 			public int size(){return 8;}
 			public void load(StdCoins E, ByteBuffer S){ E.denomination=S.getLong(); } },
 		;
-		public abstract ByteBuffer save(StdCoins E);
-		public abstract void load(StdCoins E, ByteBuffer S);
-		public ByteBuffer save(CMSavable E){return save((StdCoins)E);}
-		public CMSavable subObject(CMSavable fromThis){return null;}
-		public void load(CMSavable E, ByteBuffer S){load((StdCoins)E, S);} }
-	private enum MCode implements CMModifiable.ModEnum{
+		public CMSavable subObject(StdCoins fromThis){return null;} }
+	private enum MCode implements ModEnum<StdCoins>{
 		CURRENCY(){
 			public String brief(StdCoins E){return E.currency;}
 			public String prompt(StdCoins E){return E.currency;}
@@ -162,11 +158,5 @@ public class StdCoins extends StdItem implements Coins
 			public String brief(StdCoins E){return ""+E.denomination;}
 			public String prompt(StdCoins E){return ""+E.denomination;}
 			public void mod(StdCoins E, MOB M){E.denomination=CMLib.genEd().longPrompt(M, ""+E.denomination);} },
-		;
-		public abstract String brief(StdCoins fromThis);
-		public abstract String prompt(StdCoins fromThis);
-		public abstract void mod(StdCoins toThis, MOB M);
-		public String brief(CMModifiable fromThis){return brief((StdCoins)fromThis);}
-		public String prompt(CMModifiable fromThis){return prompt((StdCoins)fromThis);}
-		public void mod(CMModifiable toThis, MOB M){mod((StdCoins)toThis, M);} }
+		; }
 }

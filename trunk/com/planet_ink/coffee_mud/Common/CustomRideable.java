@@ -109,6 +109,17 @@ public class CustomRideable implements Rideable, Ownable
 //		E.getEnvObject().recoverEnvStats();
 		return E;
 	}
+	public void dropRiders()
+	{
+		if(riders.size()>0)
+		{
+			Item[] items=riders.toArray(Item.dummyItemArray);
+			IterCollection itemCol=IterCollection.ICFactory(items);
+			riders.removeAll(itemCol);
+			for(Item I : items)
+				I.setRide(null);
+		}
+	}
 	public Item getRider(int index)
 	{
 		try { return riders.get(index); }
@@ -127,7 +138,7 @@ public class CustomRideable implements Rideable, Ownable
 	public void setMountString(String S) {mountString=S; CMLib.database().saveObject(this);}
 	public void setDismountString(String S) {dismountString=S; CMLib.database().saveObject(this);}
 	public void setStateStringSubject(String S) {stateStringSubject=S; CMLib.database().saveObject(this);}
-	private enum SCode implements CMSavable.SaveEnum{
+	private enum SCode implements SaveEnum<CustomRideable>{
 		MBL(){
 			public ByteBuffer save(CustomRideable E){return ByteBuffer.wrap(new byte[] {(E.mobile?(byte)1:(byte)0)}); }
 			public int size(){return 1;}
@@ -163,12 +174,8 @@ public class CustomRideable implements Rideable, Ownable
 			public int size(){return 0;}
 			public void load(CustomRideable E, ByteBuffer S){ E.stateStringSubject=CMLib.coffeeMaker().loadString(S); } },
 		;
-		public abstract ByteBuffer save(CustomRideable E);
-		public abstract void load(CustomRideable E, ByteBuffer S);
-		public ByteBuffer save(CMSavable E){return save((CustomRideable)E);}
-		public CMSavable subObject(CMSavable fromThis){return null;}
-		public void load(CMSavable E, ByteBuffer S){load((CustomRideable)E, S);} }
-	private enum MCode implements ModEnum{
+		public CMSavable subObject(CustomRideable fromThis){return null;} }
+	private enum MCode implements ModEnum<CustomRideable>{
 		RIDERS() {
 			public String brief(CustomRideable E){return ""+E.numRiders();}
 			public String prompt(CustomRideable E){return "";}
@@ -210,11 +217,5 @@ public class CustomRideable implements Rideable, Ownable
 			public String brief(CustomRideable E){return E.stateStringSubject(null);}
 			public String prompt(CustomRideable E){return E.stateStringSubject(null);}
 			public void mod(CustomRideable E, MOB M){E.setStateStringSubject(CMLib.genEd().stringPrompt(M, E.stateStringSubject(null), false));} },
-		;
-		public abstract String brief(CustomRideable fromThis);
-		public abstract String prompt(CustomRideable fromThis);
-		public abstract void mod(CustomRideable toThis, MOB M);
-		public String brief(CMModifiable fromThis){return brief((CustomRideable)fromThis);}
-		public String prompt(CMModifiable fromThis){return prompt((CustomRideable)fromThis);}
-		public void mod(CMModifiable toThis, MOB M){mod((CustomRideable)toThis, M);} }
+		; }
 }

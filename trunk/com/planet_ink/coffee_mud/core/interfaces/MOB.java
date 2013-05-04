@@ -319,6 +319,7 @@ public interface MOB extends ItemCollection.ItemHolder, Interactable, CMSavable,
 	public void tell(Interactable source, Interactable target, CMObject tool, String msg);
 	public void tell(Interactable source, Interactable target, String msg);
 	public void tell(String msg);
+	public void enqueCommand(QueuedCommand qCom, boolean alwaysAtEnd);
 	public void enqueCommand(QueuedCommand qCom, QueuedCommand afterCommand);
 	public void enqueCommand(String commands, int metaFlags);
 	public int commandQueSize();
@@ -349,6 +350,9 @@ public interface MOB extends ItemCollection.ItemHolder, Interactable, CMSavable,
 	// location!
 	public Room location();
 	public void setLocation(Room newPlace);
+	//Return false if interrupted
+	public boolean goDistance(int[] distance, EnvMap.EnvLocation start, Room room);
+	public boolean goToThing(EnvMap.EnvLocation thing, EnvMap.EnvLocation start, Room room);
 /*
 	public Item fetchWornItem(String itemName);
 	public Vector fetchWornItems(long wornCode, short aboveOrAroundLayer, short layerAttributes);

@@ -34,8 +34,8 @@ public class DefaultSession extends Thread implements Session
 	protected boolean afkFlag=false;
 	protected String afkMessage=null;
 	protected StringBuilder input=new StringBuilder(256);
-	private StringBuilder preliminaryInput=new StringBuilder("");
-	private StringBuilder fakeInput=null;
+	//private StringBuilder preliminaryInput=new StringBuilder("");
+	//private StringBuilder fakeInput=null;
 	//protected boolean waiting=false;
 	protected static final int SOTIMEOUT=300;
 	protected String previousCmd="";
@@ -57,13 +57,13 @@ public class DefaultSession extends Thread implements Session
 	private long lastStop=System.currentTimeMillis();
 	private long lastLoopTop=System.currentTimeMillis();
 	private long onlineTime=System.currentTimeMillis();
-	private long lastPKFight=0;
-	private long lastNPCFight=0;
-	private long lastBlahCheck=0;
+	//private long lastPKFight=0;
+	//private long lastNPCFight=0;
+	//private long lastBlahCheck=0;
 	private long milliTotal=0;
 	//private long tickTotal=0;
 	private long lastKeystroke=0;
-	private long promptLastShown=0;
+	//private long promptLastShown=0;
 
 	//private boolean[] serverTelnetCodes=new boolean[256];
 	private boolean[] clientTelnetCodes=new boolean[256];
@@ -71,14 +71,14 @@ public class DefaultSession extends Thread implements Session
 	protected String terminalType="UNKNOWN";
 	protected long writeStartTime=0;
 
-	private final HashSet telnetSupportSet=new HashSet();
+	//private final HashSet telnetSupportSet=new HashSet();
 //	private static final HashSet mxpSupportSet=new HashSet();
 //	private static final Hashtable mxpVersionInfo=new Hashtable();
 	//private boolean bNextByteIs255=false;
-	private boolean connectionComplete=false;
+	//private boolean connectionComplete=false;
 
-	private int currentColor='N';
-	private int lastColor=-1;
+	//private int currentColor='N';
+	//private int lastColor=-1;
 	protected static int sessionCounter=0;
 	
 	protected DVector pendingPrompts=new DVector(5);	//Integer, 
@@ -325,7 +325,7 @@ public class DefaultSession extends Thread implements Session
 	public String ID(){return "DefaultSession";}
 	public CMObject newInstance(){return new DefaultSession();}
 	public void initializeClass(){}
-	public boolean isFake() { return false;}
+	//public boolean isFake() { return false;}
 	public CMObject copyOf(){ try{ Object O=this.clone(); return (CMObject)O;}catch(Exception e){return newInstance();} }
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 
@@ -339,11 +339,7 @@ public class DefaultSession extends Thread implements Session
 	{
 		synchronized(pendingPrompts)
 		{
-			for(int i=pendingPrompts.size()-1;i>=0;i--)
-			{
-				if(((Future<Void>)pendingPrompts.elementAt(i, 2)).isDone())
-					promptNumbers.remove((Integer)pendingPrompts.removeElementsAt(i)[0]);
-			}
+			checkPendingPrompts();
 			Integer I=null;
 			for(int i=1;i<10;i++)
 			{
@@ -363,9 +359,7 @@ public class DefaultSession extends Thread implements Session
 		{
 			for(int i=pendingPrompts.size()-1;i>=0;i--)
 			{
-				if(((Future<Void>)pendingPrompts.elementAt(i, 2)).isDone())
-					promptNumbers.remove((Integer)pendingPrompts.removeElementsAt(i)[0]);
-				else if(pendingPrompts.elementAt(i, 1)==command)
+				if(checkPendingPrompt(i) && (pendingPrompts.elementAt(i, 1)==command))
 				{
 					pendingPrompts.setElementAt(i, 1, Thread.currentThread());
 					return;
@@ -376,14 +370,14 @@ public class DefaultSession extends Thread implements Session
 	public String prompt(String Message, String Default, long maxTime)
 	{
 		String Msg=prompt(Message,maxTime).trim();
-		if(Msg.equals(""))
+		if(Msg.length()==0)
 			return Default;
 		return Msg;
 	}
 	public String prompt(String Message, String Default)
 	{
 		String Msg=prompt(Message,-1).trim();
-		if(Msg.equals(""))
+		if(Msg.length()==0)
 			return Default;
 		return Msg;
 	}
@@ -395,9 +389,7 @@ public class DefaultSession extends Thread implements Session
 		{
 			for(int i=pendingPrompts.size()-1;i>=0;i--)
 			{
-				if(((Future<Void>)pendingPrompts.elementAt(i, 2)).isDone())
-					promptNumbers.remove((Integer)pendingPrompts.removeElementsAt(i)[0]);
-				else if(((Thread)pendingPrompts.elementAt(i, 1))==caller)
+				if(checkPendingPrompt(i) && (((Thread)pendingPrompts.elementAt(i, 1))==caller))
 				{
 					promptData=pendingPrompts.elementsAt(i);
 					break;
@@ -463,11 +455,7 @@ public class DefaultSession extends Thread implements Session
 		Future<Void> doneCheck=null;
 		synchronized(pendingPrompts)
 		{
-			for(int i=pendingPrompts.size()-1;i>=0;i--)
-			{
-				if(((Future<Void>)pendingPrompts.elementAt(i, 2)).isDone())
-					promptNumbers.remove((Integer)pendingPrompts.removeElementsAt(i)[0]);
-			}
+			checkPendingPrompts();
 			Integer I=null;
 			for(int i=1;i<10;i++)
 			{
@@ -571,7 +559,7 @@ public class DefaultSession extends Thread implements Session
 			Thread.sleep(500);
 			if(introTextStr!=null)
 				print(introTextStr);
-			connectionComplete=true;
+		//	connectionComplete=true;
 		}
 		catch(Exception e) {Log.errOut("DefaultSession",e);}
 	}
@@ -643,8 +631,8 @@ public class DefaultSession extends Thread implements Session
 */
 	}
 
-	public int currentColor(){return currentColor;}
-	public int lastColor(){return lastColor;}
+	//public int currentColor(){return currentColor;}
+	//public int lastColor(){return lastColor;}
 	public long getTotalMillis(){ return milliTotal;}
 	public long getIdleMillis(){ return System.currentTimeMillis()-lastKeystroke;}
 	//public long getTotalTicks(){ return tickTotal;}
@@ -652,10 +640,10 @@ public class DefaultSession extends Thread implements Session
 
 	public long lastLoopTime(){ return lastLoopTop;}
 	public void updateLoopTime(){ lastLoopTop=System.currentTimeMillis();}
-	public long getLastPKFight(){return lastPKFight;}
-	public void setLastPKFight(){lastPKFight=System.currentTimeMillis();}
-	public long getLastNPCFight(){return lastNPCFight;}
-	public void setLastNPCFight(){lastNPCFight=System.currentTimeMillis();}
+	//public long getLastPKFight(){return lastPKFight;}
+	//public void setLastPKFight(){lastPKFight=System.currentTimeMillis();}
+	//public long getLastNPCFight(){return lastNPCFight;}
+	//public void setLastNPCFight(){lastNPCFight=System.currentTimeMillis();}
 	public LinkedList<String> getLastMsgs(){synchronized(prevMsgs){return (LinkedList)prevMsgs.clone();}}
 
 	public String getTerminalType(){ return terminalType;}
@@ -885,11 +873,9 @@ public class DefaultSession extends Thread implements Session
 		}
 		catch(java.lang.NullPointerException e){}
 	}
-
-	public void rawOut(String msg){out(msg);}
 	public void rawPrint(String msg)
 	{ if(msg==null)return;
-	  onlyPrint((needPrompt?"":"\r\n")+msg,false);
+	  onlyPrint((needPrompt?msg:("\r\n"+msg)),false);
 	  needPrompt=true;
 	}
 
@@ -1879,9 +1865,7 @@ public class DefaultSession extends Thread implements Session
 			Object[] promptData;
 			synchronized(pendingPrompts)
 			{
-				for(int i=pendingPrompts.size()-1;i>=0;i--)
-					if(((Future<Void>)pendingPrompts.elementAt(i, 2)).isDone())
-						promptNumbers.remove((Integer)pendingPrompts.removeElementsAt(i)[0]);
+				checkPendingPrompts();
 				promptData=pendingPrompts.elementsAt(Integer.valueOf(answersPrompt));
 			}
 			if(promptData==null)
@@ -2040,7 +2024,7 @@ public class DefaultSession extends Thread implements Session
 
 	public void showPrompt()
 	{
-		promptLastShown=System.currentTimeMillis();
+	//	promptLastShown=System.currentTimeMillis();
 		MOB Mob=mob;
 		if(Mob==null) return;
 		if(Mob.playerStats()==null) return;
@@ -2132,10 +2116,12 @@ public class DefaultSession extends Thread implements Session
 				CharCreationLibrary.LoginResult loginResult=null;
 				if(acct==null)
 					loginResult=CMLib.login().login(this);
+				//TODO: Load account settings (i.e. ansi/xterm/whatever) here!
 				if((acct!=null)||(loginResult==LoginResult.ACCOUNT_LOGIN))
 				{
 					try
 					{
+						CMLib.login().reloadTerminal(acct,this);
 						status=Session.STATUS_ACCOUNTMENU;
 						loginResult=CMLib.login().selectAccountCharacter(acct,this);
 					}
@@ -2150,6 +2136,7 @@ public class DefaultSession extends Thread implements Session
 					tries=0;
 					if((mob!=null)&&(mob.playerStats()!=null))
 						acct=mob.playerStats().getAccount();
+					CMLib.login().reloadTerminal(mob);
 					if((!killFlag)&&(mob!=null))
 					{
 						StringBuilder loginMsg=new StringBuilder("");
@@ -2273,6 +2260,43 @@ public class DefaultSession extends Thread implements Session
 		CMLib.sessions().removeElement(this);
 
 		status=Session.STATUS_LOGOUTFINAL;
+	}
+	protected void checkPendingPrompts()
+	{
+		Future<Void> prompt;
+		for(int i=pendingPrompts.size()-1;i>=0;i--)
+			if((prompt = (Future<Void>)pendingPrompts.elementAt(i, 2)).isDone())
+			{
+				promptNumbers.remove((Integer)pendingPrompts.removeElementsAt(i)[0]);
+				try {prompt.get();}
+				catch(ExecutionException e)
+				{
+					Log.errOut("Prompt",e.getCause());
+				}
+				catch(InterruptedException e)
+				{
+					Log.errOut("Prompt",e.getCause());
+				}
+			}
+	}
+	protected boolean checkPendingPrompt(int i)
+	{
+		Future<Void> prompt;
+		if((prompt = (Future<Void>)pendingPrompts.elementAt(i, 2)).isDone())
+		{
+			promptNumbers.remove((Integer)pendingPrompts.removeElementsAt(i)[0]);
+			try {prompt.get();}
+			catch(ExecutionException e)
+			{
+				Log.errOut("Prompt",e.getCause());
+			}
+			catch(InterruptedException e)
+			{
+				Log.errOut("Prompt",e.getCause());
+			}
+			return false;
+		}
+		return true;
 	}
 
 /*

@@ -82,7 +82,7 @@ public interface Interactable extends Environmental.EnvHolder, Affectable, Behav
 	}
 	public void setDescription(String newDescription){desc=newDescription; CMLib.database().saveObject(this);}
 
-	private enum SCode implements CMSavable.SaveEnum{
+	private enum SCode implements SaveEnum{
 		NAM(){
 			public ByteBuffer save(Interactable E){ return CMLib.coffeeMaker().savString(E.name); }
 			public int size(){return 0;}
@@ -96,7 +96,7 @@ public interface Interactable extends Environmental.EnvHolder, Affectable, Behav
 			public int size(){return 0;}
 			public void load(Interactable E, ByteBuffer S){ E.desc=CMLib.coffeeMaker().loadString(S); } },
 	}
-	private enum MCode implements CMModifiable.ModEnum{
+	private enum MCode implements ModEnum{
 		NAME(){
 			public String brief(Interactable E){return ""+E.name;}
 			public String prompt(Interactable E){return ""+E.name;}

@@ -159,6 +159,15 @@ public class DefaultItemCol implements ItemCollection, Ownable
 			CMLib.database().saveObject(this);
 		}
 	}
+	public Item[] toArray()
+	{ return inventory.toArray(Item.dummyItemArray); }
+	public void copyFrom(ItemCollection other)
+	{
+		Item[] items=other.toArray();
+		other.clearItems(false);
+		for(Item I : items)
+			addItem(I);
+	}
 	public void removeItem(Item item)
 	{
 		inventory.remove(item);
@@ -170,6 +179,22 @@ public class DefaultItemCol implements ItemCollection, Ownable
 		CMLib.database().saveObject(this);
 		return item;
 	}
+	public void clearItems(boolean evict)
+	{
+		if(evict)
+		{
+			Room limbo=SIDLib.ROOM.get(1);
+			if(limbo!=null)
+				for(Item I : inventory)
+					limbo.bringHere(I, false);
+			else
+			{
+				for(Item I : inventory)
+					I.destroy();
+			}
+		}
+		inventory.clear();
+	}
 	public Item getItem(int index)
 	{
 		try { return inventory.get(index); }
@@ -179,7 +204,7 @@ public class DefaultItemCol implements ItemCollection, Ownable
 	public int numItems() { return inventory.size(); }
 	public Iterator<Item> allItems() {return inventory.iterator();}
 
-	private enum SCode implements CMSavable.SaveEnum{
+	private enum SCode implements SaveEnum<DefaultItemCol>{
 		INV(){
 			public ByteBuffer save(DefaultItemCol E){
 				if(E.inventory.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.inventory.toArray(CMSavable.dummyCMSavableArray));
@@ -195,12 +220,8 @@ public class DefaultItemCol implements ItemCollection, Ownable
 			public int size(){return 4;}
 			public void load(DefaultItemCol E, ByteBuffer S){ E.maxsize=S.getInt(); } },
 		;
-		public abstract ByteBuffer save(DefaultItemCol E);
-		public abstract void load(DefaultItemCol E, ByteBuffer S);
-		public ByteBuffer save(CMSavable E){return save((DefaultItemCol)E);}
-		public CMSavable subObject(CMSavable fromThis){return null;}
-		public void load(CMSavable E, ByteBuffer S){load((DefaultItemCol)E, S);} }
-	private enum MCode implements CMModifiable.ModEnum{
+		public CMSavable subObject(DefaultItemCol fromThis){return null;} }
+	private enum MCode implements ModEnum<DefaultItemCol>{
 		INVENTORY() {
 			public String brief(DefaultItemCol E){return ""+E.inventory.size();}
 			public String prompt(DefaultItemCol E){return "";}
@@ -226,11 +247,5 @@ public class DefaultItemCol implements ItemCollection, Ownable
 			public String brief(DefaultItemCol E){return ""+E.maxsize;}
 			public String prompt(DefaultItemCol E){return ""+E.maxsize;}
 			public void mod(DefaultItemCol E, MOB M){E.maxsize=CMLib.genEd().intPrompt(M, ""+E.maxsize);} },
-		;
-		public abstract String brief(DefaultItemCol fromThis);
-		public abstract String prompt(DefaultItemCol fromThis);
-		public abstract void mod(DefaultItemCol toThis, MOB M);
-		public String brief(CMModifiable fromThis){return brief((DefaultItemCol)fromThis);}
-		public String prompt(CMModifiable fromThis){return prompt((DefaultItemCol)fromThis);}
-		public void mod(CMModifiable toThis, MOB M){mod((DefaultItemCol)toThis, M);} }
+		; }
 }

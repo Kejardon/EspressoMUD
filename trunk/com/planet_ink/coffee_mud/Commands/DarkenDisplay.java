@@ -28,7 +28,6 @@ public class DarkenDisplay extends StdCommand
 			if(!ps.hasBits(PlayerStats.ATT_DARKENDISPLAY))
 			{
 				ps.setBits(PlayerStats.ATT_DARKENDISPLAY, true);
-				S.setOther(PlayerStats.ATT_DARKENDISPLAY, true);
 				mob.tell("Display defaulting to darker colors.\r\n");
 			}
 			else

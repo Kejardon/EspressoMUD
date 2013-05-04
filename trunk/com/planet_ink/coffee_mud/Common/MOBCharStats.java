@@ -131,7 +131,7 @@ public class MOBCharStats extends DefaultCharStats
 	public void prepDefault(){}
 */
 
-	private enum SCode implements CMSavable.SaveEnum{
+	private enum SCode implements SaveEnum<MOBCharStats>{
 		STT(){
 			public ByteBuffer save(MOBCharStats E){ return CMLib.coffeeMaker().savAShort(E.stat); }
 			public int size(){return 2*6;}
@@ -145,12 +145,8 @@ public class MOBCharStats extends DefaultCharStats
 			public int size(){return 4*1;}
 			public void load(MOBCharStats E, ByteBuffer S){ E.pointsMax=CMLib.coffeeMaker().loadAInt(S); } },
 			;
-		public abstract ByteBuffer save(MOBCharStats E);
-		public abstract void load(MOBCharStats E, ByteBuffer S);
-		public ByteBuffer save(CMSavable E){return save((MOBCharStats)E);}
-		public CMSavable subObject(CMSavable fromThis){return null;}
-		public void load(CMSavable E, ByteBuffer S){load((MOBCharStats)E, S);} }
-	private enum MCode implements CMModifiable.ModEnum{
+		public CMSavable subObject(MOBCharStats fromThis){return null;} }
+	private enum MCode implements CMModifiable.ModEnum<MOBCharStats>{
 		REACTIONS(){
 			public String brief(MOBCharStats E){return ""+E.stat[0];}
 			public String prompt(MOBCharStats E){return ""+E.stat[0];}
@@ -183,11 +179,5 @@ public class MOBCharStats extends DefaultCharStats
 			public String brief(MOBCharStats E){return ""+E.pointsMax[0];}
 			public String prompt(MOBCharStats E){return ""+E.pointsMax[0];}
 			public void mod(MOBCharStats E, MOB M){E.pointsMax[0]=CMLib.genEd().intPrompt(M, ""+E.pointsMax[0]);} },
-		;
-		public abstract String brief(MOBCharStats fromThis);
-		public abstract String prompt(MOBCharStats fromThis);
-		public abstract void mod(MOBCharStats toThis, MOB M);
-		public String brief(CMModifiable fromThis){return brief((MOBCharStats)fromThis);}
-		public String prompt(CMModifiable fromThis){return prompt((MOBCharStats)fromThis);}
-		public void mod(CMModifiable toThis, MOB M){mod((MOBCharStats)toThis, M);} }
+		; }
 }

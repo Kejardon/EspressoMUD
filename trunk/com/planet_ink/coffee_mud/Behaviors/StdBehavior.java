@@ -144,29 +144,19 @@ public class StdBehavior implements Behavior
 	public void saveThis(){CMLib.database().saveObject(this);}
 	public void prepDefault(){}
 
-	private enum SCode implements CMSavable.SaveEnum{
+	private enum SCode implements SaveEnum<StdBehavior>{
 		PRM(){
 			public ByteBuffer save(StdBehavior E){ return CMLib.coffeeMaker().savString(E.parms); }
 			public int size(){return 0;}
 			public void load(StdBehavior E, ByteBuffer S){ E.parms=CMLib.coffeeMaker().loadString(S); } },
 		;
-		public abstract ByteBuffer save(StdBehavior E);
-		public abstract void load(StdBehavior E, ByteBuffer S);
-		public ByteBuffer save(CMSavable E){return save((StdBehavior)E);}
-		public CMSavable subObject(CMSavable fromThis){return null;}
-		public void load(CMSavable E, ByteBuffer S){load((StdBehavior)E, S);} }
-	private enum MCode implements CMModifiable.ModEnum{
+		public CMSavable subObject(StdBehavior fromThis){return null;} }
+	private enum MCode implements ModEnum<StdBehavior>{
 		PARMS(){
 			public String brief(StdBehavior E){return E.parms;}
 			public String prompt(StdBehavior E){return E.parms;}
 			public void mod(StdBehavior E, MOB M){E.setParms(CMLib.genEd().stringPrompt(M, ""+E.parms, false));} },
-		;
-		public abstract String brief(StdBehavior fromThis);
-		public abstract String prompt(StdBehavior fromThis);
-		public abstract void mod(StdBehavior toThis, MOB M);
-		public String brief(CMModifiable fromThis){return brief((StdBehavior)fromThis);}
-		public String prompt(CMModifiable fromThis){return prompt((StdBehavior)fromThis);}
-		public void mod(CMModifiable toThis, MOB M){mod((StdBehavior)toThis, M);} }
+		; }
 /*
 	public boolean sameAs(Behavior E)
 	{

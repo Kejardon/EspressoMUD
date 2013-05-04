@@ -24,6 +24,7 @@ public interface Rideable extends CMObject, CMModifiable, CMSavable, CMCommon //
 	public boolean hasRider(Item mob);
 	public void addRider(Item mob);
 	public void removeRider(Item mob);
+	public void dropRiders();
 	public Item removeRider(int i);
 	public Item getRider(int which);
 	public Iterator<Item> allRiders();

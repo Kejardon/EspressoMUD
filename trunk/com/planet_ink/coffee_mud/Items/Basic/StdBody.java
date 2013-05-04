@@ -366,11 +366,11 @@ public class StdBody extends StdItem implements Body
 		}
 	}
 */
-	private enum SCode implements CMSavable.SaveEnum{
+	private enum SCode implements SaveEnum<StdBody>{
 		BCS(){
 			public ByteBuffer save(StdBody E){ return CMLib.coffeeMaker().savSubFull(E.baseCharStats); }
 			public int size(){return -1;}
-			public CMSavable subObject(CMSavable fromThis){return ((StdBody)fromThis).baseCharStats;}
+			public CMSavable subObject(StdBody fromThis){return fromThis.baseCharStats;}
 			public void load(StdBody E, ByteBuffer S){
 				CharStats old=E.baseCharStats;
 				E.baseCharStats=(CharStats)CMLib.coffeeMaker().loadSub(S, E, this);
@@ -379,7 +379,7 @@ public class StdBody extends StdItem implements Body
 		CHS(){
 			public ByteBuffer save(StdBody E){ return CMLib.coffeeMaker().savSubFull(E.charStats); }
 			public int size(){return -1;}
-			public CMSavable subObject(CMSavable fromThis){return ((StdBody)fromThis).charStats;}
+			public CMSavable subObject(StdBody fromThis){return fromThis.charStats;}
 			public void load(StdBody E, ByteBuffer S){
 				CharStats old=E.charStats;
 				E.charStats=(CharStats)CMLib.coffeeMaker().loadSub(S, E, this);
@@ -404,12 +404,8 @@ public class StdBody extends StdItem implements Body
 			public int size(){return 0;}
 			public void load(StdBody E, ByteBuffer S){ E.myGender=CMClass.GENDER.get(CMLib.coffeeMaker().loadString(S)); } },
 		;
-		public abstract ByteBuffer save(StdBody E);
-		public abstract void load(StdBody E, ByteBuffer S);
-		public ByteBuffer save(CMSavable E){return save((StdBody)E);}
-		public CMSavable subObject(CMSavable fromThis){return null;}
-		public void load(CMSavable E, ByteBuffer S){load((StdBody)E, S);} }
-	private enum MCode implements CMModifiable.ModEnum{
+		public CMSavable subObject(StdBody fromThis){return null;} }
+	private enum MCode implements ModEnum<StdBody>{
 		DEAD(){
 			public String brief(StdBody E){return ""+E.dead;}
 			public String prompt(StdBody E){return ""+E.dead;}
@@ -434,11 +430,5 @@ public class StdBody extends StdItem implements Body
 			public String brief(StdBody E){return E.myRace.name();}
 			public String prompt(StdBody E){return "";}
 			public void mod(StdBody E, MOB M){E.myRace=CMLib.genEd().racePrompt(M);} },
-		;
-		public abstract String brief(StdBody fromThis);
-		public abstract String prompt(StdBody fromThis);
-		public abstract void mod(StdBody toThis, MOB M);
-		public String brief(CMModifiable fromThis){return brief((StdBody)fromThis);}
-		public String prompt(CMModifiable fromThis){return prompt((StdBody)fromThis);}
-		public void mod(CMModifiable toThis, MOB M){mod((StdBody)toThis, M);} }
+		; }
 }

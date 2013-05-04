@@ -78,7 +78,7 @@ public interface Session extends CMCommon
 	 * @param msg the string to send to the user
 	 */
 
-	public void rawOut(String msg);
+	public void out(String msg);
 
 	/**
 	 * Low level line-output method.  Sets the
@@ -170,7 +170,7 @@ public interface Session extends CMCommon
 	 * user as a mob.
 	 * @return true if this session is not a connection
 	 */
-	public boolean isFake();
+	//public boolean isFake();
 	
 	/**
 	 * Medium-level text output method.  Does full
@@ -633,7 +633,7 @@ public interface Session extends CMCommon
 	 * @see com.planet_ink.coffee_mud.Common.interfaces.Session#setLastNPCFight()
 	 * @return the last pk fight timestamp
 	 */
-	public long getLastPKFight();
+	//public long getLastPKFight();
 	
 	/**
 	 * Sets now as the milliseconds timestamp since this user last registered a pk fight.
@@ -641,7 +641,7 @@ public interface Session extends CMCommon
 	 * @see com.planet_ink.coffee_mud.Common.interfaces.Session#getLastPKFight()
 	 * @see com.planet_ink.coffee_mud.Common.interfaces.Session#getLastNPCFight()
 	 */
-	public void setLastPKFight();
+	//public void setLastPKFight();
 	
 	/**
 	 * Gets the milliseconds timestamp since this user last registered a npc fight.
@@ -650,7 +650,7 @@ public interface Session extends CMCommon
 	 * @see com.planet_ink.coffee_mud.Common.interfaces.Session#setLastNPCFight()
 	 * @return the last npc fight timestamp
 	 */
-	public long getLastNPCFight();
+	//public long getLastNPCFight();
 	
 	/**
 	 * Sets now as the milliseconds timestamp since this user last registered a npc fight.
@@ -658,7 +658,7 @@ public interface Session extends CMCommon
 	 * @see com.planet_ink.coffee_mud.Common.interfaces.Session#getLastPKFight()
 	 * @see com.planet_ink.coffee_mud.Common.interfaces.Session#getLastNPCFight()
 	 */
-	public void setLastNPCFight();
+	//public void setLastNPCFight();
 	
 	/**
 	 * Returns the last time in milliseconds that this session began its input loop.

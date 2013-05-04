@@ -20,6 +20,7 @@ public interface CharCreationLibrary extends CMLibrary
 	public ArrayList<Race> raceQualifies();
 	//public boolean isOkName(String login);
 	public void reloadTerminal(MOB mob);
+	public void reloadTerminal(AccountStats stats, Session S);
 	public void notifyFriends(MOB mob, String message);
 	public LoginResult createCharacter(PlayerAccount acct, String login, Session session) throws java.io.IOException;
 	public LoginResult login(Session session) throws java.io.IOException;

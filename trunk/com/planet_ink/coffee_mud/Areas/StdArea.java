@@ -579,7 +579,7 @@ public class StdArea implements Area
 	public void saveThis(){CMLib.database().saveObject(this);}
 	public void prepDefault(){getEnvObject();}
 
-	private enum SCode implements CMSavable.SaveEnum{
+	private enum SCode implements SaveEnum<StdArea>{
 		NAM(){
 			public ByteBuffer save(StdArea E){ return CMLib.coffeeMaker().savString(E.name); }
 			public int size(){return 0;}
@@ -595,7 +595,7 @@ public class StdArea implements Area
 				if(E.myEnvironmental==null) return GenericBuilder.emptyBuffer;
 				return CMLib.coffeeMaker().savSubFull(E.myEnvironmental); }
 			public int size(){return -1;}
-			public CMSavable subObject(CMSavable fromThis){return ((StdArea)fromThis).myEnvironmental;}
+			public CMSavable subObject(StdArea fromThis){return fromThis.myEnvironmental;}
 			public void load(StdArea E, ByteBuffer S){
 				Environmental old=E.myEnvironmental;
 				E.myEnvironmental=(Environmental)CMLib.coffeeMaker().loadSub(S, E, this);
@@ -612,12 +612,8 @@ public class StdArea implements Area
 			public int size(){return 0;}
 			public void load(StdArea E, ByteBuffer S){ E.author=CMLib.coffeeMaker().loadString(S); } }
 		;
-		public abstract ByteBuffer save(StdArea E);
-		public abstract void load(StdArea E, ByteBuffer S);
-		public ByteBuffer save(CMSavable E){return save((StdArea)E);}
-		public CMSavable subObject(CMSavable fromThis){return null;}
-		public void load(CMSavable E, ByteBuffer S){load((StdArea)E, S);} }
-	private enum MCode implements CMModifiable.ModEnum{
+		public CMSavable subObject(StdArea fromThis){return null;} }
+	private enum MCode implements ModEnum<StdArea>{
 		NAME(){
 			public String brief(StdArea E){return E.name;}
 			public String prompt(StdArea E){return E.name;}
@@ -656,13 +652,7 @@ public class StdArea implements Area
 					if(A.isChild(E)) A.removeChild(E);
 					else if(A.canChild(E)) A.addChild(E);
 					else M.session().rawPrintln("That would cause a circular reference."); } } },
-		;
-		public abstract String brief(StdArea fromThis);
-		public abstract String prompt(StdArea fromThis);
-		public abstract void mod(StdArea toThis, MOB M);
-		public String brief(CMModifiable fromThis){return brief((StdArea)fromThis);}
-		public String prompt(CMModifiable fromThis){return prompt((StdArea)fromThis);}
-		public void mod(CMModifiable toThis, MOB M){mod((StdArea)toThis, M);} }
+		; }
 
 /*
 	protected Vector allBlurbFlags()

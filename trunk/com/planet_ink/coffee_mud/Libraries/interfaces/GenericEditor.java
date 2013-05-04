@@ -45,6 +45,7 @@ public interface GenericEditor extends CMLibrary
 	public Area areaPrompt(MOB M);
 	public Race racePrompt(MOB M);
 	public Skill skillPrompt(MOB M);
+	public EnvMap mapPrompt(MOB M);
 	public Effect newAnyEffect(MOB mob);
 	public Effect newAnyEffect(MOB mob, Vector<Effect> notThese);
 	public Behavior newAnyBehavior(MOB mob);

@@ -80,7 +80,7 @@ public class StdKey extends StdItem implements Key
 		return headerEnumS;
 	}
 
-	private enum SCode implements CMSavable.SaveEnum{
+	private enum SCode implements SaveEnum<StdKey>{
 		KEY(){
 			public ByteBuffer save(StdKey E){
 				if(E.key=="skeleton") return GenericBuilder.emptyBuffer;
@@ -88,21 +88,11 @@ public class StdKey extends StdItem implements Key
 			public int size(){return 0;}
 			public void load(StdKey E, ByteBuffer S){ E.key=CMLib.coffeeMaker().loadString(S); } },
 		;
-		public abstract ByteBuffer save(StdKey E);
-		public abstract void load(StdKey E, ByteBuffer S);
-		public ByteBuffer save(CMSavable E){return save((StdKey)E);}
-		public CMSavable subObject(CMSavable fromThis){return null;}
-		public void load(CMSavable E, ByteBuffer S){load((StdKey)E, S);} }
-	private enum MCode implements CMModifiable.ModEnum{
+		public CMSavable subObject(StdKey fromThis){return null;} }
+	private enum MCode implements ModEnum<StdKey>{
 		KEYNAME(){
 			public String brief(StdKey E){return E.key;}
 			public String prompt(StdKey E){return E.key;}
 			public void mod(StdKey E, MOB M){E.key=CMLib.genEd().stringPrompt(M, E.key, false);} }
-		;
-		public abstract String brief(StdKey fromThis);
-		public abstract String prompt(StdKey fromThis);
-		public abstract void mod(StdKey toThis, MOB M);
-		public String brief(CMModifiable fromThis){return brief((StdKey)fromThis);}
-		public String prompt(CMModifiable fromThis){return prompt((StdKey)fromThis);}
-		public void mod(CMModifiable toThis, MOB M){mod((StdKey)toThis, M);} }
+		; }
 }

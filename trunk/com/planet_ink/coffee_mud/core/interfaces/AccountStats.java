@@ -39,4 +39,9 @@ public interface AccountStats extends CMCommon, CMSavable, CMModifiable
 	/*public HashSet<MOB> getFriends();
 	public HashSet<MOB> getIgnored();
 	public Vector<AccountStats> getIgnoredBy(); */
+	
+	public int getBitmap();
+	public void setBitmap(int newmap);
+	public void setBits(int bits, boolean set);
+	public boolean hasBits(int bits);
 }

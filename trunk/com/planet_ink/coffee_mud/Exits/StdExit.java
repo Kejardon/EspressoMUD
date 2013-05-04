@@ -438,13 +438,13 @@ public class StdExit implements Exit
 	}
 
 
-	private enum SCode implements CMSavable.SaveEnum{
+	private enum SCode implements SaveEnum<StdExit>{
 		ENV(){
 			public ByteBuffer save(StdExit E){
 				if(E.myEnvironmental==null) return GenericBuilder.emptyBuffer;
 				return CMLib.coffeeMaker().savSubFull(E.myEnvironmental); }
 			public int size(){return -1;}
-			public CMSavable subObject(CMSavable fromThis){return ((StdExit)fromThis).myEnvironmental;}
+			public CMSavable subObject(StdExit fromThis){return fromThis.myEnvironmental;}
 			public void load(StdExit E, ByteBuffer S){
 				Environmental old=E.myEnvironmental;
 				E.myEnvironmental=(Environmental)CMLib.coffeeMaker().loadSub(S, E, this);
@@ -487,19 +487,15 @@ public class StdExit implements Exit
 				if(E.myDoor==null) return GenericBuilder.emptyBuffer;
 				return CMLib.coffeeMaker().savSubFull(E.myDoor); }
 			public int size(){return -1;}
-			public CMSavable subObject(CMSavable fromThis){return ((StdExit)fromThis).myDoor;}
+			public CMSavable subObject(StdExit fromThis){return fromThis.myDoor;}
 			public void load(StdExit E, ByteBuffer S){
 				Closeable old=E.myDoor;
 				E.myDoor=(Closeable)CMLib.coffeeMaker().loadSub(S, E, this);
 				if(E.myDoor!=null) ((Ownable)E.myDoor).setOwner(E);
 				if((old!=null)&&(old!=E.myDoor)) old.destroy(); } },
 		;
-		public abstract ByteBuffer save(StdExit E);
-		public abstract void load(StdExit E, ByteBuffer S);
-		public ByteBuffer save(CMSavable E){return save((StdExit)E);}
-		public CMSavable subObject(CMSavable fromThis){return null;}
-		public void load(CMSavable E, ByteBuffer S){load((StdExit)E, S);} }
-	private enum MCode implements CMModifiable.ModEnum{
+		public CMSavable subObject(StdExit fromThis){return null;} }
+	private enum MCode implements ModEnum<StdExit>{
 		ENVIRONMENTAL(){
 			public String brief(StdExit E){return E.getEnvObject().ID();}
 			public String prompt(StdExit E){return "";}
@@ -537,13 +533,7 @@ public class StdExit implements Exit
 					char action=M.session().prompt("(E)dit or (D)estroy this closeable? (E)","E").trim().toUpperCase().charAt(0);
 					if(action=='E') CMLib.genEd().genMiscSet(M, E.myDoor);
 					else if(action=='D') {E.myDoor.destroy(); E.myDoor=null;} } } }
-		;
-		public abstract String brief(StdExit fromThis);
-		public abstract String prompt(StdExit fromThis);
-		public abstract void mod(StdExit toThis, MOB M);
-		public String brief(CMModifiable fromThis){return brief((StdExit)fromThis);}
-		public String prompt(CMModifiable fromThis){return prompt((StdExit)fromThis);}
-		public void mod(CMModifiable toThis, MOB M){mod((StdExit)toThis, M);} }
+		; }
 
 	public boolean sameAs(Interactable E)
 	{

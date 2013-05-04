@@ -417,7 +417,7 @@ public class DefaultTimeClock implements TimeClock, Ownable
 	public void saveThis(){if(parent!=null)parent.saveThis();}
 	public void prepDefault(){}
 
-	private enum SCode implements CMSavable.SaveEnum{
+	private enum SCode implements SaveEnum<DefaultTimeClock>{
 		TIM(){
 			public ByteBuffer save(DefaultTimeClock E){
 				return (ByteBuffer)ByteBuffer.wrap(new byte[12]).putLong(E.baseTime).putInt(E.baseYear).rewind(); }
@@ -448,12 +448,8 @@ public class DefaultTimeClock implements TimeClock, Ownable
 			public int size(){return 0;}
 			public void load(DefaultTimeClock E, ByteBuffer S){ E.yearNames=CMLib.coffeeMaker().loadAString(S); } },
 		;
-		public abstract ByteBuffer save(DefaultTimeClock E);
-		public abstract void load(DefaultTimeClock E, ByteBuffer S);
-		public ByteBuffer save(CMSavable E){return save((DefaultTimeClock)E);}
-		public CMSavable subObject(CMSavable fromThis){return null;}
-		public void load(CMSavable E, ByteBuffer S){load((DefaultTimeClock)E, S);} }
-	private enum MCode implements CMModifiable.ModEnum{
+		public CMSavable subObject(DefaultTimeClock fromThis){return null;} }
+	private enum MCode implements ModEnum<DefaultTimeClock>{
 		SUBHOUR(){
 			public String brief(DefaultTimeClock E){return ""+E.subHour;}
 			public String prompt(DefaultTimeClock E){return ""+E.subHour;}
@@ -498,12 +494,6 @@ public class DefaultTimeClock implements TimeClock, Ownable
 			public String brief(DefaultTimeClock E){return ""+E.daysInMonth;}
 			public String prompt(DefaultTimeClock E){return ""+E.daysInMonth;}
 			public void mod(DefaultTimeClock E, MOB M){E.daysInMonth=CMLib.genEd().intPrompt(M, ""+E.daysInMonth); E.recalcTime();} },
-		;
-		public abstract String brief(DefaultTimeClock fromThis);
-		public abstract String prompt(DefaultTimeClock fromThis);
-		public abstract void mod(DefaultTimeClock toThis, MOB M);
-		public String brief(CMModifiable fromThis){return brief((DefaultTimeClock)fromThis);}
-		public String prompt(CMModifiable fromThis){return prompt((DefaultTimeClock)fromThis);}
-		public void mod(CMModifiable toThis, MOB M){mod((DefaultTimeClock)toThis, M);} }
+		; }
 
 }

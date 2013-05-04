@@ -101,7 +101,7 @@ public class DefaultBind implements Bind
 	public void saveThis(){CMLib.database().saveObject(this);}
 	public void prepDefault(){}
 
-	private enum SCode implements CMSavable.SaveEnum{
+	private enum SCode implements SaveEnum<DefaultBind>{
 		INV(){
 			public ByteBuffer save(DefaultBind E){
 				ByteBuffer itemNums = ByteBuffer.wrap(new byte[8]);
@@ -120,12 +120,8 @@ public class DefaultBind implements Bind
 			public int size(){return 4;}
 			public void load(DefaultBind E, ByteBuffer S){ E.strength=S.getInt(); } },
 		;
-		public abstract ByteBuffer save(DefaultBind E);
-		public abstract void load(DefaultBind E, ByteBuffer S);
-		public ByteBuffer save(CMSavable E){return save((DefaultBind)E);}
-		public CMSavable subObject(CMSavable fromThis){return null;}
-		public void load(CMSavable E, ByteBuffer S){load((DefaultBind)E, S);} }
-	private enum MCode implements CMModifiable.ModEnum{
+		public CMSavable subObject(DefaultBind fromThis){return null;} }
+	private enum MCode implements ModEnum<DefaultBind>{
 		ITEMA() {
 			public String brief(DefaultBind E){return ((E.ItemA==null)?("null"):(""+E.ItemA.ID()));}
 			public String prompt(DefaultBind E){return "";}
@@ -170,11 +166,5 @@ public class DefaultBind implements Bind
 			public String brief(DefaultBind E){return ""+E.strength;}
 			public String prompt(DefaultBind E){return "";}
 			public void mod(DefaultBind E, MOB M){E.strength=CMLib.genEd().intPrompt(M, ""+E.strength);} },
-		;
-		public abstract String brief(DefaultBind fromThis);
-		public abstract String prompt(DefaultBind fromThis);
-		public abstract void mod(DefaultBind toThis, MOB M);
-		public String brief(CMModifiable fromThis){return brief((DefaultBind)fromThis);}
-		public String prompt(CMModifiable fromThis){return prompt((DefaultBind)fromThis);}
-		public void mod(CMModifiable toThis, MOB M){mod((DefaultBind)toThis, M);} }
+		; }
 }

@@ -97,7 +97,7 @@ public class Temperature extends StdEffect
 		}
 		return headerEnumS;
 	}
-	private enum SCode implements CMSavable.SaveEnum{
+	private enum SCode implements SaveEnum{
 		DED(){
 			public ByteBuffer save(Temperature E){ return (ByteBuffer)ByteBuffer.allocate(4).putInt(E.temperature).rewind(); }
 			public int size(){return 4;}
@@ -108,7 +108,7 @@ public class Temperature extends StdEffect
 		public ByteBuffer save(CMSavable E){return save((Temperature)E);}
 		public CMSavable subObject(CMSavable fromThis){return null;}
 		public void load(CMSavable E, ByteBuffer S){load((Temperature)E, S);} }
-	private enum MCode implements CMModifiable.ModEnum{
+	private enum MCode implements ModEnum{
 		DEAD(){
 			public String brief(Temperature E){return ""+E.temperature;}
 			public String prompt(Temperature E){return ""+E.temperature;}

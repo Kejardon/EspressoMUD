@@ -265,7 +265,7 @@ public class DefaultCharStats implements CharStats
 	public void prepDefault(){}
 
 	/*
-	private enum SCode implements CMSavable.SaveEnum{
+	private enum SCode implements SaveEnum{
 		STT(){
 			public ByteBuffer save(DefaultCharStats E){ return CMLib.coffeeMaker().savAShort(E.stat); }
 			public int size(){return 2*6;}
@@ -284,7 +284,7 @@ public class DefaultCharStats implements CharStats
 		public ByteBuffer save(CMSavable E){return save((DefaultCharStats)E);}
 		public CMSavable subObject(CMSavable fromThis){return null;}
 		public void load(CMSavable E, ByteBuffer S){load((DefaultCharStats)E, S);} }
-	private enum MCode implements CMModifiable.ModEnum{
+	private enum MCode implements ModEnum{
 		REACTIONS(){
 			public String brief(DefaultCharStats E){return ""+E.stat[0];}
 			public String prompt(DefaultCharStats E){return ""+E.stat[0];}
