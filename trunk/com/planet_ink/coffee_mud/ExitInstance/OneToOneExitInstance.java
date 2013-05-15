@@ -3,7 +3,7 @@
  * and open the template in the editor.
  */
 
-package com.planet_ink.coffee_mud.Common;
+package com.planet_ink.coffee_mud.ExitInstance;
 
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
@@ -21,7 +21,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 	http://www.apache.org/licenses/LICENSE-2.0
 */
 @SuppressWarnings("unchecked")
-public class OneToOneExitInstance implements ExitInstance, CMCommon
+public class OneToOneExitInstance implements ExitInstance
 {
 	protected Exit myExit;
 	protected Room leadsTo;
@@ -33,7 +33,7 @@ public class OneToOneExitInstance implements ExitInstance, CMCommon
 	protected int roomToLoad=0;
 	
 	public OneToOneExitInstance(){}
-	protected OneToOneExitInstance(Exit exit, Room room){myExit=exit; leadsTo=room;}
+	public OneToOneExitInstance(Exit exit, Room room){myExit=exit; leadsTo=room;}
 
 	/*
 	public boolean equals(Object O)
@@ -44,7 +44,8 @@ public class OneToOneExitInstance implements ExitInstance, CMCommon
 	}
 	*/
 	public Exit getExit(){return myExit;}
-	public String ID(){return "REMap";}
+	public Room getDestination(){return leadsTo;}
+	public String ID(){return "OneToOneExitInstance";}
 	public Environmental getEnvObject() { return myExit.getEnvObject(); }
 	public CMObject newInstance(){return new OneToOneExitInstance();}
 	public CMObject copyOf(){return new OneToOneExitInstance(myExit, leadsTo);}

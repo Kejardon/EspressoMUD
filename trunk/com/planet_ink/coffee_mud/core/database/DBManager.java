@@ -1,7 +1,7 @@
 package com.planet_ink.coffee_mud.core.database;
 import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.core.interfaces.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -44,7 +44,7 @@ These are loaded in RAM and never stored to file. Instead they are rebuilt from 
 */
 
 @SuppressWarnings("unchecked")
-public class DBManager implements DatabaseEngine	//extends Thread
+public class DBManager implements CMLibrary, Runnable	//extends Thread
 {
 	//Easily modifiable settings
 	public static final String saveDirectoryName="resources"+File.separator+"database"+File.separator;	//Note: If you change this you must make the new directory manually!
@@ -613,7 +613,7 @@ public class DBManager implements DatabaseEngine	//extends Thread
 		return true;
 	}
 	public void propertiesLoaded(){}
-	public ThreadEngine.SupportThread getSupportThread() { return null;}
+	public SupportThread getSupportThread() { return null;}
 	public static File getMakeFile(String name)
 	{
 		File f=new File(name);

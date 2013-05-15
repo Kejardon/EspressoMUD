@@ -1,9 +1,8 @@
 package com.planet_ink.coffee_mud.Libraries;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 import com.planet_ink.coffee_mud.core.exceptions.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.MoneyLibrary.MoneyDenomination;
 
 import java.util.*;
 import java.nio.ByteBuffer;
@@ -19,7 +18,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 	http://www.apache.org/licenses/LICENSE-2.0
 */
 @SuppressWarnings("unchecked")
-public class CMGenEditor extends StdLibrary implements GenericEditor
+public class CMGenEditor extends StdLibrary
 {
 	public String ID(){return "CMGenEditor";}
 
@@ -366,7 +365,7 @@ public class CMGenEditor extends StdLibrary implements GenericEditor
 			}
 			else
 			{
-				Vector<Interactable> items=CMLib.english().getTargets(mob, input, null, EnglishParsing.SRCH_ALL, EnglishParsing.SUB_ALL);
+				Vector<Interactable> items=CMLib.english().getTargets(mob, input, null, EnglishParser.SRCH_ALL, EnglishParser.SUB_ALL);
 				if(items==null)
 				{
 					mob.tell("No items found of that name.");
@@ -487,21 +486,20 @@ public class CMGenEditor extends StdLibrary implements GenericEditor
 		return null;
 	}
 
-	public void modExits(CopyOnWriteArrayList<Room.REMap> exits, MOB M)
+	public void modExits(CopyOnWriteArrayList<ExitInstance> exits, Room source, MOB M)
 	{
-		boolean done=false;
-		while((M.session()!=null)&&(!M.session().killFlag())&&(!done))
+		while((M.session()!=null)&&(!M.session().killFlag()))
 		{
-			Vector<Room.REMap> V=new Vector(exits);
+			Vector<ExitInstance> V=new Vector(exits);
 			int i=0;
 			for(;i<V.size();i++)
 			{
-				Exit e=V.get(i).exit;
-				M.session().rawPrintln((1+i)+". "+e.ID()+" "+e.saveNum()+" to "+V.get(i).room.saveNum());
+				Exit e=V.get(i).getExit();
+				M.session().rawPrintln((1+i)+". "+e.ID()+" "+e.saveNum()+" to "+V.get(i).getDestination().saveNum());
 			}
 			M.session().rawPrintln((1+i)+". New Element");
 			i=CMath.s_int(M.session().prompt("Edit which? ",""));
-			if(--i<0) done=true;
+			if(--i<0) break;
 			else if(i==V.size())
 			{
 				Exit e=newAnyExit(M);
@@ -516,9 +514,10 @@ public class CMGenEditor extends StdLibrary implements GenericEditor
 						R=SIDLib.ROOM.get(CMath.s_int(roomID));
 					}
 					if(R!=null)
-						exits.add(new Room.REMap(R, e));
+						exits.add(e.makeInstance(source, R));
 				}
 			}
+			/*
 			else if(i<V.size())
 			{
 				char action=M.session().prompt("Edit (E)xit, target (R)oom, or (D)estroy link?"," ").trim().toUpperCase().charAt(0);
@@ -543,6 +542,7 @@ public class CMGenEditor extends StdLibrary implements GenericEditor
 					}
 				}
 			}
+			*/
 		}
 	}
 	public void modAffectable(Affectable E, MOB M)
@@ -697,11 +697,11 @@ public class CMGenEditor extends StdLibrary implements GenericEditor
 				{
 					CMCommon next=e.next();
 					if(next instanceof EnvMap)
-						M.session().rawPrintln(e.next().ID());
+						M.session().rawPrintln(next.ID());
 				}
 				continue;
 			}
-			CMCommon S=CMClass.COMMON.get(skillName);
+			CMCommon S=CMClass.COMMON.getNew(skillName);
 			if(!(S instanceof EnvMap))
 			{
 				M.session().rawPrintln("No EnvMap with that name found.");

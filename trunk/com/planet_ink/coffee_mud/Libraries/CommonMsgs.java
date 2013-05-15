@@ -1,7 +1,7 @@
 package com.planet_ink.coffee_mud.Libraries;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 
 import com.planet_ink.coffee_mud.core.database.*;
 
@@ -18,7 +18,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 	http://www.apache.org/licenses/LICENSE-2.0
 */
 @SuppressWarnings("unchecked")
-public class CommonMsgs extends StdLibrary implements CommonCommands
+public class CommonMsgs extends StdLibrary
 {
 	public String ID(){return "CommonMsgs";}
 
@@ -330,11 +330,11 @@ public class CommonMsgs extends StdLibrary implements CommonCommands
 			return;
 		StringBuilder buf=new StringBuilder("Obvious exits:\r\n");
 		String Dir=null;
-		for(Iterator<Room.REMap> iter=room.getAllExits();iter.hasNext();)
+		for(Iterator<ExitInstance> iter=room.getAllExits();iter.hasNext();)
 		{
-			Room.REMap next=iter.next();
-			Exit exit=next.exit;
-			Room room2=next.room;
+			ExitInstance next=iter.next();
+			Exit exit=next.getExit();
+			Room room2=next.getDestination();
 			StringBuilder Say=new StringBuilder();
 			if(exit!=null)
 				Say.append(exit.exitListLook(mob, room2));

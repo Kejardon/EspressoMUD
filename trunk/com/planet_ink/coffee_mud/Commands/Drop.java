@@ -1,7 +1,7 @@
 package com.planet_ink.coffee_mud.Commands;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 
 import java.util.*;
 
@@ -47,7 +47,7 @@ public class Drop extends StdCommand
 		if(whatToDrop.toUpperCase().endsWith(".ALL")){ allFlag=true; whatToDrop="ALL "+whatToDrop.substring(0,whatToDrop.length()-4);}
 		*/
 
-		Vector<Item> V=(Vector)CMLib.english().getTargets(mob, commands, "from", EnglishParsing.SRCH_MOBINV|EnglishParsing.SRCH_MOBEQ|EnglishParsing.SRCH_MOB, EnglishParsing.SUB_ALL);
+		Vector<Item> V=(Vector)CMLib.english().getTargets(mob, commands, "from", EnglishParser.SRCH_MOBINV|EnglishParser.SRCH_MOBEQ|EnglishParser.SRCH_MOB, EnglishParser.SUB_ALL);
 		//Vector<Item> V=(Vector)CMLib.english().fetchInteractables(whatToDrop, false, 1, allFlag?maxToDrop:1, mob.getItemCollection());
 		if(V==null||V.size()==0)
 			mob.tell("You don't seem to be carrying that.");

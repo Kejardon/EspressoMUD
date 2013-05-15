@@ -1,7 +1,7 @@
 package com.planet_ink.coffee_mud.Commands;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 
 import java.util.*;
 
@@ -71,7 +71,7 @@ public class Channel extends StdCommand
 			return false;
 		}
 		
-		HashSet<ChannelsLibrary.ChannelFlag> flags=CMLib.channels().getChannelFlags(channelInt);
+		HashSet<CMChannels.ChannelFlag> flags=CMLib.channels().getChannelFlags(channelInt);
 		
 		if((commands.size()==2)
 		&&(mob.session()!=null)

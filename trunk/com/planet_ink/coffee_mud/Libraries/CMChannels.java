@@ -1,7 +1,7 @@
 package com.planet_ink.coffee_mud.Libraries;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 
 import java.util.*;
 import java.nio.ByteBuffer;
@@ -16,10 +16,18 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 */
 //TODO: This looks like it needs to be redone more sensibly and efficiently sometime
 @SuppressWarnings("unchecked")
-public class CMChannels extends StdLibrary implements ChannelsLibrary
+public class CMChannels extends StdLibrary
 {
+	public static final int QUEUE_SIZE=100;
+	public enum ChannelFlag {
+		DEFAULT,READONLY,
+		EXECUTIONS,LOGINS,LOGOFFS,BIRTHS,MARRIAGES, 
+		DIVORCES,CHRISTENINGS,LEVELS,DETAILEDLEVELS,DEATHS,DETAILEDDEATHS,
+		CONCEPTIONS,NEWPLAYERS,LOSTLEVELS,PLAYERPURGES,
+		WARRANTS, PLAYERREADONLY
+	};
+	
 	public String ID(){return "CMChannels";}
-	public final int QUEUE_SIZE=100;
 
 	//public int numChannelsLoaded=0;
 	public int numIChannelsLoaded=0;

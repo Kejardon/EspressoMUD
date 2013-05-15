@@ -1,7 +1,7 @@
 package com.planet_ink.coffee_mud.Common;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 
 import java.util.*;
 import java.nio.ByteBuffer;
@@ -145,31 +145,31 @@ public class CustomRideable implements Rideable, Ownable
 			public void load(CustomRideable E, ByteBuffer S){E.mobile=(S.get()!=0);} },
 		PUT(){
 			public ByteBuffer save(CustomRideable E){
-				if(E.putString.equals("on")) return GenericBuilder.emptyBuffer;
+				if(E.putString.equals("on")) return CoffeeMaker.emptyBuffer;
 				return CMLib.coffeeMaker().savString(E.putString); }
 			public int size(){return 0;}
 			public void load(CustomRideable E, ByteBuffer S){ E.putString=CMLib.coffeeMaker().loadString(S); } },
 		STA(){
 			public ByteBuffer save(CustomRideable E){
-				if(E.stateString.equals("sitting on")) return GenericBuilder.emptyBuffer;
+				if(E.stateString.equals("sitting on")) return CoffeeMaker.emptyBuffer;
 				return CMLib.coffeeMaker().savString(E.stateString); }
 			public int size(){return 0;}
 			public void load(CustomRideable E, ByteBuffer S){ E.stateString=CMLib.coffeeMaker().loadString(S); } },
 		MNT(){
 			public ByteBuffer save(CustomRideable E){
-				if(E.mountString.equals("sit(s) on")) return GenericBuilder.emptyBuffer;
+				if(E.mountString.equals("sit(s) on")) return CoffeeMaker.emptyBuffer;
 				return CMLib.coffeeMaker().savString(E.mountString); }
 			public int size(){return 0;}
 			public void load(CustomRideable E, ByteBuffer S){ E.mountString=CMLib.coffeeMaker().loadString(S); } },
 		DIS(){
 			public ByteBuffer save(CustomRideable E){
-				if(E.dismountString.equals("stand(s) from")) return GenericBuilder.emptyBuffer;
+				if(E.dismountString.equals("stand(s) from")) return CoffeeMaker.emptyBuffer;
 				return CMLib.coffeeMaker().savString(E.dismountString); }
 			public int size(){return 0;}
 			public void load(CustomRideable E, ByteBuffer S){ E.dismountString=CMLib.coffeeMaker().loadString(S); } },
 		SUB(){
 			public ByteBuffer save(CustomRideable E){
-				if(E.putString.equals("sat on by")) return GenericBuilder.emptyBuffer;
+				if(E.putString.equals("sat on by")) return CoffeeMaker.emptyBuffer;
 				return CMLib.coffeeMaker().savString(E.stateStringSubject); }
 			public int size(){return 0;}
 			public void load(CustomRideable E, ByteBuffer S){ E.stateStringSubject=CMLib.coffeeMaker().loadString(S); } },

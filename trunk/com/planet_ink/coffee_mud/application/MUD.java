@@ -5,7 +5,7 @@ import com.planet_ink.coffee_mud.core.exceptions.*;
 import com.planet_ink.coffee_mud.core.database.*;
 import com.planet_ink.coffee_mud.core.http.*;
 import com.planet_ink.coffee_mud.core.threads.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 
 import java.io.PrintWriter; // for writing to sockets
 import java.io.IOException;
@@ -412,7 +412,7 @@ public class MUD extends Thread implements MudHost
 
 		if(S!=null)S.print("Stopping player Sessions...");
 		CMProps.Strings.MUDSTATUS.setProperty("Shutting down...Stopping sessions");
-		SessionsList list=CMLib.sessions();
+		Sessions list=CMLib.sessions();
 		while(list.size()>0)
 		{
 			Session S2=list.elementAt(0);

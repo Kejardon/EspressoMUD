@@ -2,7 +2,7 @@ package com.planet_ink.coffee_mud.Commands;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
 
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 
 import java.util.*;
 
@@ -44,7 +44,7 @@ public class List extends StdCommand
 					lines.append("Thread ").append(tArray[i].getName()).append(status).append("\r\n"); }
 				if(activeStacks) {
 					Thread.State state=tArray[i].getState();
-					if(state==Thread.State.RUNNABLE || state==Thread.State.BLOCKED) lines.append(ThreadEngine.SupportThread.getStack(tArray[i])).append("\r\n"); } } }
+					if(state==Thread.State.RUNNABLE || state==Thread.State.BLOCKED) lines.append(SupportThread.getStack(tArray[i])).append("\r\n"); } } }
 		if (agc > 0) {
 			lines.append("{\r\n");
 			for (int i = 0; i<agc; ++i) if (tgArray[i] != null) dumpThreadGroup(lines,tgArray[i],activeStacks);

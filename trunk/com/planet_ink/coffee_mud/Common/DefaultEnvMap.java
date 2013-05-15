@@ -1,7 +1,7 @@
 package com.planet_ink.coffee_mud.Common;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 
 import com.planet_ink.coffee_mud.core.interfaces.Environmental.EnvHolder;
 
@@ -83,20 +83,20 @@ public class DefaultEnvMap implements EnvMap
 		switch(type)
 		{
 			case 0: return SIDLib.ITEM.get(SID);
-			case 1: return SIDLib.EXIT.get(SID);
+			case 1: return SIDLib.EXITINSTANCE.get(SID);
 		}
 		throw new IllegalArgumentException(type+" is not a defined number ID");
 	}
 	public static byte getType(CMSavable O)
 	{
 		if(O instanceof Item) return 0;
-		if(O instanceof Exit) return 1;
+		if(O instanceof ExitInstance) return 1;
 		// More 'thorough' but excessive method.
 		SIDLib.Objects type=SIDLib.getType(O);
 		if(type==null) throw new IllegalArgumentException(O.class.toString()+" has no associated save index Objects.");
 		//These returns should never be reached because of above checks, but if I ever do something crazy to break them...
 		if(type==SIDLib.ITEM) return 0;
-		if(type==SIDLib.EXIT) return 1;
+		if(type==SIDLib.EXITINSTANCE) return 1;
 
 		Log.errOut("DefaultEnvMap","SIDLib.Objects "+type.name()+" has no number ID!");
 		return -1;
@@ -215,7 +215,7 @@ public class DefaultEnvMap implements EnvMap
 					buf.limit(buf.position());
 					buf.rewind();
 					return buf; }
-				return GenericBuilder.emptyBuffer; }
+				return CoffeeMaker.emptyBuffer; }
 			public int size(){return 0;}
 			public void load(DefaultEnvMap E, ByteBuffer S) {
 				E.itemsToLoad=new int[S.remaining()/17 * 5];

@@ -1,7 +1,7 @@
 package com.planet_ink.coffee_mud.Libraries;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 
 import java.util.*;
 import java.nio.ByteBuffer;
@@ -16,8 +16,13 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 	http://www.apache.org/licenses/LICENSE-2.0
 */
 @SuppressWarnings("unchecked")
-public class CoffeeUtensils extends StdLibrary implements CMMiscUtils
+public class CoffeeUtensils extends StdLibrary
 {
+	public static final int LOOTFLAG_RUIN=1;
+	public static final int LOOTFLAG_LOSS=2;
+	public static final int LOOTFLAG_WORN=4;
+	public static final int LOOTFLAG_UNWORN=8;
+
 	public String ID(){return "CoffeeUtensils";}
 	
 	public String niceCommaList(Vector V, boolean endAnd)
@@ -263,13 +268,13 @@ public class CoffeeUtensils extends StdLibrary implements CMMiscUtils
 				if(CMath.isPct((String)parsed.elementAt(x)))
 					pct=(int)Math.round(CMath.s_pct((String)parsed.elementAt(x))*100.0);
 			int flags=0;
-			if(parsed.contains("RUIN")) flags|=CMMiscUtils.LOOTFLAG_RUIN;
+			if(parsed.contains("RUIN")) flags|=LOOTFLAG_RUIN;
 			else
-			if(parsed.contains("LOSS")) flags|=CMMiscUtils.LOOTFLAG_LOSS;
-			if(flags==0) flags|=CMMiscUtils.LOOTFLAG_LOSS;
-			if(parsed.contains("WORN")) flags|=CMMiscUtils.LOOTFLAG_WORN;
+			if(parsed.contains("LOSS")) flags|=LOOTFLAG_LOSS;
+			if(flags==0) flags|=LOOTFLAG_LOSS;
+			if(parsed.contains("WORN")) flags|=LOOTFLAG_WORN;
 			else
-			if(parsed.contains("UNWORN")) flags|=CMMiscUtils.LOOTFLAG_UNWORN;
+			if(parsed.contains("UNWORN")) flags|=LOOTFLAG_UNWORN;
 			policies.addElement(Integer.valueOf(pct),Integer.valueOf(flags),compiledMask);
 		}
 		return policies;
@@ -294,12 +299,12 @@ public class CoffeeUtensils extends StdLibrary implements CMMiscUtils
 			if(CMLib.dice().rollPercentage()>((Integer)policies.elementAt(d,1)).intValue())
 				continue;
 			int flags=((Integer)policies.elementAt(d,2)).intValue();
-			if(CMath.bset(flags,CMMiscUtils.LOOTFLAG_WORN)&&I.amWearingAt(Wearable.IN_INVENTORY))
+			if(CMath.bset(flags,LOOTFLAG_WORN)&&I.amWearingAt(Wearable.IN_INVENTORY))
 				continue;
 			else
-			if(CMath.bset(flags,CMMiscUtils.LOOTFLAG_UNWORN)&&(!I.amWearingAt(Wearable.IN_INVENTORY)))
+			if(CMath.bset(flags,LOOTFLAG_UNWORN)&&(!I.amWearingAt(Wearable.IN_INVENTORY)))
 				continue;
-			if(CMath.bset(flags,CMMiscUtils.LOOTFLAG_LOSS))
+			if(CMath.bset(flags,LOOTFLAG_LOSS))
 				return null;
 			Item I2=CMClass.getItem("GenItem");
 			I2.baseEnvStats().setWeight(I.baseEnvStats().weight());

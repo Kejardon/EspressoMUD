@@ -1,7 +1,7 @@
 package com.planet_ink.coffee_mud.Items.Basic;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 
 import java.util.*;
 import java.nio.ByteBuffer;
@@ -21,7 +21,7 @@ public class StdCoins extends StdItem implements Coins
 	protected long denomination=1;
 	protected long amount=0;
 	protected String currency="";
-	protected MoneyLibrary.MoneyDenomination denom=null; 
+	protected BeanCounter.MoneyDenomination denom=null; 
 
 	public StdCoins()
 	{
@@ -35,7 +35,7 @@ public class StdCoins extends StdItem implements Coins
 	{
 		if(denom==null)
 		{
-			MoneyLibrary.CMCurrency set=CMLib.beanCounter().getCurrencySet(currency);
+			BeanCounter.CMCurrency set=CMLib.beanCounter().getCurrencySet(currency);
 			if(set==null) return "";
 			denom=set.get(denomination);
 		}

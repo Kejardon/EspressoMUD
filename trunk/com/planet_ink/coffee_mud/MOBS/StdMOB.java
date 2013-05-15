@@ -1,7 +1,7 @@
 package com.planet_ink.coffee_mud.MOBS;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 import com.planet_ink.coffee_mud.core.database.DBManager;
 
 import java.util.*;
@@ -164,7 +164,10 @@ public class StdMOB implements MOB
 		if(inventory==null) synchronized(this)
 		{
 			if(inventory==null)
+			{
 				inventory=(ItemCollection)((Ownable)CMClass.COMMON.getNew("DefaultItemCol")).setOwner(this);
+				inventory.saveThis();
+			}
 		}
 		return inventory;
 	}
@@ -327,7 +330,7 @@ public class StdMOB implements MOB
 
 	public Room location()
 	{
-		return CMLib.map().roomLocation(myBody);
+		return CMLib.map().roomLocation(myBody.container());
 		/*
 		if(myBody==null) return null;
 		CMObject O=myBody.container();
@@ -353,12 +356,10 @@ public class StdMOB implements MOB
 	public boolean goToThing(EnvMap.EnvLocation thing, EnvMap.EnvLocation start, Room room)
 	{
 		//TODO. Instantaneous for now, needs to be gradual and depend on MOB's speed/move type eventually
-		if(thing.item instanceof Room.REMap)
+		if(thing.item instanceof ExitInstance)
 		{
-			Room.REMap exit=(Room.REMap)thing.item;
-			Room targetRoom=exit.room;
-			Room.REMap entrance=targetRoom.getREMap(exit.exit, room);
-			if(!com.planet_ink.coffee_mud.Commands.Go.move(this, exit, entrance, false, false)) return false;
+			ExitInstance map=(ExitInstance)thing.item;
+			if(!com.planet_ink.coffee_mud.Commands.Go.move(this, location(), map, false, false)) return false;
 		}
 		else
 			room.placeHere(myBody, true, thing.x, thing.y, thing.z);
@@ -1120,13 +1121,13 @@ public class StdMOB implements MOB
 		EFC(){
 			public ByteBuffer save(StdMOB E){
 				if(E.affects.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.affects.toArray(CMSavable.dummyCMSavableArray));
-				return GenericBuilder.emptyBuffer; }
+				return CoffeeMaker.emptyBuffer; }
 			public int size(){return 0;}
 			public void load(StdMOB E, ByteBuffer S){ E.effectsToLoad=CMLib.coffeeMaker().loadAInt(S); } },
 		BHV(){
 			public ByteBuffer save(StdMOB E){
 				if(E.behaviors.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.behaviors.toArray(CMSavable.dummyCMSavableArray));
-				return GenericBuilder.emptyBuffer; }
+				return CoffeeMaker.emptyBuffer; }
 			public int size(){return 0;}
 			public void load(StdMOB E, ByteBuffer S){ E.behavesToLoad=CMLib.coffeeMaker().loadAInt(S); } },
 		BDY(){
@@ -1138,7 +1139,7 @@ public class StdMOB implements MOB
 			public void load(StdMOB E, ByteBuffer S){ E.bodyToLink=S.getInt(); } },
 		SKL(){
 			public ByteBuffer save(StdMOB E){
-				if(E.skillSet.isEmpty()) return GenericBuilder.emptyBuffer;
+				if(E.skillSet.isEmpty()) return CoffeeMaker.emptyBuffer;
 				Set<Skill> keys = E.skillSet.keySet();
 				int size=0;
 				for(Skill skill : keys)

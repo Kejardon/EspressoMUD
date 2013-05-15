@@ -1,7 +1,7 @@
 package com.planet_ink.coffee_mud.Items.Basic;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 
 import java.util.*;
 import java.nio.ByteBuffer;
@@ -648,13 +648,13 @@ public class MixedItem implements Item
 		EFC(){
 			public ByteBuffer save(MixedItem E){
 				if(E.affects.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.affects.toArray(CMSavable.dummyCMSavableArray));
-				return GenericBuilder.emptyBuffer; }
+				return CoffeeMaker.emptyBuffer; }
 			public int size(){return 0;}
 			public void load(MixedItem E, ByteBuffer S){ E.effectsToLoad=CMLib.coffeeMaker().loadAInt(S); } },
 		BHV(){
 			public ByteBuffer save(MixedItem E){
 				if(E.behaviors.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.behaviors.toArray(CMSavable.dummyCMSavableArray));
-				return GenericBuilder.emptyBuffer; }
+				return CoffeeMaker.emptyBuffer; }
 			public int size(){return 0;}
 			public void load(MixedItem E, ByteBuffer S){ E.behavesToLoad=CMLib.coffeeMaker().loadAInt(S); } },
 		BND(){

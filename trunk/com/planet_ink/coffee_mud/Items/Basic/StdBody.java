@@ -1,7 +1,7 @@
 package com.planet_ink.coffee_mud.Items.Basic;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 
 import java.util.*;
 import java.nio.ByteBuffer;
@@ -100,7 +100,7 @@ public class StdBody extends StdItem implements Body
 	public void bringToLife(Room newLocation, boolean resetStats)
 	{
 		newLocation.bringHere(this, false);
-		setContainer(newLocation);
+		//setContainer(newLocation);
 		bringToLife();
 		if(resetStats)
 		{
@@ -399,7 +399,7 @@ public class StdBody extends StdItem implements Body
 			public void load(StdBody E, ByteBuffer S){ E.myRace=CMClass.RACE.get(CMLib.coffeeMaker().loadString(S)); } },
 		GEN(){
 			public ByteBuffer save(StdBody E){
-				if(E.myGender==null) return GenericBuilder.emptyBuffer;
+				if(E.myGender==null) return CoffeeMaker.emptyBuffer;
 				return CMLib.coffeeMaker().savString(E.myGender.ID()); }
 			public int size(){return 0;}
 			public void load(StdBody E, ByteBuffer S){ E.myGender=CMClass.GENDER.get(CMLib.coffeeMaker().loadString(S)); } },

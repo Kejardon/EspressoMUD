@@ -1,7 +1,7 @@
 package com.planet_ink.coffee_mud.core;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.database.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 
 import java.util.*;
 import java.io.File;
@@ -151,6 +151,7 @@ public class CMClass extends ClassLoader
 	public static final Objects<Room> LOCALE=new Objects<Room>(Room.class, "LOCALE"){};
 	public static final Objects<MOB> CREATURE=new Objects<MOB>(MOB.class, "MOB"){};
 	public static final Objects<Exit> EXIT=new Objects<Exit>(Exit.class, "EXIT"){};
+	public static final Objects<ExitInstance> EXITINSTANCE=new Objects<ExitInstance>(ExitInstance.class, "EXITINSTANCE"){};
 	public static final Objects<Behavior> BEHAVIOR=new Objects<Behavior>(Behavior.class, "BEHAVIOR"){};
 	public static final Objects<Area> AREA=new Objects<Area>(Area.class, "AREA"){};
 	public static final Objects<Closeable> CLOSEABLE=new Objects<Closeable>(Closeable.class, "CLOSEABLE"){};
@@ -255,6 +256,7 @@ public class CMClass extends ClassLoader
 		if(O instanceof Room) return LOCALE;
 		if(O instanceof MOB) return CREATURE;
 		if(O instanceof Exit) return EXIT;
+		if(O instanceof ExitInstance) return EXITINSTANCE;
 		if(O instanceof Behavior) return BEHAVIOR;
 		if(O instanceof Area) return AREA;
 		if(O instanceof Closeable) return CLOSEABLE;
@@ -712,6 +714,11 @@ public class CMClass extends ClassLoader
 			O=EXIT;
 			loadListToObj(O, prefix+"Exits/", O.ancestor(), false);
 			Log.sysOut(Thread.currentThread().getName(),"Exit Types loaded : "+O.size());
+			if(O.size()==0) return false;
+
+			O=EXITINSTANCE;
+			loadListToObj(O, prefix+"ExitInstance/", O.ancestor(), false);
+			Log.sysOut(Thread.currentThread().getName(),"ExitInstance Types: "+O.size());
 			if(O.size()==0) return false;
 
 			O=CREATURE;

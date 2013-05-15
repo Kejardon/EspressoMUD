@@ -1,7 +1,7 @@
 package com.planet_ink.coffee_mud.Commands;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 
 import java.util.*;
 import java.io.IOException;
@@ -215,7 +215,7 @@ public class Destroy extends StdCommand
 			return;
 		}
 
-		Room.REMap target=mob.location().getREMap(commands.elementAt(2));
+		ExitInstance target=mob.location().getExitInstance(commands.elementAt(2));
 		if(target==null)
 		{
 			mob.tell("No exit with that name was found here.\r\n");
@@ -223,13 +223,13 @@ public class Destroy extends StdCommand
 		}
 		if(bothSides)
 		{
-			target.room.removeExit(target.exit, mob.location());
-			Log.sysOut("Exits",mob.location().saveNum()+" and "+target.room.saveNum()+" exit, "+target.exit.saveNum()+" destroyed by "+mob.name()+".");
+			Log.sysOut("Exits",target.saveNum()+" exit instance from "+target.getExit().saveNum()+" destroyed by "+mob.name()+".");
 		}
 		else
-			Log.sysOut("Exits",mob.location().saveNum()+" exit "+target.exit.saveNum()+" unlinked by "+mob.name()+".");
+			Log.sysOut("Exits",target.saveNum()+" exit instance from "+target.getExit().saveNum()+" unlinked by "+mob.name()+".");
+		target.getExit().removeInstance(target, bothSides);
 		mob.location().removeExit(target);
-		mob.location().show(null,"A wall of inhibition covers "+target.exit.directLook(mob, target.room)+".");
+		mob.location().show(null,"A wall of inhibition covers "+target.getExit().directLook(mob, target.getDestination())+".");
 		
 	}
 	public void lock(MOB mob, Vector<String> commands)
@@ -354,7 +354,7 @@ public class Destroy extends StdCommand
 		if(commandType.equals("EXIT")||commandType.equals("EXITS"))
 		{
 			if(!CMSecurity.isAllowed(mob,"CMDEXITS")) return errorOut(mob);
-			exits(mob,commands,commandType.equals("EXIT"));
+			exits(mob,commands,commandType.equals("EXITS"));
 		}
 		else if(commandType.equals("ITEM"))
 		{

@@ -1,7 +1,7 @@
 package com.planet_ink.coffee_mud.Libraries;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 
 import java.util.*;
 import java.nio.ByteBuffer;
@@ -15,17 +15,19 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 	http://www.apache.org/licenses/LICENSE-2.0
 */
 @SuppressWarnings("unchecked")
-public class Sessions extends StdLibrary implements SessionsList
+public class Sessions extends StdLibrary implements Runnable
 {
+	public final static long sleepTime=50;	//Check if there is input from users 20 times a second
+
 	public String ID(){return "Sessions";}
 	
 //	protected int lastSize=0;
 	
-	private ThreadEngine.SupportThread thread=null;
+	private SupportThread thread=null;
 	public Vector<Session> all=new Vector();
 	public Session[] sessArray=Session.dummySessionArray;
 	
-	public ThreadEngine.SupportThread getSupportThread() { return thread;}
+	public SupportThread getSupportThread() { return thread;}
 	
 	public Session elementAt(int x)
 	{
@@ -92,7 +94,7 @@ public class Sessions extends StdLibrary implements SessionsList
 	}
 	public boolean activate() {
 		if(thread==null)
-			thread=new ThreadEngine.SupportThread("THSessions", 60000, this, CMSecurity.isDebugging("UTILITHREAD"));
+			thread=new SupportThread("THSessions", 60000, this, CMSecurity.isDebugging("UTILITHREAD"));
 		if(!thread.started)
 			thread.start();
 		return true;

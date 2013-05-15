@@ -1,7 +1,7 @@
 package com.planet_ink.coffee_mud.Common.Closeable;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 
 import java.util.*;
 import java.nio.ByteBuffer;
@@ -109,7 +109,7 @@ public class DefaultLid implements Closeable, Ownable
 	private enum SCode implements SaveEnum<DefaultLid>{
 		KEY(){
 			public ByteBuffer save(DefaultLid E){
-				if(E.key=="skeleton") return GenericBuilder.emptyBuffer;
+				if(E.key=="skeleton") return CoffeeMaker.emptyBuffer;
 				return CMLib.coffeeMaker().savString(E.key); }
 			public int size(){return 0;}
 			public void load(DefaultLid E, ByteBuffer S){E.key=CMLib.coffeeMaker().loadString(S); } },

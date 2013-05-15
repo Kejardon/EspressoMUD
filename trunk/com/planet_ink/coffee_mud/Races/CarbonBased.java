@@ -1,7 +1,7 @@
 package com.planet_ink.coffee_mud.Races;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 import com.planet_ink.coffee_mud.Commands.StdCommand;
 
 import java.util.*;
@@ -44,7 +44,7 @@ public class CarbonBased extends StdRace
 			if(commands.data==null)
 			{
 				String ID=CMParms.removeFirst(commands.cmdString);
-				targets=CMLib.english().getTargets(mob, ID, "from", EnglishParsing.SRCH_ALL, EnglishParsing.SUB_ALL);
+				targets=CMLib.english().getTargets(mob, ID, "from", EnglishParser.SRCH_ALL, EnglishParser.SUB_ALL);
 				if(targets==null) return false;
 				commands.data=targets;
 				//if(targets.size()==0)	//Shouldn't happen I think

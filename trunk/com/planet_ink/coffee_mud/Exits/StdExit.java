@@ -1,7 +1,8 @@
 package com.planet_ink.coffee_mud.Exits;
+import com.planet_ink.coffee_mud.ExitInstance.OneToOneExitInstance;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 
 import java.util.*;
 import java.nio.ByteBuffer;
@@ -29,6 +30,8 @@ public class StdExit implements Exit
 	protected String plainDesc;
 	protected String plainDescOf;
 	protected boolean visible=true;
+	protected OneToOneExitInstance exitInstA;
+	protected OneToOneExitInstance exitInstB;
 
 	protected EnumSet<ListenHolder.Flags> lFlags=EnumSet.of(ListenHolder.Flags.OK,ListenHolder.Flags.EXC);
 	protected CopyOnWriteArrayList<OkChecker> okCheckers=new CopyOnWriteArrayList();
@@ -73,7 +76,63 @@ public class StdExit implements Exit
 	}
 	public boolean visibleExit(MOB mob, Room destination) {return visible; }
 	public void setVisible(boolean b){visible = b; CMLib.database().saveObject(this);}
+	public ExitInstance makeInstance(Room source, Room destination)
+	{
+		OneToOneExitInstance otherExit;
+		boolean isA;
+		if(exitInstA==null)
+		{
+			otherExit=exitInstB;
+			isA=true;
+		}
+		else if(exitInstB==null)
+		{
+			otherExit=exitInstA;
+			isA=false;
+		}
+		else return null;
+		if(otherExit!=null && (otherExit.getDestination()!=source || !destination.hasExit(otherExit)))
+			return null;
+		OneToOneExitInstance newInstance=new OneToOneExitInstance(this, destination);
+		if(isA)
+			exitInstA=newInstance;
+		else
+			exitInstB=newInstance;
+		CMLib.database().saveObject(newInstance);
+		return newInstance;
+	}
+	public void removeInstance(ExitInstance myInstance, boolean both)
+	{
+		OneToOneExitInstance alsoRemove=null;
+		if(myInstance==exitInstA)
+		{
+			exitInstA=null;
+			if(both) alsoRemove=exitInstB;
+			else if(exitInstB==null) both=true;
+		}
+		else if(myInstance==exitInstB)
+		{
+			exitInstB=null;
+			if(both) alsoRemove=exitInstA;
+			else if(exitInstA==null) both=true;
+		}
+		else return;
+		if(both)
+		{
+			destroy();
+			if(alsoRemove!=null)
+				myInstance.getDestination().removeExit(alsoRemove);
+			return;
+		}
+		myInstance.destroy();
+	}
 
+	public ExitInstance oppositeOf(ExitInstance myInstance, Room destination)
+	{
+		if(myInstance==exitInstA) return exitInstB;
+		else if(myInstance==exitInstB) return exitInstA;
+		return null;
+	}
 	public int priority(ListenHolder L){return Integer.MAX_VALUE;}
 	public void registerListeners(ListenHolder here) { here.addListener(this, lFlags); }
 	public void registerAllListeners() { }
@@ -140,6 +199,10 @@ public class StdExit implements Exit
 		behaviors.clear();
 		if(saveNum!=0)	//NOTE: I think this should be a standard destroy() check?
 			CMLib.database().deleteObject(this);
+		if(exitInstA!=null)
+			exitInstA.destroy();
+		if(exitInstB!=null)
+			exitInstB.destroy();
 	}
 	public boolean amDestroyed(){return amDestroyed;}
 
@@ -426,6 +489,16 @@ public class StdExit implements Exit
 			behavesToLoad=null;
 		}
 	}
+	public void linkMe(ExitInstance myInstance)
+	{
+		if(!(myInstance instanceof OneToOneExitInstance))
+		{
+			Log.errOut(ID(),"Incorrect ExitInstance type attempting to link");
+		}
+		if(exitInstA==null) exitInstA=(OneToOneExitInstance)myInstance;
+		else if(exitInstB==null) exitInstB=(OneToOneExitInstance)myInstance;
+		else Log.errOut(ID(),"ExitInstance attempting to link to full Exit");
+	}
 	public void saveThis(){CMLib.database().saveObject(this);}
 	public void prepDefault(){}
 
@@ -437,11 +510,10 @@ public class StdExit implements Exit
 		//super.finalize();
 	}
 
-
 	private enum SCode implements SaveEnum<StdExit>{
 		ENV(){
 			public ByteBuffer save(StdExit E){
-				if(E.myEnvironmental==null) return GenericBuilder.emptyBuffer;
+				if(E.myEnvironmental==null) return CoffeeMaker.emptyBuffer;
 				return CMLib.coffeeMaker().savSubFull(E.myEnvironmental); }
 			public int size(){return -1;}
 			public CMSavable subObject(StdExit fromThis){return fromThis.myEnvironmental;}
@@ -452,7 +524,7 @@ public class StdExit implements Exit
 				if((old!=null)&&(old!=E.myEnvironmental)) old.destroy(); } },
 		DSP(){
 			public ByteBuffer save(StdExit E){
-				if(E.display=="an open passage to another place.") return GenericBuilder.emptyBuffer;
+				if(E.display=="an open passage to another place.") return CoffeeMaker.emptyBuffer;
 				return CMLib.coffeeMaker().savString(E.display); }
 			public int size(){return 0;}
 			public void load(StdExit E, ByteBuffer S){ E.display=CMLib.coffeeMaker().loadString(S); } },
@@ -463,13 +535,13 @@ public class StdExit implements Exit
 		EFC(){
 			public ByteBuffer save(StdExit E){
 				if(E.affects.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.affects.toArray(CMSavable.dummyCMSavableArray));
-				return GenericBuilder.emptyBuffer; }
+				return CoffeeMaker.emptyBuffer; }
 			public int size(){return 0;}
 			public void load(StdExit E, ByteBuffer S){ E.effectsToLoad=CMLib.coffeeMaker().loadAInt(S); } },
 		BHV(){
 			public ByteBuffer save(StdExit E){
 				if(E.behaviors.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.behaviors.toArray(CMSavable.dummyCMSavableArray));
-				return GenericBuilder.emptyBuffer; }
+				return CoffeeMaker.emptyBuffer; }
 			public int size(){return 0;}
 			public void load(StdExit E, ByteBuffer S){ E.behavesToLoad=CMLib.coffeeMaker().loadAInt(S); } },
 		VIS(){
@@ -478,13 +550,13 @@ public class StdExit implements Exit
 			public void load(StdExit E, ByteBuffer S){ E.visible=(S.get()!=0); } },
 		NAM(){
 			public ByteBuffer save(StdExit E){
-				if(E.name=="an ordinary pathway") return GenericBuilder.emptyBuffer;
+				if(E.name=="an ordinary pathway") return CoffeeMaker.emptyBuffer;
 				return CMLib.coffeeMaker().savString(E.name); }
 			public int size(){return 0;}
 			public void load(StdExit E, ByteBuffer S){ E.name=CMLib.coffeeMaker().loadString(S); } },
 		CLS(){
 			public ByteBuffer save(StdExit E){
-				if(E.myDoor==null) return GenericBuilder.emptyBuffer;
+				if(E.myDoor==null) return CoffeeMaker.emptyBuffer;
 				return CMLib.coffeeMaker().savSubFull(E.myDoor); }
 			public int size(){return -1;}
 			public CMSavable subObject(StdExit fromThis){return fromThis.myDoor;}

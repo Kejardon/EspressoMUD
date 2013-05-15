@@ -1,7 +1,7 @@
 package com.planet_ink.coffee_mud.Libraries;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 
 import com.planet_ink.coffee_mud.application.MUD;
 
@@ -20,8 +20,13 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 	http://www.apache.org/licenses/LICENSE-2.0
 */
 @SuppressWarnings("unchecked")
-public class CharCreation extends StdLibrary implements CharCreationLibrary
+public class CharCreation extends StdLibrary
 {
+	public enum LoginResult
+	{
+		NO_LOGIN, NORMAL_LOGIN, ACCOUNT_LOGIN, SESSION_SWAP, CCREATION_EXIT
+	}
+	
 	public String ID(){return "CharCreation";}
 	public HashMap<String,Integer> startRooms=new HashMap();
 	public HashMap<String,Integer> deathRooms=new HashMap();
@@ -526,13 +531,13 @@ public class CharCreation extends StdLibrary implements CharCreationLibrary
 				if(mob==session.mob())
 					reloadTerminal(mob);
 				mob.body().bringToLife(getDefaultStartRoom(mob),true);
-				mob.location().show(mob,"^[S-NAME] appears!");
+				mob.location().show(mob,"^[S-NAME] appear^s!");
 				CMLib.players().addPlayer(mob);
 	
 				mob.playerStats().setLastIP(session.getByteAddress());
 				Log.sysOut("FrontDoor","Created user: "+mob.name());
 				//notifyFriends(mob,"^X"+mob.name()+" has just been created.^.^?");
-				Vector channels=CMLib.channels().getFlaggedChannelNames(ChannelsLibrary.ChannelFlag.NEWPLAYERS);
+				Vector channels=CMLib.channels().getFlaggedChannelNames(CMChannels.ChannelFlag.NEWPLAYERS);
 				for(int i=0;i<channels.size();i++)
 					CMLib.commands().postChannel((String)channels.get(i),mob.name()+" has just been created.",true);
 			}
@@ -793,7 +798,7 @@ public class CharCreation extends StdLibrary implements CharCreationLibrary
 		if(showMessage) mob.location().show(mob,"^[S-NAME] stirs!");
 		mob.playerStats().setLastIP(session.getByteAddress());
 		notifyFriends(mob,"^X"+mob.name()+" has logged on.^.^?");
-		Vector<String> channels=CMLib.channels().getFlaggedChannelNames(ChannelsLibrary.ChannelFlag.LOGINS);
+		Vector<String> channels=CMLib.channels().getFlaggedChannelNames(CMChannels.ChannelFlag.LOGINS);
 		for(int i=0;i<channels.size();i++)
 			CMLib.commands().postChannel(channels.get(i),mob.name()+" has logged on.",true);
 		return LoginResult.NORMAL_LOGIN;

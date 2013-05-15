@@ -3,6 +3,7 @@ import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 
 /*
@@ -25,12 +26,33 @@ public interface MOB extends ItemCollection.ItemHolder, Interactable, CMSavable,
 	public static final MOB[] dummyMOBArray=new MOB[0];
 	public class QueuedCommand	//Nothing more than a storage object instead of having an Object[] and typecasting stuff
 	{
+		protected static final ConcurrentLinkedQueue<QueuedCommand> QCCache = new ConcurrentLinkedQueue();
+		
+		protected QueuedCommand(){}
+		
 		public long nextAct;
 		public Command command;
 		public String cmdString;
 		public int commandType;
 		public Object data;
 		public int metaFlags;
+		public static QueuedCommand newQC()
+		{
+			QueuedCommand queued = QCCache.poll();
+			if(queued==null)
+				return new QueuedCommand();
+			return queued;
+		}
+		public void returnThis()
+		{
+			nextAct=0;
+			command=null;
+			cmdString=null;
+			commandType=0;
+			data=null;
+			metaFlags=0;
+			QCCache.offer(this);
+		}
 	}
 	public class Skilltable extends Hashtable<Skill, MOBSkill>
 	{

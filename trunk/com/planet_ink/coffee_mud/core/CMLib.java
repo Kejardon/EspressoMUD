@@ -1,7 +1,9 @@
 package com.planet_ink.coffee_mud.core;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
+import com.planet_ink.coffee_mud.core.database.DBManager;
+import com.planet_ink.coffee_mud.core.threads.ServiceEngine;
 
 import java.util.*;
 import java.lang.reflect.Modifier;
@@ -51,65 +53,65 @@ public class CMLib
 		return V.iterator();
 	}
 
-	public static DatabaseEngine database(){return (DatabaseEngine)libraries[Library.DATABASE.ordinal()];}
-	public static ThreadEngine threads(){return (ThreadEngine)libraries[Library.THREADS.ordinal()];}
+	public static DBManager database(){return (DBManager)libraries[Library.DATABASE.ordinal()];}
+	public static ServiceEngine threads(){return (ServiceEngine)libraries[Library.THREADS.ordinal()];}
 	public static ExternalHTTPRequests httpUtils(){return (ExternalHTTPRequests)libraries[Library.HTTP.ordinal()];}
-	public static ListingLibrary lister(){return (ListingLibrary)libraries[Library.LISTER.ordinal()];}
-	public static MoneyLibrary beanCounter(){return (MoneyLibrary)libraries[Library.MONEY.ordinal()];}
-	public static MaterialLibrary materials(){return (MaterialLibrary)libraries[Library.MATERIALS.ordinal()];}
-	public static CombatLibrary combat(){return (CombatLibrary)libraries[Library.COMBAT.ordinal()];}
-	public static HelpLibrary help(){return (HelpLibrary)libraries[Library.HELP.ordinal()];}
-	public static TrackingLibrary tracking(){return (TrackingLibrary)libraries[Library.TRACKING.ordinal()];}
-	public static MaskingLibrary masking(){return (MaskingLibrary)libraries[Library.MASKING.ordinal()];}
-	public static ChannelsLibrary channels(){return (ChannelsLibrary)libraries[Library.CHANNELS.ordinal()];}
-	public static CommonCommands commands(){return (CommonCommands)libraries[Library.COMMANDS.ordinal()];}
-	public static EnglishParsing english(){return (EnglishParsing)libraries[Library.ENGLISH.ordinal()];}
-	public static TelnetFilter coffeeFilter(){return (TelnetFilter)libraries[Library.TELNET.ordinal()];}
-	public static GenericBuilder coffeeMaker(){return (GenericBuilder)libraries[Library.OBJBUILDERS.ordinal()];}
-	public static SessionsList sessions(){return (SessionsList)libraries[Library.SESSIONS.ordinal()];}
-	public static CMFlagLibrary flags(){return (CMFlagLibrary)libraries[Library.FLAGS.ordinal()];}
-	public static XMLLibrary xml(){return (XMLLibrary)libraries[Library.XML.ordinal()];}
-	public static CMMiscUtils utensils(){return (CMMiscUtils)libraries[Library.UTENSILS.ordinal()];}
-	public static WorldMap map(){return (WorldMap)libraries[Library.MAP.ordinal()];}
-	public static LanguageLibrary lang(){return (LanguageLibrary)libraries[Library.LANGUAGE.ordinal()];}
-	public static DiceLibrary dice(){return (DiceLibrary)libraries[Library.DICE.ordinal()];}
-	public static TimeManager time(){return (TimeManager)libraries[Library.TIME.ordinal()];}
-	public static ColorLibrary color(){return (ColorLibrary)libraries[Library.COLOR.ordinal()];}
-	public static CharCreationLibrary login(){return (CharCreationLibrary)libraries[Library.LOGIN.ordinal()];}
-	public static PlayerLibrary players(){return (PlayerLibrary)libraries[Library.PLAYERS.ordinal()];}
-	public static GenericEditor genEd(){return (GenericEditor)libraries[Library.GENEDITOR.ordinal()];}
-	public static MiscLibrary misc(){return (MiscLibrary)libraries[Library.MISC.ordinal()];}
+	public static CMLister lister(){return (CMLister)libraries[Library.LISTER.ordinal()];}
+	public static BeanCounter beanCounter(){return (BeanCounter)libraries[Library.MONEY.ordinal()];}
+	public static RawCMaterial materials(){return (RawCMaterial)libraries[Library.MATERIALS.ordinal()];}
+	public static MUDFight combat(){return (MUDFight)libraries[Library.COMBAT.ordinal()];}
+	public static MUDHelp help(){return (MUDHelp)libraries[Library.HELP.ordinal()];}
+	public static MUDTracker tracking(){return (MUDTracker)libraries[Library.TRACKING.ordinal()];}
+	public static MUDZapper masking(){return (MUDZapper)libraries[Library.MASKING.ordinal()];}
+	public static CMChannels channels(){return (CMChannels)libraries[Library.CHANNELS.ordinal()];}
+	public static CommonMsgs commands(){return (CommonMsgs)libraries[Library.COMMANDS.ordinal()];}
+	public static EnglishParser english(){return (EnglishParser)libraries[Library.ENGLISH.ordinal()];}
+	public static CoffeeFilter coffeeFilter(){return (CoffeeFilter)libraries[Library.TELNET.ordinal()];}
+	public static CoffeeMaker coffeeMaker(){return (CoffeeMaker)libraries[Library.OBJBUILDERS.ordinal()];}
+	public static Sessions sessions(){return (Sessions)libraries[Library.SESSIONS.ordinal()];}
+	public static Sense flags(){return (Sense)libraries[Library.FLAGS.ordinal()];}
+	public static XMLManager xml(){return (XMLManager)libraries[Library.XML.ordinal()];}
+	public static CoffeeUtensils utensils(){return (CoffeeUtensils)libraries[Library.UTENSILS.ordinal()];}
+	public static CMMap map(){return (CMMap)libraries[Library.MAP.ordinal()];}
+	public static DirtyLanguage lang(){return (DirtyLanguage)libraries[Library.LANGUAGE.ordinal()];}
+	public static Dice dice(){return (Dice)libraries[Library.DICE.ordinal()];}
+	public static CoffeeTime time(){return (CoffeeTime)libraries[Library.TIME.ordinal()];}
+	public static CMColor color(){return (CMColor)libraries[Library.COLOR.ordinal()];}
+	public static CharCreation login(){return (CharCreation)libraries[Library.LOGIN.ordinal()];}
+	public static CMPlayers players(){return (CMPlayers)libraries[Library.PLAYERS.ordinal()];}
+	public static CMGenEditor genEd(){return (CMGenEditor)libraries[Library.GENEDITOR.ordinal()];}
+	public static MiscLib misc(){return (MiscLib)libraries[Library.MISC.ordinal()];}
 
 	public static Library convertToLibraryCode(Object O)
 	{
-		if(O instanceof DatabaseEngine) return Library.DATABASE;
-		if(O instanceof ThreadEngine) return Library.THREADS;
+		if(O instanceof DBManager) return Library.DATABASE;
+		if(O instanceof ServiceEngine) return Library.THREADS;
 		if(O instanceof ExternalHTTPRequests) return Library.HTTP;
-		if(O instanceof ListingLibrary) return Library.LISTER;
-		if(O instanceof MoneyLibrary) return Library.MONEY;
-		if(O instanceof CombatLibrary) return Library.COMBAT;
-		if(O instanceof HelpLibrary) return Library.HELP;
-		if(O instanceof TrackingLibrary) return Library.TRACKING;
-		if(O instanceof LanguageLibrary) return Library.LANGUAGE;
-		if(O instanceof MaskingLibrary) return Library.MASKING;
-		if(O instanceof ChannelsLibrary) return Library.CHANNELS;
-		if(O instanceof CommonCommands) return Library.COMMANDS;
-		if(O instanceof EnglishParsing) return Library.ENGLISH;
-		if(O instanceof TelnetFilter) return Library.TELNET;
-		if(O instanceof GenericBuilder) return Library.OBJBUILDERS;
-		if(O instanceof SessionsList) return Library.SESSIONS;
-		if(O instanceof CMFlagLibrary) return Library.FLAGS;
-		if(O instanceof XMLLibrary) return Library.XML;
-		if(O instanceof CMMiscUtils) return Library.UTENSILS;
-		if(O instanceof WorldMap) return Library.MAP;
-		if(O instanceof DiceLibrary) return Library.DICE;
-		if(O instanceof TimeManager) return Library.TIME;
-		if(O instanceof ColorLibrary) return Library.COLOR;
-		if(O instanceof CharCreationLibrary) return Library.LOGIN;
-		if(O instanceof MaterialLibrary) return Library.MATERIALS;
-		if(O instanceof PlayerLibrary) return Library.PLAYERS;
-		if(O instanceof GenericEditor) return Library.GENEDITOR;
-		if(O instanceof MiscLibrary) return Library.MISC;
+		if(O instanceof CMLister) return Library.LISTER;
+		if(O instanceof BeanCounter) return Library.MONEY;
+		if(O instanceof MUDFight) return Library.COMBAT;
+		if(O instanceof MUDHelp) return Library.HELP;
+		if(O instanceof MUDTracker) return Library.TRACKING;
+		if(O instanceof DirtyLanguage) return Library.LANGUAGE;
+		if(O instanceof MUDZapper) return Library.MASKING;
+		if(O instanceof CMChannels) return Library.CHANNELS;
+		if(O instanceof CommonMsgs) return Library.COMMANDS;
+		if(O instanceof EnglishParser) return Library.ENGLISH;
+		if(O instanceof CoffeeFilter) return Library.TELNET;
+		if(O instanceof CoffeeMaker) return Library.OBJBUILDERS;
+		if(O instanceof Sessions) return Library.SESSIONS;
+		if(O instanceof Sense) return Library.FLAGS;
+		if(O instanceof XMLManager) return Library.XML;
+		if(O instanceof CoffeeUtensils) return Library.UTENSILS;
+		if(O instanceof CMMap) return Library.MAP;
+		if(O instanceof Dice) return Library.DICE;
+		if(O instanceof CoffeeTime) return Library.TIME;
+		if(O instanceof CMColor) return Library.COLOR;
+		if(O instanceof CharCreation) return Library.LOGIN;
+		if(O instanceof RawCMaterial) return Library.MATERIALS;
+		if(O instanceof CMPlayers) return Library.PLAYERS;
+		if(O instanceof CMGenEditor) return Library.GENEDITOR;
+		if(O instanceof MiscLib) return Library.MISC;
 		return null;
 	}
 

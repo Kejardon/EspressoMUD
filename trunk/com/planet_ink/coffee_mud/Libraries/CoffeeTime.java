@@ -1,7 +1,7 @@
 package com.planet_ink.coffee_mud.Libraries;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 
 import java.util.*;
 import java.nio.ByteBuffer;
@@ -18,8 +18,24 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 	http://www.apache.org/licenses/LICENSE-2.0
 */
 //NOTE: Only the date2String methods are actually used
-public class CoffeeTime extends StdLibrary implements TimeManager
+public class CoffeeTime extends StdLibrary
 {
+	public final static long MILI_SECOND=1000;
+	public final static long MILI_MINUTE=MILI_SECOND*60;
+	public final static long MILI_HOUR=MILI_MINUTE*60;
+	public final static long MILI_DAY=MILI_HOUR*24;
+	public final static long MILI_WEEK=MILI_DAY*7;
+	public final static long MILI_MONTH=MILI_DAY*30;
+	public final static long MILI_YEAR=MILI_DAY*365;
+	
+	public final static String[] MONTHS={
+		"January","February","March","April","May","June","July","August","September","October","November","December"
+	};
+	
+	public final static String[] SHORTMONTHS={
+		"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"
+	};
+
 	public String ID(){return "CoffeeTime";}
 	//public static TimeClock globalClock=null;
 //	protected TimeClock globalClock=null;
@@ -685,16 +701,16 @@ public class CoffeeTime extends StdLibrary implements TimeManager
 		lastWord=lastWord.toUpperCase().trim();
 		TimeClock clock=CMLib.misc().globalClock();
 		if(lastWord.startsWith("MINUTE")||lastWord.equals("MINS")||lastWord.equals("MIN"))
-			return TimeManager.MILI_MINUTE/Tickable.TIME_TICK_DOUBLE;
+			return CoffeeTime.MILI_MINUTE/Tickable.TIME_TICK_DOUBLE;
 		else
 		if(lastWord.startsWith("SECOND")||lastWord.equals("SECS")||lastWord.equals("SEC"))
-			return TimeManager.MILI_SECOND/Tickable.TIME_TICK_DOUBLE;
+			return CoffeeTime.MILI_SECOND/Tickable.TIME_TICK_DOUBLE;
 		else
 		if(lastWord.startsWith("HOUR"))
-			return TimeManager.MILI_HOUR/Tickable.TIME_TICK_DOUBLE;
+			return CoffeeTime.MILI_HOUR/Tickable.TIME_TICK_DOUBLE;
 		else
 		if(lastWord.startsWith("DAY")||lastWord.equals("DAYS"))
-			return TimeManager.MILI_DAY/Tickable.TIME_TICK_DOUBLE;
+			return CoffeeTime.MILI_DAY/Tickable.TIME_TICK_DOUBLE;
 		else
 		if(lastWord.startsWith("TICK"))
 			return 1.0;

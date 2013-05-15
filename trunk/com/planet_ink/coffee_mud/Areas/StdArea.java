@@ -2,7 +2,7 @@ package com.planet_ink.coffee_mud.Areas;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Items.Basic.StdItem;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 
 import java.util.*;
 import java.nio.ByteBuffer;
@@ -587,12 +587,12 @@ public class StdArea implements Area
 		CHL(){
 			public ByteBuffer save(StdArea E){
 				if(E.children.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.children.toArray(CMSavable.dummyCMSavableArray));
-				return GenericBuilder.emptyBuffer; }
+				return CoffeeMaker.emptyBuffer; }
 			public int size(){return 0;}
 			public void load(StdArea E, ByteBuffer S){ E.childrenToLoad=CMLib.coffeeMaker().loadAInt(S); } },
 		ENV(){
 			public ByteBuffer save(StdArea E){
-				if(E.myEnvironmental==null) return GenericBuilder.emptyBuffer;
+				if(E.myEnvironmental==null) return CoffeeMaker.emptyBuffer;
 				return CMLib.coffeeMaker().savSubFull(E.myEnvironmental); }
 			public int size(){return -1;}
 			public CMSavable subObject(StdArea fromThis){return fromThis.myEnvironmental;}
@@ -604,7 +604,7 @@ public class StdArea implements Area
 		EFC(){
 			public ByteBuffer save(StdArea E){
 				if(E.affects.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.affects.toArray(CMSavable.dummyCMSavableArray));
-				return GenericBuilder.emptyBuffer; }
+				return CoffeeMaker.emptyBuffer; }
 			public int size(){return 0;}
 			public void load(StdArea E, ByteBuffer S){ E.effectsToLoad=CMLib.coffeeMaker().loadAInt(S); } },
 		ATH(){

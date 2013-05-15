@@ -1,7 +1,7 @@
 package com.planet_ink.coffee_mud.Libraries;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 
 import com.planet_ink.coffee_mud.core.database.*;
 
@@ -17,17 +17,17 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 	http://www.apache.org/licenses/LICENSE-2.0
 */
 @SuppressWarnings("unchecked")
-public class MiscLib extends StdLibrary implements MiscLibrary
+public class MiscLib extends StdLibrary implements CMSavable, Runnable
 {
-	//private ThreadEngine.SupportThread thread=null;
+	//private SupportThread thread=null;
 	protected TimeClock globalClock=null;
 
 	public String ID(){return "MiscLib";}
-	//public ThreadEngine.SupportThread getSupportThread() { return thread;}
+	//public SupportThread getSupportThread() { return thread;}
 
 	/*public boolean activate() {
 		if(thread==null)
-			thread=new ThreadEngine.SupportThread("THMiscSaver"+Thread.currentThread().getThreadGroup().getName().charAt(0), 
+			thread=new SupportThread("THMiscSaver"+Thread.currentThread().getThreadGroup().getName().charAt(0), 
 					DBManager.timeTillDoLast+2*DBManager.waitInterval, this, CMSecurity.isDebugging("SAVETHREAD"));
 		if(!thread.started)
 			thread.start();

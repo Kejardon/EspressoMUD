@@ -1,8 +1,8 @@
 package com.planet_ink.coffee_mud.Common;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.CharCreationLibrary.LoginResult;
+import com.planet_ink.coffee_mud.Libraries.*;
+import com.planet_ink.coffee_mud.Libraries.CharCreation.LoginResult;
 import com.jcraft.jzlib.*;
 import java.io.*;
 import java.util.*;
@@ -952,14 +952,14 @@ public class DefaultSession extends Thread implements Session
 	{
 		if(!enANSI) return "";
 		if((c>='0')&&(c<='7'))
-			return ColorLibrary.ASCI_COLORS[(c-'0')+(defaultDark?0:8)];
+			return CMColor.ASCI_COLORS[(c-'0')+(defaultDark?0:8)];
 		switch(c)
 		{
-			case '.': return ColorLibrary.COLOR_NONE;
-			case 'I': return ColorLibrary.COLOR_ITALIC;
-			case 'i': return ColorLibrary.COLOR_ENDITALIC;
-			case 'U': return ColorLibrary.COLOR_UNDERLINE;
-			case 'u': return ColorLibrary.COLOR_ENDUNDERLINE;
+			case '.': return CMColor.COLOR_NONE;
+			case 'I': return CMColor.COLOR_ITALIC;
+			case 'i': return CMColor.COLOR_ENDITALIC;
+			case 'U': return CMColor.COLOR_UNDERLINE;
+			case 'u': return CMColor.COLOR_ENDUNDERLINE;
 		}
 		return "";
 	}
@@ -1032,12 +1032,12 @@ public class DefaultSession extends Thread implements Session
 		if(foreColor==-1)
 			colorString.append('9');
 		else
-			colorString.append(ColorLibrary.xTermToANSI[foreColor]);
+			colorString.append(CMColor.xTermToANSI[foreColor]);
 		colorString.append(";4");
 		if(backColor==-1)
 			colorString.append('9');
 		else
-			colorString.append(ColorLibrary.xTermToANSINoBold[backColor]);
+			colorString.append(CMColor.xTermToANSINoBold[backColor]);
 		colorString.append('m');
 		return colorString.toString();
 	}
@@ -2113,7 +2113,7 @@ public class DefaultSession extends Thread implements Session
 				status=Session.STATUS_LOGIN;
 				String input=null;
 				mob=null;
-				CharCreationLibrary.LoginResult loginResult=null;
+				LoginResult loginResult=null;
 				if(acct==null)
 					loginResult=CMLib.login().login(this);
 				//TODO: Load account settings (i.e. ansi/xterm/whatever) here!
@@ -2130,7 +2130,7 @@ public class DefaultSession extends Thread implements Session
 						status=Session.STATUS_LOGIN;
 					}
 				}
-				if(loginResult != CharCreationLibrary.LoginResult.NO_LOGIN)
+				if(loginResult != LoginResult.NO_LOGIN)
 				{
 					status=Session.STATUS_LOGIN2;
 					tries=0;
@@ -2147,7 +2147,7 @@ public class DefaultSession extends Thread implements Session
 								.append(((mob.playerStats().hasBits(PlayerStats.ATT_ANSI))&&clientTelnetMode(Session.TELNET_ANSI))?" ANSI":"")
 								.append(", login: "+mob.name());
 						Log.sysOut("Session",loginMsg.toString());
-						if(loginResult != CharCreationLibrary.LoginResult.NO_LOGIN)
+						if(loginResult != LoginResult.NO_LOGIN)
 						{
 							CMMsg loginMessage = CMClass.getMsg(mob,null,null,EnumSet.of(CMMsg.MsgCode.LOGIN),null);
 							if(!CMLib.map().sendGlobalMessage(mob,EnumSet.of(CMMsg.MsgCode.LOGIN),loginMessage))
@@ -2235,7 +2235,7 @@ public class DefaultSession extends Thread implements Session
 		{
 			String name=mob.name();
 			if(name.trim().length()==0) name="Unknown";
-			Vector<String> channels=CMLib.channels().getFlaggedChannelNames(ChannelsLibrary.ChannelFlag.LOGOFFS);
+			Vector<String> channels=CMLib.channels().getFlaggedChannelNames(CMChannels.ChannelFlag.LOGOFFS);
 			for(int i=0;i<channels.size();i++)
 				CMLib.commands().postChannel(channels.elementAt(i),name+" has logged out",true);
 			CMLib.login().notifyFriends(mob,"^X"+mob.name()+" has logged off.^.^?");

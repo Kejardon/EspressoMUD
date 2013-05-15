@@ -1,7 +1,7 @@
 package com.planet_ink.coffee_mud.Common;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 
 import java.util.*;
 import java.nio.ByteBuffer;
@@ -330,7 +330,7 @@ public class DefaultBindCollection implements BindCollection, Ownable
 		INV(){
 			public ByteBuffer save(DefaultBindCollection E){
 				if(E.inventory.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.inventory.toArray(CMSavable.dummyCMSavableArray));
-				return GenericBuilder.emptyBuffer; }
+				return CoffeeMaker.emptyBuffer; }
 			public int size(){return 4;}
 			public void load(DefaultBindCollection E, ByteBuffer S){ E.bindsToLoad=CMLib.coffeeMaker().loadAInt(S); } },
 		;

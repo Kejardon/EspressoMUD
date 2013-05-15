@@ -1,7 +1,7 @@
 package com.planet_ink.coffee_mud.Libraries;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 
 import java.util.*;
 import java.nio.ByteBuffer;
@@ -15,7 +15,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 	http://www.apache.org/licenses/LICENSE-2.0
 */
 @SuppressWarnings("unchecked")
-public class MUDTracker extends StdLibrary implements TrackingLibrary
+public class MUDTracker extends StdLibrary
 {
 	public String ID(){return "MUDTracker";}
 /*
@@ -671,8 +671,7 @@ public class MUDTracker extends StdLibrary implements TrackingLibrary
 				}
 			}
 		if(R2==null) return "Unable to determine '"+where+"'.";
-		TrackingLibrary.TrackingFlags flags = new TrackingLibrary.TrackingFlags()
-											.add(TrackingLibrary.TrackingFlag.NOEMPTYGRIDS);
+		TrackingFlags flags = new TrackingFlags().add(TrackingFlag.NOEMPTYGRIDS);
 		if(set.size()==0)
 			getRadiantRooms(R1,set,flags,R2,radius,ignoreRooms);
 		int foundAt=-1;

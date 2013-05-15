@@ -1,5 +1,5 @@
 package com.planet_ink.coffee_mud.core.interfaces;
-import com.planet_ink.coffee_mud.Libraries.interfaces.PlayerLibrary;
+import com.planet_ink.coffee_mud.Libraries.*;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import java.util.*;
 

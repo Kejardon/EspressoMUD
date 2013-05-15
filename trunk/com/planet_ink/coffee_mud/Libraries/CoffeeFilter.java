@@ -1,7 +1,7 @@
 package com.planet_ink.coffee_mud.Libraries;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 
 import java.util.*;
 import java.nio.ByteBuffer;
@@ -15,15 +15,33 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 	http://www.apache.org/licenses/LICENSE-2.0
 */
 @SuppressWarnings("unchecked")
-public class CoffeeFilter extends StdLibrary implements TelnetFilter
+public class CoffeeFilter extends StdLibrary
 {
+	public final static String hexStr="0123456789ABCDEF";
+	public final static int HISHER=0;
+	public final static int HIMHER=HISHER+1;
+	public final static int NAME=HIMHER+1;
+	public final static int NAMESELF=NAME+1;
+	public final static int HESHE=NAMESELF+1;
+	public final static int ISARE=HESHE+1;
+	public final static int HASHAVE=ISARE+1;
+	public final static int YOUPOSS=HASHAVE+1;
+	public final static int HIMHERSELF=YOUPOSS+1;
+	public final static int HISHERSELF=HIMHERSELF+1;
+	public final static int SIRMADAM=HISHERSELF+1;
+	public final static int NAMENOART=SIRMADAM+1;
+	public final static String[] FILTER_DESCS={"-HIS-HER","-HIM-HER","-NAME","-NAMESELF",
+											   "-HE-SHE","-IS-ARE","-HAS-HAVE","-YOUPOSS",
+											   "-HIM-HERSELF","-HIS-HERSELF",
+											   "-SIRMADAM","-NAMENOART"};
+
 	public String ID(){return "CoffeeFilter";}
-	public Hashtable<String, Integer> tagTable=null;
+	public volatile Hashtable<String, Integer> tagTable=null;
 	
 	public Hashtable<String, Integer> getTagTable()
 	{
 		if(tagTable==null)
-			synchronized(this){if(tagTable==null) tagTable=CMStrings.makeNumericHash(TelnetFilter.FILTER_DESCS);}
+			synchronized(this){if(tagTable==null) tagTable=CMStrings.makeNumericHash(FILTER_DESCS);}
 		return tagTable;
 	}
 	
@@ -169,7 +187,7 @@ public class CoffeeFilter extends StdLibrary implements TelnetFilter
 		StringBuilder buf=new StringBuilder(msg.length()*5/4);
 
 		int loop=0;
-		String currentColor=ColorLibrary.COLOR_NONE;	//"\033[0m"
+		String currentColor=CMColor.COLOR_NONE;	//"\033[0m"
 		ArrayList<String> oldColors=null;//=new ArrayList();
 
 		while(msg.length()>loop)
@@ -221,7 +239,7 @@ public class CoffeeFilter extends StdLibrary implements TelnetFilter
 						}
 						else if(escapeChar=='.')
 						{
-							currentColor=ColorLibrary.COLOR_NONE;
+							currentColor=CMColor.COLOR_NONE;
 							oldColors=null;
 						}
 					}
@@ -275,7 +293,7 @@ public class CoffeeFilter extends StdLibrary implements TelnetFilter
 			loop++;
 		}
 
-		if((oldColors!=null)&&(oldColors.size()>0)) buf.append(ColorLibrary.COLOR_NONE);
+		if((oldColors!=null)&&(oldColors.size()>0)) buf.append(CMColor.COLOR_NONE);
 
 		if(CMSecurity.isDebugging("OUTPUT"))
 			Log.debugOut("CoffeeFilter","OUTPUT: "+(((S!=null)&&(S.mob()!=null))?S.mob().name():"")+": "+buf.toString());
@@ -491,7 +509,7 @@ public class CoffeeFilter extends StdLibrary implements TelnetFilter
 		int loop=0;
 		int lastSpace=0;
 		int firstAlpha=-1;
-		String currentColor=ColorLibrary.COLOR_NONE;	//"\033[0m"
+		String currentColor=CMColor.COLOR_NONE;	//"\033[0m"
 		ArrayList<String> oldColors=null;//=new ArrayList();
 
 		while(msg.length()>loop)
@@ -570,7 +588,7 @@ public class CoffeeFilter extends StdLibrary implements TelnetFilter
 							}
 							else if(escapeChar=='.')
 							{
-								currentColor=ColorLibrary.COLOR_NONE;
+								currentColor=CMColor.COLOR_NONE;
 								oldColors=null;
 							}
 						}
@@ -724,7 +742,7 @@ public class CoffeeFilter extends StdLibrary implements TelnetFilter
 
 		if(firstAlpha>=0)
 			buf.setCharAt(firstAlpha,Character.toUpperCase(buf.charAt(firstAlpha)));
-		if((oldColors!=null)&&(oldColors.size()>0)) buf.append(ColorLibrary.COLOR_NONE);
+		if((oldColors!=null)&&(oldColors.size()>0)) buf.append(CMColor.COLOR_NONE);
 
 		if(CMSecurity.isDebugging("OUTPUT"))
 			Log.debugOut("CoffeeFilter","OUTPUT: "+(((S!=null)&&(S.mob()!=null))?S.mob().name():"")+": "+buf.toString());

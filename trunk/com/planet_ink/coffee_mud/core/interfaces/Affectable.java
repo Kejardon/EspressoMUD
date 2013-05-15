@@ -60,7 +60,7 @@ public interface Affectable extends ListenHolder, ListenHolder.MsgListener, List
 		EFC(){
 			public ByteBuffer save(CMSavable E){
 				if(E.affects.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.affects.toArray(CMSavable.dummyCMSavableArray));
-				return GenericBuilder.emptyBuffer; }
+				return CoffeeMaker.emptyBuffer; }
 			public int size(){return 0;}
 			public void load(CMSavable E, ByteBuffer S){ E.effectsToLoad=CMLib.coffeeMaker().loadAInt(S); } },
 	}

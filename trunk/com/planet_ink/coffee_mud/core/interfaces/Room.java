@@ -1,7 +1,7 @@
 package com.planet_ink.coffee_mud.core.interfaces;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 
 import java.util.*;
 import java.nio.ByteBuffer;
@@ -21,6 +21,7 @@ public interface Room extends ItemCollection.ItemHolder, Interactable, CMSavable
 {
 	//public static final EnumSet<CMMsg.MsgCode> showHappensSet=EnumSet.of(CMMsg.MsgCode.SHOWHAPPEN);
 	public static Room[] dummyRoomArray=new Room[0];
+	/*
 	public static class REMap implements Interactable
 	{
 		protected static final ConcurrentLinkedQueue<REMap> REMapCache = new ConcurrentLinkedQueue();
@@ -100,6 +101,7 @@ public interface Room extends ItemCollection.ItemHolder, Interactable, CMSavable
 		public boolean okMessage(OkChecker myHost, CMMsg msg){return true;}
 		public void executeMsg(ExcChecker myHost, CMMsg msg){return;}
 	}
+	*/
 /*
 	public enum Substance
 	{
@@ -146,21 +148,24 @@ public interface Room extends ItemCollection.ItemHolder, Interactable, CMSavable
 
 	public int numExits();
 	public void addExit(Exit E, Room destination);
-	public void addExit(REMap R);
-	public void removeExit(REMap R);
-	public void removeExit(Exit E, Room R);
+	public void addExit(ExitInstance E);
+	public void removeExit(ExitInstance R);
+	//public void removeExit(Exit E, Room R);
 	public Exit getExit(int i);
 	public Exit getExit(String target);
 	public Room getExitDestination(int i);
 	public Room getExitDestination(Exit E);
-	public REMap getREMap(int i);
-	public REMap getREMap(String target);
-	public REMap getREMap(Exit E, Room R);
+	public ExitInstance getExitInstance(int i);
+	public ExitInstance getExitInstance(String target);
+	public ExitInstance getExitInstance(Exit E, Room R);
+	public boolean hasExit(ExitInstance E);
 	//public REMap hasREMap(REMap M);
-	public Iterator<REMap> getAllExits();
-	public boolean changeExit(REMap M, Exit newE);
-	public boolean changeExit(REMap M, Room newR);
-	public boolean changeExit(REMap M, REMap newM);
+	public Iterator<ExitInstance> getAllExits();
+	/*
+	public boolean changeExit(ExitInstance M, Exit newE);
+	public boolean changeExit(ExitInstance M, Room newR);
+	public boolean changeExit(ExitInstance M, ExitInstance newM);
+	*/
 //	public int getExitIndex(String target);
 //	public int getExitIndex(Exit E, Room R);
 //	public void initExits();

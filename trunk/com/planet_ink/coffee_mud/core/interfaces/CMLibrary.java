@@ -1,4 +1,4 @@
-package com.planet_ink.coffee_mud.Libraries.interfaces;
+package com.planet_ink.coffee_mud.core.interfaces;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
 
@@ -22,6 +22,6 @@ public interface CMLibrary extends CMObject
 	//This is called early early by CMLIB, before libraries are even registered... except since none are registered
 	//none get called by it. Not that it matters as none of them do anything at the moment. TODO
 	public void propertiesLoaded();
-	public ThreadEngine.SupportThread getSupportThread();
+	public SupportThread getSupportThread();
 	public void finalInitialize();
 }

@@ -1,7 +1,7 @@
 package com.planet_ink.coffee_mud.Libraries;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 
 import java.util.*;
 import java.nio.ByteBuffer;
@@ -16,7 +16,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 	http://www.apache.org/licenses/LICENSE-2.0
 */
 @SuppressWarnings("unchecked")
-public class CMPlayers extends StdLibrary implements PlayerLibrary
+public class CMPlayers extends StdLibrary implements Runnable
 {
 	public String ID(){return "CMPlayers";}
 	//Ideally, new ConcurrentHashMap(size, 0.75, 2);
@@ -25,8 +25,8 @@ public class CMPlayers extends StdLibrary implements PlayerLibrary
 	public ArrayList<MOB> playersQueue = new ArrayList();
 	public ArrayList<PlayerAccount> accountsQueue = new ArrayList();
 
-	private ThreadEngine.SupportThread thread=null;
-	public ThreadEngine.SupportThread getSupportThread() { return thread;}
+	private SupportThread thread=null;
+	public SupportThread getSupportThread() { return thread;}
 	
 	public int numPlayers() { return playersList.size(); }
 	public void queuePlayer(MOB newOne)	//Should only be called by a single thread at MUD boot, so no synch stuff
@@ -121,7 +121,7 @@ public class CMPlayers extends StdLibrary implements PlayerLibrary
 	}
 	public boolean activate() {
 		if(thread==null)
-			thread=new ThreadEngine.SupportThread("THPlayers"+Thread.currentThread().getThreadGroup().getName().charAt(0), 
+			thread=new SupportThread("THPlayers"+Thread.currentThread().getThreadGroup().getName().charAt(0), 
 					MudHost.TIME_SAVETHREAD_SLEEP, this, CMSecurity.isDebugging("SAVETHREAD"));
 		if(!thread.started)
 			thread.start();
@@ -179,7 +179,7 @@ public class CMPlayers extends StdLibrary implements PlayerLibrary
 /*
 	public Enumeration<ThinPlayer> thinPlayers(String sort, Hashtable cache)
 	{
-		List<PlayerLibrary.ThinPlayer> V=(cache==null)?null:(List<PlayerLibrary.ThinPlayer>)cache.get("PLAYERLISTVECTOR"+sort);
+		List<ThinPlayer> V=(cache==null)?null:(List<ThinPlayer>)cache.get("PLAYERLISTVECTOR"+sort);
 		if(V==null)
 		{
 			V=CMLib.database().getExtendedUserList();
@@ -188,7 +188,7 @@ public class CMPlayers extends StdLibrary implements PlayerLibrary
 			&&(code>=0)
 			&&(V.size()>1))
 			{
-				List<PlayerLibrary.ThinPlayer> unV=V;
+				List<ThinPlayer> unV=V;
 				V=new Vector();
 				while(unV.size()>0)
 				{

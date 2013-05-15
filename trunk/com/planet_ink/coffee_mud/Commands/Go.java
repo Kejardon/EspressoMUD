@@ -1,9 +1,10 @@
 package com.planet_ink.coffee_mud.Commands;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -16,16 +17,38 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 public class Go extends StdCommand
 {
 	public Go(){access=new String[]{"GO","WALK"};}
+	
+	//QueuedMove.newMove(exit, moveDistance)
+	protected static class QueuedMove
+	{
+		protected static final ConcurrentLinkedQueue<QueuedMove> QMCache = new ConcurrentLinkedQueue();
+		
+		public ExitInstance lastExit;
+		public int[] moveCommand;
+		public QueuedMove(ExitInstance exit, int[] move){lastExit=exit; moveCommand=move;}
+		protected QueuedMove(){}
+		public static QueuedMove newMove(ExitInstance exit, int[] move)
+		{
+			QueuedMove queued = QMCache.poll();
+			if(queued==null)
+				return new QueuedMove(exit, move);
+			queued.lastExit=exit;
+			queued.moveCommand=move;
+			return queued;
+		}
+		public void returnThis(){lastExit=null; moveCommand=null; QMCache.offer(this);}
+	}
 
 	public static boolean move(MOB mob,
-						Room.REMap exit,
-						Room.REMap entrance,
+						Room thisRoom,
+						ExitInstance through,
 						boolean nolook,
 						boolean always)
 	{
-		if(mob==null) return false;
-		Room thisRoom=mob.location();
-		Room destRoom=(exit==null?null:exit.room);
+		if(mob==null || through==null) return false;
+		Exit exit=through.getExit();
+		Room destRoom=through.getDestination();
+		ExitInstance entrance=exit.oppositeOf(through, destRoom);
 
 		always|=CMSecurity.isAllowed(mob,"GOTO");
 		//EnumSet enterCode=EnumSet.of(CMMsg.MsgCode.LEAVE);
@@ -35,30 +58,36 @@ public class Go extends StdCommand
 		EnumSet<CMMsg.MsgCode> code=always?EnumSet.of(CMMsg.MsgCode.LEAVE,CMMsg.MsgCode.ALWAYS):EnumSet.of(CMMsg.MsgCode.LEAVE);
 		CMMsg leaveMsg=CMClass.getMsg(mob,null,exit,code,"^[S-NAME] leave(s).");
 		
-		int gotDepart=thisRoom.getLock(0);
-		int gotEntrance=(destRoom==null?0:destRoom.getLock(0));
+		int gotDepart=0;
+		int gotEntrance=0;
 		boolean success=false;
 		try{
+			gotDepart=thisRoom.getLock(0);
+			gotEntrance=(destRoom==null?0:destRoom.getLock(0));
 			if((gotDepart!=2)&&(gotEntrance!=2))
 				success=thisRoom.doAndReturnMsg(leaveMsg);
+			if(success && destRoom!=null)
+			{
+				EnvMap.EnvLocation entranceLoc=null;
+				boolean positions=destRoom.hasPositions();
+				if(positions && entrance!=null)
+					entranceLoc=destRoom.positionOf(entrance);
+				if(entranceLoc==null)
+				{
+					if(positions)
+						destRoom.placeHere(mob.body(), true, 0, 0, 0);
+					else
+						destRoom.bringHere(mob.body(), true);
+				}
+				else
+					destRoom.placeHere(mob.body(), true, entranceLoc.x, entranceLoc.y, entranceLoc.z);
+				if(!nolook)
+					CMLib.commands().postLook(mob);
+			}
 		}finally{
 			if(gotEntrance==1) destRoom.returnLock();
 			if(gotDepart==1) thisRoom.returnLock();
 		}
-
-		if(success && destRoom!=null)
-		{
-			EnvMap.EnvLocation entranceLoc=null;
-			if(destRoom.hasPositions() && entrance!=null)
-				entranceLoc=destRoom.positionOf(entrance);
-			if(entranceLoc==null)
-				destRoom.placeHere(mob.body(), true, 0, 0, 0);
-			else
-				destRoom.placeHere(mob.body(), true, entranceLoc.x, entranceLoc.y, entranceLoc.z);
-			if(!nolook)
-				CMLib.commands().postLook(mob);
-		}
-
 		return success;
 	}
 
@@ -133,8 +162,8 @@ public class Go extends StdCommand
 	{
 		if(commands.cmdString.length()==0)
 		{
-			if(!(commands.data instanceof int[])) return false;
-			int[] moveDistance=(int[])commands.data;
+			if(!(commands.data instanceof QueuedMove)) return false;
+			int[] moveDistance=((QueuedMove)commands.data).moveCommand;
 			if(moveDistance.length!=3) return false;
 			
 			Room R=mob.location();
@@ -158,20 +187,21 @@ public class Go extends StdCommand
 					return false;
 				}
 				EnvMap.EnvLocation exitLocation=null;
+				ExitInstance exit=null;
 				found:
 				if(numExits==1)
 				{
-					Room.REMap exit=R.getREMap(0);
-					if(exit!=null)
+					exit=R.getExitInstance(0);
+					if(exit!=null && exit!=((QueuedMove)commands.data).lastExit)
 						exitLocation=R.positionOf(exit);
 				} else {
 					ArrayList<EnvMap.EnvLocation> options=new ArrayList(numExits);
 					long[] optionScores=new long[numExits];
 					int option=0;
-					for(Iterator<Room.REMap> iter=R.getAllExits();iter.hasNext();)
+					for(Iterator<ExitInstance> iter=R.getAllExits();iter.hasNext();)
 					{
 						EnvMap.EnvLocation next=R.positionOf(iter.next());
-						if(next==null) continue;
+						if(next==null || next.item==((QueuedMove)commands.data).lastExit) continue;
 						long dotProduct=(long)(next.x-mobLocation.x)*moveDistance[0];
 						dotProduct+=(long)(next.y-mobLocation.y)*moveDistance[1];
 						dotProduct+=(long)(next.z-mobLocation.z)*moveDistance[2];
@@ -216,17 +246,16 @@ public class Go extends StdCommand
 					moveDistance[2]-=(exitLocation.z-mobLocation.z);
 
 					mob.goToThing(exitLocation, mobLocation, R);
-					MOB.QueuedCommand qCom=new MOB.QueuedCommand();
+					MOB.QueuedCommand qCom=MOB.QueuedCommand.newQC();
 					qCom.command=this;
 					qCom.cmdString="";
-					qCom.data=moveDistance;
+					qCom.data=QueuedMove.newMove(exit.getExit().oppositeOf(exit, exit.getDestination()), moveDistance);
 					mob.enqueCommand(qCom, true);//TODO: queue command to go the remaining moveDistance
 					return false;
 				}
-				mob.goDistance(moveDistance, mobLocation, R);
 				return false;
 			}
-			
+			mob.goDistance(moveDistance, mobLocation, R);
 			return false;
 		}
 		String whereStr;
@@ -291,17 +320,18 @@ public class Go extends StdCommand
 						return false;
 					}
 					EnvMap.EnvLocation exitLocation=null;
+					ExitInstance exit=null;
 					found:
 					if(numExits==1)
 					{
-						Room.REMap exit=R.getREMap(0);
+						exit=R.getExitInstance(0);
 						if(exit!=null)
 							exitLocation=R.positionOf(exit);
 					} else {
 						ArrayList<EnvMap.EnvLocation> options=new ArrayList(numExits);
 						long[] optionScores=new long[numExits];
 						int option=0;
-						for(Iterator<Room.REMap> iter=R.getAllExits();iter.hasNext();)
+						for(Iterator<ExitInstance> iter=R.getAllExits();iter.hasNext();)
 						{
 							EnvMap.EnvLocation next=R.positionOf(iter.next());
 							if(next==null) continue;
@@ -349,13 +379,14 @@ public class Go extends StdCommand
 						moveDistance[2]-=(exitLocation.z-mobLocation.z);
 						
 						mob.goToThing(exitLocation, mobLocation, R);
-						MOB.QueuedCommand qCom=new MOB.QueuedCommand();
+						MOB.QueuedCommand qCom=MOB.QueuedCommand.newQC();
 						qCom.command=this;
 						qCom.cmdString="";
-						qCom.data=moveDistance;
+						qCom.data=QueuedMove.newMove(exit.getExit().oppositeOf(exit, exit.getDestination()), moveDistance);
 						mob.enqueCommand(qCom, true);
 						return false;
 					}
+					return false;
 				}
 				mob.goDistance(moveDistance, mobLocation, R);
 				return false;
@@ -371,15 +402,9 @@ public class Go extends StdCommand
 		}
 		else
 		{
-			Room.REMap map=R.getREMap(whereStr);
+			ExitInstance map=R.getExitInstance(whereStr);
 			if(map!=null)
-			{
-				Room destination=map.room;
-				Room.REMap entrance=null;
-				if(destination.hasPositions())
-					entrance=destination.getREMap(map.exit, R);
-				move(mob,map,entrance,false,false);
-			}
+				move(mob,R,map,false,false);
 			else
 				mob.tell("There is no exit like that.");
 		}

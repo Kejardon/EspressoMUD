@@ -5,7 +5,7 @@ import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
 
 import java.util.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 import java.util.concurrent.*;
 
 /*
@@ -16,10 +16,10 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 	http://www.apache.org/licenses/LICENSE-2.0
 */
 @SuppressWarnings("unchecked")
-public class ServiceEngine implements ThreadEngine
+public class ServiceEngine implements CMLibrary, Runnable
 {
 	public String ID(){return "ServiceEngine";}
-	private ThreadEngine.SupportThread thread=null;
+	private SupportThread thread=null;
 	//protected HashedList<Tick> ticks=new HashedList<Tick>();
 	protected HashedList<TickArea> areas=new HashedList<TickArea>();
 	protected HashedList<Exit> exits=new HashedList<Exit>();
@@ -35,7 +35,7 @@ public class ServiceEngine implements ThreadEngine
 	public void propertiesLoaded(){}
 	//public Iterator<Tick> tickGroups(){return ticks.iterator();}
 	public Iterator<TickArea> areaGroups(){return areas.iterator();}
-	public ThreadEngine.SupportThread getSupportThread() { return thread;}
+	public SupportThread getSupportThread() { return thread;}
 	protected class GlobalTicker extends Thread //implements Tickable
 	{
 		protected boolean dead=false;
@@ -259,7 +259,7 @@ public class ServiceEngine implements ThreadEngine
 		for(Iterator<CMLibrary> e=CMLib.libraries();e.hasNext();)
 		{
 			CMLibrary lib=e.next();
-			ThreadEngine.SupportThread thread=lib.getSupportThread();
+			SupportThread thread=lib.getSupportThread();
 			if(thread!=null) {
 				String[] S=new String[3];
 				S[0]=thread.getName();
@@ -380,7 +380,7 @@ public class ServiceEngine implements ThreadEngine
 			for(Enumeration e=CMLib.libraries();e.hasMoreElements();)
 			{
 				CMLibrary lib=(CMLibrary)e.nextElement();
-				ThreadEngine.SupportThread thread=lib.getSupportThread();
+				SupportThread thread=lib.getSupportThread();
 				if(thread!=null) {
 					if(curThreadNum==threadNum) {
 						String instrCode=itemCode.substring(xend);
@@ -564,8 +564,8 @@ public class ServiceEngine implements ThreadEngine
 */
 	public String getServiceThreadSummary(Thread T)
 	{
-		if(T instanceof ThreadEngine.SupportThread)
-			return " ("+((ThreadEngine.SupportThread)T).status+")";
+		if(T instanceof SupportThread)
+			return " ("+((SupportThread)T).status+")";
 		else
 		if(T instanceof MudHost)
 			return " ("+((MudHost)T).getStatus()+")";
@@ -592,8 +592,8 @@ public class ServiceEngine implements ThreadEngine
 */
 	public void checkHealth()
 	{
-		long lastDateTime=System.currentTimeMillis()-(5*TimeManager.MILI_MINUTE);
-		//long longerDateTime=System.currentTimeMillis()-(120*TimeManager.MILI_MINUTE);
+		long lastDateTime=System.currentTimeMillis()-(5*CoffeeTime.MILI_MINUTE);
+		//long longerDateTime=System.currentTimeMillis()-(120*CoffeeTime.MILI_MINUTE);
 		//thread.status("checking");
 
 		ArrayList<TickArea> orderedDeaths=new ArrayList();
@@ -686,7 +686,7 @@ public class ServiceEngine implements ThreadEngine
 
 	public boolean activate() {
 		if(thread==null)
-			thread=new ThreadEngine.SupportThread("THThreads",
+			thread=new SupportThread("THThreads",
 					MudHost.TIME_UTILTHREAD_SLEEP, this, CMSecurity.isDebugging("UTILITHREAD"));
 		if(!thread.started)
 			thread.start();

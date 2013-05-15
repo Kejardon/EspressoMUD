@@ -1,7 +1,7 @@
 package com.planet_ink.coffee_mud.Libraries;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 
 import java.util.*;
 import java.nio.*;
@@ -17,7 +17,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 	http://www.apache.org/licenses/LICENSE-2.0
 */
 @SuppressWarnings("unchecked")
-public class MUDHelp extends StdLibrary implements HelpLibrary
+public class MUDHelp extends StdLibrary
 {
 	public String ID(){return "MUDHelp";}
 
@@ -123,7 +123,7 @@ public class MUDHelp extends StdLibrary implements HelpLibrary
 					help.append("default");
 				else
 					help.append(CMStrings.capitalizeAndLower(currency));
-				MoneyLibrary.MoneyDenomination denoms[]=CMLib.beanCounter().getCurrencySet(currency);
+				BeanCounter.MoneyDenomination denoms[]=CMLib.beanCounter().getCurrencySet(currency);
 				for(int d=0;d<denoms.length;d++)
 				{
 					if(denoms[d].abbr.length()>0)

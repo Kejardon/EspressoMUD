@@ -1,7 +1,7 @@
 package com.planet_ink.coffee_mud.Libraries;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 
 import java.util.*;
 import java.nio.ByteBuffer;
@@ -14,7 +14,7 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-public class Dice extends StdLibrary implements DiceLibrary
+public class Dice extends StdLibrary
 {
 	public String ID(){return "Dice";}
 	private Random randomizer = null;

@@ -1,7 +1,7 @@
 package com.planet_ink.coffee_mud.Locales;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 
 import java.util.*;
 import java.nio.ByteBuffer;
@@ -35,7 +35,7 @@ public class StdRoom implements Room
 	protected String plainDesc;
 	protected String plainDescOf;
 	protected Area myArea=null;
-	protected CopyOnWriteArrayList<REMap> exits=new CopyOnWriteArrayList();
+	protected CopyOnWriteArrayList<ExitInstance> exits=new CopyOnWriteArrayList();
 	protected AtomicReference<Thread> activeThread=new AtomicReference<Thread>();
 	protected long lockTime;
 	
@@ -59,7 +59,7 @@ public class StdRoom implements Room
 	protected int saveNum=0;
 	protected int[] effectsToLoad=null;
 	protected int[] behavesToLoad=null;
-	protected int[][] exitsToLoad=null;
+	protected int[] exitsToLoad=null;
 	protected int areaToLink=0;
 	protected int itemCollectionToLoad=0;
 	protected int envMapToLoad=0;
@@ -170,25 +170,28 @@ public class StdRoom implements Room
 	public int numExits() { return exits.size(); }
 	public void addExit(Exit E, Room destination)
 	{
-		addExit(new REMap(destination, E));
+		addExit(E.makeInstance(this, destination));
 	}
-	public void addExit(REMap R)
+	public void addExit(ExitInstance R)
 	{
 		if(exits.addIfAbsent(R))
 			CMLib.database().saveObject(this);
 	}
+	/*
 	public void removeExit(Exit E, Room R)
 	{
-		removeExit(new REMap(R, E));
+		if(E.removeExitFrom(this, R, exits))
+			CMLib.database().saveObject(this);
 	}
-	public void removeExit(REMap R)
+	*/
+	public void removeExit(ExitInstance R)
 	{
 		if(exits.remove(R))
 			CMLib.database().saveObject(this);
 	}
 	public Exit getExit(int i)
 	{
-		try{ return exits.get(i).exit; }
+		try{ return exits.get(i).getExit(); }
 		catch(ArrayIndexOutOfBoundsException e){}
 		return null;
 	}
@@ -200,38 +203,40 @@ public class StdRoom implements Room
 	}
 	public Room getExitDestination(int i)
 	{
-		try{ return exits.get(i).room; }
+		try{ return exits.get(i).getDestination(); }
 		catch(ArrayIndexOutOfBoundsException e){}
 		return null;
 	}
 	public Room getExitDestination(Exit E)
 	{
-		for(REMap exit : exits)
-			if(exit.exit==E)
-				return exit.room;
+		for(ExitInstance exit : exits)
+			if(exit.getExit()==E)
+				return exit.getDestination();
 		return null;
 	}
-	public REMap getREMap(int i)
+	public ExitInstance getExitInstance(int i)
 	{
 		try{ return exits.get(i); }
 		catch(ArrayIndexOutOfBoundsException e){}
 		return null;
 	}
-	public REMap getREMap(String S)
+	public ExitInstance getExitInstance(String target)
 	{
 		//Definitely need TODO
-		REMap exit = (REMap)CMLib.english().fetchInteractable(exits.iterator(),S,true);
+		ExitInstance exit = (ExitInstance)CMLib.english().fetchInteractable(exits.iterator(),target,true);
 		if(exit!=null) return exit;
-		return (REMap)CMLib.english().fetchInteractable(exits.iterator(),S,false);
+		return (ExitInstance)CMLib.english().fetchInteractable(exits.iterator(),target,false);
 	}
-	public REMap getREMap(Exit E, Room R)
+	public ExitInstance getExitInstance(Exit E, Room R)
 	{
-		for(REMap exit : exits)
-			if(exit.exit == E && exit.room == R)
+		for(ExitInstance exit : exits)
+			if(exit.getExit() == E && exit.getDestination() == R)
 				return exit;
 		return null;
 	}
-	public Iterator<REMap> getAllExits() { return exits.iterator(); }
+	public boolean hasExit(ExitInstance I){return exits.contains(I);}
+	public Iterator<ExitInstance> getAllExits() { return exits.iterator(); }
+	/*
 	public boolean changeExit(REMap R, Exit newExit)
 	{
 		return changeExit(R, new REMap(R.room, newExit));
@@ -250,6 +255,7 @@ public class StdRoom implements Room
 		}
 		return false;
 	}
+	*/
 
 	public Domain domain(){return myDom;} 
 	public Enclosure enclosure(){return myEnc;}
@@ -314,16 +320,14 @@ public class StdRoom implements Room
 			StdRoom room = (StdRoom)data;
 			boolean always = msg.hasOthersCode(CMMsg.MsgCode.ALWAYS);
 			for(CMObject O : msg.tool())
-			if(O instanceof Room.REMap)
+			if(O instanceof ExitInstance)
 			{
-				Room.REMap map=(Room.REMap)O;
-				Room destination=map.room;
-				if(destination!=null)
+				ExitInstance map=(ExitInstance)O;
+				Exit exit=map.getExit();
+				Room destination=map.getDestination();
+				ExitInstance entrance=exit.oppositeOf(map, destination);
+				if(destination!=null && entrance!=null)
 				{
-					Room.REMap entrance=destination.getREMap(map.exit, room);
-					if(entrance==null)
-						entrance=Room.REMap.newMap(room, map.exit);
-					//TODO: What if destination.hasREMap(entrance)==false ?
 					EnumSet<CMMsg.MsgCode> codeSet=always?EnumSet.of(CMMsg.MsgCode.ENTER,CMMsg.MsgCode.ALWAYS):EnumSet.of(CMMsg.MsgCode.ENTER);
 					CMMsg enterMessage=CMClass.getMsg(msg.source().clone(),null,entrance,codeSet,"^[S-NAME] enter(s).");
 					if(destination.okMessage(destination, enterMessage)&&enterMessage.handleResponses())
@@ -459,7 +463,7 @@ public class StdRoom implements Room
 	{
 		if(I==null) return;
 		CMObject o=I.container();
-		if((o==null)||(o==this)) return;
+		if(o==this) return;
 
 		if(!(andRiders))
 		{
@@ -894,7 +898,10 @@ public class StdRoom implements Room
 		if(inventory==null) synchronized(this)
 		{
 			if(inventory==null)
+			{
 				inventory=(ItemCollection)((Ownable)CMClass.COMMON.getNew("DefaultItemCol")).setOwner(this);
+				inventory.saveThis();
+			}
 		}
 		return inventory;
 	}
@@ -964,12 +971,11 @@ public class StdRoom implements Room
 		}
 		if(exitsToLoad!=null)
 		{
-			for(int[] exitToLoad : exitsToLoad)
+			for(int SID : exitsToLoad)
 			{
-				Room R=SIDLib.ROOM.get(exitToLoad[0]);
-				Exit E=SIDLib.EXIT.get(exitToLoad[1]);
-				if(R==null||E==null) continue;
-				exits.add(new REMap(R, E));
+				ExitInstance e=SIDLib.EXITINSTANCE.get(SID);
+				if(e==null) continue;
+				exits.add(e);
 			}
 			exitsToLoad=null;
 		}
@@ -1049,9 +1055,9 @@ public class StdRoom implements Room
 			public int size(){return 0;}
 			public void load(StdRoom E, ByteBuffer S){ E.desc=CMLib.coffeeMaker().loadString(S); } },
 		EXT(){
-			public ByteBuffer save(StdRoom E){ return CMLib.coffeeMaker().savExits(E.exits.toArray(new REMap[E.exits.size()])); }
+			public ByteBuffer save(StdRoom E){ return CMLib.coffeeMaker().savSaveNums(E.exits.toArray(CMSavable.dummyCMSavableArray)); }
 			public int size(){return 0;}
-			public void load(StdRoom E, ByteBuffer S){ E.exitsToLoad=CMLib.coffeeMaker().loadExits(S); } },
+			public void load(StdRoom E, ByteBuffer S){ E.exitsToLoad=CMLib.coffeeMaker().loadAInt(S); } },
 		ARE(){
 			public ByteBuffer save(StdRoom E){ return (ByteBuffer)ByteBuffer.wrap(new byte[4]).putInt((E.myArea==null)?0:E.myArea.saveNum()).rewind(); }
 			public int size(){return 4;}
@@ -1063,13 +1069,13 @@ public class StdRoom implements Room
 		EFC(){
 			public ByteBuffer save(StdRoom E){
 				if(E.affects.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.affects.toArray((CMSavable.dummyCMSavableArray)));
-				return GenericBuilder.emptyBuffer; }
+				return CoffeeMaker.emptyBuffer; }
 			public int size(){return 0;}
 			public void load(StdRoom E, ByteBuffer S){ E.effectsToLoad=CMLib.coffeeMaker().loadAInt(S); } },
 		BHV(){
 			public ByteBuffer save(StdRoom E){
 				if(E.behaviors.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.behaviors.toArray(CMSavable.dummyCMSavableArray));
-				return GenericBuilder.emptyBuffer; }
+				return CoffeeMaker.emptyBuffer; }
 			public int size(){return 0;}
 			public void load(StdRoom E, ByteBuffer S){ E.behavesToLoad=CMLib.coffeeMaker().loadAInt(S); } },
 		NAM(){
@@ -1118,7 +1124,7 @@ public class StdRoom implements Room
 		EXITS(){
 			public String brief(StdRoom E){return ""+E.exits.size();}
 			public String prompt(StdRoom E){return "";}
-			public void mod(StdRoom E, MOB M){CMLib.genEd().modExits(E.exits, M);} },
+			public void mod(StdRoom E, MOB M){CMLib.genEd().modExits(E.exits, E, M);} },
 		EFFECTS(){
 			public String brief(StdRoom E){return ""+E.affects.size();}
 			public String prompt(StdRoom E){return "";}
@@ -1141,7 +1147,7 @@ public class StdRoom implements Room
 			public void mod(StdRoom E, MOB M){
 				char action=M.session().prompt("(F)ill with missing objects, (D)estroy, (C)reate, or (M)odify room map (default M)? ","M").trim().toUpperCase().charAt(0);
 				if(action=='F' && E.positions!=null) {
-					for(REMap exit : E.exits) if(E.positions.position(exit)==null) E.positions.placeThing(exit, 0, 0, 0);
+					for(ExitInstance exit : E.exits) if(E.positions.position(exit)==null) E.positions.placeThing(exit, 0, 0, 0);
 					for(Iterator<Item> items=E.inventory.allItems();items.hasNext();) {
 						Item item=items.next();
 						if(E.positions.position(item)==null) E.positions.placeThing(item, 0, 0, 0); } }

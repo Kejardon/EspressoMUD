@@ -1,10 +1,10 @@
 package com.planet_ink.coffee_mud.Libraries;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 
 import com.planet_ink.coffee_mud.core.exceptions.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.MoneyLibrary.MoneyDenomination;
+import com.planet_ink.coffee_mud.Libraries.BeanCounter.MoneyDenomination;
 
 import java.util.*;
 import java.nio.ByteBuffer;
@@ -20,8 +20,27 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 	http://www.apache.org/licenses/LICENSE-2.0
 */
 @SuppressWarnings("unchecked")
-public class EnglishParser extends StdLibrary implements EnglishParsing
+public class EnglishParser extends StdLibrary
 {
+	public static final int SRCH_MOBINV=1;	//'held' items
+	public static final int SRCH_MOBEQ=SRCH_MOBINV*2;	//Items worn on body
+	public static final int SRCH_MOB=SRCH_MOBEQ*2;	//Body parts
+	public static final int SRCH_ROOM=SRCH_MOB*2;	//Any item lying in the room.
+	public static final int SRCH_ALL=SRCH_ROOM|SRCH_MOBINV|SRCH_MOBEQ|SRCH_MOB;
+
+	public static final int SUB_ITEMCOLL=1;	//Search items stored inside
+	public static final int SUB_RIDERS=SUB_ITEMCOLL*2;	//Search items stored on top
+	public static final int SUB_ALL=SUB_ITEMCOLL|SUB_RIDERS;
+
+	public static class StringFlags
+	{
+		public boolean allFlag;
+		public boolean myFlag;
+		public String srchStr;
+		public int occurrance=1;
+		public int toFind=1;
+	}
+
 	public String ID(){return "EnglishParser";}
 	private final static String[] articles={"a","an","all of","some one","a pair of","one of","all","the","some"};
 	private final static String[] basicArticles={"a","an","some one","all","the","some"};
@@ -441,13 +460,13 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 		public String srchStr;
 		public int occurrance;
 	}*/
-	public EnglishParsing.StringFlags fetchFlags(String srchStr)
+	public StringFlags fetchFlags(String srchStr)
 	{
 		if(srchStr.length()==0) return null;
 		srchStr=srchStr.toUpperCase();
 		if((srchStr.length()<2)||(srchStr.equals("THE")))
 			return null;
-		EnglishParsing.StringFlags flags=new EnglishParsing.StringFlags();
+		StringFlags flags=new StringFlags();
 
 		//Clip excess past quotes
 		boolean doQuotes=false;
@@ -539,7 +558,7 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 
 	public CMObject fetchObject(Vector<? extends CMObject> list, String srchStr, boolean exactOnly)
 	{
-		EnglishParsing.StringFlags flags=fetchFlags(srchStr);
+		StringFlags flags=fetchFlags(srchStr);
 		if(flags==null) return null;
 		if(flags.srchStr=="ALL")
 			return (list.size()>0?list.get(0):null);
@@ -567,7 +586,7 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 	}
 	public CMObject fetchObject(Iterator<? extends CMObject> list, String srchStr, boolean exactOnly)
 	{
-		EnglishParsing.StringFlags flags=fetchFlags(srchStr);
+		StringFlags flags=fetchFlags(srchStr);
 		if(flags==null) return null;
 		if(flags.srchStr=="ALL")
 			return (list.hasNext()?list.next():null);
@@ -612,7 +631,7 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 	{ return fetchInteractable((Interactable[])list.toArray(Interactable.dummyInteractableArray), srchStr, exactOnly); }
 	public Interactable fetchInteractable(Iterator<? extends Interactable> list, String srchStr, boolean exactOnly)
 	{ return fetchInteractable((Interactable[])CMParms.toArrayList(list).toArray(Interactable.dummyInteractableArray), srchStr, exactOnly); }
-	protected boolean thingCheck(Vector<Interactable> V, Interactable thisThang, EnglishParsing.StringFlags flags, boolean exact, int maxDepth)
+	protected boolean thingCheck(Vector<Interactable> V, Interactable thisThang, StringFlags flags, boolean exact, int maxDepth)
 	{
 		if(!V.contains(thisThang))
 		{
@@ -676,7 +695,7 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 		}
 		return false;
 	}
-	protected boolean thingArrayCheck(Vector<Interactable> V, Interactable[] stuff, EnglishParsing.StringFlags flags, boolean exact, int maxDepth)
+	protected boolean thingArrayCheck(Vector<Interactable> V, Interactable[] stuff, StringFlags flags, boolean exact, int maxDepth)
 	{
 		for(Interactable I : stuff)
 		{
@@ -685,7 +704,7 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 		}
 		return false;
 	}
-	protected boolean thingArrayCheck(Vector<Interactable> V, Iterator<? extends Interactable> stuff, EnglishParsing.StringFlags flags, boolean exact, int maxDepth)
+	protected boolean thingArrayCheck(Vector<Interactable> V, Iterator<? extends Interactable> stuff, StringFlags flags, boolean exact, int maxDepth)
 	{
 		while(stuff.hasNext())
 			if(thingCheck(V, stuff.next(), flags, exact, maxDepth)) return true;
@@ -694,7 +713,7 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 	public Vector<Interactable> fetchInteractables(MOB mob, String srchStr, int searchFlags, boolean exactOnly, Object... list)//, int maxDepth, int toFind, Object... list)
 	{
 		Vector<Interactable> V=new Vector();
-		EnglishParsing.StringFlags flags=fetchFlags(srchStr);
+		StringFlags flags=fetchFlags(srchStr);
 		if(flags==null) return null;
 		if(flags.myFlag)
 		{
@@ -743,7 +762,7 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 	public Interactable fetchInteractable(MOB mob, String srchStr, int searchFlags, boolean exactOnly, Object... list)//, int maxDepth, int toFind, Object... list)
 	{
 		Interactable thisThang=null;
-		EnglishParsing.StringFlags flags=fetchFlags(srchStr);
+		StringFlags flags=fetchFlags(srchStr);
 		if(flags==null) return null;
 		if(flags.myFlag)
 		{
@@ -789,7 +808,7 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 	public Vector<Interactable> fetchInteractables(String srchStr, boolean exactOnly, int maxDepth, int toFind, Object... list)
 	{
 		Vector<Interactable> V=new Vector();
-		EnglishParsing.StringFlags flags=fetchFlags(srchStr);
+		StringFlags flags=fetchFlags(srchStr);
 		if(flags==null) return null;
 		int toSkip=flags.occurrance;
 		flags.occurrance=toFind+toSkip;	//It wasn't used at all before so... hmm.
@@ -812,7 +831,7 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 	}
 	public Interactable fetchInteractable(String srchStr, boolean exactOnly, int maxDepth, Object... list)
 	{
-		EnglishParsing.StringFlags flags=fetchFlags(srchStr);
+		StringFlags flags=fetchFlags(srchStr);
 		if(flags==null) return null;
 
 		Interactable thisThang=null;
@@ -838,7 +857,7 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 		else
 			return (containsRawString(thing.plainName(),name));
 	}
-	protected Interactable thingCheck(Interactable thisThang, EnglishParsing.StringFlags flags, boolean exact, int maxDepth)
+	protected Interactable thingCheck(Interactable thisThang, StringFlags flags, boolean exact, int maxDepth)
 	{
 		if(flags.srchStr=="ALL")
 			return thisThang;
@@ -884,7 +903,7 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 		}
 		return null;
 	}
-	protected Interactable thingArrayCheck(Interactable[] stuff, EnglishParsing.StringFlags flags, boolean exact, int maxDepth)
+	protected Interactable thingArrayCheck(Interactable[] stuff, StringFlags flags, boolean exact, int maxDepth)
 	{
 		Interactable thing=null;
 		for(Interactable I : stuff)
@@ -895,7 +914,7 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 		}
 		return thing;
 	}
-	protected Interactable thingArrayCheck(Iterator<? extends Interactable> stuff, EnglishParsing.StringFlags flags, boolean exact, int maxDepth)
+	protected Interactable thingArrayCheck(Iterator<? extends Interactable> stuff, StringFlags flags, boolean exact, int maxDepth)
 	{
 		Interactable thing=null;
 		while(stuff.hasNext())
@@ -906,14 +925,14 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 
 	//Probably unused now
 	//FUTURE PLANS: Make this sort of code have an extra parameter for a check-sort-of-class that may do additional checks
-	//Also, extend EnglishParsing.StringFlags to have seperate skipXOccurance and numberToFind
+	//Also, extend StringFlags to have seperate skipXOccurance and numberToFind
 	public Vector<Interactable> fetchInteractables(Vector<? extends Interactable> list, String srchStr, boolean exactOnly) {
 		return fetchInteractables((Interactable[])list.toArray(Interactable.dummyInteractableArray), srchStr, exactOnly); }
 	public Vector<Interactable> fetchInteractables(Iterator<? extends Interactable> list, String srchStr, boolean exactOnly) {
 		return fetchInteractables((Interactable[])CMParms.toArrayList(list).toArray(Interactable.dummyInteractableArray), srchStr, exactOnly); }
 	public Vector<Interactable> fetchInteractables(Interactable[] list, String srchStr, boolean exactOnly)
 	{
-		EnglishParsing.StringFlags flags=fetchFlags(srchStr);
+		StringFlags flags=fetchFlags(srchStr);
 		Vector<Interactable> matches=new Vector(1);
 		if(flags==null) return matches;
 		
@@ -950,7 +969,7 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 	
 	public Interactable fetchInteractable(Interactable[] list, String srchStr, boolean exactOnly)
 	{
-		EnglishParsing.StringFlags flags=fetchFlags(srchStr);
+		StringFlags flags=fetchFlags(srchStr);
 		if(flags==null) return null;
 		if(flags.srchStr=="ALL")
 			return (list.length>0?list[0]:null);
@@ -1598,12 +1617,12 @@ public class EnglishParser extends StdLibrary implements EnglishParsing
 
 	public double matchAnyDenomination(String currency, String itemID)
 	{
-		MoneyLibrary.CMCurrency DV=CMLib.beanCounter().getCurrencySet(currency);
+		BeanCounter.CMCurrency DV=CMLib.beanCounter().getCurrencySet(currency);
 		itemID=itemID.toUpperCase();
 		String s=null;
 		if(DV!=null)
 		{
-			MoneyLibrary.MoneyDenomination MD=DV.find(itemID);
+			BeanCounter.MoneyDenomination MD=DV.find(itemID);
 			if(MD!=null) return MD.value();
 		}
 		return 0.0;

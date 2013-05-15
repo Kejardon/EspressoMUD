@@ -1,7 +1,7 @@
 package com.planet_ink.coffee_mud.Libraries;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 
 import java.util.*;
 import java.nio.ByteBuffer;
@@ -15,8 +15,12 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 	http://www.apache.org/licenses/LICENSE-2.0
 */
 @SuppressWarnings("unchecked")
-public class MUDFight extends StdLibrary implements CombatLibrary
+public class MUDFight extends StdLibrary
 {
+	public static final int COMBAT_DEFAULT=0;
+	public static final int COMBAT_QUEUE=1;
+	public static final int COMBAT_MANUAL=2;
+
 	public String ID(){return "MUDFight";}
 
 /*
@@ -589,8 +593,8 @@ public class MUDFight extends StdLibrary implements CombatLibrary
 		{
 			if((!deadmob.isMonster())&&(deadmob.soulMate()==null))
 			{
-				Vector channels=CMLib.channels().getFlaggedChannelNames(ChannelsLibrary.ChannelFlag.DETAILEDDEATHS);
-				Vector channels2=CMLib.channels().getFlaggedChannelNames(ChannelsLibrary.ChannelFlag.DEATHS);
+				Vector channels=CMLib.channels().getFlaggedChannelNames(CMChannels.ChannelFlag.DETAILEDDEATHS);
+				Vector channels2=CMLib.channels().getFlaggedChannelNames(CMChannels.ChannelFlag.DEATHS);
 				if(!CMLib.flags().isCloaked(deadmob))
 				for(int i=0;i<channels.size();i++)
 				if((msg.tool()!=null)&&(msg.tool() instanceof MOB))
@@ -690,7 +694,7 @@ public class MUDFight extends StdLibrary implements CombatLibrary
 	{
 		// combat que system eats up standard commands
 		// before using any attacks
-		while((CMProps.getIntVar(CMProps.SYSTEMI_COMBATSYSTEM)==CombatLibrary.COMBAT_QUEUE)
+		while((CMProps.getIntVar(CMProps.SYSTEMI_COMBATSYSTEM)==COMBAT_QUEUE)
 		&&(!fighter.amDead())
 		&&(fighter.dequeCommand()));
 	}
@@ -728,15 +732,15 @@ public class MUDFight extends StdLibrary implements CombatLibrary
 
 		subtickBeforeAttack(fighter);
 		int combatSystem=CMProps.getIntVar(CMProps.SYSTEMI_COMBATSYSTEM);
-		int saveAction=(combatSystem!=CombatLibrary.COMBAT_DEFAULT)?0:1;
+		int saveAction=(combatSystem!=COMBAT_DEFAULT)?0:1;
 
 		if(CMLib.flags().aliveAwakeMobile(fighter,true))
 		{
-			if((combatSystem!=CombatLibrary.COMBAT_MANUAL)
+			if((combatSystem!=COMBAT_MANUAL)
 			||(fighter.isMonster()))
 			{
 				int numAttacks=(int)Math.round(Math.floor(fighter.actions()))-saveAction;
-				if((combatSystem==CombatLibrary.COMBAT_DEFAULT)
+				if((combatSystem==COMBAT_DEFAULT)
 				&&(numAttacks>(int)Math.round(Math.floor(fighter.envStats().speed()+0.9))))
 					numAttacks=(int)Math.round(Math.floor(fighter.envStats().speed()+0.9));
 				for(int s=0;s<numAttacks;s++)

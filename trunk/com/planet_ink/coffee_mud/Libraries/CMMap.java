@@ -1,7 +1,7 @@
 package com.planet_ink.coffee_mud.Libraries;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 
 //import com.planet_ink.coffee_mud.Exits.StdExit;
 
@@ -19,18 +19,20 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 	http://www.apache.org/licenses/LICENSE-2.0
 */
 @SuppressWarnings("unchecked")
-public class CMMap extends StdLibrary implements WorldMap
+public class CMMap extends StdLibrary implements Runnable
 {
+	public final static long ROOM_EXPIRATION_MILLIS=2500000;
+	
 	public String ID(){return "CMMap";}
 	protected Area[] sortedAreas=Area.dummyAreaArray;
 	protected SortedVector<Area> areasList = new SortedVector<Area>();
 	protected Hashtable<CMMsg.MsgCode,CopyOnWriteArrayList<ListenHolder.MsgListener>> globalHandlers=new Hashtable();
-	private ThreadEngine.SupportThread thread=null;
+	private SupportThread thread=null;
 	protected long lastVReset=0;
 	//protected Exit openExit;
 	//protected SortedVector<Exit> exits = new SortedVector();
 
-	public ThreadEngine.SupportThread getSupportThread() { return thread;}
+	public SupportThread getSupportThread() { return thread;}
 	public void initializeClass()
 	{
 		//openExit=CMClass.EXIT.get("OpenExit");
@@ -50,35 +52,37 @@ public class CMMap extends StdLibrary implements WorldMap
 		//protected CopyOnWriteArrayList<ExcChecker> excCheckers=new CopyOnWriteArrayList();
 		//protected EnumSet<ListenHolder.Flags> lFlags=EnumSet.of(ListenHolder.Flags.OK, ListenHolder.Flags.EXC);
 		//protected ItemCollection inventory=null;
-		public String ID(){return "LimboRoom";}
+		@Override public String ID(){return "LimboRoom";}
 		//public Room(){}
-		public CMObject newInstance(){return this;}
-		public Environmental getEnvObject() {return (Environmental)CMClass.COMMON.get("DefaultEnvironmental");}
-		public String name(){ return "Limbo";}
-		public String plainName(){ return "Limbo";}
-		public void setName(String newName){}
-		public String displayText(){return "Nothing should be here. If there is, an archon should take care of it.";}
-		public String plainDisplayText(){return "Nothing should be here. If there is, an archon should take care of it.";}
-		public void setDisplayText(String newDisplayText){}
-		public String description(){return "";}
-		public String plainDescription(){return "";}
-		public void setDescription(String newDescription){}
-		public CMObject copyOf(){ return this; }
-		public int numExits() { return 0;}
-		public void addExit(Exit E, Room destination){}
-		public void addExit(REMap R){}
-		public void removeExit(Exit E, Room R){}
-		public void removeExit(REMap R){}
-		public Exit getExit(int i){ return null;}
-		public Exit getExit(String target){ return null;}
-		public Room getExitDestination(int i){ return null;}
-		public Room getExitDestination(Exit E){ return null;}
-		public REMap getREMap(int i){ return null;}
-		public REMap getREMap(String S){ return null;}
-		public boolean changeExit(REMap R, Exit newExit){ return false;}
-		public boolean changeExit(REMap R, Room newRoom){ return false;}
-		public boolean changeExit(REMap R, REMap newMap){ return false;}
-		public Area getArea(){
+		@Override public CMObject newInstance(){return this;}
+		@Override public Environmental getEnvObject() {return (Environmental)CMClass.COMMON.get("DefaultEnvironmental");}
+		@Override public String name(){ return "Limbo";}
+		@Override public String plainName(){ return "Limbo";}
+		@Override public void setName(String newName){}
+		@Override public String displayText(){return "Nothing should be here. If there is, an archon should take care of it.";}
+		@Override public String plainDisplayText(){return "Nothing should be here. If there is, an archon should take care of it.";}
+		@Override public void setDisplayText(String newDisplayText){}
+		@Override public String description(){return "";}
+		@Override public String plainDescription(){return "";}
+		@Override public void setDescription(String newDescription){}
+		@Override public CMObject copyOf(){ return this; }
+		@Override public int numExits() { return 0;}
+		@Override public void addExit(Exit E, Room destination){}
+		@Override public void addExit(ExitInstance R){}
+		//@Override public void removeExit(Exit E, Room R){}
+		@Override public void removeExit(ExitInstance R){}
+		@Override public Exit getExit(int i){ return null;}
+		@Override public Exit getExit(String target){ return null;}
+		@Override public Room getExitDestination(int i){ return null;}
+		@Override public Room getExitDestination(Exit E){ return null;}
+		@Override public ExitInstance getExitInstance(int i){ return null;}
+		@Override public ExitInstance getExitInstance(String S){ return null;}
+		/*
+		@Override public boolean changeExit(REMap R, Exit newExit){ return false;}
+		@Override public boolean changeExit(REMap R, Room newRoom){ return false;}
+		@Override public boolean changeExit(REMap R, REMap newMap){ return false;}
+		*/
+		@Override public Area getArea(){
 			found:
 			if(myArea==null) synchronized(this){
 				if(myArea!=null) break found;
@@ -90,16 +94,16 @@ public class CMMap extends StdLibrary implements WorldMap
 				myArea.addProperRoom(this);
 				CMLib.map().addArea(myArea); }
 			return myArea; }
-		public void setArea(Area newArea){}
-		public void setAreaRaw(Area newArea){}
+		@Override public void setArea(Area newArea){}
+		@Override public void setAreaRaw(Area newArea){}
 		//public boolean okMessage(OkChecker myHost, CMMsg msg) { return msg.hasSourceCode(CMMsg.MsgCode.LOOK); }
 		//public boolean respondTo(CMMsg msg){return true;}
 		//public void executeMsg(ExcChecker myHost, CMMsg msg) {}
-		public Tickable.TickStat getTickStatus(){return Tickable.TickStat.Not;}
-		public boolean tick(int tickTo){return false;}
-		public int tickCounter(){return 0;}
+		@Override public Tickable.TickStat getTickStatus(){return Tickable.TickStat.Not;}
+		@Override public boolean tick(int tickTo){return false;}
+		@Override public int tickCounter(){return 0;}
 		//public void tickAct(){}
-		public void recoverRoomStats(){}
+		@Override public void recoverRoomStats(){}
 		/*public void bringHere(Item I, boolean andRiders) {
 			if(I==null) return;
 			CMObject o=I.container();
@@ -110,59 +114,60 @@ public class CMMap extends StdLibrary implements WorldMap
 			ItemCollection col=ItemCollection.O.getFrom(o);
 			if(col!=null) col.removeItem(I);
 			getItemCollection().addItem(I); } */
-		public void destroy(){}
-		public boolean amDestroyed(){return false;}
-		public void removeListener(Listener oldAffect, EnumSet<ListenHolder.Flags> flags) {
+		@Override public void destroy(){}
+		@Override public boolean amDestroyed(){return false;}
+		@Override public void removeListener(Listener oldAffect, EnumSet<ListenHolder.Flags> flags) {
 			ListenHolder.O.removeListener(this, oldAffect, flags); }
-		public void addListener(Listener newAffect, EnumSet<ListenHolder.Flags> flags) {
+		@Override public void addListener(Listener newAffect, EnumSet<ListenHolder.Flags> flags) {
 			ListenHolder.O.addListener(this, newAffect, flags); }
-		public void registerAllListeners() {}
-		public void clearAllListeners() {}
+		@Override public void registerAllListeners() {}
+		@Override public void clearAllListeners() {}
 		//public CopyOnWriteArrayList<CharAffecter> charAffecters(){return null;}
 		//public CopyOnWriteArrayList<EnvAffecter> envAffecters(){return null;}
 		//public CopyOnWriteArrayList<OkChecker> okCheckers(){return okCheckers;}
 		//public CopyOnWriteArrayList<ExcChecker> excCheckers(){return excCheckers;}
-		public CopyOnWriteArrayList<TickActer> tickActers(){return null;}
+		@Override public CopyOnWriteArrayList<TickActer> tickActers(){return null;}
 		//public EnumSet<ListenHolder.Flags> listenFlags() {return lFlags;}
-		public void addEffect(Effect to){}
-		public void delEffect(Effect to){}
-		public boolean hasEffect(Effect to){return false;}
-		public int numEffects(){return 0;}
-		public Effect fetchEffect(int index){return null;}
-		public Vector<Effect> fetchEffect(String ID){ return new Vector(1); }
-		public Iterator<Effect> allEffects() { return Collections.emptyIterator(); }
-		public void addBehavior(Behavior to){}
-		public void delBehavior(Behavior to){}
-		public int numBehaviors(){return 0;}
-		public Behavior fetchBehavior(int index){return null;}
-		public Behavior fetchBehavior(String ID){return null;}
-		public Iterator<Behavior> allBehaviors(){ return Collections.emptyIterator(); }
-		public ItemCollection getItemCollection(){
+		@Override public void addEffect(Effect to){}
+		@Override public void delEffect(Effect to){}
+		@Override public boolean hasEffect(Effect to){return false;}
+		@Override public int numEffects(){return 0;}
+		@Override public Effect fetchEffect(int index){return null;}
+		@Override public Vector<Effect> fetchEffect(String ID){ return new Vector(1); }
+		@Override public Iterator<Effect> allEffects() { return Collections.emptyIterator(); }
+		@Override public void addBehavior(Behavior to){}
+		@Override public void delBehavior(Behavior to){}
+		@Override public int numBehaviors(){return 0;}
+		@Override public Behavior fetchBehavior(int index){return null;}
+		@Override public Behavior fetchBehavior(String ID){return null;}
+		@Override public Iterator<Behavior> allBehaviors(){ return Collections.emptyIterator(); }
+		@Override public ItemCollection getItemCollection(){
 			found:
 			if(inventory==null) synchronized(this){
 				if(inventory!=null) break found;
 				inventory=SIDLib.ITEMCOLLECTION.get(SIDLib.LimboICSaveNum);
 				if(inventory!=null) break found;
 				inventory=(ItemCollection)((Ownable)CMClass.COMMON.getNew("DefaultItemCol")).setOwner(this);
-				inventory.setSaveNum(SIDLib.LimboICSaveNum); }
+				inventory.setSaveNum(SIDLib.LimboICSaveNum);
+				inventory.saveThis(); }
 			return inventory; }
-		public boolean sameAs(Interactable E){return E==this;}
-		public SaveEnum[] totalEnumS(){return CMSavable.dummySEArray;}
-		public Enum[] headerEnumS(){return CMClass.dummyEnumArray;}
-		public ModEnum[] totalEnumM(){return CMModifiable.dummyMEArray;}
-		public Enum[] headerEnumM(){return CMClass.dummyEnumArray;}
-		public int saveNum(){ return SIDLib.LimboRoomSaveNum; }
-		public void setSaveNum(int num){}
-		public boolean needLink(){return true;}
-		public void link(){
-			myArea = SIDLib.AREA.get(1);
+		//@Override public boolean sameAs(Interactable E){return E==this;}
+		@Override public SaveEnum[] totalEnumS(){return CMSavable.dummySEArray;}
+		@Override public Enum[] headerEnumS(){return CMClass.dummyEnumArray;}
+		@Override public ModEnum[] totalEnumM(){return CMModifiable.dummyMEArray;}
+		@Override public Enum[] headerEnumM(){return CMClass.dummyEnumArray;}
+		@Override public int saveNum(){ return SIDLib.LimboRoomSaveNum; }
+		@Override public void setSaveNum(int num){}
+		@Override public boolean needLink(){return true;}
+		@Override public void link(){
+			myArea = SIDLib.AREA.get(SIDLib.LimboAreaSaveNum);
 			if(myArea==null) getArea();
 			else myArea.addProperRoom(this);
-			inventory = SIDLib.ITEMCOLLECTION.get(1);
+			inventory = SIDLib.ITEMCOLLECTION.get(SIDLib.LimboICSaveNum);
 			if(inventory==null) getItemCollection();
 			else ((Ownable)inventory).setOwner(this); }
-		public void saveThis(){}
-		public void prepDefault(){getArea(); getItemCollection();}
+		@Override public void saveThis(){}
+		@Override public void prepDefault(){getArea(); getItemCollection();}
 	};
 
 	// areas
@@ -926,7 +931,7 @@ public class CMMap extends StdLibrary implements WorldMap
 	public boolean activate() 
 	{
 		if(thread==null)
-			thread=new ThreadEngine.SupportThread("THMap"+Thread.currentThread().getThreadGroup().getName().charAt(0), 
+			thread=new SupportThread("THMap"+Thread.currentThread().getThreadGroup().getName().charAt(0), 
 					MudHost.TIME_SAVETHREAD_SLEEP, this, CMSecurity.isDebugging("SAVETHREAD"));
 		if(!thread.started)
 			thread.start();

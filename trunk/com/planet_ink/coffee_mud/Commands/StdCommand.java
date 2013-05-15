@@ -1,7 +1,7 @@
 package com.planet_ink.coffee_mud.Commands;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 
 import java.util.*;
 import java.nio.ByteBuffer;
@@ -43,7 +43,7 @@ public class StdCommand implements Command
 	}
 	public MOB.QueuedCommand prepCommand(MOB mob, String commands, int metaflags)
 	{
-		MOB.QueuedCommand commandInstance=new MOB.QueuedCommand();
+		MOB.QueuedCommand commandInstance=MOB.QueuedCommand.newQC();
 		commandInstance.command=this;
 		commandInstance.cmdString=commands;
 		commandInstance.commandType=commandType(mob, commands);

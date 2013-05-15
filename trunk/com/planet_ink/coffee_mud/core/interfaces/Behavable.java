@@ -63,7 +63,7 @@ public interface Behavable extends ListenHolder, ListenHolder.TickActer
 		BHV(){
 			public ByteBuffer save(CMSavable E){
 				if(E.behaviors.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.behaviors.toArray(CMSavable.dummyCMSavableArray));
-				return GenericBuilder.emptyBuffer; }
+				return CoffeeMaker.emptyBuffer; }
 			public int size(){return 0;}
 			public void load(CMSavable E, ByteBuffer S){ E.behavesToLoad=CMLib.coffeeMaker().loadAInt(S); } },
 	}

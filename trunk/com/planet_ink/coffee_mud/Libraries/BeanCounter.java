@@ -1,8 +1,7 @@
 package com.planet_ink.coffee_mud.Libraries;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.MoneyLibrary.MoneyDenomination;
+import com.planet_ink.coffee_mud.Libraries.*;
 
 import java.util.*;
 import java.nio.ByteBuffer;
@@ -16,8 +15,75 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 	http://www.apache.org/licenses/LICENSE-2.0
 */
 @SuppressWarnings("unchecked")
-public class BeanCounter extends StdLibrary implements MoneyLibrary
+public class BeanCounter extends StdLibrary
 {
+	public static final String defaultCurrencyDefinition=
+		"=1 gold coin(s);100 golden note(s);10000 whole note(s);1000000 Archon note(s)";
+	public static final String copperStandard=
+		"COPPER=1 copper bit(s) (cc);10 silver bit(s) (sc);100 gold bit(s) (gc);500 platinum bit(s) (pc)";
+	public static final MoneyDenomination[] dummyMDArray=new MoneyDenomination[0];
+	
+	public static class MoneyDenomination
+	{
+		private long value=0;
+		private String name="";
+		private String abbr="";
+		public MoneyDenomination(long value,String name,String abbr)
+		{
+			this.value=value;
+			this.name=name;
+			this.abbr=abbr;
+		}
+		public long value(){return value;}
+		public String name(){return name;}
+		public String abbr(){return abbr;}
+	}
+	public static class CMCurrency
+	{
+		private String name="";
+		private MoneyDenomination[] denoms=null;
+		public CMCurrency(MoneyDenomination[] denoms, String name)
+		{
+			this.denoms=denoms;
+			this.name=name;
+		}
+		public String name(){return name;}
+		public int size(){return denoms.length;}
+		public MoneyDenomination get(int i)
+		{
+			if((i>=0)&&(i<denoms.length)) return denoms[i];
+			return null;
+		}
+		public MoneyDenomination find(String S)
+		{
+			for (MoneyDenomination MD : denoms)
+				if(MD.name().startsWith(S))	//NOTE: I think this should ignore case, may reconsider later.
+					return MD;
+			for (MoneyDenomination MD : denoms)
+				if(MD.abbr().equalsIgnoreCase(S))
+					return MD;
+			return null;
+		}
+		public MoneyDenomination get(String S)
+		{
+			for (MoneyDenomination MD : denoms)
+				if(MD.name().equalsIgnoreCase(S))	//NOTE: I think this should ignore case, may reconsider later.
+					return MD;
+			for (MoneyDenomination MD : denoms)
+				if(MD.abbr().equalsIgnoreCase(S))
+					return MD;
+			return null;
+		}
+		public MoneyDenomination get(long val)
+		{
+			for (MoneyDenomination MD : denoms)
+				if(MD.value()==val)
+					return MD;
+			return null;
+		}
+	}
+
+	
 	public String ID(){return "BeanCounter";}
 	public Hashtable<String,CMCurrency> currencies=new Hashtable<String,CMCurrency>();
 	public HashSet<String> allCurrencyNames=new HashSet<String>();
@@ -82,7 +148,7 @@ public class BeanCounter extends StdLibrary implements MoneyLibrary
 					DV.add(insertAt, new MoneyDenomination(d,s,shortName));
 			}
 		}
-		result=new CMCurrency((MoneyDenomination[])DV.toArray(MoneyLibrary.dummyMDArray), code);
+		result=new CMCurrency((MoneyDenomination[])DV.toArray(dummyMDArray), code);
 		currencies.put(code, result);
 		synchronized(allCurrencyNames) {allCurrencyNames.add(code);}
 		return result;
@@ -366,7 +432,7 @@ public class BeanCounter extends StdLibrary implements MoneyLibrary
 		if(debtData==null){ Log.errOut("BeanCounter","Unable to get debt data"); return ;}
 		for(int p=0;p<debtData.size();p++)
 		{
-			XMLLibrary.XMLpiece ablk=(XMLLibrary.XMLpiece)debtData.elementAt(p);
+			XMLManager.XMLpiece ablk=(XMLManager.XMLpiece)debtData.elementAt(p);
 			if((!ablk.tag.equalsIgnoreCase("OWE"))||(ablk.contents==null)||(ablk.contents.size()==0)) continue;
 			String owed=CMLib.xml().getValFromPieces(ablk.contents,"TO");
 			double amt=CMLib.xml().getDoubleFromPieces(ablk.contents,"AMT");
@@ -635,7 +701,7 @@ public class BeanCounter extends StdLibrary implements MoneyLibrary
 			Vector V=CMLib.database().DBReadData(owner,"LEDGER-"+bankName,"LEDGER-"+bankName+"/"+owner);
 			if((V!=null)&&(V.size()>0))
 			{
-				DatabaseEngine.PlayerData D=(DatabaseEngine.PlayerData)V.firstElement();
+				DBManager.PlayerData D=(DBManager.PlayerData)V.firstElement();
 				String last=D.xml;
 				if(last.length()>4096)
 				{
@@ -654,7 +720,7 @@ public class BeanCounter extends StdLibrary implements MoneyLibrary
 		Vector V=CMLib.database().DBReadAllPlayerData(owner);
 		for(int v=0;v<V.size();v++)
 		{
-			DatabaseEngine.PlayerData D=(DatabaseEngine.PlayerData)V.elementAt(v);
+			DBManager.PlayerData D=(DBManager.PlayerData)V.elementAt(v);
 			String last=D.xml;
 			if(last.startsWith("COINS;"))
 			{

@@ -1,7 +1,7 @@
 package com.planet_ink.coffee_mud.Common;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 
 import java.util.*;
 import java.nio.ByteBuffer;
@@ -291,7 +291,7 @@ public class DefaultPlayerAccount implements PlayerAccount
 			public int size(){return 0;}
 			public void load(DefaultPlayerAccount E, ByteBuffer S){ E.ignoredToAdd=CMLib.coffeeMaker().loadAInt(S); } },
 		LIP(){
-			public ByteBuffer save(DefaultPlayerAccount E){ return (E.lastIP==null?GenericBuilder.emptyBuffer:ByteBuffer.wrap(E.lastIP)); }
+			public ByteBuffer save(DefaultPlayerAccount E){ return (E.lastIP==null?CoffeeMaker.emptyBuffer:ByteBuffer.wrap(E.lastIP)); }
 			public int size(){return 0;}	//Ideally I can just say 4 but... ipv6.
 			public void load(DefaultPlayerAccount E, ByteBuffer S){ E.lastIP=CMLib.coffeeMaker().loadAByte(S); } },
 		PSS(){

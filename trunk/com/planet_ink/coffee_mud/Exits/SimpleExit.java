@@ -1,7 +1,8 @@
 package com.planet_ink.coffee_mud.Exits;
+import com.planet_ink.coffee_mud.ExitInstance.OneToOneExitInstance;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 
 import java.util.*;
 import java.nio.ByteBuffer;
@@ -21,6 +22,8 @@ public class SimpleExit implements Exit
 
 	protected static EnumSet<ListenHolder.Flags> lFlags=EnumSet.of(ListenHolder.Flags.OK,ListenHolder.Flags.EXC);
 	protected boolean amDestroyed=false;
+	protected OneToOneExitInstance exitInstA;
+	protected OneToOneExitInstance exitInstB;
 
 	protected Environmental myEnvironmental;//=(Environmental)((Ownable)CMClass.COMMON.getNew("DefaultEnvironmental")).setOwner(this);
 
@@ -37,6 +40,73 @@ public class SimpleExit implements Exit
 
 	public String directLook(MOB mob, Room destination) { return displayText()+" It leads to "+destination.displayText(); }
 	public String exitListLook(MOB mob, Room destination) { return destination.displayText(); }
+	public ExitInstance makeInstance(Room source, Room destination)
+	{
+		OneToOneExitInstance otherExit;
+		boolean isA;
+		if(exitInstA==null)
+		{
+			otherExit=exitInstB;
+			isA=true;
+		}
+		else if(exitInstB==null)
+		{
+			otherExit=exitInstA;
+			isA=false;
+		}
+		else return null;
+		if(otherExit!=null && (otherExit.getDestination()!=source || !destination.hasExit(otherExit)))
+			return null;
+		OneToOneExitInstance newInstance=new OneToOneExitInstance(this, destination);
+		if(isA)
+			exitInstA=newInstance;
+		else
+			exitInstB=newInstance;
+		CMLib.database().saveObject(newInstance);
+		return newInstance;
+	}
+	public void removeInstance(ExitInstance myInstance, boolean both)
+	{
+		OneToOneExitInstance alsoRemove=null;
+		if(myInstance==exitInstA)
+		{
+			exitInstA=null;
+			if(both) alsoRemove=exitInstB;
+			else if(exitInstB==null) both=true;
+		}
+		else if(myInstance==exitInstB)
+		{
+			exitInstB=null;
+			if(both) alsoRemove=exitInstA;
+			else if(exitInstA==null) both=true;
+		}
+		else return;
+		if(both)
+		{
+			destroy();
+			if(alsoRemove!=null)
+				myInstance.getDestination().removeExit(alsoRemove);
+			return;
+		}
+		myInstance.destroy();
+	}
+
+	public ExitInstance oppositeOf(ExitInstance myInstance, Room destination)
+	{
+		if(myInstance==exitInstA) return exitInstB;
+		else if(myInstance==exitInstB) return exitInstA;
+		return null;
+	}
+	public void linkMe(ExitInstance myInstance)
+	{
+		if(!(myInstance instanceof OneToOneExitInstance))
+		{
+			Log.errOut(ID(),"Incorrect ExitInstance type attempting to link");
+		}
+		if(exitInstA==null) exitInstA=(OneToOneExitInstance)myInstance;
+		else if(exitInstB==null) exitInstB=(OneToOneExitInstance)myInstance;
+		else Log.errOut(ID(),"ExitInstance attempting to link to full Exit");
+	}
 
 	public int priority(ListenHolder L){return Integer.MAX_VALUE;}
 	public void registerListeners(ListenHolder here) { here.addListener(this, lFlags); }
@@ -191,10 +261,11 @@ public class SimpleExit implements Exit
 	}
 
 
+
 	private enum SCode implements SaveEnum<SimpleExit>{
 		ENV(){
 			public ByteBuffer save(SimpleExit E){
-				if(E.myEnvironmental==null) return GenericBuilder.emptyBuffer;
+				if(E.myEnvironmental==null) return CoffeeMaker.emptyBuffer;
 				return CMLib.coffeeMaker().savSubFull(E.myEnvironmental); }
 			public int size(){return -1;}
 			public CMSavable subObject(SimpleExit fromThis){return fromThis.myEnvironmental;}

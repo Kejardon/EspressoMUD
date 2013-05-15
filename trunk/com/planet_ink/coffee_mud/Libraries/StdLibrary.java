@@ -1,7 +1,7 @@
 package com.planet_ink.coffee_mud.Libraries;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 
 import java.util.*;
 import java.nio.ByteBuffer;
@@ -36,5 +36,5 @@ public class StdLibrary implements CMLibrary
 	public boolean activate(){ return true;}
 	public void propertiesLoaded(){ }
 	public boolean shutdown(){ return true;}
-	public ThreadEngine.SupportThread getSupportThread() { return null;}
+	public SupportThread getSupportThread() { return null;}
 }

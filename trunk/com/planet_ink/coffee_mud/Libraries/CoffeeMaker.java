@@ -1,10 +1,9 @@
 package com.planet_ink.coffee_mud.Libraries;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 
 import com.planet_ink.coffee_mud.core.database.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.XMLLibrary.XMLpiece;
 
 import java.util.*;
 import java.nio.ByteBuffer;
@@ -29,8 +28,10 @@ headers not found, don't worry about defaults. If defaults are important the cal
 string to.
 */
 @SuppressWarnings("unchecked")
-public class CoffeeMaker extends StdLibrary implements GenericBuilder
+public class CoffeeMaker extends StdLibrary
 {
+	public static final ByteBuffer emptyBuffer=ByteBuffer.wrap(new byte[0]);
+
 	public String ID(){return "CoffeeMaker";}
 
 	protected byte[] toBytes(int i)
@@ -328,7 +329,8 @@ public class CoffeeMaker extends StdLibrary implements GenericBuilder
 		buf.rewind();
 		return buf;
 	}
-	public ByteBuffer savExits(Room.REMap[] exits)
+	/*
+	public ByteBuffer savExits(ExitInstance[] exits)
 	{
 		ByteBuffer buf=ByteBuffer.wrap(new byte[exits.length*8]);
 		for(Room.REMap exit : exits)
@@ -346,6 +348,7 @@ public class CoffeeMaker extends StdLibrary implements GenericBuilder
 		}
 		return nums;
 	}
+	*/
 	
 	//Save a list of races.
 	public ByteBuffer getRaceWVector(WVector<Race> V)

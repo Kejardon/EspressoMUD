@@ -2,7 +2,7 @@ package com.planet_ink.coffee_mud.Skills;
 
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
+import com.planet_ink.coffee_mud.Libraries.*;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman

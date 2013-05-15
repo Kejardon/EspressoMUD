@@ -1,8 +1,7 @@
 package com.planet_ink.coffee_mud.Libraries;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.*;
-import com.planet_ink.coffee_mud.Libraries.interfaces.XMLLibrary.XMLpiece;
+import com.planet_ink.coffee_mud.Libraries.*;
 
 import java.util.*;
 import java.nio.ByteBuffer;
@@ -17,8 +16,42 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 */
 //NOTE: As the MUD currently does not use XML I am mostly leaving this library untouched for the time being.
 @SuppressWarnings("unchecked")
-public class XMLManager extends StdLibrary implements XMLLibrary
+public class XMLManager extends StdLibrary
 {
+	public static final String HEX_DIGITS="0123456789ABCDEF";
+	public static final String FILE_XML_BOUNDARY="<?xml version=\"1.0\"?>";
+	public static class XMLpiece implements Cloneable
+	{
+		public String tag="";
+		public String value="";
+		public Vector<XMLpiece> contents=new Vector<XMLpiece>();
+		public Hashtable<String,String> parms=new Hashtable<String,String>();
+		public XMLpiece parent=null;
+		public int outerStart=-1;
+		public int innerStart=-1;
+		public int innerEnd=-1;
+		public int outerEnd=-1;
+		
+		public XMLpiece copyOf() {
+			try {
+				XMLpiece piece2=(XMLpiece)this.clone();
+				piece2.contents=(Vector<XMLpiece>)contents.clone();
+				piece2.parms=(Hashtable<String,String>)parms.clone();
+				return piece2;
+			} catch(Exception e) {
+				return this;
+			}
+		}
+		
+		public void addContent(XMLpiece x)
+		{
+			if (x == null) return;
+			if (contents == null) contents = new Vector<XMLpiece>();
+			x.parent=this;
+			contents.add(x);
+		}
+	}
+
 	public String ID(){return "XMLManager";}
 	
 	public String parseOutAngleBrackets(String s)
@@ -553,7 +586,7 @@ public class XMLManager extends StdLibrary implements XMLLibrary
 		Vector<XMLpiece> xml=parseAllXML(numberedList);
 		Vector<String> V=new Vector<String>();
 		for(int v=0;v<xml.size();v++)
-			V.add(this.restoreAngleBrackets(((XMLLibrary.XMLpiece)xml.get(v)).value));
+			V.add(this.restoreAngleBrackets(xml.get(v).value));
 		return V;
 	}
 }
