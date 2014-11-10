@@ -96,6 +96,9 @@ public interface CharStats extends CMCommon, CMModifiable, CMSavable, Ownable
 	public void setStat(Stat option, short value);
 //	public void setMaxStat(Stat option, int value);
 
+	public short getTrain(Stat option);
+	public void setTrain(Stat option, short value);
+
 	public short getSave(Save option);
 	public void setSave(Save option, short value);
 /*	ALL THIS SHOULD BE HANDLED BY BODY OBJECTS, NOT CHARSTATS

@@ -61,6 +61,6 @@ public class StdCommand implements Command
 	public boolean securityCheck(MOB mob){return true;}
 	public CMObject newInstance(){return this;}
 	public CMObject copyOf() { return this; }
-	public boolean prompter(){return false;}
+	public int prompter(){return 0;}
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 }

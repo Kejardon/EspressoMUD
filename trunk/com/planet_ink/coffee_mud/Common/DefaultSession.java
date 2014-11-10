@@ -34,6 +34,7 @@ public class DefaultSession extends Thread implements Session
 	protected boolean afkFlag=false;
 	protected String afkMessage=null;
 	protected StringBuilder input=new StringBuilder(256);
+	protected ConcurrentLinkedQueue<String> output=new ConcurrentLinkedQueue<>();
 	//private StringBuilder preliminaryInput=new StringBuilder("");
 	//private StringBuilder fakeInput=null;
 	//protected boolean waiting=false;
@@ -81,8 +82,9 @@ public class DefaultSession extends Thread implements Session
 	//private int lastColor=-1;
 	protected static int sessionCounter=0;
 	
-	protected DVector pendingPrompts=new DVector(5);	//Integer, 
-	protected HashSet<Integer> promptNumbers=new HashSet();
+	protected DVector pendingPrompts=new DVector(5);	//Integer, Wrapper/Thread, Future (sign of use/done), Cached message, State (False=busy, True=accepts user input)
+	protected boolean[] promptNumbers=new boolean[MAX_PROMPTS];
+	public static final int MAX_PROMPTS=10; //0 special prompt, and normal prompts 1-9.
 
 	protected volatile boolean activePrompt=false;
 	protected SessionInputReader currentInputReader=NormalSIR;
@@ -125,8 +127,12 @@ public class DefaultSession extends Thread implements Session
 		//{TELNET_IAC, TELNET_WILL, TELNET_MCCP},	//TODO eventually: Reimplement compression
 	};
 
+	public static final String MSDP_START = String.valueOf(new char[]{TELNET_IAC, TELNET_SB, TELNET_MSDP, 1});
+	
 	public void sendMSDPDirect(String name, String value)
 	{
+		output.add(MSDP_START+name+((char)2)+value+IAC_END);
+		/*
 		int tempSize=name.length();
 		char[] output=new char[tempSize+value.length()+7];
 		output[0]=(char)TELNET_IAC;
@@ -139,9 +145,13 @@ public class DefaultSession extends Thread implements Session
 		output[output.length-2]=(char)TELNET_IAC;
 		output[output.length-1]=(char)TELNET_SE;
 		out.write(output);
+		*/
 	}
+	private static final String ATCP_START = String.valueOf(new char[]{TELNET_IAC, TELNET_SB, TELNET_ATCP,'M','S','D','P','.'});
 	public void sendATCPDirect(String name, String value)
 	{
+		output.add(ATCP_START+name+" "+value+IAC_END);
+		/*
 		int tempSize=name.length();
 		char[] output=new char[tempSize+value.length()+11];
 		output[0]=(char)TELNET_IAC;
@@ -158,12 +168,18 @@ public class DefaultSession extends Thread implements Session
 		output[output.length-2]=(char)TELNET_IAC;
 		output[output.length-1]=(char)TELNET_SE;
 		out.write(output);
+		*/
 	}
 
+	public static final String MSDPHeader=String.valueOf(new char[]{TELNET_IAC,TELNET_SB,TELNET_MSDP,1});
+	public static final String ATCPHeader=String.valueOf(new char[]{TELNET_IAC,TELNET_SB,TELNET_ATCP,'M','S','D','P','.'});
+	public static final String IAC_END=String.valueOf(new char[]{TELNET_IAC,TELNET_SE});
 	public void sendMSDP(String name, String value)
 	{
 		if(enMSDP)
 		{
+			output.add(MSDPHeader+name+((char)2)+value+IAC_END);
+			/*
 			int tempSize=name.length();
 			char[] output=new char[tempSize+value.length()+7];
 			output[0]=(char)TELNET_IAC;
@@ -176,9 +192,12 @@ public class DefaultSession extends Thread implements Session
 			output[output.length-2]=(char)TELNET_IAC;
 			output[output.length-1]=(char)TELNET_SE;
 			out.write(output);
+			*/
 		}
 		else if(enATCP)
 		{
+			output.add(ATCPHeader+name+' '+value+IAC_END);
+			/*
 			int tempSize=name.length();
 			char[] output=new char[tempSize+value.length()+11];
 			output[0]=(char)TELNET_IAC;
@@ -195,6 +214,7 @@ public class DefaultSession extends Thread implements Session
 			output[output.length-2]=(char)TELNET_IAC;
 			output[output.length-1]=(char)TELNET_SE;
 			out.write(output);
+			*/
 		}
 	}
 	public void setMSDPNew(String S)
@@ -335,22 +355,32 @@ public class DefaultSession extends Thread implements Session
 		++sessionCounter;
 	}
 
-	public void handlePromptFor(CommandCallWrap command)
+	public void handlePromptFor(CommandCallWrap command, int type)
 	{
 		synchronized(pendingPrompts)
 		{
 			checkPendingPrompts();
-			Integer I=null;
-			for(int i=1;i<10;i++)
+			if(type==2)
 			{
-				if(promptNumbers.contains(i)) continue;
-				I=new Integer(i);
+				if(!promptNumbers[0])
+				{
+					pendingPrompts.addRow(0, command, CMClass.threadPool.submit(command), null, Boolean.TRUE);
+					promptNumbers[0]=true;
+				}
+				return;
+			}
+			//else { }
+			Integer I=null;
+			for(int i=1;i<MAX_PROMPTS;i++)
+			{
+				if(promptNumbers[i]) continue;
+				I=Integer.valueOf(i);
 				break;
 			}
 			if(I==null) {rawPrint("You have too many active prompts, finish some first.\r\n"); return;}
 			Future<Void> doneCheck=CMClass.threadPool.submit(command);
 			pendingPrompts.addRow(I, command, doneCheck, null, Boolean.TRUE);
-			promptNumbers.add(I);
+			promptNumbers[I]=true;
 		}
 	}
 	public void catchPromptFor(CommandCallWrap command)
@@ -397,29 +427,34 @@ public class DefaultSession extends Thread implements Session
 			}
 		}
 		try{
-			if(promptData==null)	//This is an active prompt. Hijack flushInput.
+			int index=(Integer)promptData[0];
+			//if(promptData==null)	//This is an active prompt. Hijack flushInput.
+			if(index==0)
 			{
-				print(Message);
+				//print(Message);
 				activePrompt=true;
-				long stopTime=System.currentTimeMillis()+(maxTime>0?maxTime:DefaultPromptSleep);
-				while((activePrompt)&&(stopTime<System.currentTimeMillis()))
-				{
-					if(in.ready())
-						while(currentInputReader.checkInput(this));	//Wait until a flushInput from reading input clears activePrompt
-					else
-						try{Thread.sleep(50);}catch(Exception e){}
-				}
-				if(activePrompt)
-				{
-					activePrompt=false;
-					return "";
-				}
+				//long stopTime=System.currentTimeMillis()+(maxTime>0?maxTime:DefaultPromptSleep);
+				//while((activePrompt)&&(stopTime<System.currentTimeMillis()))
+				//{
+				//	if(in.ready())
+				//		while(currentInputReader.checkInput(this));	//Wait until a flushInput from reading input clears activePrompt
+				//	else
+				//		try{Thread.sleep(50);}catch(Exception e){}
+				//}
+				//if(index==0&&activePrompt)
+				//{
+				//	activePrompt=false;
+				//	return "";
+				//}
 				//input now has our data.
-				Message=input.toString();
-				input.setLength(0);
-				return Message;
+				//Message=input.toString();
+				//input.setLength(0);
+				//return Message;
 			}
-			Message="-- Prompt "+promptData[0]+" --\r\n"+Message+"\r\n-- End Prompt "+promptData[0]+" --";
+			else
+			{
+				Message="-- Prompt "+index+" --\r\n"+Message+"\r\n-- End Prompt "+index+" --";
+			}
 			promptData[3]=Message;
 			promptData[4]=Boolean.FALSE;
 			print(Message);
@@ -427,7 +462,14 @@ public class DefaultSession extends Thread implements Session
 			if(promptData[4]==Boolean.FALSE)
 			{
 				promptData[4]=Boolean.TRUE;
-				print("\r\n-- Prompt "+promptData[0]+" has expired --\r\n");
+				if(index==0)
+				{
+					activePrompt=false;
+				}
+				else
+				{
+					print("\r\n-- Prompt "+index+" has expired --\r\n");
+				}
 				return "";
 			}
 			return (String)promptData[3];
@@ -448,6 +490,10 @@ public class DefaultSession extends Thread implements Session
 		public boolean isCancelled(){return false;}
 		public boolean isDone(){return done;}
 	}
+	public String newMainPrompt(String Message, long maxTime)
+	{
+		
+	}
 	public String newPrompt(String Message, long maxTime)
 	{
 		Thread caller=Thread.currentThread();
@@ -457,9 +503,9 @@ public class DefaultSession extends Thread implements Session
 		{
 			checkPendingPrompts();
 			Integer I=null;
-			for(int i=1;i<10;i++)
+			for(int i=1;i<MAX_PROMPTS;i++)
 			{
-				if(promptNumbers.contains(i)) continue;
+				if(promptNumbers[i]) continue;
 				I=new Integer(i);
 				break;
 			}
@@ -468,7 +514,7 @@ public class DefaultSession extends Thread implements Session
 			//pendingPrompts.addRow(I, caller, doneCheck, null, Boolean.TRUE);
 			promptData=new Object[]{I, caller, doneCheck, null, Boolean.TRUE};
 			pendingPrompts.addRow(promptData);
-			promptNumbers.add(I);
+			promptNumbers[I]=true;
 		}
 		try{
 			Message="-- Prompt "+promptData[0]+" --\r\n"+Message+"\r\n-- End Prompt "+promptData[0]+" --";
@@ -599,21 +645,32 @@ public class DefaultSession extends Thread implements Session
 	}
 	public boolean clientTelnetMode(int telnetCode)
 	{ return clientTelnetCodes[telnetCode]; }
+	public static final String IACWill=String.valueOf(new char[]{TELNET_IAC,TELNET_WILL});
+	public static final String IACWont=String.valueOf(new char[]{TELNET_IAC,TELNET_WONT});
 	public void changeTelnetMode(int telnetCode, boolean onOff) 
 	{
+		/*
 		char[] command={(char)TELNET_IAC,onOff?(char)TELNET_WILL:(char)TELNET_WONT,(char)telnetCode};
 		out.write(command);
 		out.flush();
+		*/
+		String command=(onOff?(IACWill):(IACWont))+(char)telnetCode;
+		output.add(command);
 		if(CMSecurity.isDebugging("TELNET")) Log.debugOut("Session","Sent: "+(onOff?"Will":"Won't")+" "+Session.TELNET_DESCS[telnetCode]);
 		//setServerTelnetMode(telnetCode,onOff);
 	}
+	private static final String IAC_START=String.valueOf(new char[]{TELNET_IAC,TELNET_SB});
 	public void negotiateTelnetMode(int telnetCode)
 	{
+		/*
 		char[] command=(telnetCode==TELNET_TERMTYPE?
 		  (new char[]{(char)TELNET_IAC,(char)TELNET_SB,(char)telnetCode,(char)1,(char)TELNET_IAC,(char)TELNET_SE}):
 		  (new char[]{(char)TELNET_IAC,(char)TELNET_SB,(char)telnetCode,(char)TELNET_IAC,(char)TELNET_SE}));
 		out.write(command);
 		out.flush();
+		*/
+		String command=(telnetCode==TELNET_TERMTYPE?(IAC_START+((char)telnetCode)+((char)1)+IAC_END):(IAC_START+((char)telnetCode)+IAC_END));
+		output.add(command);
 		if(CMSecurity.isDebugging("TELNET")) Log.debugOut("Session","Negotiate-Sent: "+Session.TELNET_DESCS[telnetCode]);
 	}
 
@@ -757,10 +814,15 @@ public class DefaultSession extends Thread implements Session
 		return ((System.currentTimeMillis()-time)>10000);
 	}
 
-	public void out(char[] c){
+	public void addOut(String msg)
+	{
+		output.add(msg);
+	}
+	private void out(String c){
 		try{
-			if((out!=null)&&(c!=null)&&(c.length>0))
+			if((out!=null)&&(c!=null)&&(!c.isEmpty()))
 			{
+				/*
 				if(isLockedUpWriting())
 				{
 					String name=(mob!=null)?mob.name():getAddress();
@@ -769,9 +831,9 @@ public class DefaultSession extends Thread implements Session
 					//kill(true);
 					CMLib.killThread(this,500,1);
 				}
-				else
+				else*/
 				{
-					writeStartTime=System.currentTimeMillis()+c.length;
+					writeStartTime=System.currentTimeMillis()+c.length();
 					out.write(c);
 					if(out.checkError())
 						kill(true);
@@ -781,8 +843,8 @@ public class DefaultSession extends Thread implements Session
 		catch(Exception ioe){ killFlag=true;}
 		finally{writeStartTime=0;}
 	}
-	public void out(String c){ if(c!=null) out(c.toCharArray());}
-	public void out(char c){ char[] cs={c}; out(cs);}
+	//public void out(String c){ if(c!=null) out(c.toCharArray());}
+	//public void out(char c){ char[] cs={c}; out(cs);}
 	public void onlyPrint(String msg){onlyPrint(msg,false);}
 	public void onlyPrint(String msg, boolean noCache)
 	{
@@ -806,7 +868,7 @@ public class DefaultSession extends Thread implements Session
 			{
 				if(spamStack>1)
 					lastStr=lastStr.substring(0,lastStr.length()-2)+"("+spamStack+")"+lastStr.substring(lastStr.length()-2);
-				out(lastStr.toCharArray());
+				output.add(lastStr);
 			}
 
 			spamStack=0;
@@ -815,9 +877,10 @@ public class DefaultSession extends Thread implements Session
 			else
 				lastStr=msg;
 
+			/*
 			if(this==Thread.currentThread())
 			{
-				int pageBreak=getPageBreak();
+				//int pageBreak=getPageBreak();
 				int lines=0;
 				if(pageBreak>0)
 				for(int i=0;i<msg.length();i++)
@@ -846,6 +909,7 @@ public class DefaultSession extends Thread implements Session
 					}
 				}
 			}
+			*/
 
 			// handle line cache --
 			if(!noCache)
@@ -869,7 +933,17 @@ public class DefaultSession extends Thread implements Session
 				}
 				curPrevMsg.append(msg.charAt(i));
 			}
-			out(msg.toCharArray());
+			output.add(msg);
+			/*
+			if(this==Thread.currentThread())
+			{
+				String next;
+				while((next=output.poll())!=null)
+				{
+					out(next);
+				}
+			}
+			*/
 		}
 		catch(java.lang.NullPointerException e){}
 	}
@@ -951,17 +1025,22 @@ public class DefaultSession extends Thread implements Session
 	public String getColor(char c)
 	{
 		if(!enANSI) return "";
-		if((c>='0')&&(c<='7'))
-			return CMColor.ASCI_COLORS[(c-'0')+(defaultDark?0:8)];
 		switch(c)
 		{
+			case '0': case '1': case '2': case '3':
+			case '4': case '5': case '6': case '7':
+				return CMColor.ASCI_COLORS[(c-'0')+(defaultDark?0:8)];
 			case '.': return CMColor.COLOR_NONE;
 			case 'I': return CMColor.COLOR_ITALIC;
 			case 'i': return CMColor.COLOR_ENDITALIC;
 			case 'U': return CMColor.COLOR_UNDERLINE;
 			case 'u': return CMColor.COLOR_ENDUNDERLINE;
+			//default: fall through
 		}
-		return "";
+			
+		//TODO: Check for override for this session
+		CMColor.ColorCode color=CMColor.ColorCode.get(c);
+		return color==null?"":color.DefaultWholeString;
 	}
 	/*
 	If no ANSI, return "";
@@ -1133,25 +1212,23 @@ public class DefaultSession extends Thread implements Session
 	EscapeSIR - If format wrong... abandon immediately, toss all so-far-collected data? First should be [, then either digits, ;, or m. If anything else, delete everything up to and including the first anything else. If m, leave alone. Goto normal when done.
 	*/
 	protected static interface SessionInputReader{public boolean checkInput(DefaultSession S) throws IOException;}
-	protected static SessionInputReader MXPSIR=new SessionInputReader()
-	{
-		private String getSub(String tag, StringBuilder source, int fromHere)
+	protected static SessionInputReader MXPSIR=new SessionInputReader() {
+	private String getSub(String tag, StringBuilder source, int fromHere) {
+		int i=source.indexOf(tag, fromHere);
+		if(i<0) return null;
+		fromHere=i+tag.length();
+		int size=source.length();
+		if(fromHere>=size) return null;
+		if(source.charAt(i)=='\"') fromHere++;
+		for(i=fromHere;i<size;i++)
 		{
-			int i=source.indexOf(tag, fromHere);
-			if(i<0) return null;
-			fromHere=i+tag.length();
-			int size=source.length();
-			if(fromHere>=size) return null;
-			if(source.charAt(i)=='\"') fromHere++;
-			for(i=fromHere;i<size;i++)
-			{
-				char ch=source.charAt(i);
-				if((!Character.isLetterOrDigit(ch))&&(ch!='.'))
-					break;
-			}
-			return source.substring(fromHere, i);
+			char ch=source.charAt(i);
+			if((!Character.isLetterOrDigit(ch))&&(ch!='.'))
+				break;
 		}
-		public boolean checkInput(DefaultSession S) throws IOException {
+		return source.substring(fromHere, i);
+	}
+	public boolean checkInput(DefaultSession S) throws IOException {
 		//ESC[#z was just eaten, S.inputMark should point to start of MXP data. Stop when mark is 1000 bytes ago or a >, whichever comes first
 		stopLoop:
 		while(S.in.ready())
@@ -1209,7 +1286,7 @@ public class DefaultSession extends Thread implements Session
 					}
 					if(S.MXPVersion.length()>0)
 					{
-						S.out.write("\t[F210][\toINFO\t[F210]]\tn MXP version "+S.MXPVersion+" detected and enabled.\r\n");
+						S.output.add("\t[F210][\toINFO\t[F210]]\tn MXP version "+S.MXPVersion+" detected and enabled.\r\n");
 					}
 					S.input.setLength(S.inputMark);
 					S.currentInputReader=DefaultSession.NormalSIR;
@@ -1226,8 +1303,8 @@ public class DefaultSession extends Thread implements Session
 		}
 		return S.in.ready();
 	} };
-	protected static SessionInputReader IACValue1SIR=new SessionInputReader()
-	{ public boolean checkInput(DefaultSession S) throws IOException {
+	protected static SessionInputReader IACValue1SIR=new SessionInputReader() {
+	public boolean checkInput(DefaultSession S) throws IOException {
 		int next=S.in.read();
 		switch(next)
 		{
@@ -1242,7 +1319,7 @@ public class DefaultSession extends Thread implements Session
 //				if(S.input.length()>0)
 //					S.flushInput();
 //				else
-					S.out(" \b");	//I don't really know why " \b" exactly. This is what CoffeeMUD does though.
+					S.output.add(" \b");	//I don't really know why " \b" exactly. This is what CoffeeMUD does though.
 				S.currentInputReader=DefaultSession.NormalSIR;
 				break;
 			case TELNET_DO:
@@ -1262,9 +1339,8 @@ public class DefaultSession extends Thread implements Session
 		}
 		return S.in.ready();
 	} };
-	protected static SessionInputReader IACFullSIR=new SessionInputReader()
-	{ public void doMSDP(DefaultSession S, String MSDPVar, String MSDPVal)
-	{
+	protected static SessionInputReader IACFullSIR=new SessionInputReader() {
+	public void doMSDP(DefaultSession S, String MSDPVar, String MSDPVal) {
 		if(MSDPVar.equals("SEND"))
 		{
 			MSDPOptions O=null;
@@ -1442,7 +1518,7 @@ public class DefaultSession extends Thread implements Session
 										S.setMSDPNew(MSDPOptions.XTERM_256_COLORS.ordinal());
 										S.support256=1;
 									}
-									S.out.write((char)TELNET_IAC+(char)TELNET_SB+(char)TELNET_TERMTYPE+(char)1+(char)TELNET_IAC+(char)TELNET_SE);
+									S.output.add(IAC_START+((char)TELNET_TERMTYPE)+((char)1)+IAC_END); //(char)TELNET_IAC+(char)TELNET_SB+(char)TELNET_TERMTYPE+(char)1+(char)TELNET_IAC+(char)TELNET_SE);
 								}
 								if(newID.startsWith("Mudlet"))
 								{
@@ -1571,8 +1647,10 @@ public class DefaultSession extends Thread implements Session
 		}
 		return S.in.ready();
 	} };
-	protected static SessionInputReader IACValue2SIR=new SessionInputReader()
-	{ public boolean checkInput(DefaultSession S) throws IOException {
+	public static final String MXP_ON_RESPONSE=IAC_START+(char)TELNET_MXP+IAC_END+"\033[7z";
+	public static final String MXP_WILL=""+(char)TELNET_IAC+(char)TELNET_WILL+(char)TELNET_MXP;
+	protected static SessionInputReader IACValue2SIR=new SessionInputReader() {
+	public boolean checkInput(DefaultSession S) throws IOException {
 		int type=S.in.read();
 		switch(type)
 		{
@@ -1608,7 +1686,7 @@ public class DefaultSession extends Thread implements Session
 				break;
 			case TELNET_MSSP:
 				if(S.input.charAt(S.inputMark)==TELNET_DO)
-					S.out.write(CMProps.getMSSPIAC());
+					S.output.add(CMProps.getMSSPIAC());
 				break;
 /*			case TELNET_MCCP:
 				//Not supported yet. TODO eventually
@@ -1623,12 +1701,12 @@ public class DefaultSession extends Thread implements Session
 				char command=S.input.charAt(S.inputMark);
 				if((command==TELNET_DO)||(command==TELNET_WILL))
 				{
-					S.out.write((char)TELNET_IAC+(char)TELNET_SB+(char)TELNET_MXP+(char)TELNET_IAC+(char)TELNET_SE+"\033[7z");	//Effectively disables the need for <, >, and & handling.
+					S.output.add(MXP_ON_RESPONSE);	//Effectively disables the need for <, >, and & handling.
 					S.enMXP=true;
 					S.setMSDPNew(MSDPOptions.MXP.ordinal());
 				}
 				else if(command==TELNET_WONT)
-					S.out.write((char)TELNET_IAC+(char)TELNET_WILL+(char)TELNET_MXP);
+					S.output.add(MXP_WILL);
 				else
 				{
 					S.enMXP=false;
@@ -1652,8 +1730,8 @@ public class DefaultSession extends Thread implements Session
 		S.currentInputReader=DefaultSession.NormalSIR;
 		return S.in.ready();
 	} };
-	protected static SessionInputReader NormalSIR=new SessionInputReader()
-	{ public boolean checkInput(DefaultSession S) throws IOException {
+	protected static SessionInputReader NormalSIR=new SessionInputReader() {
+	public boolean checkInput(DefaultSession S) throws IOException {
 		stopLoop:
 		while(S.in.ready())
 		{
@@ -1695,10 +1773,8 @@ public class DefaultSession extends Thread implements Session
 		}
 		return S.in.ready();
 	} };
-	protected static SessionInputReader EscapeSIR=new SessionInputReader()
-	{ 
-		private boolean validEscape(String S)
-		{
+	protected static SessionInputReader EscapeSIR=new SessionInputReader() {
+	private boolean validEscape(String S) {
 			if(S.length()==0) return true;
 			//First two (ESC, [) and last (m) have been checked and are not here. Need to check to see: Does not end with ;, no ints too large
 			boolean wasN8=false;	//was38 or was48
@@ -1739,7 +1815,7 @@ public class DefaultSession extends Thread implements Session
 				if(S.length()==0) return false;
 			}
 		}
-		public boolean checkInput(DefaultSession S) throws IOException{
+	public boolean checkInput(DefaultSession S) throws IOException{
 		if(S.inputMark+1==S.input.length())
 		{
 			int next=S.in.read();
@@ -1796,7 +1872,7 @@ public class DefaultSession extends Thread implements Session
 		}
 		return S.in.ready();
 	} };
-	private static class InputThread implements Callable<Void>
+	/* private static class InputThread implements Callable<Void>
 	{
 		protected final DefaultSession S;
 		public InputThread(DefaultSession ses){S=ses;}
@@ -1824,73 +1900,89 @@ public class DefaultSession extends Thread implements Session
 			S.busyMSDP=false;
 			return null;
 		}
-	}
+	} */
 
 	//Do it even if size is 0
 	public void flushInput()
 	{
-		String thisInput=input.toString();
-		if(!activePrompt)
+		String thisInput=input.toString().trim();
+		//if(!activePrompt)
 			input.setLength(0);
 		if(clientTelnetCodes[TELNET_ECHO])
-			out(thisInput.toCharArray());
+			output.add(thisInput);
 		if(snoops.size()>0)
 		{
 			//get chararray, write it
 			String mobName=(mob==null?"?":mob.name());
 			//"\033[1;33;41m", ":\033[0;37m " : 10+9=19 chars
-			char[] msgColored=new char[thisInput.length()+mobName.length()+19];
-			"\033[1;33;41m".getChars(0,10, msgColored, 0);
-			mobName.getChars(0, mobName.length(), msgColored, 10);
-			":\033[0;37m ".getChars(0, 9, msgColored, 10+mobName.length());
-			thisInput.getChars(0, thisInput.length(), msgColored, 19+mobName.length());
+			//char[] msgColored=new char[thisInput.length()+mobName.length()+19];
+			//"\033[1;33;41m".getChars(0,10, msgColored, 0);
+			//mobName.getChars(0, mobName.length(), msgColored, 10);
+			//":\033[0;37m ".getChars(0, 9, msgColored, 10+mobName.length());
+			String msgColored="\033[1;33;41m"+mobName+":\033[0;37m "+thisInput;
+			//thisInput.getChars(0, thisInput.length(), msgColored, 19+mobName.length());
 			for(Session snooper : snoops)
-				snooper.out(msgColored);
+			{
+				if(snooper instanceof DefaultSession)
+					((DefaultSession)snooper).output.add(msgColored);
+			}
 		}
 		lastKeystroke=System.currentTimeMillis();
 		if(thisInput.length()>0)
 			synchronized(prevMsgs){prevMsgs.add(thisInput);}
 		setAfkFlag(false);
-		doneInput:
-		if(activePrompt)
+		int answersPrompt=activePrompt?0:-1;
+		if((thisInput.length()>0)&&(Character.isDigit(thisInput.charAt(0))))
 		{
-			activePrompt=false;
+			int index=1;
+			while(thisInput.length()>index && Character.isDigit(thisInput.charAt(index))) index++;
+			answersPrompt=(index==thisInput.length()?CMath.s_int(thisInput):CMath.s_int(thisInput.substring(0,index)));
+			thisInput=thisInput.substring(index).trim();
 		}
-		else if((thisInput.length()>0)&&(Character.isDigit(thisInput.charAt(0))))
+		doneInput:
+		if(answersPrompt>=0)
 		{
-			int answersPrompt;
-			int index=thisInput.indexOf(' ');
-			answersPrompt=(index==-1?CMath.s_int(thisInput):CMath.s_int(thisInput.substring(0,index)));
-			if(answersPrompt<=0) break doneInput;
+			//int answersPrompt;
+			//int index=thisInput.indexOf(' ');
+			//answersPrompt=(index==-1?CMath.s_int(thisInput):CMath.s_int(thisInput.substring(0,index)));
+			//if(answersPrompt<=0) break doneInput;
 			Object[] promptData;
 			synchronized(pendingPrompts)
 			{
 				checkPendingPrompts();
-				promptData=pendingPrompts.elementsAt(Integer.valueOf(answersPrompt));
+				promptData=pendingPrompts.elementsAt(answersPrompt);
 			}
 			if(promptData==null)
 			{
 				rawPrint("There is no prompt associated with that number.");
-				break doneInput;
 			}
-			else if(((Boolean)promptData[4]).booleanValue()||index==-1)
+			else if((Boolean)promptData[4])
 			{
-				if(index!=-1)
-					rawPrint("That prompt is not currently waiting for input.");
-				if(promptData[3]!=null)
-					print((String)promptData[3]);	//Should it be the below? Or should the below be saved? Gotta format it anyways the first time so...
-					//print("-- Prompt "+answersPrompt+" --\r\n"+((String)promptData[3])+"\r\n-- End Prompt "+answersPrompt+" --");
-				else if(index==-1)	//Kinda worth noting: This kinda signifies the user predicted a prompt before it happened..
-					rawPrint("There is no previous method from this prompt!");
-				break doneInput;
+				rawPrint("That prompt is not currently waiting for input.");
 			}
-			promptData[3]=thisInput.substring(index+1);	//Temporary memory leakage is pretty insignificant
-			promptData[4]=Boolean.TRUE;
-			((Thread)promptData[1]).interrupt();
+			else if(thisInput.isEmpty() && answersPrompt!=0)
+			{
+				if(promptData[3]!=null)
+					print((String)promptData[3]);
+				else //Probably a bug.
+					rawPrint("There is no previous message from this prompt!");
+				//if(index!=-1)
+				//	rawPrint("That prompt is not currently waiting for input.");
+				//if(promptData[3]!=null)
+				//	print((String)promptData[3]);	//Should it be the below? Or should the below be saved? Gotta format it anyways the first time so...
+				//	//print("-- Prompt "+answersPrompt+" --\r\n"+((String)promptData[3])+"\r\n-- End Prompt "+answersPrompt+" --");
+				//else if(index==-1)	//Kinda worth noting: This kinda signifies the user predicted a prompt before it happened..
+				//	rawPrint("There is no previous method from this prompt!");
+			}
+			else
+			{
+				promptData[3]=thisInput;
+				promptData[4]=Boolean.TRUE;
+				((Thread)promptData[1]).interrupt();
+			}
 		}
 		else
 		{
-			thisInput=thisInput.trim();
 			int spaceIndex=thisInput.indexOf(' ');
 			String firstWord=(spaceIndex<0?thisInput:thisInput.substring(0,spaceIndex));
 			if(firstWord.length()==0) break doneInput;
@@ -2102,7 +2194,196 @@ public class DefaultSession extends Thread implements Session
 		}
 	}
 
+	private void checkIO()
+	{
+		try{
+			if(in.ready())
+				while(currentInputReader.checkInput(this));
+			String outString;
+			while((outString=output.poll())!=null)
+				out(outString);
+				
+		} catch (IOException e){}
+	}
+	
+	private static class LoginCall implements Callable<LoginResult>
+	{
+		public DefaultSession session;
+		public LoginCall(DefaultSession sess)
+		{
+			this.session=sess;
+		}
+		public LoginResult call()
+		{
+			try {return CMLib.login().login(session);}
+			catch (Exception e){Log.errOut("DefaultSession", e);}
+			return null;
+		}
+	}
+	public Future<LoginResult> loginAttempt()
+	{
+		return CMClass.threadPool.submit(new LoginCall(this));
+	}
 	public void run()
+	{
+		status=Session.STATUS_LOGIN;
+		try
+		{
+			int tries=0;
+			while((!killFlag)&&((++tries)<5))
+			{
+				status=Session.STATUS_LOGIN;
+				String input=null;
+				mob=null;
+				LoginResult loginResult=null;
+				if(acct==null)
+					loginResult=CMLib.login().login(this);
+				//TODO: Load account settings (i.e. ansi/xterm/whatever) here!
+				if((acct!=null)||(loginResult==LoginResult.ACCOUNT_LOGIN))
+				{
+					try
+					{
+						CMLib.login().reloadTerminal(acct,this);
+						status=Session.STATUS_ACCOUNTMENU;
+						loginResult=CMLib.login().selectAccountCharacter(acct,this);
+					}
+					finally
+					{
+						status=Session.STATUS_LOGIN;
+					}
+				}
+				if(loginResult != LoginResult.NO_LOGIN)
+				{
+					status=Session.STATUS_LOGIN2;
+					tries=0;
+					if((mob!=null)&&(mob.playerStats()!=null))
+						acct=mob.playerStats().getAccount();
+					CMLib.login().reloadTerminal(mob);
+					if((!killFlag)&&(mob!=null))
+					{
+						StringBuilder loginMsg=new StringBuilder("");
+						loginMsg.append(getAddress())
+								.append(" "+terminalType)
+								.append(((mob.playerStats().hasBits(PlayerStats.ATT_MXP))&&clientTelnetMode(Session.TELNET_MXP))?" MXP":"")
+//								.append((clientTelnetMode(Session.TELNET_COMPRESS)||clientTelnetMode(Session.TELNET_COMPRESS2))?" CMP":"")
+								.append(((mob.playerStats().hasBits(PlayerStats.ATT_ANSI))&&clientTelnetMode(Session.TELNET_ANSI))?" ANSI":"")
+								.append(", login: "+mob.name());
+						Log.sysOut("Session",loginMsg.toString());
+						if(loginResult != LoginResult.NO_LOGIN)
+						{
+							CMMsg loginMessage = CMClass.getMsg(mob,null,null,EnumSet.of(CMMsg.MsgCode.LOGIN),null);
+							if(!CMLib.map().sendGlobalMessage(mob,EnumSet.of(CMMsg.MsgCode.LOGIN),loginMessage))
+								killFlag=true;
+							loginMessage.returnMsg();
+						}
+					}
+					needPrompt=true;
+					status=Session.STATUS_OK;
+					while((!killFlag)&&(mob!=null))
+					{
+						while((!killFlag)
+						&&(mob!=null)
+						&&(CMLib.threads().isAllSuspended())
+						&&(!CMSecurity.isASysOp(mob)))
+							try{Thread.sleep(2000);}catch(Exception e){}
+						lastLoopTop=System.currentTimeMillis();
+						//waiting=true;
+						if(mob==null) break;
+						//checkInput();
+						setMSDPNew(MSDPOptions.SERVER_TIME.ordinal());
+						if((enMSDP)&&(lastMSDP<lastLoopTop-1000)&&(newMSDP))	//saving a bit instead of calling System
+						{
+							lastMSDP=lastLoopTop;
+							newMSDP=false;
+							for(int i=MSDPOptions.size-1; i>=0; i--)
+							{
+								if(!MSDPReporting[i]) continue;
+								if(MSDPIsNew[i]) continue;
+								MSDPIsNew[i]=false;
+								MSDPOptions O=MSDPOptions.fromOrdinal(i);
+								sendMSDP(O.toString(), O.value(this));
+							}
+						}
+						if(in.ready())
+							while(currentInputReader.checkInput(this));
+/*
+						if((enMSDP)&&(lastMSDP<lastLoopTop-1000)&&(!busyMSDP)&&(newMSDP))	//saving a bit instead of calling System
+						{
+							lastMSDP=lastLoopTop;
+							busyMSDP=true;
+							CMClass.threadPool.submit(new MSDPUpdate(this));
+						}
+						if((in.ready())&&(!doingInput))
+						{
+							doingInput=true;
+							CMClass.threadPool.submit(new InputThread(this));
+						}
+*/
+						if(!afkFlag)
+						{
+							if(System.currentTimeMillis()-lastKeystroke>=600000)
+								setAfkFlag(true);
+						}
+						if((needPrompt)&&(lastPrompt+1000<System.currentTimeMillis()))
+						{
+							showPrompt();
+							needPrompt=false;
+							lastPrompt=System.currentTimeMillis();
+						}
+						try{Thread.sleep(100);}catch(Exception e){}
+					}
+					status=Session.STATUS_LOGOUT2;
+					previousCmd=""; // will let system know you are back in login menu
+				}
+				else
+					mob=null;
+				status=Session.STATUS_LOGOUT;
+			}
+			status=Session.STATUS_LOGOUT3;
+		}
+		catch(SocketException e)
+		{
+			if(!Log.isMaskedErrMsg(e.getMessage())&&((!killFlag)||(sock.isConnected())))
+				errorOut(e);
+		}
+		catch(Exception t)
+		{
+			if(!Log.isMaskedErrMsg(t.getMessage())&&((!killFlag)||(sock.isConnected())))
+				errorOut(t);
+		}
+		status=Session.STATUS_LOGOUT3;
+
+		if(mob!=null)
+		{
+			String name=mob.name();
+			if(name.trim().length()==0) name="Unknown";
+			Vector<String> channels=CMLib.channels().getFlaggedChannelNames(CMChannels.ChannelFlag.LOGOFFS);
+			for(int i=0;i<channels.size();i++)
+				CMLib.commands().postChannel(channels.elementAt(i),name+" has logged out",true);
+			CMLib.login().notifyFriends(mob,"^X"+mob.name()+" has logged off.^.^?");
+
+			// the player quit message!
+			mob.playerStats().setLastDateTime(System.currentTimeMillis());
+			Log.sysOut("Session",getAddress()+" logout: "+name);
+			mob.setSession(null);
+			mob=null;
+		}
+
+		status=Session.STATUS_LOGOUT4;
+		killFlag=true;
+		//waiting=false;
+		needPrompt=false;
+		acct=null;
+		snoops.clear();
+
+		closeSocks();
+
+		status=Session.STATUS_LOGOUT11;
+		CMLib.sessions().removeElement(this);
+
+		status=Session.STATUS_LOGOUTFINAL;
+	}
+	private void notRun()
 	{
 		status=Session.STATUS_LOGIN;
 		try
@@ -2267,13 +2548,9 @@ public class DefaultSession extends Thread implements Session
 		for(int i=pendingPrompts.size()-1;i>=0;i--)
 			if((prompt = (Future<Void>)pendingPrompts.elementAt(i, 2)).isDone())
 			{
-				promptNumbers.remove((Integer)pendingPrompts.removeElementsAt(i)[0]);
+				promptNumbers[(Integer)pendingPrompts.removeElementsAt(i)[0]]=false;
 				try {prompt.get();}
-				catch(ExecutionException e)
-				{
-					Log.errOut("Prompt",e.getCause());
-				}
-				catch(InterruptedException e)
+				catch(ExecutionException | InterruptedException e)
 				{
 					Log.errOut("Prompt",e.getCause());
 				}
@@ -2284,13 +2561,9 @@ public class DefaultSession extends Thread implements Session
 		Future<Void> prompt;
 		if((prompt = (Future<Void>)pendingPrompts.elementAt(i, 2)).isDone())
 		{
-			promptNumbers.remove((Integer)pendingPrompts.removeElementsAt(i)[0]);
+			promptNumbers[(Integer)pendingPrompts.removeElementsAt(i)[0]]=false;
 			try {prompt.get();}
-			catch(ExecutionException e)
-			{
-				Log.errOut("Prompt",e.getCause());
-			}
-			catch(InterruptedException e)
+			catch(ExecutionException | InterruptedException e)
 			{
 				Log.errOut("Prompt",e.getCause());
 			}

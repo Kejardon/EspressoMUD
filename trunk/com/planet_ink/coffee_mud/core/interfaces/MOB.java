@@ -331,6 +331,8 @@ public interface MOB extends ItemCollection.ItemHolder, Interactable, CMSavable,
 	public Set<Skill> knownSkills();
 	public boolean changeSkillState(Skill key, int state);
 
+	public void trainStat(CharStats.Stat stat, CMMsg message);
+
 	/** Combat and death */
 //	public void removeFromGame(boolean killSession);
 	public Interactable getVictim();

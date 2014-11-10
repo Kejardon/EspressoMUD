@@ -22,14 +22,15 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 	NOTE: This class should NEVER be instantiated except for CMClass's reference!
 */
 @SuppressWarnings("unchecked")
-public class DefaultCharStats implements CharStats
+public abstract class DefaultCharStats implements CharStats
 {
 	public String ID(){return "DefaultCharStats";}
 
-	public CMObject newInstance(){try{return (CMObject)getClass().newInstance();}catch(Exception e){return new DefaultCharStats();}}
+	public CMObject newInstance(){try{return (CMObject)getClass().newInstance();}catch(Exception e){return null;}}
 	public void initializeClass(){}
 	protected CMSavable parent=null;
 	protected short[] stat;
+	protected short[] statTrain;
 	protected short[] save;
 	protected int[] points;
 	protected int[] pointsMax;
@@ -43,6 +44,7 @@ public class DefaultCharStats implements CharStats
 	public Ownable setOwner(CMSavable owner){parent=owner; return this;}
 //	protected Body myBody=null;
 
+	/*
 	public int getStatIndex(Stat option)
 	{
 		return -1;
@@ -55,8 +57,9 @@ public class DefaultCharStats implements CharStats
 	{
 		return -1;
 	}
-
 	public DefaultCharStats() { }
+	*/
+
 
 	public void copyInto(CharStats intoStats)
 	{
@@ -75,6 +78,8 @@ public class DefaultCharStats implements CharStats
 		if(intoStats.ID()==ID())
 		{
 			DefaultCharStats newStats=(DefaultCharStats)intoStats;
+			for(int i=0; i<statTrain.length; i++)
+				newStats.statTrain[i]=statTrain[i];
 			for(int i=0; i<stat.length; i++)
 				newStats.stat[i]=stat[i];
 			for(int i=0; i<pointsMax.length; i++)
@@ -110,6 +115,18 @@ public class DefaultCharStats implements CharStats
 	{
 		int i=getSaveIndex(option);
 		if(i>=0) { save[i]=value; if(parent!=null) parent.saveThis(); }
+	}
+
+	public short getTrain(Stat option)
+	{
+		int i=getStatIndex(option);
+		if(i>=0) return statTrain[i];
+		return -1;
+	}
+	public void setTrain(Stat option, short value)
+	{
+		int i=getStatIndex(option);
+		if(i>=0) { statTrain[i]=value; if(parent!=null) parent.saveThis(); }
 	}
 
 	public short getStat(Stat option)

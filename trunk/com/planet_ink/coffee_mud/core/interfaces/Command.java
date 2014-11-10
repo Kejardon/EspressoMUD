@@ -14,7 +14,8 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 public interface Command extends CMObject
 {
 	//Flag for commands that may call a session prompt. These commands should be called via a new thread, see CommandCallWrap.
-	public boolean prompter();
+	//0: Not a prompter. 1: Normal prompter, add to prompt queue. 2: Lone prompter, demands input immediately.
+	public int prompter();
 	public String[] getAccessWords();
 	//public double actionsCost(MOB mob, Vector<String> cmds);
 	public int commandType(MOB mob, String cmds);

@@ -29,6 +29,7 @@ public class MOBCharStats extends DefaultCharStats
 
 	{
 		stat=new short[]{10, 10, 10, 10, 10, 10};
+		statTrain=new short[]{0, 0, 0, 0, 0, 0};
 		save=new short[]{};
 		points=new int[]{1000};
 		pointsMax=new int[]{1000};

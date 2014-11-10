@@ -574,6 +574,7 @@ public class CoffeeFilter extends StdLibrary
 					case '4': case '5': case '6': case '7':
 					//Telnet Formatting. Ignored by oldColors
 					case 'I': case 'i': case 'U': case 'u': //case 'B': case 'b':
+					{
 						nextChar=(char)0;
 						len+=2;
 						String newColor=S.getColor(escapeChar);
@@ -593,6 +594,7 @@ public class CoffeeFilter extends StdLibrary
 							}
 						}
 						break;
+					}
 					//Previous color
 					case '?':
 						if((oldColors!=null)&&(oldColors.size()>0))
@@ -714,9 +716,19 @@ public class CoffeeFilter extends StdLibrary
 						nextChar=(char)0;
 						break;
 					default:
+					{
+						String newColor=S.getColor(escapeChar);
+						if(newColor.length()>0)
+						{
+							buf.append(newColor);
+							if(oldColors==null) oldColors=new ArrayList();
+							oldColors.add(currentColor);
+							currentColor=newColor;
+						}
 						len++;
 						nextChar=(char)0;
 						break;
+					}
 					}
 					break;
 				default:

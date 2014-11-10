@@ -11,7 +11,6 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-//Note: This is not a prompter command, it must be responded to immediately by the player
 @SuppressWarnings("unchecked")
 public class Quit extends StdCommand
 {
@@ -68,6 +67,7 @@ public class Quit extends StdCommand
 		return false;
 	}
 
+	public int prompter(){return 2;}
 	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	public boolean canBeOrdered(){return false;}
 }

@@ -655,4 +655,94 @@ public class CoffeeMaker extends StdLibrary
 		return A.toString();
 	}
 */
+	public ByteBuffer savSubCollection(Collection<? extends CMSavable> subs)
+	{
+		return savSubCollection(subs.toArray(CMSavable.dummyCMSavableArray));
+	}
+	public ByteBuffer savSubCollection(CMSavable[] subs)
+	{
+		if(subs.length==0) return emptyBuffer;
+		//Total size: 4(numEntries)+Data
+		int totalSize=4;
+		ByteBuffer[] saveDatas=new ByteBuffer[subs.length];
+		
+		for(int i=0;i<subs.length;i++)
+		{
+			CMSavable sub = subs[i];
+			CMClass.Objects type=CMClass.getType(sub);
+			byte[] typeBytes=type.name.getBytes(DBManager.charFormat);
+			byte[] IDbytes=sub.ID().getBytes(DBManager.charFormat);
+			//This size: 4(Type ID size)+?(Type ID)+4(ID Size)+?(ID)+4(Data Size)+?(Data)=12+typeSize+IDSize+DataSize
+			int thisSize=12+IDbytes.length+typeBytes.length;
+			ArrayList<ByteBuffer> allVals=new ArrayList();
+			for(CMSavable.SaveEnum thisEnum : sub.totalEnumS())
+			{
+				ByteBuffer buf=thisEnum.save(sub);
+				int size=buf.remaining();
+				if(size==0) continue;
+				allVals.add(DBManager.charFormat.encode(thisEnum.name()));
+				allVals.add((ByteBuffer)ByteBuffer.wrap(new byte[4]).putInt(size).rewind());
+				allVals.add(buf);
+				thisSize+=size+7;
+			}
+			ByteBuffer saveData=ByteBuffer.wrap(new byte[thisSize]);
+			saveData.putInt(thisSize).putInt(typeBytes.length).put(typeBytes).putInt(IDbytes.length).put(IDbytes);
+			for(Iterator<ByteBuffer> e=allVals.iterator();e.hasNext();)
+				saveData.put(e.next());
+			saveData.rewind();
+			totalSize+=4+thisSize;
+			saveDatas[i]=saveData;
+		}
+		ByteBuffer saveData=ByteBuffer.wrap(new byte[totalSize]);
+		saveData.putInt(subs.length);
+		for(ByteBuffer partData : saveDatas)
+			saveData.put(partData);
+		saveData.rewind();
+		return saveData;
+	}
+	public CMSavable[] loadSubCollection(ByteBuffer fullBuf)
+	{
+		CMSavable[] subs;
+		if(fullBuf.remaining()==0)
+			subs=new CMSavable[0];
+		else
+			subs=new CMSavable[fullBuf.getInt()];
+		for(int i=0;i<subs.length;i++)
+		{
+			int bufSize=fullBuf.getInt();
+			ByteBuffer buf=fullBuf.slice();
+			buf.limit(bufSize);
+			fullBuf.position(fullBuf.position()+bufSize);
+			
+			byte[] typeBytes=new byte[buf.getInt()];
+			buf.get(typeBytes);
+			byte[] IDbytes=new byte[buf.getInt()];
+			buf.get(IDbytes);
+			CMSavable sub=(CMSavable)((CMClass.Objects)CMClass.Objects.valueOf(new String(typeBytes, DBManager.charFormat))).getNew(new String(IDbytes, DBManager.charFormat));
+			if(sub==null) continue; //actually a critical error; class has been deleted or something
+			DBManager.SaveFormat format=DBManager.getFormat(sub);
+			byte[] enumName=new byte[3];
+			Enum[] options=format.myObject.headerEnumS();
+			while(buf.remaining()>0)
+			{
+				buf.get(enumName);
+				String option=new String(enumName, DBManager.charFormat);
+				CMSavable.SaveEnum thisEnum=null;
+				for(int j=0;(j<options.length)&&(thisEnum==null);j++)
+					thisEnum=DBManager.getParser(options[j], option);
+				int size=buf.getInt();
+				if(thisEnum==null)
+				{
+					buf.position(buf.position()+size);
+					continue;
+				}
+				ByteBuffer saveBuffer=buf.slice();
+				buf.position(buf.position()+size);
+				saveBuffer.limit(size);
+				thisEnum.load(sub, saveBuffer);
+			}
+			subs[i]=sub;
+		}
+		return subs;
+	}
 }

@@ -3,6 +3,7 @@ import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Libraries.*;
 import com.planet_ink.coffee_mud.core.database.DBManager;
+import com.planet_ink.coffee_mud.core.interfaces.CharStats.Stat;
 
 import java.util.*;
 import java.nio.ByteBuffer;
@@ -438,8 +439,11 @@ public class StdMOB implements MOB
 	public boolean doCommand(QueuedCommand qCom)
 	{
 		//Log.sysOut("MOB",""+Thread.currentThread()+" is doing "+qCom.command.ID()+" for "+mySession);
-		if((qCom.command.prompter())&&((mySession==Thread.currentThread())||(false)))
-			mySession.handlePromptFor(new CommandCallWrap(this, qCom));
+		int type=qCom.command.prompter();
+		if((type!=0)&&((mySession==Thread.currentThread())||(false)))
+		{
+			mySession.handlePromptFor(new CommandCallWrap(this, qCom),type);
+		}
 		else try
 		{
 			return qCom.command.execute(this,qCom);
@@ -1090,6 +1094,20 @@ public class StdMOB implements MOB
 	}
 	public void saveThis(){CMLib.database().saveObject(this);}
 	public void prepDefault(){getItemCollection();}
+
+	public void trainStat(Stat stat, CMMsg message) {
+		Body body = myBody;
+		if(body.isComposite())
+		{
+			WVector<Race> myRaces=body.raceSet();
+			Log.errOut("StdMOB",new RuntimeException("Incomplete code!"));	//TODO eventually
+			tell("Incomplete code!");
+			return;
+		}
+		Race race=body.race();
+		race.trainStat(body, stat, message);
+		
+	}
 
 	private enum SCode implements SaveEnum<StdMOB>{
 		NAM(){

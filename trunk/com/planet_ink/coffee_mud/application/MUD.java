@@ -26,6 +26,7 @@ public class MUD extends Thread implements MudHost
 	private static final float HOST_VERSION_MAJOR=(float)1.0;
 	private static final long  HOST_VERSION_MINOR=0;
 	private static final long LastConnectionDelay=(5*60*1000);
+	public static final String copyright="(C) 2010 - 2014 Kejardon";
 
 	protected static boolean bringDown=false;
 	private static DVector accessed=new DVector(2);	//List of connection attempts
@@ -721,7 +722,7 @@ public class MUD extends Thread implements MudHost
 			Log.sysOut(Thread.currentThread().getName(),"CoffeeMud v K1");
 			Log.sysOut(Thread.currentThread().getName(),"(C) 2000-2010 Bo Zimmerman");
 			Log.sysOut(Thread.currentThread().getName(),"http://www.coffeemud.org");
-			Log.sysOut(Thread.currentThread().getName(),"(C) 2010-2012 Kejardon");
+			Log.sysOut(Thread.currentThread().getName(),copyright);
 			Log.sysOut(Thread.currentThread().getName(),"Starting MUD");
 			ThreadGroup G=new ThreadGroup("MUD");
 			HostGroup H=new HostGroup(G,nameID);

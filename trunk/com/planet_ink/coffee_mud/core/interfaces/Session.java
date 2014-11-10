@@ -23,7 +23,9 @@ public interface Session extends CMCommon
 {
 	public static final Session[] dummySessionArray=new Session[0];
 
-	public void handlePromptFor(CommandCallWrap command);
+	//Runs a command. If it asks for a prompt it will be added to the session's prompt list.
+	public void handlePromptFor(CommandCallWrap command, int type);
+	//Sets the prompt's thread so it will be able to recognize the call later
 	public void catchPromptFor(CommandCallWrap command);
 	/**
 	 * Negotiates various telnet options (or attempts to), and 
@@ -72,13 +74,14 @@ public interface Session extends CMCommon
 	public void onlyPrint(String msg);
 
 	/**
-	 * Lowest level user-output method.  Does nothing
-	 * but send the string to the user, period.
+	 * Lowest level public user-output method.  Does nothing
+	 * but queue the string to send to the user, period.
 	 * @see com.planet_ink.coffee_mud.Common.interfaces.Session#out(char[])
 	 * @param msg the string to send to the user
 	 */
 
-	public void out(String msg);
+	//public void out(String msg);
+	public void addOut(String msg);
 
 	/**
 	 * Low level line-output method.  Sets the
@@ -152,7 +155,7 @@ public interface Session extends CMCommon
 	 * but send the string to the user, period.
 	 * @param c string (as char array) to send out to the user
 	 */
-	public void out(char[] c);
+	//public void out(char[] c);
 	
 	/**
 	 * Checks whether this session is currently over its 

@@ -32,6 +32,7 @@ public interface ListenHolder extends Tickable {
 		ENV, CHAR, OK, EXC, TICK
 	}
 	public final static EnumSet<Flags> AllFlags=EnumSet.range(Flags.ENV,Flags.TICK);
+	public final static EnumSet<Flags> NoFlags=EnumSet.noneOf(Flags.class);
 
 	public static interface Listener
 	{

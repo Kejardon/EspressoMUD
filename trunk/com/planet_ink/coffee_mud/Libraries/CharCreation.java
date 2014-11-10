@@ -78,7 +78,7 @@ public class CharCreation extends StdLibrary
 			{
 				StringBuffer mxpText=Resources.getFileResource("text/mxp.txt",true);
 				if(mxpText!=null)
-					S.out("\033[7z"+mxpText.toString()+"\r\n");
+					S.addOut("\033[7z"+mxpText.toString()+"\r\n");
 			}
 			else
 				S.rawPrint("MXP codes have been disabled for this session.\n");
@@ -645,7 +645,7 @@ public class CharCreation extends StdLibrary
 			return LoginResult.NO_LOGIN;
 		if(login.equalsIgnoreCase("MSSP-REQUEST")&&(!CMSecurity.isDisabled("MSSP")))
 		{
-			session.out(CMProps.getMSSPPacket());
+			session.addOut(CMProps.getMSSPPacket());
 //			session.kill(false);
 			return LoginResult.NO_LOGIN;
 		}

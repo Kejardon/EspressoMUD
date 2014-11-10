@@ -16,16 +16,16 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 */
 //Defaults for typical carbon-based lifeform (mainly recoverTick)
 @SuppressWarnings("unchecked")
-public class StdRace implements Race
+public abstract class StdRace implements Race
 {
 	public static final EnumSet<ListenHolder.Flags> lFlags=EnumSet.noneOf(ListenHolder.Flags.class);
 	public Gender[] myGenders;
 
-	public String ID(){	return "StdRace"; }
-	public String name(){ return "StdRace"; }
-	public String racialCategory(){return "Unknown";}
+	//public String ID(){	return "StdRace"; }
+	//public String name(){ return "StdRace"; }
+	//public String racialCategory(){return "Unknown";}
 
-	public HashMap<String, Body.BodyPart> bodyMap(){return null;}
+	//public HashMap<String, Body.BodyPart> bodyMap(){return null;}
 
 	public CMObject newInstance(){return this;}
 	public void initializeClass(){}
@@ -35,21 +35,14 @@ public class StdRace implements Race
 	public void registerAllListeners(){}
 	public void clearAllListeners(){}
 
-	protected static final Vector empty=new Vector();
-	protected String baseStatChgDesc = "";
+	//protected static final Vector empty=new Vector();
+	//protected String baseStatChgDesc = "";
 //	protected String sensesChgDesc = null;
 //	protected String dispChgDesc = null;
 //	protected String abilitiesDesc = null;
-	protected String languagesDesc = "";
+	//protected String languagesDesc = "";
 
-	public StdRace()
-	{
-		if(ID().equals("StdRace"))
-		{
-			myGenders=new Gender[1];
-			myGenders[0]=CMClass.GENDER.get("Neuter");
-		}
-	}
+	//public StdRace() {}
 
 	public int availabilityCode(){return -1;}
 
@@ -59,15 +52,7 @@ public class StdRace implements Race
 
 	public CMObject copyOf()
 	{
-		try
-		{
-			StdRace E=(StdRace)this.clone();
-			return E;
-		}
-		catch(CloneNotSupportedException e)
-		{
-			return this;
-		}
+		return this;
 	}
 
 	public void affectEnvStats(Environmental affected, EnvStats affectableStats)
@@ -135,6 +120,7 @@ public class StdRace implements Race
 	}
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 
+	/*
 	public String getStatAdjDesc()
 	{
 		return baseStatChgDesc;
@@ -143,6 +129,7 @@ public class StdRace implements Race
 	{
 		return languagesDesc;
 	}
+	*/
 
 	public boolean sameAs(Race E)
 	{

@@ -3,6 +3,7 @@ import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Libraries.*;
 import com.planet_ink.coffee_mud.Commands.StdCommand;
+import com.planet_ink.coffee_mud.core.interfaces.CharStats.Stat;
 
 import java.util.*;
 
@@ -19,6 +20,9 @@ public class CarbonBased extends StdRace
 	public String ID(){	return "CarbonBased"; }
 	public String name(){ return "CarbonBased"; }
 	public String racialCategory(){return "CarbonBased";}
+	
+	public HashMap<String, Body.BodyPart> bodyMap(){return null;}
+	
 	public void initializeClass()
 	{
 		if(ID()!="CarbonBased") return;
@@ -28,6 +32,12 @@ public class CarbonBased extends StdRace
 		newCommand=new Drink();
 		CMClass.COMMAND.remove(newCommand);
 		CMClass.COMMAND.add(newCommand);
+	}
+
+	public void trainStat(Body body, Stat stat, CMMsg message)
+	{
+		//TODO. Read message, affect limbs/body.
+		throw new UnsupportedOperationException("Not supported yet.");
 	}
 
 	public static class Eat extends StdCommand
@@ -162,7 +172,7 @@ public class CarbonBased extends StdRace
 		if(body.isComposite())
 		{
 			WVector<Race> myRaces=body.raceSet();
-			Log.errOut("StdMOB",new RuntimeException("Incomplete code!"));	//TODO eventually
+			Log.errOut("CarbonBased",new RuntimeException("Incomplete code!"));	//TODO eventually
 			mob.tell("Incomplete code!");
 			return -1;
 		}

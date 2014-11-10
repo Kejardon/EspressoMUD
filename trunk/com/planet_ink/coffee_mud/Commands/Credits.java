@@ -1,4 +1,5 @@
 package com.planet_ink.coffee_mud.Commands;
+import com.planet_ink.coffee_mud.application.MUD;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
 
@@ -25,7 +26,7 @@ public class Credits extends StdCommand
 		else
 		{
 			mob.tell("CoffeeMud 5.6.2 is (C)2000-2010 by Bo Zimmerman");
-			mob.tell("EspressoMUD is (C)2010-2012 by Kejardon");
+			mob.tell("EspressoMUD is "+MUD.copyright);
 		}
 		return false;
 	}

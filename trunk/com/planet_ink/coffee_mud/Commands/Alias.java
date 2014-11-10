@@ -97,6 +97,6 @@ public class Alias extends StdCommand
 	}
 
 	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
-	public boolean prompter(){return true;}
+	public int prompter(){return 1;}
 	public boolean canBeOrdered(){return true;}
 }

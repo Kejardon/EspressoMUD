@@ -22,7 +22,7 @@ public class CMGenEditor extends StdLibrary
 {
 	public String ID(){return "CMGenEditor";}
 
-	public CMObject genMiscSet(MOB mob, CMModifiable E)
+	public <T extends CMModifiable> T genMiscSet(MOB mob, T E)
 	{
 		if(E==null)
 			return null;
@@ -224,7 +224,7 @@ public class CMGenEditor extends StdLibrary
 		return mob.session().prompt("Enter a new character: ",((defaultTo==null)?" ":defaultTo)).charAt(0);
 	}
 
-	public int promptVector(MOB mob, Vector V, boolean newOption)
+	public int promptVector(MOB mob, List V, boolean newOption)
 	{
 		int i=0;
 		for(;i<V.size();i++)
@@ -303,6 +303,39 @@ public class CMGenEditor extends StdLibrary
 			}
 			else
 				return null;
+		}
+		return null;
+	}
+	public <T extends CMObject> T newObjectOfType(
+			MOB M,
+			CMClass.Objects group,
+			Class<T> thisInterface,
+			boolean newInstance,
+			String type)
+	{
+		if(type==null)
+			type=(thisInterface!=null?thisInterface.getCanonicalName():group.name);
+		while((M.session()!=null)&&(!M.session().killFlag()))
+		{
+			String objectName=M.session().prompt("Enter a "+type+" type: ","");
+			if(objectName.equals("")) return null;
+			if(objectName.equals("?"))
+			{
+				for(Iterator<CMObject> e=group.all();e.hasNext();)
+				{
+					CMObject next=e.next();
+					if(thisInterface==null||thisInterface.isInstance(next))
+						M.session().rawPrintln(next.ID());
+				}
+				continue;
+			}
+			CMObject S=newInstance?group.getNew(objectName):group.get(objectName);
+			if(S==null || (thisInterface!=null && !thisInterface.isInstance(S)))
+			{
+				M.session().rawPrintln("No "+type+" with that name found.");
+				continue;
+			}
+			return (T)S;
 		}
 		return null;
 	}
@@ -547,12 +580,11 @@ public class CMGenEditor extends StdLibrary
 	}
 	public void modAffectable(Affectable E, MOB M)
 	{
-		boolean done=false;
-		while((M.session()!=null)&&(!M.session().killFlag())&&(!done))
+		while((M.session()!=null)&&(!M.session().killFlag()))
 		{
 			Vector<Effect> V=CMParms.denumerate(E.allEffects());
 			int i=CMLib.genEd().promptVector(M, V, true);
-			if(--i<0) done=true;
+			if(--i<0) break;
 			else if(i==V.size())
 			{
 				Effect I=CMLib.genEd().newAnyEffect(M);
@@ -569,12 +601,11 @@ public class CMGenEditor extends StdLibrary
 	}
 	public void modBehavable(Behavable E, MOB M)
 	{
-		boolean done=false;
-		while((M.session()!=null)&&(!M.session().killFlag())&&(!done))
+		while((M.session()!=null)&&(!M.session().killFlag()))
 		{
 			Vector<Behavior> V=CMParms.denumerate(E.allBehaviors());
 			int i=CMLib.genEd().promptVector(M, V, true);
-			if(--i<0) done=true;
+			if(--i<0) break;
 			else if(i==V.size())
 			{
 				Behavior I=CMLib.genEd().newAnyBehavior(M);

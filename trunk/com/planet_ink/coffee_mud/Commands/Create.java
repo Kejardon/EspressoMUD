@@ -243,7 +243,7 @@ public class Create extends StdCommand
 	}
 
 	public int commandType(MOB mob, String cmds){return CT_NON_ACTION;}
-	public boolean prompter(){return true;}
+	public int prompter(){return 1;}
 	public boolean canBeOrdered(){return true;}
 	public boolean securityCheck(MOB mob){return CMSecurity.isAllowedStartsWith(mob,"CMD");}
 }

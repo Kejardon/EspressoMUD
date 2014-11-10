@@ -55,6 +55,7 @@ public class StdRoom implements Room
 	protected Enclosure myEnc=Enclosure.OPEN;
 	protected boolean amDestroyed=false;
 	protected Environmental myEnvironmental=null;//(Environmental)((Ownable)CMClass.COMMON.getNew("DefaultEnvironmental")).setOwner(this);
+	protected ArrayList<Environmental> terrainObjects=new ArrayList();
 
 	protected int saveNum=0;
 	protected int[] effectsToLoad=null;
@@ -1086,6 +1087,10 @@ public class StdRoom implements Room
 			public ByteBuffer save(StdRoom E){ return (ByteBuffer)ByteBuffer.wrap(new byte[4]).putInt(E.positions==null?0:E.positions.saveNum()).rewind(); }
 			public int size(){return 4;}
 			public void load(StdRoom E, ByteBuffer S){ E.envMapToLoad=S.getInt(); } },
+		TRN(){
+			public ByteBuffer save(StdRoom E){ return CMLib.coffeeMaker().savSubCollection(E.terrainObjects); }
+			public int size(){return 0;}
+			public void load(StdRoom E, ByteBuffer S){ E.terrainObjects.addAll(IterCollection.ICFactory(CMLib.coffeeMaker().loadSubCollection(S))); } },
 		//TODO: EXT()
 		;
 		public CMSavable subObject(StdRoom fromThis){return null;} }
@@ -1159,5 +1164,21 @@ public class StdRoom implements Room
 						if(oldMap!=null&&M.session().prompt("Copy old map into new? Y/n","Y").trim().toUpperCase().charAt(0)=='Y') map.copyFrom(oldMap);
 						E.positions=map; } }
 				else if(action=='M') CMLib.genEd().genMiscSet(M, E.positions); } },
+		TERRAIN(){
+			public String brief(StdRoom E){return ""+E.terrainObjects.size();}
+			public String prompt(StdRoom E){return "";}
+			public void mod(StdRoom E, MOB M){
+				while((M.session()!=null)&&(!M.session().killFlag())) {
+					ArrayList<Environmental> V=(ArrayList)E.terrainObjects.clone();
+					int i=CMLib.genEd().promptVector(M, V, true);
+					if(--i<0) break;
+					else if(i==V.size()) {
+						Environmental I=CMLib.genEd().newObjectOfType(M, CMClass.COMMON, Environmental.class, true, "Environmental");
+						if(I!=null) E.terrainObjects.add(CMLib.genEd().genMiscSet(M, I)); }
+					else if(i<V.size()) {
+						char action=M.session().prompt("(D)estroy or (M)odify "+V.get(i).ID()+" (default M)? ","M").trim().toUpperCase().charAt(0);
+						if(action=='D') {
+							if(E.terrainObjects.remove(V.get(i))) V.get(i).destroy(); }
+						else if(action=='M') CMLib.genEd().genMiscSet(M, V.get(i)); } } } },
 		; }
 }

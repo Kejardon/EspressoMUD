@@ -48,6 +48,9 @@ public interface Race extends StatsAffecting, ListenHolder.MsgListener, CMObject
 //	public int[] weight(Gender g, int age);
 
 //	public int[] getAgingChart();
+	
+	public void trainStat(Body body, CharStats.Stat stat, CMMsg message);
+	
 	public void recoverTick(Body body, CharStats stats);
 	//Return expected nutritional value of material
 	//Below -100 is 'completely unable to eat'.
@@ -62,8 +65,8 @@ public interface Race extends StatsAffecting, ListenHolder.MsgListener, CMObject
 	public HashMap<String, Body.BodyPart> bodyMap();
 	// Chance of impregnation(0-100) when having sex with the given race. Can be negative- 0 means 'impossible naturally but possible with magic/science aid', -100 means 'completely impossible'
 //	public int fertile(String race);
-	public String getStatAdjDesc();
-	public String getLanguagesDesc();
+	//public String getStatAdjDesc();
+	//public String getLanguagesDesc();
 /*
 	public final static int BODY_ANTENEA=0;
 	public final static int BODY_EYE=1;

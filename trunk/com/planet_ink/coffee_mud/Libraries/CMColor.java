@@ -161,6 +161,89 @@ public class CMColor extends StdLibrary
 			msg.setTargetMessage(msg.targetMessage().replace("^F","^e"));
 		return msg;
 	}
+
+	//All available options that currently default:
+	// !"#$%&'()*+,-/89:;<=>
+	//@ABCGKPRVY]_
+	//'abgjklnprz{|}~
+	public static final char COLORCODE_CHANNEL='Q';
+	public static final char COLORCODE_CHANNELFORE='q';
+	public static final char COLORCODE_IMPORTANT1='x';
+	public static final char COLORCODE_IMPORTANT2='X';
+	public static final char COLORCODE_IMPORTANT3='Z';
+	public static final char COLORCODE_ROOMTITLE='O';
+	public static final char COLORCODE_ROOMDESC='L';
+	public static final char COLORCODE_DIRECTION='D';
+	public static final char COLORCODE_DOORDESC='d';
+	public static final char COLORCODE_ITEM='o'; //I
+	public static final char COLORCODE_MOB='M';
+	public static final char COLORCODE_HITPOINTS='h';
+	public static final char COLORCODE_MANA='m';
+	public static final char COLORCODE_MOVES='v';
+	public static final char COLORCODE_NORMAL='N';
+	public static final char COLORCODE_HIGHLIGHT='H';
+	public static final char COLORCODE_UNEXPDIRECTION='W'; //U
+	public static final char COLORCODE_UNEXPDOORDESC='w'; //u
+	/*
+	public static final class ColorCode
+	{
+		final char ColorCode;
+		final int ColorIndex;
+		final String DefaultColorString;
+	}*/
+	protected static final ArrayList<ColorCode> byIndex=new ArrayList();
+	protected static final ColorCode[] byChar=new ColorCode[128-32];
+	public static enum ColorCode
+	{
+		NORMAL('N',0,"0;37"), //Grey
+		YOU_FIGHT('f',1,"1;35"), //Light purple
+		FIGHT_YOU('F',2,"1;31"), //Light red. Was 'e'
+		FIGHT('c',3,"22;31"), //Red. Was 'F'
+		SPELL('S',4,"1;33"), //Yellow
+		EMOTE('E',5,"1;35"), //Light purple
+		WEATHER('J',6,"1;37"), //White
+		TALK('T',7,"1;34"), //Light blue
+		TELL('t',8,"22;36"), //Cyan
+		CHANNEL('Q',9,"1;36;44"), //Light cyan on blue
+		CHANNELFORE('q',10,"1;36"), //Light cyan
+		IMPORTANT1('x',11,"1;36;44"), //Light cyan on blue
+		IMPORTANT2('X',12,"1;33;44"), //Yellow on blue
+		IMPORTANT3('Z',13,"1;33;41"), //Yellow on red
+		ROOMTITLE('O',14,"1;36"), //Light cyan
+		ROOMDESC('L',15,"1;37"), //White
+		DIRECTION('D',16,"1;36;44"), //Light cyan on blue
+		DOORDESC('d',17,"1;34"), //Light blue
+		ITEM('o',18,"1;32"), //Light green. Was 'I'
+		MOB('M',19,"1;35"), //Light purple
+		HITPOINTS('h',20,"1;36"), //Light cyan
+		MANA('m',21,"1;36"), //Light cyan
+		MOVES('v',22,"1;36"), //Light cyan
+		UNEXPDIRECTION('W',23,"22;36;44"), //Cyan on blue. Was 'U'
+		UNEXPDOORDESC('w',24,"1;34"), //Light blue. Was 'u'
+		;
+		public final char Code;
+		public final int Index;
+		public final String DefaultString;
+		public final String DefaultWholeString;
+		
+		ColorCode(char c, int i, String s)
+		{
+			Code=c;Index=i;DefaultString=s;
+			DefaultWholeString="\033"+s+"m";
+			byIndex.set(Index, this);
+			int charIndex=c-32;
+			if(charIndex>=0 && charIndex<96) byChar[charIndex]=this;
+		}
+		
+		public static ColorCode get(int i){return byIndex.get(i);}
+		public static ColorCode get(char c)
+		{
+			int charIndex=c-32;
+			if(charIndex>=0 && charIndex<96) return byChar[charIndex];
+			return null;
+		}
+	};
+	
 	
 	/*public String[] standardHTMLlookups()
 	{
