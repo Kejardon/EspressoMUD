@@ -1,12 +1,10 @@
 package com.planet_ink.coffee_mud.core;
+import com.planet_ink.coffee_mud.Common.DefaultSession;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.database.*;
-import com.planet_ink.coffee_mud.Libraries.*;
 
 import java.util.*;
-import java.io.File;
 import java.lang.reflect.Modifier;
-import java.net.URL;
 import java.util.concurrent.*;
 
 /*
@@ -34,7 +32,19 @@ public class CMClass extends ClassLoader
 	//public static final Enumeration emptyEnumeration=emptyVector.elements();
 	//public static final Iterator emptyIterator=emptyVector.iterator();
 
-	public static final ExecutorService threadPool=Executors.newCachedThreadPool();	//Gotta put it somewhere, here's a good spot
+	//IMPORTANT NOTE: This is probably something to check for Java version compatibility
+	public static final ExecutorService threadPool=new ThreadPoolExecutor(0, Integer.MAX_VALUE,
+                                      60L, TimeUnit.SECONDS,
+                                      new SynchronousQueue<Runnable>())
+	{
+			@Override public Future<?> submit(Runnable task) {
+				if (task == null) throw new NullPointerException();
+				RunnableFuture<Void> ftask = newTaskFor(task, null);
+				if(task instanceof DefaultSession.PromptableCall) ((DefaultSession.PromptableCall)task).future = ftask; //Handle custom tasks that need their own future before starting execution
+				execute(ftask);
+				return ftask;
+			}
+	}; //Executors.newCachedThreadPool();	//Gotta put it somewhere, here's a good spot
 	protected static boolean debugging=false;
 	//protected static Hashtable<String, Object> classes=new Hashtable();
 	//public static EnumSet<Objects> ItemTypes = EnumSet.of(Objects.ITEM, Objects.WEARABLE, Objects.WEAPON);

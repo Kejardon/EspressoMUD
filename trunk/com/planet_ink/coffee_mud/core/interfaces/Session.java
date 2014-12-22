@@ -5,6 +5,7 @@ import java.util.*;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
+import java.util.concurrent.Future;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -23,7 +24,11 @@ public interface Session extends CMCommon
 {
 	public static final Session[] dummySessionArray=new Session[0];
 
+	//Runs a thread as a prompt. If the thread asks for a prompt it will be added to the session's prompt list.
+	//Returns true if it has been added to the prompt list (else the thread should clean up as failed).
+	public boolean handlePromptFor(Thread thread, int type, Future response);
 	//Runs a command. If it asks for a prompt it will be added to the session's prompt list.
+	//Will submit the command. The command wrap should call catchPromptFor to associate the thread.
 	public void handlePromptFor(CommandCallWrap command, int type);
 	//Sets the prompt's thread so it will be able to recognize the call later
 	public void catchPromptFor(CommandCallWrap command);
@@ -856,7 +861,8 @@ public interface Session extends CMCommon
 	public static final int STATUS_ACCOUNTMENU=STATUS_LOGIN+1;
 	public static final int STATUS_LOGIN1=STATUS_ACCOUNTMENU+1;
 	public static final int STATUS_LOGIN2=STATUS_LOGIN1+1;
-	public static final int STATUS_LOGOUT=STATUS_LOGIN2+1;
+	public static final int STATUS_LOGIN3=STATUS_LOGIN2+1;
+	public static final int STATUS_LOGOUT=STATUS_LOGIN3+1;
 	public static final int STATUS_LOGOUT1=STATUS_LOGOUT+1;
 	public static final int STATUS_LOGOUT2=STATUS_LOGOUT1+1;
 	public static final int STATUS_LOGOUT3=STATUS_LOGOUT2+1;
@@ -875,6 +881,7 @@ public interface Session extends CMCommon
 											 "ACCOUNTMENU",
 											 "LOGIN-1",
 											 "LOGIN-2",
+											 "LOGIN-3",
 											 "LOGOUT-S",
 											 "LOGOUT-1",
 											 "LOGOUT-2",

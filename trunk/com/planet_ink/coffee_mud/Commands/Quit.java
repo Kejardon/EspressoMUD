@@ -18,11 +18,6 @@ public class Quit extends StdCommand
 
 	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
-/*
-		if(mob.soulMate()!=null)
-			dispossess(mob);
-		else
-*/
 		if(!mob.isMonster())
 		{
 			Session session=mob.session();

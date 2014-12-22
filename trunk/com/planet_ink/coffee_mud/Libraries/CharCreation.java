@@ -1,16 +1,10 @@
 package com.planet_ink.coffee_mud.Libraries;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.Libraries.*;
-
-import com.planet_ink.coffee_mud.application.MUD;
 
 import java.util.*;
-import java.nio.ByteBuffer;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -624,135 +618,151 @@ public class CharCreation extends StdLibrary
 		}
 		return true;
 	}
-	
-	public LoginResult login(Session session)
-		throws java.io.IOException
+	/*
+	private static class LoginCall implements Callable<LoginResult>
 	{
-		if(session==null) 
-			return LoginResult.NO_LOGIN;
+		public LoginCall(Session session)
+		{
+			this.session = session;
+		}
+		private Session session;
+		@Override
+		public LoginResult call() throws java.io.IOException
+	*/
+	public LoginResult login(Session session) throws java.io.IOException
+		{ //TODO: Rethink this routine's logic / codeflow
+			if(session==null) 
+				return LoginResult.NO_LOGIN;
 
-		session.setAccount(null);
-		
-		String login;
-		if(CMProps.Ints.COMMONACCOUNTSYSTEM.property()>1)
-			login=session.prompt("\r\naccount name: ");
-		else
-			login=session.prompt("\r\nname: ");
-		if(login==null)
-			return LoginResult.NO_LOGIN;
-		login=login.trim();
-		if(login.length()==0) 
-			return LoginResult.NO_LOGIN;
-		if(login.equalsIgnoreCase("MSSP-REQUEST")&&(!CMSecurity.isDisabled("MSSP")))
-		{
-			session.addOut(CMProps.getMSSPPacket());
-//			session.kill(false);
-			return LoginResult.NO_LOGIN;
-		}
-		//login = CMStrings.titleCase(login);
-		if(!validChars(login))
-		{
-			session.println("Please use only A-Z, a-z, and spaces in your name, with at least 3 letters for a first name.");
-			return LoginResult.NO_LOGIN;
-		}
-		if(CMSecurity.isBanned(login))
-		{
-			session.println("\r\nThis is a banned name. Choose a different one.\r\n");
-			return LoginResult.NO_LOGIN;
-		}
-		PlayerAccount acct = null;
-		MOB player = null;
-		if(CMProps.Ints.COMMONACCOUNTSYSTEM.property()>1)
-		{
-			acct = CMLib.players().getAccount(login);
-			if(acct==null)
-			{
-				player=CMLib.players().getPlayer(login);
-				if(player != null)
-				{
-					PlayerStats ps=player.playerStats();
-					if(ps.getAccount()==null)
-					{
-						String password=session.prompt("password for "+player.name()+": ");
-						boolean done = true;
-						if(BCrypt.checkpw(password, ps.password()))
-						{
-							session.println("\r\nThis mud is now using an account system.  "
-									+"Please create a new account and use the IMPORT command to add your character(s) to your account.");
-							//TODO: Properly implement this.
-							done = !session.confirm("Would you like to create your new master account and call it '"+player.name()+"' (y/N)? ", "N");
-						}
-						player = null;
-						if(done)
-							return LoginResult.NO_LOGIN;
-					}
-					else
-					{
-						session.println("\r\nAccount '"+login+"' does not exist.");
-						player=null;
-						return LoginResult.NO_LOGIN;
-					}
-				}
-			}
+			session.setAccount(null);
+
+			String login;
+			if(CMProps.Ints.COMMONACCOUNTSYSTEM.property()>1)
+				login=session.prompt("\r\naccount name: ");
 			else
+				login=session.prompt("\r\nname: ");
+			if(login==null)
+				return LoginResult.NO_LOGIN;
+			login=login.trim();
+			if(login.length()==0) 
+				return LoginResult.NO_LOGIN;
+			if(login.equalsIgnoreCase("MSSP-REQUEST")&&(!CMSecurity.isDisabled("MSSP")))
 			{
-				String password=session.prompt("password: ");
-				if(BCrypt.checkpw(password, acct.password()))
-				{
-					session.setAccount(acct);
-					return LoginResult.ACCOUNT_LOGIN;
-				}
+				session.addOut(CMProps.getMSSPPacket());
+	//			session.kill(false);
 				return LoginResult.NO_LOGIN;
 			}
-			if(session.confirm("\r\n'"+login+"' does not exist.\r\nIs this a new account you would like to create (y/N)?","N"))
+			//login = CMStrings.titleCase(login);
+			if(!validChars(login))
 			{
-				acct = (PlayerAccount)CMClass.COMMON.getNew("DefaultPlayerAccount");
-				return createAccount(acct,login,session);
+				session.println("Please use only A-Z, a-z, and spaces in your name, with at least 3 letters for a first name.");
+				return LoginResult.NO_LOGIN;
 			}
-		}
-		else
-		{
-			player=CMLib.players().getPlayer(login);
-			if(player!=null)
+			if(CMSecurity.isBanned(login))
 			{
-				String password=session.prompt("password: ");
-				if(BCrypt.checkpw(password, player.playerStats().password()))
+				session.println("\r\nThis is a banned name. Choose a different one.\r\n");
+				return LoginResult.NO_LOGIN;
+			}
+			PlayerAccount acct = null;
+			MOB player = null;
+			if(CMProps.Ints.COMMONACCOUNTSYSTEM.property()>1)
+			{
+				acct = CMLib.players().getAccount(login);
+				if(acct==null)
 				{
-					LoginResult prelimResults = prelimChecks(session,player);
-					if(prelimResults!=null)
-						return prelimResults;
-					
-					LoginResult completeResult=completeCharacterLogin(session,login);
-					if(completeResult == LoginResult.NO_LOGIN)
-						return completeResult;
+					player=CMLib.players().getPlayer(login);
+					if(player != null)
+					{
+						PlayerStats ps=player.playerStats();
+						if(ps.getAccount()==null)
+						{
+							String password=session.prompt("password for "+player.name()+": ");
+							boolean done = true;
+							if(BCrypt.checkpw(password, ps.password()))
+							{
+								session.println("\r\nThis mud is now using an account system.  "
+										+"Please create a new account and use the IMPORT command to add your character(s) to your account.");
+								//TODO: Properly implement this.
+								done = !session.confirm("Would you like to create your new master account and call it '"+player.name()+"' (y/N)? ", "N");
+							}
+							player = null;
+							if(done)
+								return LoginResult.NO_LOGIN;
+						}
+						else
+						{
+							session.println("\r\nAccount '"+login+"' does not exist.");
+							player=null;
+							return LoginResult.NO_LOGIN;
+						}
+					}
 				}
 				else
 				{
-					Log.sysOut("FrontDoor","Failed login: "+player.name());
-					session.println("\r\nInvalid password.\r\n");
+					String password=session.prompt("password: ");
+					if(BCrypt.checkpw(password, acct.password()))
+					{
+						session.setAccount(acct);
+						return LoginResult.ACCOUNT_LOGIN;
+					}
 					return LoginResult.NO_LOGIN;
+				}
+				if(session.confirm("\r\n'"+login+"' does not exist.\r\nIs this a new account you would like to create (y/N)?","N"))
+				{
+					acct = (PlayerAccount)CMClass.COMMON.getNew("DefaultPlayerAccount");
+					return createAccount(acct,login,session);
 				}
 			}
 			else
 			{
-				if(newCharactersAllowed(login,session,true))
+				player=CMLib.players().getPlayer(login);
+				if(player!=null)
 				{
-					if(session.confirm("\r\n'"+login+"' does not exist.\r\nIs this a new character you would like to create (y/N)?","N"))
+					String password=session.prompt("password: ");
+					if(BCrypt.checkpw(password, player.playerStats().password()))
 					{
-						LoginResult result = LoginResult.NO_LOGIN;
-						if(createCharacter(acct,login,session)==LoginResult.CCREATION_EXIT)
-							result = LoginResult.NORMAL_LOGIN;
-						return result;
+						LoginResult prelimResults = prelimChecks(session,player);
+						if(prelimResults!=null)
+							return prelimResults;
+
+						LoginResult completeResult=completeCharacterLogin(session,login);
+						if(completeResult == LoginResult.NO_LOGIN)
+							return completeResult;
+					}
+					else
+					{
+						Log.sysOut("FrontDoor","Failed login: "+player.name());
+						session.println("\r\nInvalid password.\r\n");
+						return LoginResult.NO_LOGIN;
 					}
 				}
-				return LoginResult.NO_LOGIN;
+				else
+				{
+					if(newCharactersAllowed(login,session,true))
+					{
+						if(session.confirm("\r\n'"+login+"' does not exist.\r\nIs this a new character you would like to create (y/N)?","N"))
+						{
+							LoginResult result = LoginResult.NO_LOGIN;
+							if(createCharacter(acct,login,session)==LoginResult.CCREATION_EXIT)
+								result = LoginResult.NORMAL_LOGIN;
+							return result;
+						}
+					}
+					return LoginResult.NO_LOGIN;
+				}
 			}
-		}
-		if(session!=null)
 			session.println("\r\n");
-		return LoginResult.NORMAL_LOGIN;
+			return LoginResult.NORMAL_LOGIN;
+		}
+	//}
+	
+	/*
+	public Future<LoginResult> login(Session session)
+	{
+		return CMClass.threadPool.submit(new LoginCall(session));
 	}
-
+	*/
+	
 	public boolean newCharactersAllowed(String login, Session session, boolean checkPlayerName)
 	{
 		if(CMSecurity.isDisabled("NEWPLAYERS"))
