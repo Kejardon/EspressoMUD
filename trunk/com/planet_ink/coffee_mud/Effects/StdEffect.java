@@ -14,7 +14,7 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public class StdEffect implements Effect
 {
 	protected int tickDown=-1;
@@ -55,9 +55,9 @@ public class StdEffect implements Effect
 	public void initializeClass() {}
 	public StdEffect(){}
 
-	public CMObject newInstance()
+	public StdEffect newInstance()
 	{
-		try { return (CMObject)this.getClass().newInstance(); }
+		try { return getClass().newInstance(); }
 		catch(Exception e) { Log.errOut(ID(),e); }
 		return new StdEffect();
 	}
@@ -104,7 +104,7 @@ public class StdEffect implements Effect
 		for(Effect A : E.affects)
 			affects.add(A.copyOnto(this));
 	}
-	public CMObject copyOf()
+	public StdEffect copyOf()
 	{
 		try
 		{

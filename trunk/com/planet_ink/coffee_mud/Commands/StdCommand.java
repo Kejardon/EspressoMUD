@@ -14,7 +14,7 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public class StdCommand implements Command
 {
 	public StdCommand(){}
@@ -37,7 +37,7 @@ public class StdCommand implements Command
 	{
 		return true;
 	}
-	public boolean execute(MOB mob, MOB.QueuedCommand commands)
+	@Override public boolean execute(MOB mob, MOB.QueuedCommand commands)
 	{
 		return execute(mob, CMParms.parse(commands.cmdString, -1), commands.metaFlags);
 	}
@@ -56,8 +56,8 @@ public class StdCommand implements Command
 	}
 */
 	public boolean interruptCommand(MOB.QueuedCommand thisCommand, MOB.QueuedCommand interruptingCommand){return true;}
-	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
-	public boolean canBeOrdered(){return true;}
+	@Override public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
+	@Override public boolean canBeOrdered(){return true;}
 	public boolean securityCheck(MOB mob){return true;}
 	public CMObject newInstance(){return this;}
 	public CMObject copyOf() { return this; }

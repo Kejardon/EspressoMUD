@@ -14,7 +14,7 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public class DefaultEnvStats implements EnvStats, Ownable
 {
 	public String ID(){return "DefaultEnvStats";}
@@ -134,9 +134,9 @@ public class DefaultEnvStats implements EnvStats, Ownable
 		}
 	}
 
-	public CMObject newInstance(){try{return (CMObject)getClass().newInstance();}catch(Exception e){return new DefaultEnvStats();}}
+	public DefaultEnvStats newInstance(){try{return (DefaultEnvStats)getClass().newInstance();}catch(Exception e){return new DefaultEnvStats();}}
 	public void initializeClass(){}
-	public CMObject copyOf()
+	public DefaultEnvStats copyOf()
 	{
 		try
 		{

@@ -11,12 +11,12 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public class Boot extends StdCommand
 {
 	public Boot(){access=new String[]{"BOOT"};}
 
-	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
+	@Override public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		if(mob.session()==null) return false;
 		if(commands.size()<=1)
@@ -57,7 +57,7 @@ public class Boot extends StdCommand
 		return false;
 	}
 
-	public int commandType(MOB mob, String cmds){return CT_NON_ACTION;}
-	public boolean canBeOrdered(){return true;}
+	@Override public int commandType(MOB mob, String cmds){return CT_NON_ACTION;}
+	@Override public boolean canBeOrdered(){return true;}
 	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,"BOOT");}
 }

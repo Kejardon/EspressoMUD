@@ -14,6 +14,8 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 // A container for stats related to a variaety of animated objects.
 public interface CharStats extends CMCommon, CMModifiable, CMSavable, Ownable
 {
+	@Override public CharStats copyOf();
+	@Override public CharStats newInstance();
 	public static final Stat[] dummyStatArray={};
 	public static final Save[] dummySaveArray={};
 	public static final Points[] dummyPointsArray={};

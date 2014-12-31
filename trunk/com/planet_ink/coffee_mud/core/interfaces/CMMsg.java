@@ -47,7 +47,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
  	9: get itemcollection canhold
  	10: Entrance msg due to Leave msg (ok only, execute doesn't happen until the Leave execute)
  */
-@SuppressWarnings("unchecked")
+
 public interface CMMsg extends CMCommon
 {
 	public static final EnumSet<MsgCode> NO_EFFECT=EnumSet.noneOf(MsgCode.class);

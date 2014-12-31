@@ -15,14 +15,14 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 	http://www.apache.org/licenses/LICENSE-2.0
 */
 //TODO: Make this class store a real-time time, derive actual time as needed
-@SuppressWarnings("unchecked")
+
 public class DefaultTimeClock implements TimeClock, Ownable
 {
 	protected CMSavable parent;
 
 	public String ID(){return "DefaultTimeClock";}
 	public String name(){return "Time Object";}
-	public CMObject newInstance(){try{return (CMObject)getClass().newInstance();}catch(Exception e){return new DefaultTimeClock();}}
+	public DefaultTimeClock newInstance(){try{return getClass().newInstance();}catch(Exception e){return new DefaultTimeClock();}}
 	public void initializeClass(){}
 	//public long lastTick=0;
 
@@ -212,11 +212,11 @@ public class DefaultTimeClock implements TimeClock, Ownable
 		return getTODCode()!=oldCode;
 	}
 	
-	public CMObject copyOf()
+	public DefaultTimeClock copyOf()
 	{
 		try
 		{
-			TimeClock C=(TimeClock)this.clone();
+			DefaultTimeClock C=(DefaultTimeClock)this.clone();
 			return C;
 		}
 		catch(CloneNotSupportedException e)

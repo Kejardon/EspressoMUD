@@ -27,7 +27,7 @@ header string (headerEnum.valueOf() to find the load function to call) and load 
 headers not found, don't worry about defaults. If defaults are important the caller will send a new object to load the
 string to.
 */
-@SuppressWarnings("unchecked")
+
 public class CoffeeMaker extends StdLibrary
 {
 	public static final ByteBuffer emptyBuffer=ByteBuffer.wrap(new byte[0]);

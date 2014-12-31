@@ -15,7 +15,7 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public class StdExit implements Exit
 {
 	public String ID(){	return "StdExit";}
@@ -206,11 +206,11 @@ public class StdExit implements Exit
 	}
 	public boolean amDestroyed(){return amDestroyed;}
 
-	public CMObject newInstance()
+	public StdExit newInstance()
 	{
 		try
 		{
-			return (StdExit)this.getClass().newInstance();
+			return this.getClass().newInstance();
 		}
 		catch(Exception e)
 		{
@@ -230,14 +230,14 @@ public class StdExit implements Exit
 		if(E.myEnvironmental!=null)
 			myEnvironmental=(Environmental)((Ownable)myEnvironmental.copyOf()).setOwner(this);
 		if(E.myDoor!=null)
-			myDoor=(Closeable)E.myDoor.copyOf();
+			myDoor=E.myDoor.copyOf();
 
 		for(Effect A : E.affects)
 			affects.add(A.copyOnto(this));
 		for(Behavior B : E.behaviors)
-			addBehavior((Behavior)B.copyOf());
+			addBehavior(B.copyOf());
 	}
-	public CMObject copyOf()
+	public StdExit copyOf()
 	{
 		try
 		{

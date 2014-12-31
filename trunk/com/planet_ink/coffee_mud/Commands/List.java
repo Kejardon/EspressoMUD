@@ -14,7 +14,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 	http://www.apache.org/licenses/LICENSE-2.0
 */
 //TODO in general
-@SuppressWarnings("unchecked")
+
 public class List extends StdCommand
 {
 	public List(){access=new String[]{"LIST"};}
@@ -633,7 +633,7 @@ public class List extends StdCommand
 		return !sess.killFlag();
 	}
 */
-	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
+	@Override public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		commands.removeElementAt(0);
 		if(commands.size()==0)
@@ -673,7 +673,7 @@ public class List extends StdCommand
 		return false;
 	}
 
-	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
-	public boolean canBeOrdered(){return true;}
+	@Override public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
+	@Override public boolean canBeOrdered(){return true;}
 	public boolean securityCheck(MOB mob){return getAnyCode(mob)!=null;}
 }

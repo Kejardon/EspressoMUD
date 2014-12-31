@@ -156,8 +156,8 @@ public class DefaultEnvironmental implements Environmental, Ownable
 
 	//CMObject
 	public String ID(){return "DefaultEnvironmental";}
-	public CMObject newInstance(){return new DefaultEnvironmental();}
-	public CMObject copyOf()
+	public DefaultEnvironmental newInstance(){return new DefaultEnvironmental();}
+	public DefaultEnvironmental copyOf()
 	{
 		try
 		{

@@ -4,7 +4,7 @@ import com.planet_ink.coffee_mud.core.*;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
-@SuppressWarnings("unchecked")
+
 public interface ItemCollection extends CMObject, CMModifiable, CMSavable, CMCommon//, ListenHolder
 {
 	public static interface ItemHolder extends ListenHolder
@@ -13,6 +13,8 @@ public interface ItemCollection extends CMObject, CMModifiable, CMSavable, CMCom
 		public void setItemCollection(ItemCollection IC, boolean copyInto);
 	}
 
+	@Override public ItemCollection copyOf();
+	@Override public ItemCollection newInstance();
 	public boolean canHold(Item item);
 	public boolean hasItem(Item item, boolean checkSubItems);
 	public void addItem(Item item);

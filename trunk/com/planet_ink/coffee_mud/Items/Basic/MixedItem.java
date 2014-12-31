@@ -14,7 +14,7 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public class MixedItem implements Item
 {
 	public String ID(){	return "MixedItem";}
@@ -295,11 +295,11 @@ public class MixedItem implements Item
 	//public long lastAct(){return 0;}	//No Action ticks
 	//public long lastTick(){return lastTick;}
 
-	public CMObject newInstance()
+	@Override public MixedItem newInstance()
 	{
 		try
 		{
-			return (CMObject)this.getClass().newInstance();
+			return getClass().newInstance();
 		}
 		catch(Exception e)
 		{
@@ -320,15 +320,15 @@ public class MixedItem implements Item
 		tickStatus=Tickable.TickStat.Not;
 		tickCount=0;
 		container=null;
-		binds=(BindCollection)E.binds.copyOf();
+		binds=E.binds.copyOf();
 		if(myEnvironmental!=null) myEnvironmental=(Environmental)((Ownable)myEnvironmental.copyOf()).setOwner(this);
 
 		for(Effect A : E.affects)
 			affects.add(A.copyOnto(this));
 		for(Behavior B : E.behaviors)
-			addBehavior((Behavior)B.copyOf());
+			addBehavior(B.copyOf());
 	}
-	public CMObject copyOf()
+	@Override public MixedItem copyOf()
 	{
 		try
 		{

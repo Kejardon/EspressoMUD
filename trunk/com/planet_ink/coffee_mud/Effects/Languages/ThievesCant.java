@@ -18,7 +18,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 	Respect to all who work on Coffee, keep the tradition going!
 */
 
-@SuppressWarnings("unchecked")
+
 public class ThievesCant extends StdLanguage
 {
 	public String ID() { return "ThievesCant"; }

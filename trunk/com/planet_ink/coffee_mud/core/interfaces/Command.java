@@ -10,7 +10,7 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public interface Command extends CMObject
 {
 	//Flag for commands that may call a session prompt. These commands should be called via a new thread, see CommandCallWrap.

@@ -14,11 +14,13 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
  * An interface for a base player account. Shared by PlayerAccount
  * and PlayerStats (since the account system is optional)  
  */
-@SuppressWarnings("unchecked")
+
 public interface AccountStats extends CMCommon, CMSavable, CMModifiable
 {
 	public final static AccountStats[] dummyASArray=new AccountStats[0];
 
+	@Override public AccountStats copyOf();
+	@Override public AccountStats newInstance();
 	public long lastDateTime();
 	public void setLastDateTime(long C);
 	public long lastUpdated();

@@ -11,13 +11,15 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public interface Rideable extends CMObject, CMModifiable, CMSavable, CMCommon //on second thought not Environmental. Let's have this mimic ItemCollection.
 {
 	public static interface RideHolder extends CMObject { public Rideable getRideObject(); }
 	//TODO GENERAL NOTE:
 	//When the ride moves it should move all riders on it automatically (late response).
 	//When a mob moves the rider should have a (mid) response to remove the rider.
+	@Override public Rideable copyOf();
+	@Override public Rideable newInstance();
 	public boolean isMobileRide();
 	public void setMobileRide(boolean mob);
 	public boolean canBeRidden(Item E);

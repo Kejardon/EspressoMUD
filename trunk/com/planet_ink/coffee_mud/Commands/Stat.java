@@ -11,7 +11,7 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public class Stat  extends StdCommand
 {
 	public Stat(){access=new String[]{"STAT"};}
@@ -26,7 +26,7 @@ public class Stat  extends StdCommand
 		{"TITLES","TITLE"},
 	};
 
-	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
+	@Override public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		if(mob.isMonster()) return false;
 		commands.removeElementAt(0);
@@ -90,7 +90,7 @@ public class Stat  extends StdCommand
 		mob.session().wraplessPrintln(str.toString());
 		return false;
 	}
-	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
-	public boolean canBeOrdered(){return true;}
+	@Override public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
+	@Override public boolean canBeOrdered(){return true;}
 	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,"STAT");}
 }

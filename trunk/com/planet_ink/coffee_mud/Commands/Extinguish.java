@@ -11,12 +11,12 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public class Extinguish extends StdCommand
 {
 	public Extinguish(){access=new String[]{"EXTINGUISH"};}
 
-	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
+	@Override public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		if(commands.size()<2)
 		{
@@ -43,7 +43,7 @@ public class Extinguish extends StdCommand
 				Item I=(Item)items.elementAt(i);
 				if((items.size()==1)||(I instanceof Light))
 				{
-					CMMsg msg=CMClass.getMsg(mob,I,null,EnumSet.of(CMMsg.MsgCode.EXTINGUISH),"<S-NAME> extinguish(es) <T-NAME>.");
+					CMMsg msg=CMClass.getMsg(mob,I,(Vector)null,EnumSet.of(CMMsg.MsgCode.EXTINGUISH),"<S-NAME> extinguish(es) <T-NAME>.");
 					mob.location().doMessage(msg);
 					msg.returnMsg();
 				}
@@ -56,13 +56,13 @@ public class Extinguish extends StdCommand
 				mob.tell("You don't see '"+target+"' here.");
 			else
 			{
-				CMMsg msg=CMClass.getMsg(mob,I,null,EnumSet.of(CMMsg.MsgCode.EXTINGUISH),"<S-NAME> extinguish(es) <T-NAME>.");
+				CMMsg msg=CMClass.getMsg(mob,I,(Vector)null,EnumSet.of(CMMsg.MsgCode.EXTINGUISH),"<S-NAME> extinguish(es) <T-NAME>.");
 				mob.location().doMessage(msg);
 				msg.returnMsg();
 			}
 		}
 		return false;
 	}
-	public int commandType(MOB mob, String cmds){return CT_LOW_P_ACTION;}
-	public boolean canBeOrdered(){return true;}
+	@Override public int commandType(MOB mob, String cmds){return CT_LOW_P_ACTION;}
+	@Override public boolean canBeOrdered(){return true;}
 }

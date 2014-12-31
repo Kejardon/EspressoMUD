@@ -2,6 +2,7 @@ package com.planet_ink.coffee_mud.core;
 import com.planet_ink.coffee_mud.Common.DefaultSession;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.database.*;
+import com.planet_ink.coffee_mud.core.interfaces.CMMsg.MsgCode;
 
 import java.util.*;
 import java.lang.reflect.Modifier;
@@ -14,7 +15,7 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public class CMClass extends ClassLoader
 {
 	public static final Object[] dummyObjectArray=new Object[0];
@@ -33,22 +34,23 @@ public class CMClass extends ClassLoader
 	//public static final Iterator emptyIterator=emptyVector.iterator();
 
 	//IMPORTANT NOTE: This is probably something to check for Java version compatibility
-	public static final ExecutorService threadPool=new ThreadPoolExecutor(0, Integer.MAX_VALUE,
-                                      60L, TimeUnit.SECONDS,
-                                      new SynchronousQueue<Runnable>())
+	public static class CustomThreadPool extends ThreadPoolExecutor
 	{
-			@Override public Future<?> submit(Runnable task) {
-				if (task == null) throw new NullPointerException();
-				RunnableFuture<Void> ftask = newTaskFor(task, null);
-				if(task instanceof DefaultSession.PromptableCall) ((DefaultSession.PromptableCall)task).future = ftask; //Handle custom tasks that need their own future before starting execution
-				execute(ftask);
-				return ftask;
-			}
-	}; //Executors.newCachedThreadPool();	//Gotta put it somewhere, here's a good spot
+		public CustomThreadPool(){super(0, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>());}
+		public <T> Future<T> submit(DefaultSession.PromptableCall<T> task)
+		{
+			if (task == null) throw new NullPointerException();
+			RunnableFuture<T> ftask = newTaskFor(task);
+			task.future = ftask; //Handle custom tasks that need their own future before starting execution
+			execute(ftask);
+			return ftask;
+		}
+	}
+	public static final ExecutorService threadPool=new CustomThreadPool(); //Executors.newCachedThreadPool();	//Gotta put it somewhere, here's a good spot
 	protected static boolean debugging=false;
 	//protected static Hashtable<String, Object> classes=new Hashtable();
 	//public static EnumSet<Objects> ItemTypes = EnumSet.of(Objects.ITEM, Objects.WEARABLE, Objects.WEAPON);
-	protected static final ConcurrentLinkedQueue<CMMsg> MSGS_CACHE=new ConcurrentLinkedQueue();
+	protected static final ConcurrentLinkedQueue<CMMsg> MSGS_CACHE=new ConcurrentLinkedQueue<>();
 	protected static CMClass instance=new CMClass();
 	public static CMClass instance(){return instance;}
 	protected static final byte[] charTranslatorTable=
@@ -88,13 +90,13 @@ public class CMClass extends ClassLoader
 
 	public static abstract class Objects<U extends CMObject>
 	{
-		public static final HashMap<String, Objects> objectsNames=new HashMap<String, Objects>();
+		public static final HashMap<String, Objects> objectsNames=new HashMap<>();
 		public static Objects valueOf(String S){return objectsNames.get(S);}
 		public static Collection<Objects> values(){return objectsNames.values();}
 
 		public final Class ancestor;
 		public final String name;
-		public ConcurrentHashMap<String, U> options=new ConcurrentHashMap<String, U>();
+		public ConcurrentHashMap<String, U> options=new ConcurrentHashMap<>();
 		
 		public Objects(Class S, String name)
 		{
@@ -129,7 +131,7 @@ public class CMClass extends ClassLoader
 	public static final class ObjectsSkill extends Objects<Skill>
 	{
 		public ObjectsSkill(Class S, String name){super(S, name);}
-		private HashMap<String, Skill> friendlyNameMap=new HashMap<String, Skill>();
+		private HashMap<String, Skill> friendlyNameMap=new HashMap<>();
 		public Skill getSkill(String S)
 		{
 			S=S.toUpperCase();
@@ -148,7 +150,7 @@ public class CMClass extends ClassLoader
 			}
 			return skill;
 		}
-		public void add(Skill O)
+		@Override public void add(Skill O)
 		{
 			super.add(O);
 			friendlyNameMap.put(O.playerFriendlyName().toUpperCase(), O);
@@ -172,28 +174,26 @@ public class CMClass extends ClassLoader
 	public static final class ObjectsCommand extends Objects<Command>
 	{
 		public ObjectsCommand(Class S, String name){super(S, name);}
-		private HashMap<String, Command> commandWordsMap=new HashMap<String, Command>();
-		private HashMap<String, Command> tempWordsMap=new HashMap<String, Command>();
+		private HashMap<String, Command> commandWordsMap=new HashMap<>();
+		private final HashMap<String, Command> tempWordsMap=new HashMap<>();
 		private String[] commandWordsList=new String[0];
-		private SortedVector<String> tempWordsList=new SortedVector<String>();
+		private SortedVector<String> tempWordsList=new SortedVector<>();
 		private ByteIndexTable rootTable=null;
-		public synchronized void add(Command O){
+		@Override public synchronized void add(Command O){
 			super.add(O);
 			if(O.getAccessWords()==null) Log.errOut("C.O.COMMAND","Null accesswords: "+O.ID());
-			else synchronized(tempWordsMap){
-				for(String S : O.getAccessWords()){
-					//S=S.trim().toUpperCase();	//No, ideally this should not be needed. Just make sure the input to this is always good.
-					tempWordsMap.put(S,O);
-					tempWordsList.addRandom(S); }
-				if(rootTable!=null) {
-					compileCommands();
-					Log.sysOut("CMClass","Recompiled table for "+O.ID()); } } }
-		public synchronized boolean remove(Command O){
+			for(String S : O.getAccessWords()){
+				//S=S.trim().toUpperCase();	//No, ideally this should not be needed. Just make sure the input to this is always good.
+				tempWordsMap.put(S,O);
+				tempWordsList.addRandom(S); }
+			if(rootTable!=null) {
+				compileCommands();
+				Log.sysOut("CMClass","Recompiled table for "+O.ID()); } }
+		@Override public synchronized boolean remove(Command O){
 			if(!super.remove(O)) return false;
-			synchronized(tempWordsMap){
-				for(String S : O.getAccessWords()){
-					tempWordsMap.remove(S);
-					tempWordsList.remove(S); } }
+			for(String S : O.getAccessWords()){
+				tempWordsMap.remove(S);
+				tempWordsList.remove(S); }
 			return true; }
 		public void compileCommands() {
 			ByteIndexTable tempTable=new ByteIndexTable();
@@ -205,7 +205,7 @@ public class CMClass extends ClassLoader
 				tempTable.indexOffsets[arrayIndex]=i;
 				i+=subCompile(1, i, newTable); }
 			commandWordsList=(String[])tempWordsList.toArray(CMClass.dummyStringArray);
-			commandWordsMap=(HashMap)tempWordsMap.clone();
+			commandWordsMap=new HashMap<>(tempWordsMap);
 			rootTable=tempTable; }
 		private int subCompile(int stringIndex, int listIndex, ByteIndexTable newTable) {
 			String firstStr=tempWordsList.get(listIndex);
@@ -251,7 +251,7 @@ public class CMClass extends ClassLoader
 	}
 	public static final ObjectsCommand COMMAND=new ObjectsCommand(Command.class, "COMMAND");
 	public static final Objects<CMLibrary> LIBRARY=new Objects<CMLibrary>(CMLibrary.class, "LIBRARY"){
-			public void add(CMLibrary O){
+			@Override public void add(CMLibrary O){
 				super.add(O);
 				CMLib.registerLibrary((CMLibrary)O); }
 			//public void remove(CMObject O){}	//This really is not supported by CMLib. No, just don't remove libraries.
@@ -327,10 +327,9 @@ public class CMClass extends ClassLoader
 		//Object set=null;
 		int x=calledThis.lastIndexOf('.');
 		if(x>0) calledThis=calledThis.substring(x+1);
-		CMObject thisItem=null;
 		for(Objects e : Objects.values())
 		{
-			thisItem=e.get(calledThis);
+			CMObject thisItem=e.get(calledThis);
 			if(thisItem!=null) return thisItem;
 		}
 		//try{ return ((CMObject)classes.get(calledThis)).newInstance();}catch(Exception e){}
@@ -364,65 +363,64 @@ public class CMClass extends ClassLoader
 		return msg;
 	}
 
-	public static CMMsg getMsg(Object source, Interactable target, Object tool, EnumSet newAllCode, String allMessage)
+	public static CMMsg getMsg(Vector<Interactable> source, Interactable target, Vector<CMObject> tool, EnumSet<MsgCode> sCode, String sMessage, EnumSet<MsgCode> tCode, String tMessage, EnumSet<MsgCode> oCode, String oMessage)
 	{
 		CMMsg M=MsgFactory();
-		if(source!=null)
-		{
-			if(source instanceof Vector)
-				M.setSource((Vector<Interactable>)source);
-			else
-				M.addSource((Interactable)source);
-		}
-		if(target!=null)
-			M.setTarget(target);
-		if(tool!=null)
-		{
-			if(tool instanceof Vector)
-				M.setTools((Vector<CMObject>)tool);
-			else
-				M.addTool((CMObject)tool);
-		}
-		M.setSourceCode(newAllCode.clone());
-		M.setTargetCode(newAllCode.clone());
-		M.setOthersCode(newAllCode);
-		if(allMessage!=null)
-		{
-			M.setSourceMessage(allMessage);
-			M.setTargetMessage(allMessage);
-			M.setOthersMessage(allMessage);
-		}
+		//if checks for null for source, target, tools, message?
+		M.setSource(source);
+		M.setTarget(target);
+		M.setTools(tool);
+		M.setSourceCode(sCode);
+		M.setTargetCode(tCode);
+		M.setOthersCode(oCode);
+		M.setSourceMessage(sMessage);
+		M.setTargetMessage(tMessage);
+		M.setOthersMessage(oMessage);
 		return M;
 	}
-	public static CMMsg getMsg(Object source, Interactable target, Object tool, EnumSet newSourceCode, String sourceMessage, EnumSet newTargetCode, String targetMessage, EnumSet newOthersCode, String othersMessage)
+	public static CMMsg getMsg(Vector<Interactable> sources, Interactable target, Vector<CMObject> tools, EnumSet<MsgCode> newAllCode, String allMessage)
 	{
-		CMMsg M=MsgFactory();
-		if(source!=null)
-		{
-			if(source instanceof Vector)
-				M.setSource((Vector<Interactable>)source);
-			else
-				M.addSource((Interactable)source);
-		}
-		if(target!=null)
-			M.setTarget(target);
-		if(tool!=null)
-		{
-			if(tool instanceof Vector)
-				M.setTools((Vector<CMObject>)tool);
-			else
-				M.addTool((CMObject)tool);
-		}
-		M.setSourceCode(newSourceCode);
-		if(sourceMessage!=null)
-			M.setSourceMessage(sourceMessage);
-		M.setTargetCode(newTargetCode);
-		if(targetMessage!=null)
-			M.setTargetMessage(targetMessage);
-		M.setOthersCode(newOthersCode);
-		if(othersMessage!=null)
-			M.setOthersMessage(othersMessage);
-		return M;
+		return getMsg(sources, target, tools, newAllCode, allMessage, newAllCode.clone(), allMessage, newAllCode.clone(), allMessage);
+	}
+	public static CMMsg getMsg(Vector<Interactable> sources, Interactable target, CMObject tool, EnumSet<MsgCode> newAllCode, String allMessage)
+	{
+		Vector<CMObject> tools=new Vector<>();
+		tools.add(tool);
+		return getMsg(sources, target, tools, newAllCode, allMessage, newAllCode.clone(), allMessage, newAllCode.clone(), allMessage);
+	}
+	public static CMMsg getMsg(Interactable source, Interactable target, Vector<CMObject> tools, EnumSet<MsgCode> newAllCode, String allMessage)
+	{
+		Vector<Interactable> sources=new Vector<>();
+		sources.add(source);
+		return getMsg(sources, target, tools, newAllCode, allMessage, newAllCode.clone(), allMessage, newAllCode.clone(), allMessage);
+	}
+	public static CMMsg getMsg(Interactable source, Interactable target, CMObject tool, EnumSet<MsgCode> newAllCode, String allMessage)
+	{
+		Vector<Interactable> sources=new Vector<>();
+		sources.add(source);
+		Vector<CMObject> tools=new Vector<>();
+		tools.add(tool);
+		return getMsg(sources, target, tools, newAllCode, allMessage, newAllCode.clone(), allMessage, newAllCode.clone(), allMessage);
+	}
+	public static CMMsg getMsg(Vector<Interactable> sources, Interactable target, CMObject tool, EnumSet<MsgCode> sCode, String sMessage, EnumSet<MsgCode> tCode, String tMessage, EnumSet<MsgCode> oCode, String oMessage)
+	{
+		Vector<CMObject> tools=new Vector<>();
+		tools.add(tool);
+		return getMsg(sources, target, tools, sCode, sMessage, tCode, tMessage, oCode, oMessage);
+	}
+	public static CMMsg getMsg(Interactable source, Interactable target, Vector<CMObject> tools, EnumSet<MsgCode> sCode, String sMessage, EnumSet<MsgCode> tCode, String tMessage, EnumSet<MsgCode> oCode, String oMessage)
+	{
+		Vector<Interactable> sources=new Vector<>();
+		sources.add(source);
+		return getMsg(sources, target, tools, sCode, sMessage, tCode, tMessage, oCode, oMessage);
+	}
+	public static CMMsg getMsg(Interactable source, Interactable target, CMObject tool, EnumSet<MsgCode> sCode, String sMessage, EnumSet<MsgCode> tCode, String tMessage, EnumSet<MsgCode> oCode, String oMessage)
+	{
+		Vector<Interactable> sources=new Vector<>();
+		sources.add(source);
+		Vector<CMObject> tools=new Vector<>();
+		tools.add(tool);
+		return getMsg(sources, target, tools, sCode, sMessage, tCode, tMessage, oCode, oMessage);
 	}
 
 	public static void initializeClasses()
@@ -444,12 +442,12 @@ public class CMClass extends ClassLoader
 				CMFile[] list=file.listFiles();
 //				if(!quiet)
 //					Log.sysOut("Adding Directory "+filePath+", "+list.length+" files.");
-				for(int l=0;l<list.length;l++)
-					if((list[l].getName().indexOf("$")<0)&&(list[l].getName().toUpperCase().endsWith(".CLASS")))
+				for(CMFile subfile : list)
+					if((!subfile.getName().contains("$"))&&(subfile.getName().toUpperCase().endsWith(".CLASS")))
 					{
 //						if(!quiet)
 //							Log.sysOut("Adding File "+list[l].getLocalPathAndName());
-						fileList.add(list[l].getVFSPathAndName());
+						fileList.add(subfile.getVFSPathAndName());
 					}
 			}
 			else
@@ -595,7 +593,7 @@ public class CMClass extends ClassLoader
 	 * will always want the class resolved before it is returned
 	 * to them.
 	 */
-	public Class loadClass(String className) throws ClassNotFoundException {
+	@Override public Class loadClass(String className) throws ClassNotFoundException {
 		return (loadClass(className, true));
 	}
 
@@ -604,7 +602,7 @@ public class CMClass extends ClassLoader
 	 * both from loadClass above and from the internal function
 	 * FindClassFromClass.
 	 */
-	public synchronized Class loadClass(String className, boolean resolveIt)
+	@Override public synchronized Class loadClass(String className, boolean resolveIt)
 		throws ClassNotFoundException
 	{
 		//String pathName=null;
@@ -777,10 +775,10 @@ public class CMClass extends ClassLoader
 	}
 	public static String getStackTrace(Thread theThread)
 	{
-		java.lang.StackTraceElement[] s=(java.lang.StackTraceElement[])theThread.getStackTrace();
-		StringBuffer dump = new StringBuffer("");
-		for(int i=0;i<s.length;i++)
-			dump.append("\n   "+s[i].getClassName()+": "+s[i].getMethodName()+"("+s[i].getFileName()+": "+s[i].getLineNumber()+")");
+		StackTraceElement[] s=theThread.getStackTrace();
+		StringBuilder dump = new StringBuilder("");
+		for(StackTraceElement el : s)
+			dump.append("\n   ").append(el.getClassName()).append(": ").append(el.getMethodName()).append("(").append(el.getFileName()).append(": ").append(el.getLineNumber()).append(")");
 		return dump.toString();
 	}
 	public Class finishDefineClass(String className, byte[] classData, String overPackage, boolean resolveIt)
@@ -798,7 +796,7 @@ public class CMClass extends ClassLoader
 		try{result=defineClass(className, classData, 0, classData.length);}
 		catch(NoClassDefFoundError e)
 		{
-			if(e.getMessage().toLowerCase().indexOf("(wrong name:")>=0)
+			if(e.getMessage().toLowerCase().contains("(wrong name:"))
 			{
 				int x=className.lastIndexOf(".");
 				if(x>=0)

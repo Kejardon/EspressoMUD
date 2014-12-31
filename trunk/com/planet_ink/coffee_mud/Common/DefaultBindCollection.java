@@ -38,8 +38,8 @@ public class DefaultBindCollection implements BindCollection, Ownable
 	
 	//CMObject
 	public String ID(){return "DefaultBindCollection";}
-	public CMObject newInstance(){return new DefaultBindCollection();}
-	public CMObject copyOf(){return null;}	//TODO
+	@Override public DefaultBindCollection newInstance(){try {return getClass().newInstance();}catch(Exception e){Log.errOut("DefaultBindCollection", e);}return new DefaultBindCollection();}
+	@Override public DefaultBindCollection copyOf(){return null;}	//TODO
 	public void initializeClass(){}
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 

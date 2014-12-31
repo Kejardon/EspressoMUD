@@ -11,12 +11,12 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public class Sleep extends StdCommand
 {
 	public Sleep(){access=new String[]{"SLEEP","SL"};}
 
-	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
+	@Override public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 /*
 		if(CMLib.flags().isSleeping(mob))
@@ -48,6 +48,6 @@ public class Sleep extends StdCommand
 		return false;
 	}
 
-	public int commandType(MOB mob, String cmds){return CT_LOW_P_ACTION;}
-	public boolean canBeOrdered(){return true;}
+	@Override public int commandType(MOB mob, String cmds){return CT_LOW_P_ACTION;}
+	@Override public boolean canBeOrdered(){return true;}
 }

@@ -17,11 +17,13 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public interface ExitInstance extends Interactable, CMSavable, CMModifiable //Item?
 {
 	public Exit getExit();
 	public Room getDestination();
+	@Override public ExitInstance newInstance();
+	@Override public ExitInstance copyOf();
 	public static class ComparableEI implements ExitInstance
 	{
 		protected static final ConcurrentLinkedQueue<ComparableEI> CEICache = new ConcurrentLinkedQueue();
@@ -38,13 +40,13 @@ public interface ExitInstance extends Interactable, CMSavable, CMModifiable //It
 			map.e=E;
 			return map;
 		}
-		public CMObject newInstance() {
+		public ComparableEI newInstance() {
 			ComparableEI map = CEICache.poll();
 			if(map==null)
 				map=new ComparableEI();
 			return map;
 		}
-		public CMObject copyOf() {
+		public ComparableEI copyOf() {
 			ComparableEI map = CEICache.poll();
 			if(map==null)
 				map=new ComparableEI();

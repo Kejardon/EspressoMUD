@@ -43,7 +43,7 @@ These are loaded in RAM and never stored to file. Instead they are rebuilt from 
 	WVector<Integer> freeSpaces - part of SaveFormat I guess
 */
 
-@SuppressWarnings("unchecked")
+
 public class DBManager implements CMLibrary, Runnable	//extends Thread
 {
 	//Easily modifiable settings

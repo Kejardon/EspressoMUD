@@ -17,6 +17,8 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
  */
 public interface Exit extends Interactable, Closeable.CloseableHolder, CMModifiable, CMSavable
 {
+	@Override public Exit copyOf();
+	@Override public Exit newInstance();
 	//TODO: These no longer make sense with destination, they should probably have ExitInstance myInstance instead.
 	public String directLook(MOB mob, Room destination);
 	public String exitListLook(MOB mob, Room destination);

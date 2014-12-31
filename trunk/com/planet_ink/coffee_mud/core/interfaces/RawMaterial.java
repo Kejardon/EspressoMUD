@@ -13,7 +13,9 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 */
 public interface RawMaterial extends Item
 {
-	
+
+	@Override public RawMaterial newInstance();
+	@Override public RawMaterial copyOf();
 	public String domainSource();
 	public void setDomainSource(String src);
 	public boolean rebundle();

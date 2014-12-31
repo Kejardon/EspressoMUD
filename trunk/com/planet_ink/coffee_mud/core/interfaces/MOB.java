@@ -13,7 +13,7 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 
 //Let's see.
 //A MOB will have a body, that is almost the main feature of a mob.
@@ -24,7 +24,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 public interface MOB extends ItemCollection.ItemHolder, Interactable, CMSavable, CMModifiable, TickActer
 {
 	public static final MOB[] dummyMOBArray=new MOB[0];
-	public class QueuedCommand	//Nothing more than a storage object instead of having an Object[] and typecasting stuff
+	public static class QueuedCommand	//Nothing more than a storage object instead of having an Object[] and typecasting stuff
 	{
 		protected static final ConcurrentLinkedQueue<QueuedCommand> QCCache = new ConcurrentLinkedQueue();
 		
@@ -54,7 +54,7 @@ public interface MOB extends ItemCollection.ItemHolder, Interactable, CMSavable,
 			QCCache.offer(this);
 		}
 	}
-	public class Skilltable extends Hashtable<Skill, MOBSkill>
+	public static class Skilltable extends Hashtable<Skill, MOBSkill>
 	{
 		//max level around 2369038960
 		public long totalEXP=0;
@@ -317,6 +317,8 @@ public interface MOB extends ItemCollection.ItemHolder, Interactable, CMSavable,
 	public Vector fetchInventories(String itemName);
 	public boolean isMine(Interactable env);
 	public void giveItem(Item thisContainer);
+	@Override public MOB newInstance();
+	@Override public MOB copyOf();
 
 	/** Some general statistics about MOBs.  See the
 	 * CharStats class (in interfaces) for more info. */

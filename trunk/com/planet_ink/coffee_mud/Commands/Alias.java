@@ -11,11 +11,11 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public class Alias extends StdCommand
 {
 	public Alias(){ access=new String[]{"ALIAS"}; }
-	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
+	@Override public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		if((mob.playerStats()==null)||(mob.session()==null))
 			return false;
@@ -96,7 +96,7 @@ public class Alias extends StdCommand
 		return true;
 	}
 
-	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
+	@Override public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	public int prompter(){return 1;}
-	public boolean canBeOrdered(){return true;}
+	@Override public boolean canBeOrdered(){return true;}
 }

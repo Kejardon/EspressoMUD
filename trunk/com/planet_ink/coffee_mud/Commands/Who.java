@@ -11,7 +11,7 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public class Who extends StdCommand
 {
 	public Who(){access=new String[]{"WHO","WH"};}
@@ -58,7 +58,7 @@ public class Who extends StdCommand
 		return msg;
 	}
 	
-	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
+	@Override public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		String mobName=CMParms.combine(commands,1);
 		AccountStats friendsOf=null;
@@ -89,6 +89,6 @@ public class Who extends StdCommand
 		return false;
 	}
 
-	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
-	public boolean canBeOrdered(){return true;}
+	@Override public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
+	@Override public boolean canBeOrdered(){return true;}
 }

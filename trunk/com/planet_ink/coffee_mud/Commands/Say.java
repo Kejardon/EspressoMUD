@@ -11,12 +11,12 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public class Say extends StdCommand
 {
 	public Say(){access=new String[]{"SAY", "`", "SAYTO", "ASK", "ASKTO", "YELL", "YELLTO"};}
 
-	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
+	@Override public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		String theWord="Say";
 		boolean toFlag=false;
@@ -81,6 +81,6 @@ public class Say extends StdCommand
 		return false;
 	}
 
-	public int commandType(MOB mob, String cmds){return CT_NON_ACTION;}	//TALKING IS A FREE ACTION, LENGTH BE DAMNED
-	public boolean canBeOrdered(){return true;}
+	@Override public int commandType(MOB mob, String cmds){return CT_NON_ACTION;}	//TALKING IS A FREE ACTION, LENGTH BE DAMNED
+	@Override public boolean canBeOrdered(){return true;}
 }

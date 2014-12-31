@@ -14,7 +14,7 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public class CoffeeFilter extends StdLibrary
 {
 	public final static String hexStr="0123456789ABCDEF";
@@ -35,10 +35,10 @@ public class CoffeeFilter extends StdLibrary
 											   "-HIM-HERSELF","-HIS-HERSELF",
 											   "-SIRMADAM","-NAMENOART"};
 
-	public String ID(){return "CoffeeFilter";}
-	public volatile Hashtable<String, Integer> tagTable=null;
+	@Override public String ID(){return "CoffeeFilter";}
+	public volatile HashMap<String, Integer> tagTable=null;
 	
-	public Hashtable<String, Integer> getTagTable()
+	public HashMap<String, Integer> getTagTable()
 	{
 		if(tagTable==null)
 			synchronized(this){if(tagTable==null) tagTable=CMStrings.makeNumericHash(FILTER_DESCS);}
@@ -296,7 +296,7 @@ public class CoffeeFilter extends StdLibrary
 		if((oldColors!=null)&&(oldColors.size()>0)) buf.append(CMColor.COLOR_NONE);
 
 		if(CMSecurity.isDebugging("OUTPUT"))
-			Log.debugOut("CoffeeFilter","OUTPUT: "+(((S!=null)&&(S.mob()!=null))?S.mob().name():"")+": "+buf.toString());
+			Log.debugOut("CoffeeFilter","OUTPUT: "+(S.mob()!=null?S.mob().name():"")+": "+buf.toString());
 		return buf.toString();
 	}
 	
@@ -364,10 +364,10 @@ public class CoffeeFilter extends StdLibrary
 				break;
 		}
 		//String replacement=null;
-		Integer I=(Integer)getTagTable().get(cmd.substring(1));
+		Integer I=getTagTable().get(cmd.substring(1));
 		if(I==null)
 			return cmd.substring(1);
-		else switch(I.intValue())
+		else switch(I)
 		{
 		case NAME:
 			if(regarding==null){}
@@ -614,7 +614,7 @@ public class CoffeeFilter extends StdLibrary
 						lastSpace=msg.length();
 						lastSp=-1;
 						break;
-					case 's':	//Pluralization AND conjugation check
+					case 's':	//Pluralization AND conjugation check (1 bob -> 2 bobs, hit -> hits)
 						if(doSagain||shouldUseExtension(buf,lastSp,lastSpace))
 						{
 							len+=2;
@@ -628,7 +628,7 @@ public class CoffeeFilter extends StdLibrary
 						}
 						firstSdone=true;
 						break;
-					case 'y':	//Conjugation check (not intended to check for numbers)
+					case 'y':	//Conjugation check (not intended to check for numbers) (try -> tries)
 						if(doSagain||shouldUseExtension(buf,lastSp,lastSpace))
 						{
 							nextChar=Character.isUpperCase(buf.charAt(buf.length()-1))?'Y':'y';
@@ -651,7 +651,7 @@ public class CoffeeFilter extends StdLibrary
 						}
 						firstSdone=true;
 						break;
-					case 'e':	//Conjugation check (not intended to check for numbers)
+					case 'e':	//Conjugation check (not intended to check for numbers, go -> goes)
 						if(doSagain||shouldUseExtension(buf,lastSp,lastSpace))
 						{
 							nextChar=(char)0;
@@ -696,7 +696,7 @@ public class CoffeeFilter extends StdLibrary
 							{
 								if(i==loop+2) break;
 								String substring=handleSTO(msg.substring(loop+1, i), mob, source, target, tool);
-								if((!firstSdone)&&(substring=="you")) doSagain=true;	//Safe because java compiler
+								if((!firstSdone)&&(substring=="you")) doSagain=true;	//Safe because java compiler, actually good in case of crazies named "you"
 								if(substring.length()>0)
 								{
 									if(firstAlpha < 0)
@@ -757,7 +757,7 @@ public class CoffeeFilter extends StdLibrary
 		if((oldColors!=null)&&(oldColors.size()>0)) buf.append(CMColor.COLOR_NONE);
 
 		if(CMSecurity.isDebugging("OUTPUT"))
-			Log.debugOut("CoffeeFilter","OUTPUT: "+(((S!=null)&&(S.mob()!=null))?S.mob().name():"")+": "+buf.toString());
+			Log.debugOut("CoffeeFilter","OUTPUT: "+(S.mob()!=null?S.mob().name():"")+": "+buf.toString());
 		return buf.toString();
 	}
 

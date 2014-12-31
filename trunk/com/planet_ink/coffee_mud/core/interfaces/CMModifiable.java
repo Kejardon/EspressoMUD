@@ -11,7 +11,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 	http://www.apache.org/licenses/LICENSE-2.0
 */
 // Interface for objects editable with CMGenEditor. This is basically everything.
-@SuppressWarnings("unchecked")
+
 public interface CMModifiable extends CMObject
 {
 	public static final ModEnum[] dummyMEArray=new ModEnum[0];
@@ -22,6 +22,8 @@ public interface CMModifiable extends CMObject
 		public String prompt(U fromThis);
 		public void mod(U toThis, MOB mob);
 	}
+	@Override public CMModifiable newInstance();
+	@Override public CMModifiable copyOf();
 
 	public ModEnum[] totalEnumM();
 	public Enum[] headerEnumM();

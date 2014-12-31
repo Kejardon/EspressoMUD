@@ -6,7 +6,7 @@ import java.util.*;
 	Copyright 2011 Kejardon
 	A Vector that keeps a 'weight' for each object it holds, as a portion of this WVector's total weight.
 */
-@SuppressWarnings("unchecked")
+
 public class WVector<E> implements Cloneable
 {
 	public static class CachedLists<U>

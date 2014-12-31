@@ -12,7 +12,7 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public interface Environmental extends Affectable, CMModifiable, CMSavable, CMCommon
 {
 	public static interface EnvHolder extends ListenHolder
@@ -21,6 +21,8 @@ public interface Environmental extends Affectable, CMModifiable, CMSavable, CMCo
 		public Environmental getEnvObject();
 	}
 
+	public Environmental newInstance();
+	public Environmental copyOf();
 	public boolean sameAs(Environmental E);
 	public EnvStats baseEnvStats();
 	public void setBaseEnvStats(EnvStats newBaseEnvStats);

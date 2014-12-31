@@ -14,12 +14,6 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 public class Temperature extends StdEffect
 {
 	public String ID() { return "Temperature"; }
-	public CMObject newInstance()
-	{
-		try { return (CMObject)this.getClass().newInstance(); }
-		catch(Exception e) { Log.errOut(ID(),e); }
-		return new Temperature();
-	}
 //	public int temperature=0;
 	public boolean invoke(Affectable target, int asLevel)
 	{

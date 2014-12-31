@@ -32,8 +32,8 @@ public class DefaultRideable implements Rideable, Ownable
 
 	//CMObject
 	public String ID(){return "DefaultRideable";}
-	public CMObject newInstance(){return new DefaultRideable();}
-	public CMObject copyOf(){return null;}
+	@Override public DefaultRideable newInstance(){try {return getClass().newInstance();}catch(Exception e){Log.errOut("DefaultRideable", e);}return new DefaultRideable();}
+	@Override public DefaultRideable copyOf(){return null;}
 	public void initializeClass(){}
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 

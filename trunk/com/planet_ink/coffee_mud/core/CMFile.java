@@ -23,7 +23,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 	http://www.apache.org/licenses/LICENSE-2.0
 */
 //TODO: Redo stuff here using nio? Test in misc.java
-@SuppressWarnings("unchecked")
+
 public class CMFile
 {
 /*	public enum Flags

@@ -27,8 +27,8 @@ public class DefaultBind implements Bind
 	protected int[] itemsToLoad=null;
 	
 	public String ID(){return "DefaultBind";}
-	public CMObject newInstance(){return new DefaultBind();}
-	public CMObject copyOf(){return null;}	//TODO
+	@Override public DefaultBind newInstance(){try {return getClass().newInstance();}catch(Exception e){Log.errOut("DefaultBind", e);}return new DefaultBind();}
+	@Override public DefaultBind copyOf(){return null;}	//TODO
 	public void initializeClass(){}
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 

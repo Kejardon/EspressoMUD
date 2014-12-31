@@ -14,7 +14,7 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public class StdArea implements Area
 {
 	public String ID(){return "StdArea";}
@@ -121,7 +121,7 @@ public class StdArea implements Area
 	//public long lastTick(){return lastTick;}
 
 	public EnumSet<ListenHolder.Flags> listenFlags() {return lFlags;}
-	public CMObject newInstance() { return new StdArea(); }
+	@Override public StdArea newInstance() { try {return getClass().newInstance();}catch(Exception e){Log.errOut("StdArea", e);} return new StdArea(); }
 	protected void cloneFix(StdArea E)
 	{
 		okCheckers=new CopyOnWriteArrayList();
@@ -139,7 +139,7 @@ public class StdArea implements Area
 		for(Effect A : E.affects)
 			affects.add(A.copyOnto(this));
 	}
-	public CMObject copyOf()
+	public StdArea copyOf()
 	{
 		try
 		{

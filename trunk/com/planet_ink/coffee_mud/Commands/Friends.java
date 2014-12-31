@@ -12,12 +12,12 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 	http://www.apache.org/licenses/LICENSE-2.0
 */
 //TODO: Rewrite this to cause a prompt for the requested friend, if they accept, then they are added to eachothers' friend list
-@SuppressWarnings("unchecked")
+
 public class Friends extends StdCommand
 {
 	public Friends(){access=new String[]{"FRIENDS"};}
 
-	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
+	@Override public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		PlayerStats pstats=mob.playerStats();
 		if(pstats==null) return false;
@@ -120,6 +120,6 @@ public class Friends extends StdCommand
 	}
 	
 	public int prompter(){return 1;}
-	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
-	public boolean canBeOrdered(){return false;}
+	@Override public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
+	@Override public boolean canBeOrdered(){return false;}
 }

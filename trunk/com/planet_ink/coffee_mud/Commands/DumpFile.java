@@ -4,12 +4,12 @@ import com.planet_ink.coffee_mud.core.*;
 
 import java.util.*;
 
-@SuppressWarnings("unchecked")
+
 public class DumpFile extends StdCommand
 {
 	public DumpFile(){access=new String[]{"DUMPFILE"};}
 
-	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
+	@Override public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		commands.removeElementAt(0);
 		if((commands.size()<2)||(commands.size()==2&&commands.get(0).equalsIgnoreCase("raw")))
@@ -79,7 +79,7 @@ public class DumpFile extends StdCommand
 		return false;
 	}
 
-	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
-	public boolean canBeOrdered(){return true;}
+	@Override public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
+	@Override public boolean canBeOrdered(){return true;}
 	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,"DUMPFILE");}
 }

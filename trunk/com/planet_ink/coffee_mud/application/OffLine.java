@@ -16,7 +16,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 	http://www.apache.org/licenses/LICENSE-2.0
 */
 //Generally unsupported file
-@SuppressWarnings("unchecked")
+
 public class OffLine extends Thread implements MudHost
 {
 	public static Vector mudThreads=new Vector();

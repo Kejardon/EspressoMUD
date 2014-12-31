@@ -21,6 +21,8 @@ public interface Interactable extends Environmental.EnvHolder, Affectable, Behav
 	public String description();
 	public String plainDescription();
 	public void setDescription(String newDescription);
+	@Override public Interactable newInstance();
+	@Override public Interactable copyOf();
 	//public void destroy();
 	//public boolean amDestroyed();
 	//public boolean sameAs(Interactable E);

@@ -19,7 +19,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
  * The interface implemented by the main mud application.  Includes several timing constants.
  * @author Bo Zimmerman
  */
-@SuppressWarnings("unchecked")
+
 public interface MudHost
 {
 	/** the number of milliseconds between each savethread execution */

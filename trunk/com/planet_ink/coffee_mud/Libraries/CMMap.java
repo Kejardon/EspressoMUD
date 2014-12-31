@@ -18,7 +18,7 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public class CMMap extends StdLibrary implements Runnable
 {
 	public final static long ROOM_EXPIRATION_MILLIS=2500000;
@@ -54,7 +54,7 @@ public class CMMap extends StdLibrary implements Runnable
 		//protected ItemCollection inventory=null;
 		@Override public String ID(){return "LimboRoom";}
 		//public Room(){}
-		@Override public CMObject newInstance(){return this;}
+		@Override public com.planet_ink.coffee_mud.Locales.StdRoom newInstance(){return this;}
 		@Override public Environmental getEnvObject() {return (Environmental)CMClass.COMMON.get("DefaultEnvironmental");}
 		@Override public String name(){ return "Limbo";}
 		@Override public String plainName(){ return "Limbo";}
@@ -65,7 +65,7 @@ public class CMMap extends StdLibrary implements Runnable
 		@Override public String description(){return "";}
 		@Override public String plainDescription(){return "";}
 		@Override public void setDescription(String newDescription){}
-		@Override public CMObject copyOf(){ return this; }
+		@Override public com.planet_ink.coffee_mud.Locales.StdRoom copyOf(){ return this; }
 		@Override public int numExits() { return 0;}
 		@Override public void addExit(Exit E, Room destination){}
 		@Override public void addExit(ExitInstance R){}

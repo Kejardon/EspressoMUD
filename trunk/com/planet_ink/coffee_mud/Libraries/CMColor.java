@@ -15,7 +15,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 	http://www.apache.org/licenses/LICENSE-2.0
 */
 //TODO later. Need to revamp this
-@SuppressWarnings("unchecked")
+
 public class CMColor extends StdLibrary
 {
 	public static final String[] ASCI_COLORS={

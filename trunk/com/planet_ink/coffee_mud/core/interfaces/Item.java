@@ -13,6 +13,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 /**
  * The interface for all common items, and as a base for RawMaterial, armor, weapons, etc.
  * @author Bo Zimmerman
+ * @param <T> Type of object created when an Item is duplicated / instantiated
  */
 public interface Item extends Interactable, CMSavable, CMModifiable
 {
@@ -28,6 +29,8 @@ public interface Item extends Interactable, CMSavable, CMModifiable
 	public String stackableName();
 	public void setStackableName(String S);
 	
+	@Override public Item copyOf();
+	@Override public Item newInstance();
 	public boolean isComposite();
 	public BindCollection subItems();
 	

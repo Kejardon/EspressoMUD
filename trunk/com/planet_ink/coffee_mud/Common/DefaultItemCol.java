@@ -27,8 +27,8 @@ public class DefaultItemCol implements ItemCollection, Ownable
 	
 	//CMObject
 	public String ID(){return "DefaultItemCol";}
-	public CMObject newInstance(){return new DefaultItemCol();}
-	public CMObject copyOf(){return null;}	//TODO
+	public DefaultItemCol newInstance(){try {return getClass().newInstance();}catch(Exception e){Log.errOut("DefaultItemCol", e);}return new DefaultItemCol();}
+	public DefaultItemCol copyOf(){return null;}	//TODO
 	public void initializeClass(){}
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 

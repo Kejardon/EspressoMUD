@@ -17,7 +17,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
  * include other areas in a parent->child relationship.  
  * @author Bo Zimmerman, Jeremy Vyska
  */
-@SuppressWarnings("unchecked")
+
 public interface Area extends Environmental.EnvHolder, ListenHolder.MsgListener, Affectable, CMModifiable, CMSavable//, Comparable<Area>
 {
 	public static Area[] dummyAreaArray=new Area[0];
@@ -67,6 +67,8 @@ public interface Area extends Environmental.EnvHolder, ListenHolder.MsgListener,
 	public void addParent(Area Adopted);
 	public void removeParent(Area Disowned);
 	public void removeParent(int Disowned);
+	@Override public Area newInstance();
+	@Override public Area copyOf();
 
 	/* A blurb flag is a run-time modifiable set of strings that can be added
 	 * to an area in order to display them in the HELP entry for an area.

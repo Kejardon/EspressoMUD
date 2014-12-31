@@ -20,7 +20,7 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public class OneToOneExitInstance implements ExitInstance
 {
 	protected Exit myExit;
@@ -47,8 +47,8 @@ public class OneToOneExitInstance implements ExitInstance
 	public Room getDestination(){return leadsTo;}
 	public String ID(){return "OneToOneExitInstance";}
 	public Environmental getEnvObject() { return myExit.getEnvObject(); }
-	public CMObject newInstance(){return new OneToOneExitInstance();}
-	public CMObject copyOf(){return new OneToOneExitInstance(myExit, leadsTo);}
+	@Override public OneToOneExitInstance newInstance(){return new OneToOneExitInstance();}
+	@Override public OneToOneExitInstance copyOf(){return new OneToOneExitInstance(myExit, leadsTo);}
 	public void initializeClass(){}
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 

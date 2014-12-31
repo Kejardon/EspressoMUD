@@ -5,7 +5,7 @@ import com.planet_ink.coffee_mud.core.*;
 import java.util.*;
 import java.io.*;
 
-@SuppressWarnings("unchecked")
+
 public interface Closeable extends CMObject, CMModifiable, CMSavable, CMCommon
 {
 	public static interface CloseableHolder extends CMObject { public Closeable getLidObject(); }
@@ -24,6 +24,8 @@ public interface Closeable extends CMObject, CMModifiable, CMSavable, CMCommon
 	public boolean obviousLock();	//Key required for the lock will be found automatically
 	public void setLidsNLocks(boolean newHasALid, boolean newIsOpen, boolean newHasALock, boolean newIsLocked, boolean newObvious);
 	public void destroy();
+	@Override public Closeable newInstance();
+	@Override public Closeable copyOf();
 
 	public static class O
 	{

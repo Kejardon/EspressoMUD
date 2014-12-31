@@ -18,7 +18,7 @@ will refer to the new object next reboot.
 		I don't think a 'find existing references to this object' exists. Would have to keep everything in mind when coding.
 	How do SQL libraries do it? Junction tables require it, using foreign keys. Ask Sharl?
 */
-@SuppressWarnings("unchecked")
+
 public class SIDLib
 {
 	// CLAIMED NON-TRANSIENT OBJECTS/IDS. None of these should have the same number and category, nor number over 9999.

@@ -12,12 +12,12 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 	http://www.apache.org/licenses/LICENSE-2.0
 */
 //TODO: I want to rework how Copy works eventually and make a paste option as well
-@SuppressWarnings("unchecked")
+
 public class Copy extends StdCommand
 {
 	public Copy(){access=new String[]{"COPY"};}
 
-	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
+	@Override public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		commands.removeElementAt(0); // copy
 		if(commands.size()<1)
@@ -227,7 +227,7 @@ public class Copy extends StdCommand
 		return false;
 	}
 	
-	public int commandType(MOB mob, String cmds){return CT_NON_ACTION;}
-	public boolean canBeOrdered(){return true;}
+	@Override public int commandType(MOB mob, String cmds){return CT_NON_ACTION;}
+	@Override public boolean canBeOrdered(){return true;}
 	public boolean securityCheck(MOB mob){return CMSecurity.isAllowedStartsWith(mob,"COPY");}
 }

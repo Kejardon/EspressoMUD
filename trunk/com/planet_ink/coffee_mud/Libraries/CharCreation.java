@@ -3,8 +3,6 @@ import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
 
 import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.Future;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -13,7 +11,7 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public class CharCreation extends StdLibrary
 {
 	public enum LoginResult
@@ -21,7 +19,7 @@ public class CharCreation extends StdLibrary
 		NO_LOGIN, NORMAL_LOGIN, ACCOUNT_LOGIN, SESSION_SWAP, CCREATION_EXIT
 	}
 	
-	public String ID(){return "CharCreation";}
+	@Override public String ID(){return "CharCreation";}
 	public HashMap<String,Integer> startRooms=new HashMap();
 	public HashMap<String,Integer> deathRooms=new HashMap();
 	public HashMap<String,Integer> bodyRooms=new HashMap();
@@ -102,34 +100,32 @@ public class CharCreation extends StdLibrary
 		session.setClientTelnetMode(Session.TELNET_ANSI,acct.hasBits(PlayerStats.ATT_ANSI));
 		boolean charSelected = false;
 		boolean showList = acct.hasAccBits(PlayerAccount.FLAG_ACCOUNTMENUSOFF);
-		StringBuffer introTextBuf;
 		String introText=(String)Resources.getResource("CHARSELECTTEXT");
 		if(introText==null)
 		{
-			introTextBuf=new CMFile("resources/text/selchar.txt",null,true).text();
-			introText="\r\n\r\n"+introText.toString();
+			introText="\r\n\r\n"+new CMFile("resources/text/selchar.txt",null,true).text();
 			Resources.submitResource(introText, "CHARSELECTTEXT");
 		}
 		session.println(null,null,null,introText);
 		while((!session.killFlag())&&(!charSelected))
 		{
-			StringBuffer buf = new StringBuffer("");
+			StringBuilder buf = new StringBuilder("");
 			if(showList)
 			{
 				showList = false;
-				buf.append("^X");
-				buf.append(CMStrings.padRight("Character",20));
-				buf.append(" " + CMStrings.padRight("Race",10));
-//				buf.append(" " + CMStrings.padRight("Level",5));
-				buf.append("^.^N\r\n");
+				buf.append("^X")
+				.append(CMStrings.padRight("Character",20))
+				.append(" ").append(CMStrings.padRight("Race",10))
+//				.append(" ").append(CMStrings.padRight("Level",5))
+				.append("^.^N\r\n");
 				for(Iterator<MOB> p = acct.getLoadPlayers(); p.hasNext();)
 				{
 					MOB player = p.next();
-					buf.append("^H");
-					buf.append(CMStrings.padRight(player.name(),20));
-					buf.append("^.^N " + CMStrings.padRight(player.body().raceName(),10));
-//					buf.append(" " + CMStrings.padRight(""+player.level,5));
-					buf.append("^.^N\r\n");
+					buf.append("^H")
+					.append(CMStrings.padRight(player.name(),20))
+					.append("^.^N ").append(CMStrings.padRight(player.body().raceName(),10))
+//					.append(" ").append(CMStrings.padRight(""+player.level,5))
+					.append("^.^N\r\n");
 				}
 				session.println(buf.toString());
 				buf.setLength(0);
@@ -146,8 +142,7 @@ public class CharCreation extends StdLibrary
 				introText=(String)Resources.getResource("CHARACCTTEXT");
 				if(introText==null)
 				{
-					introTextBuf=new CMFile("resources/help/accts.txt",null,true).text();
-					introText="\r\n\r\n"+introText.toString();
+					introText="\r\n\r\n"+new CMFile("resources/help/accts.txt",null,true).text();
 					Resources.submitResource(introText, "CHARACCTTEXT");
 				}
 				session.println(null,null,null,introText);
@@ -394,8 +389,7 @@ public class CharCreation extends StdLibrary
 					session.setClientTelnetMode(Session.TELNET_ANSI,false);
 				}
 			}
-			else
-			if(session.confirm("\r\nDo you want ANSI colors (Y/n)?","Y"))
+			else if(session.confirm("\r\nDo you want ANSI colors (Y/n)?","Y"))
 				mob.playerStats().setBits(PlayerStats.ATT_ANSI,true);
 			else
 			{
@@ -415,7 +409,7 @@ public class CharCreation extends StdLibrary
 			Body newBody=(Body)CMClass.ITEM.getNew("StdBody");
 			String raceOptions;
 			{
-				StringBuffer listOfRaces=new StringBuffer("[");
+				StringBuilder listOfRaces=new StringBuilder("[");
 				boolean tmpFirst = true;
 				for(Race R : raceQualifies())
 				{
@@ -423,7 +417,7 @@ public class CharCreation extends StdLibrary
 						tmpFirst = false;
 					else
 						listOfRaces.append(", ");
-					listOfRaces.append("^H"+R.name()+"^N");
+					listOfRaces.append("^H").append(R.name()).append("^N");
 				}
 				listOfRaces.append("]");
 				raceOptions=listOfRaces.toString();
@@ -453,7 +447,7 @@ public class CharCreation extends StdLibrary
 					if(newRace!=null)
 					{
 						String str=CMLib.help().getHelpText(newRace.ID().toUpperCase(),mob,false);
-						if(str!=null) session.println("\r\n^N"+str.toString()+"\r\n");
+						if(str!=null) session.println("\r\n^N"+str+"\r\n");
 						if(!session.confirm("^!Is ^H"+newRace.name()+"^N^! correct (Y/n)?^N","Y"))
 							newRace=null;
 					}
@@ -477,7 +471,7 @@ public class CharCreation extends StdLibrary
 				{
 					StringBuilder gPrompt=new StringBuilder("\r\n^!What is your gender (");
 					for(Gender g : options)
-						gPrompt.append(g.name()+", ");
+						gPrompt.append(g.name()).append(", ");
 					gPrompt.setLength(gPrompt.length()-2);
 					gPrompt.append(")?^N");
 					String gPromptDone=gPrompt.toString();
@@ -531,9 +525,9 @@ public class CharCreation extends StdLibrary
 				mob.playerStats().setLastIP(session.getByteAddress());
 				Log.sysOut("FrontDoor","Created user: "+mob.name());
 				//notifyFriends(mob,"^X"+mob.name()+" has just been created.^.^?");
-				Vector channels=CMLib.channels().getFlaggedChannelNames(CMChannels.ChannelFlag.NEWPLAYERS);
+				Vector<String> channels=CMLib.channels().getFlaggedChannelNames(CMChannels.ChannelFlag.NEWPLAYERS);
 				for(int i=0;i<channels.size();i++)
-					CMLib.commands().postChannel((String)channels.get(i),mob.name()+" has just been created.",true);
+					CMLib.commands().postChannel(channels.get(i),mob.name()+" has just been created.",true);
 			}
 		}
 		catch(Throwable t)
@@ -618,150 +612,129 @@ public class CharCreation extends StdLibrary
 		}
 		return true;
 	}
-	/*
-	private static class LoginCall implements Callable<LoginResult>
-	{
-		public LoginCall(Session session)
-		{
-			this.session = session;
-		}
-		private Session session;
-		@Override
-		public LoginResult call() throws java.io.IOException
-	*/
 	public LoginResult login(Session session) throws java.io.IOException
-		{ //TODO: Rethink this routine's logic / codeflow
-			if(session==null) 
-				return LoginResult.NO_LOGIN;
+	{ //TODO: Rethink this routine's logic / codeflow
+		if(session==null) 
+			return LoginResult.NO_LOGIN;
 
-			session.setAccount(null);
+		session.setAccount(null);
 
-			String login;
-			if(CMProps.Ints.COMMONACCOUNTSYSTEM.property()>1)
-				login=session.prompt("\r\naccount name: ");
-			else
-				login=session.prompt("\r\nname: ");
-			if(login==null)
-				return LoginResult.NO_LOGIN;
-			login=login.trim();
-			if(login.length()==0) 
-				return LoginResult.NO_LOGIN;
-			if(login.equalsIgnoreCase("MSSP-REQUEST")&&(!CMSecurity.isDisabled("MSSP")))
+		String login;
+		if(CMProps.Ints.COMMONACCOUNTSYSTEM.property()>1)
+			login=session.prompt("\r\naccount name: ");
+		else
+			login=session.prompt("\r\nname: ");
+		if(login==null)
+			return LoginResult.NO_LOGIN;
+		login=login.trim();
+		if(login.length()==0) 
+			return LoginResult.NO_LOGIN;
+		if(login.equalsIgnoreCase("MSSP-REQUEST")&&(!CMSecurity.isDisabled("MSSP")))
+		{
+			session.addOut(CMProps.getMSSPPacket());
+//			session.kill(false);
+			return LoginResult.NO_LOGIN;
+		}
+		//login = CMStrings.titleCase(login);
+		if(!validChars(login))
+		{
+			session.println("Please use only A-Z, a-z, and spaces in your name, with at least 3 letters for a first name.");
+			return LoginResult.NO_LOGIN;
+		}
+		if(CMSecurity.isBanned(login))
+		{
+			session.println("\r\nThis is a banned name. Choose a different one.\r\n");
+			return LoginResult.NO_LOGIN;
+		}
+		PlayerAccount acct = null;
+		if(CMProps.Ints.COMMONACCOUNTSYSTEM.property()>1)
+		{
+			acct = CMLib.players().getAccount(login);
+			if(acct==null)
 			{
-				session.addOut(CMProps.getMSSPPacket());
-	//			session.kill(false);
-				return LoginResult.NO_LOGIN;
-			}
-			//login = CMStrings.titleCase(login);
-			if(!validChars(login))
-			{
-				session.println("Please use only A-Z, a-z, and spaces in your name, with at least 3 letters for a first name.");
-				return LoginResult.NO_LOGIN;
-			}
-			if(CMSecurity.isBanned(login))
-			{
-				session.println("\r\nThis is a banned name. Choose a different one.\r\n");
-				return LoginResult.NO_LOGIN;
-			}
-			PlayerAccount acct = null;
-			MOB player = null;
-			if(CMProps.Ints.COMMONACCOUNTSYSTEM.property()>1)
-			{
-				acct = CMLib.players().getAccount(login);
-				if(acct==null)
+				MOB player=CMLib.players().getPlayer(login);
+				if(player != null)
 				{
-					player=CMLib.players().getPlayer(login);
-					if(player != null)
+					PlayerStats ps=player.playerStats();
+					if(ps.getAccount()==null)
 					{
-						PlayerStats ps=player.playerStats();
-						if(ps.getAccount()==null)
+						String password=session.prompt("password for "+player.name()+": ");
+						boolean done = true;
+						if(BCrypt.checkpw(password, ps.password()))
 						{
-							String password=session.prompt("password for "+player.name()+": ");
-							boolean done = true;
-							if(BCrypt.checkpw(password, ps.password()))
-							{
-								session.println("\r\nThis mud is now using an account system.  "
-										+"Please create a new account and use the IMPORT command to add your character(s) to your account.");
-								//TODO: Properly implement this.
-								done = !session.confirm("Would you like to create your new master account and call it '"+player.name()+"' (y/N)? ", "N");
-							}
-							player = null;
-							if(done)
-								return LoginResult.NO_LOGIN;
+							session.println("\r\nThis mud is now using an account system.  "
+									+"Please create a new account and use the IMPORT command to add your character(s) to your account.");
+							//TODO: Properly implement this.
+							done = !session.confirm("Would you like to create your new master account and call it '"+player.name()+"' (y/N)? ", "N");
 						}
-						else
-						{
-							session.println("\r\nAccount '"+login+"' does not exist.");
-							player=null;
+						if(done)
 							return LoginResult.NO_LOGIN;
-						}
-					}
-				}
-				else
-				{
-					String password=session.prompt("password: ");
-					if(BCrypt.checkpw(password, acct.password()))
-					{
-						session.setAccount(acct);
-						return LoginResult.ACCOUNT_LOGIN;
-					}
-					return LoginResult.NO_LOGIN;
-				}
-				if(session.confirm("\r\n'"+login+"' does not exist.\r\nIs this a new account you would like to create (y/N)?","N"))
-				{
-					acct = (PlayerAccount)CMClass.COMMON.getNew("DefaultPlayerAccount");
-					return createAccount(acct,login,session);
-				}
-			}
-			else
-			{
-				player=CMLib.players().getPlayer(login);
-				if(player!=null)
-				{
-					String password=session.prompt("password: ");
-					if(BCrypt.checkpw(password, player.playerStats().password()))
-					{
-						LoginResult prelimResults = prelimChecks(session,player);
-						if(prelimResults!=null)
-							return prelimResults;
-
-						LoginResult completeResult=completeCharacterLogin(session,login);
-						if(completeResult == LoginResult.NO_LOGIN)
-							return completeResult;
 					}
 					else
 					{
-						Log.sysOut("FrontDoor","Failed login: "+player.name());
-						session.println("\r\nInvalid password.\r\n");
+						session.println("\r\nAccount '"+login+"' does not exist.");
 						return LoginResult.NO_LOGIN;
 					}
 				}
+			}
+			else
+			{
+				String password=session.prompt("password: ");
+				if(BCrypt.checkpw(password, acct.password()))
+				{
+					session.setAccount(acct);
+					return LoginResult.ACCOUNT_LOGIN;
+				}
+				return LoginResult.NO_LOGIN;
+			}
+			if(session.confirm("\r\n'"+login+"' does not exist.\r\nIs this a new account you would like to create (y/N)?","N"))
+			{
+				acct = (PlayerAccount)CMClass.COMMON.getNew("DefaultPlayerAccount");
+				return createAccount(acct,login,session);
+			}
+		}
+		else
+		{
+			MOB player=CMLib.players().getPlayer(login);
+			if(player!=null)
+			{
+				String password=session.prompt("password: ");
+				if(BCrypt.checkpw(password, player.playerStats().password()))
+				{
+					LoginResult prelimResults = prelimChecks(session,player);
+					if(prelimResults!=null)
+						return prelimResults;
+
+					LoginResult completeResult=completeCharacterLogin(session,login);
+					if(completeResult == LoginResult.NO_LOGIN)
+						return completeResult;
+				}
 				else
 				{
-					if(newCharactersAllowed(login,session,true))
-					{
-						if(session.confirm("\r\n'"+login+"' does not exist.\r\nIs this a new character you would like to create (y/N)?","N"))
-						{
-							LoginResult result = LoginResult.NO_LOGIN;
-							if(createCharacter(acct,login,session)==LoginResult.CCREATION_EXIT)
-								result = LoginResult.NORMAL_LOGIN;
-							return result;
-						}
-					}
+					Log.sysOut("FrontDoor","Failed login: "+player.name());
+					session.println("\r\nInvalid password.\r\n");
 					return LoginResult.NO_LOGIN;
 				}
 			}
-			session.println("\r\n");
-			return LoginResult.NORMAL_LOGIN;
+			else
+			{
+				if(newCharactersAllowed(login,session,true))
+				{
+					if(session.confirm("\r\n'"+login+"' does not exist.\r\nIs this a new character you would like to create (y/N)?","N"))
+					{
+						LoginResult result = LoginResult.NO_LOGIN;
+						if(createCharacter(acct,login,session)==LoginResult.CCREATION_EXIT)
+							result = LoginResult.NORMAL_LOGIN;
+						return result;
+					}
+				}
+				return LoginResult.NO_LOGIN;
+			}
 		}
-	//}
-	
-	/*
-	public Future<LoginResult> login(Session session)
-	{
-		return CMClass.threadPool.submit(new LoginCall(session));
+		session.println("\r\n");
+		return LoginResult.NORMAL_LOGIN;
 	}
-	*/
+
 	
 	public boolean newCharactersAllowed(String login, Session session, boolean checkPlayerName)
 	{
@@ -827,9 +800,9 @@ public class CharCreation extends StdLibrary
 */
 		Integer roomID=startRooms.get("ALL");
 
-		Room room=null;
+		Room room;
 		if(roomID!=null)
-			room=SIDLib.ROOM.get(roomID.intValue());
+			room=SIDLib.ROOM.get(roomID);
 		else
 			room=SIDLib.ROOM.get(10000);
 //		if(room==null)
@@ -848,11 +821,11 @@ public class CharCreation extends StdLibrary
 */
 		Integer roomID=deathRooms.get("ALL");
 
-		Room room=null;
+		Room room;
 //		if((roomID!=null)&&(roomID.equalsIgnoreCase("START")))
 //			room=mob.getStartRoom();
 		if(roomID!=null)
-			room=SIDLib.ROOM.get(roomID.intValue());
+			room=SIDLib.ROOM.get(roomID);
 		else
 			room=SIDLib.ROOM.get(10000);
 //		if(room==null)
@@ -877,10 +850,10 @@ public class CharCreation extends StdLibrary
 		Integer roomID=bodyRooms.get("ALL");
 
 		Room room=null;
-		if((roomID!=null)&&(roomID.intValue()==0))
+		if((roomID!=null)&&(roomID==0))
 			room=mob.location();
 		if((room==null)&&(roomID!=null))
-			room=SIDLib.ROOM.get(roomID.intValue());
+			room=SIDLib.ROOM.get(roomID);
 		if(room==null)
 			room=mob.location();
 		if((room==null)&&(CMLib.map().numRooms()>0))
@@ -922,7 +895,7 @@ public class CharCreation extends StdLibrary
 		bodyRooms=tempMap;
 	}
 
-	public boolean shutdown() {
+	@Override public boolean shutdown() {
 		/*bodyRooms=new HashMap();
 		startRooms=new HashMap();
 		deathRooms=new HashMap();*/

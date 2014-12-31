@@ -43,6 +43,8 @@ public interface TimeClock extends Tickable, CMCommon, CMSavable, CMModifiable
 	public void setDaysInWeek(String[] days);
 	public String[] getYearNames();
 	public void setYearNames(String[] years);
+	@Override public TimeClock newInstance();
+	@Override public TimeClock copyOf();
 	//public String deriveEllapsedTimeString(long millis);
 
 	public final static String[] TOD_DESC={

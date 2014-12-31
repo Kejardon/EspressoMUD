@@ -11,23 +11,23 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public class Look extends StdCommand
 {
 	public Look(){access=new String[]{"LOOK","LOO","LO","L"};}
 
-	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
+	@Override public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		Interactable thisThang=null;
 		if((commands!=null)&&(commands.size()>1))
 		{
-			String ID=CMParms.combine(commands,1);
-			if(ID.length()==0)
+			String target=CMParms.combine(commands,1);
+			if(target.length()==0)
 				thisThang=mob.location();
-			if(ID.equalsIgnoreCase("SELF")||ID.equalsIgnoreCase("ME"))
+			if(target.equalsIgnoreCase("SELF")||target.equalsIgnoreCase("ME"))
 				thisThang=mob;
 			if(thisThang==null)
-				thisThang=CMLib.english().fetchInteractable(ID, false, 1, mob.getItemCollection(), mob.location());
+				thisThang=CMLib.english().fetchInteractable(target, false, 1, mob.getItemCollection(), mob.location());
 		}
 		else
 			thisThang=mob.location();
@@ -49,6 +49,6 @@ public class Look extends StdCommand
 		return false;
 	}
 
-	public int commandType(MOB mob, String cmds){return CT_NON_ACTION;}
-	public boolean canBeOrdered(){return true;}
+	@Override public int commandType(MOB mob, String cmds){return CT_NON_ACTION;}
+	@Override public boolean canBeOrdered(){return true;}
 }

@@ -11,20 +11,13 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public class Fey extends StdLanguage
 {
 	public String ID() { return "Fey"; }//Based on Gevey from http://www.kalieda.org/gevey/lexicon.html
 	public String name(){ return "Fey";}
 	public static Vector wordLists=null;	
-	public Fey()
-	{
-		super();
-	}
-	public CMObject newInstance()
-	{	
-		return new Fey();
-	}
+
 	public Vector translationVector(String language)
 	{ 
 		if(wordLists==null)

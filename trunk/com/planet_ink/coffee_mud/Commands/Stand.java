@@ -11,12 +11,12 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public class Stand extends StdCommand
 {
 	public Stand(){access=new String[]{"STAND","ST","STA","STAN"};}
 
-	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
+	@Override public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 /*
 		boolean ifnecessary=((commands.size()>1)&&(commands.lastElement().equalsIgnoreCase("IFNECESSARY")));
@@ -29,6 +29,6 @@ public class Stand extends StdCommand
 		msg.returnMsg();
 		return false;
 	}
-	public int commandType(MOB mob, String cmds){return CT_LOW_P_ACTION;}
-	public boolean canBeOrdered(){return true;}
+	@Override public int commandType(MOB mob, String cmds){return CT_LOW_P_ACTION;}
+	@Override public boolean canBeOrdered(){return true;}
 }

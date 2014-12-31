@@ -12,7 +12,7 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public class Load extends StdCommand
 {
 	public Load(){access=new String[]{"LOAD"};}
@@ -31,7 +31,7 @@ public class Load extends StdCommand
 		return list;
 	}
 
-	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
+	@Override public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		if(commands.size()<3)
 		{
@@ -143,7 +143,7 @@ public class Load extends StdCommand
 		return false;
 	}
 
-	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
-	public boolean canBeOrdered(){return true;}
+	@Override public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
+	@Override public boolean canBeOrdered(){return true;}
 	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,"LOADUNLOAD");}
 }

@@ -9,7 +9,7 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public class CMParms
 {
 	private CMParms(){super();}
@@ -1329,16 +1329,16 @@ public class CMParms
 			throw new NoSuchElementException(); }
 		public void remove(){}
 	}
-	public static Vector denumerate(Iterator e)
+	public static <E> Vector<E> denumerate(Iterator<E> e)
 	{
-		Vector V=new Vector();
+		Vector<E> V=new Vector<>();
 		while(e.hasNext())
 			V.add(e.next());
 		return V;
 	}
-	public static ArrayList toArrayList(Iterator e)
+	public static <E> ArrayList<E> toArrayList(Iterator<E> e)
 	{
-		ArrayList V=new ArrayList();
+		ArrayList<E> V=new ArrayList<>();
 		while(e.hasNext())
 			V.add(e.next());
 		return V;

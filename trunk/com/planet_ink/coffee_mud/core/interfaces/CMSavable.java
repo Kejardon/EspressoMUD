@@ -20,7 +20,7 @@ in coffeemaker to convert to/from ByteBuffers.
 The CMSavable itself will return Enum.values(), or the first of each Enum (to be checkable for .valueOf() and stuff) when asked
 	Subobjects really don't have any need to be saved seperately. Their enum data should be included automatically somehow...
  */
-@SuppressWarnings("unchecked")
+
 public interface CMSavable extends CMObject
 {
 	//IMPORTANT NOTE: ALL SAVEENUMS MUST HAVE 3-LETTER NAMES
@@ -50,6 +50,8 @@ public interface CMSavable extends CMObject
 //		public void loadFixed(ByteBuffer val);
 	}
 */
+	@Override public CMSavable newInstance();
+	@Override public CMSavable copyOf();
 	public SaveEnum[] totalEnumS();
 	public Enum[] headerEnumS();
 	public int saveNum();

@@ -11,12 +11,12 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public class Empty extends Drop
 {
 	public Empty(){access=new String[]{"EMPTY","EMP"};}
 
-	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
+	@Override public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		String whatToDrop=null;
 		Interactable target=mob;
@@ -77,7 +77,7 @@ public class Empty extends Drop
 				drinks.add((Drink)I);
 		}
 
-		String str="<S-NAME> empt(ys) <T-NAME>";
+		String str="^[S-NAME] empt^y ^[T-NAME]";
 		if(target instanceof Room) str+=" here.";
 		else
 		if(target instanceof MOB) str+=".";
@@ -89,7 +89,7 @@ public class Empty extends Drop
 		if((V.size()==0)
 		&&(drinks.size()==1)
 		&&(drinks.firstElement().nourishment()==0))
-			mob.tell(mob,(Drink)V.firstElement(),"<T-NAME> is already empty.");
+			mob.tell(mob,(Drink)V.firstElement(),"^[T-NAME] is already empty.");
 		else
 		{
 			Room R=mob.location();
@@ -101,8 +101,8 @@ public class Empty extends Drop
 				if(C==target) continue;
 				col=ItemCollection.O.getFrom(C);
 				if(col==null) continue;
-				Vector<Item> stuff=CMParms.denumerate(col.allItems());
-				CMMsg msg=CMClass.getMsg(mob,C,null,EnumSet.of(CMMsg.MsgCode.VISUAL),str);
+				Vector stuff=CMParms.denumerate(col.allItems());
+				CMMsg msg=CMClass.getMsg(mob,C,(Vector)null,EnumSet.of(CMMsg.MsgCode.VISUAL),str);
 				if(!R.doMessage(msg)) {msg.returnMsg(); continue;}
 				msg.returnMsg();
 				msg=CMClass.getMsg(mob,target,stuff,EnumSet.of(CMMsg.MsgCode.DROP),null);
@@ -124,7 +124,7 @@ public class Empty extends Drop
 				for(int v=0;v<drinks.size();v++)
 				{
 					Drink D=drinks.elementAt(v);
-					CMMsg fillMsg=CMClass.getMsg(mob,target,D,EnumSet.of(CMMsg.MsgCode.FILL),(target!=null)?"<S-NAME> pour(s) <O-NAME> into <T-NAME>.":"<S-NAME> pour(s) <O-NAME> out.");
+					CMMsg fillMsg=CMClass.getMsg(mob,target,D,EnumSet.of(CMMsg.MsgCode.FILL),(target!=null)?"^[S-NAME] pour^s ^[O-NAME] into ^[T-NAME].":"^[S-NAME] pour^s ^[O-NAME] out.");
 					mob.location().doMessage(fillMsg);
 					fillMsg.returnMsg();
 				}
@@ -132,6 +132,6 @@ public class Empty extends Drop
 		}
 		return false;
 	}
-	public int commandType(MOB mob, String cmds){return CT_LOW_P_ACTION;}
-	public boolean canBeOrdered(){return true;}
+	@Override public int commandType(MOB mob, String cmds){return CT_LOW_P_ACTION;}
+	@Override public boolean canBeOrdered(){return true;}
 }

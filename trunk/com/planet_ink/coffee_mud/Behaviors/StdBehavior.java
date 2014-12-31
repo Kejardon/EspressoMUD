@@ -14,7 +14,7 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public class StdBehavior implements Behavior
 {
 	protected Behavable behaver=null;
@@ -46,12 +46,12 @@ public class StdBehavior implements Behavior
 
 	public Behavable behaver(){return behaver;}
 
-	public CMObject newInstance() { return new StdBehavior(); }
+	public StdBehavior newInstance() { try{return getClass().newInstance();}catch(Exception e){Log.errOut("StdBehavior", e);} return new StdBehavior(); }
 	public void cloneFix(StdBehavior E)
 	{
 		//parms=E.getParms();	//Not actually necessary as Strings are immutable
 	}
-	public CMObject copyOf()
+	public StdBehavior copyOf()
 	{
 		try
 		{

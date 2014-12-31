@@ -31,7 +31,7 @@ LIST: (affected by killx, cmdplayers, loadunload, ban, nopurge,
 cmditems, cmdmobs, cmdrooms, sessions, cmdareas, listadmin, stat
 */ 
 
-@SuppressWarnings("unchecked")
+
 public class CMSecurity
 {
 	protected final long startTime=System.currentTimeMillis();

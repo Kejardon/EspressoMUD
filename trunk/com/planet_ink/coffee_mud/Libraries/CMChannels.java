@@ -15,7 +15,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 	http://www.apache.org/licenses/LICENSE-2.0
 */
 //TODO: This looks like it needs to be redone more sensibly and efficiently sometime
-@SuppressWarnings("unchecked")
+
 public class CMChannels extends StdLibrary
 {
 	public static final int QUEUE_SIZE=100;

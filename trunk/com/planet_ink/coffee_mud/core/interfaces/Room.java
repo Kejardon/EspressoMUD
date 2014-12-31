@@ -16,7 +16,7 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public interface Room extends ItemCollection.ItemHolder, Interactable, CMSavable, CMModifiable //ContainableRoom will extend Item.
 {
 	//public static final EnumSet<CMMsg.MsgCode> showHappensSet=EnumSet.of(CMMsg.MsgCode.SHOWHAPPEN);
@@ -146,6 +146,8 @@ public interface Room extends ItemCollection.ItemHolder, Interactable, CMSavable
 	public void setArea(Area newArea);
 	public void setAreaRaw(Area newArea);
 
+	@Override public Room newInstance();
+	@Override public Room copyOf();
 	public int numExits();
 	public void addExit(Exit E, Room destination);
 	public void addExit(ExitInstance E);

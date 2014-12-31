@@ -1,5 +1,4 @@
 package com.planet_ink.coffee_mud.core.interfaces;
-import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
 
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -16,12 +15,12 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
  * @see com.planet_ink.coffee_mud.core.CMClass
  * @author Bo Zimmerman
  */
-public interface CMObject extends Cloneable, Comparable<CMObject>
+public interface CMObject extends Comparable<CMObject>, Cloneable
 {
 	public static final CMObject[] dummyCMOArray=new CMObject[0];
 
-	public String ID();
 	public CMObject newInstance();
 	public CMObject copyOf();
+	public String ID();
 	public void initializeClass();
 }

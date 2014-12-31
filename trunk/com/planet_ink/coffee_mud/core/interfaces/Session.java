@@ -19,7 +19,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
  * and their player MOB.
  * This object handles input, output, and related processes.
  */
-@SuppressWarnings("unchecked")
+
 public interface Session extends CMCommon
 {
 	public static final Session[] dummySessionArray=new Session[0];
@@ -40,6 +40,8 @@ public interface Session extends CMCommon
 	 */
 	public void initializeSession(Socket s, String introTextStr);
 
+	@Override public Session copyOf();
+	@Override public Session newInstance();
 	public void setOther(int otherCode, boolean onOff);
 	public void setMSDPNew(String S);
 	public void setMSDPNew(int i);

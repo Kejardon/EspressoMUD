@@ -13,7 +13,7 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public class Go extends StdCommand
 {
 	public Go(){access=new String[]{"GO","WALK"};}
@@ -158,7 +158,7 @@ public class Go extends StdCommand
 		return 0;
 	}
 	
-	public boolean execute(MOB mob, MOB.QueuedCommand commands)
+	@Override public boolean execute(MOB mob, MOB.QueuedCommand commands)
 	{
 		if(commands.cmdString.length()==0)
 		{
@@ -411,6 +411,6 @@ public class Go extends StdCommand
 		return false;
 	}
 
-	public int commandType(MOB mob, String cmds){return CT_LOW_P_ACTION;}
-	public boolean canBeOrdered(){return true;}
+	@Override public int commandType(MOB mob, String cmds){return CT_LOW_P_ACTION;}
+	@Override public boolean canBeOrdered(){return true;}
 }

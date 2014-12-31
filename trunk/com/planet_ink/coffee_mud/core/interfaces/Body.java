@@ -19,7 +19,7 @@ Bodymap. There will be a set of limbs with some standardized naming scheme.
 		If L or R is specified for both (LArm1 LLeg1), sqrt((difference of self-self)^2+(base-to-base)^2)
 		If L or R is specified for one (LArm1, Leg1), sqrt((specified self)^2+(base-to-base)^2). Same with mirrored to not-mirrored.
 */
-@SuppressWarnings("unchecked")
+
 public interface Body extends Item	//, Rideable
 {
 	public MOB mob();

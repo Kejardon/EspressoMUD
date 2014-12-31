@@ -15,7 +15,7 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public interface EnvMap extends Ownable, CMSavable, CMModifiable, CMCommon
 {
 	public static class EnvLocation
@@ -59,6 +59,8 @@ public interface EnvMap extends Ownable, CMSavable, CMModifiable, CMCommon
 		}
 	}
 
+	@Override public EnvMap copyOf();
+	@Override public EnvMap newInstance();
 	public int size();
 	public void clear(boolean returnELs);
 	public Environmental.EnvHolder[] toArray();

@@ -32,8 +32,8 @@ public class CustomRideable implements Rideable, Ownable
 
 	//CMObject
 	public String ID(){return "CustomRideable";}
-	public CMObject newInstance(){return new CustomRideable();}
-	public CMObject copyOf(){return null;}
+	@Override public CustomRideable newInstance(){try{return getClass().newInstance();}catch(Exception e){Log.errOut("CustomRideable", e);}return new CustomRideable();}
+	@Override public CustomRideable copyOf(){return null;}
 	public void initializeClass(){}
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 

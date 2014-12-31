@@ -3,9 +3,11 @@ import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
 
 import java.util.*;
-@SuppressWarnings("unchecked")
+
 public interface BindCollection extends CMObject, CMModifiable, CMSavable, CMCommon//, ListenHolder
 {
+	@Override public BindCollection copyOf();
+	@Override public BindCollection newInstance();
 	public ArrayList<Bind> bindsTo(Item subItem);
 	public Iterator<Bind> allBinds();
 	public boolean hasBind(Bind bind, boolean checkSubItems);

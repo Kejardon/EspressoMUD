@@ -21,12 +21,12 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 /*
 	NOTE: This class should NEVER be instantiated except for CMClass's reference!
 */
-@SuppressWarnings("unchecked")
+
 public abstract class DefaultCharStats implements CharStats
 {
 	public String ID(){return "DefaultCharStats";}
 
-	public CMObject newInstance(){try{return (CMObject)getClass().newInstance();}catch(Exception e){return null;}}
+	public DefaultCharStats newInstance(){try{return getClass().newInstance();}catch(Exception e){return null;}}
 	public void initializeClass(){}
 	protected CMSavable parent=null;
 	protected short[] stat;
@@ -97,7 +97,7 @@ public abstract class DefaultCharStats implements CharStats
 		if(parent!=null) parent.saveThis();
 	}
 
-	public CMObject copyOf()
+	public DefaultCharStats copyOf()
 	{
 		//KINDA TODO
 		DefaultCharStats newOne=(DefaultCharStats)newInstance();

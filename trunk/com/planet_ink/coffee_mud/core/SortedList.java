@@ -9,7 +9,7 @@ import java.lang.Comparable;
 	if it became the new first element.
 	Not properly set up but screw it, it'll work how I want it to work.
 */
-@SuppressWarnings("unchecked")
+
 public class SortedList<E extends Comparable> extends LinkedList<E>
 {
 	public boolean add(E O)

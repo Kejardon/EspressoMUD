@@ -15,7 +15,7 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public class SimpleExit implements Exit
 {
 	public String ID(){	return "SimpleExit";}
@@ -136,11 +136,11 @@ public class SimpleExit implements Exit
 	}
 	public boolean amDestroyed(){return amDestroyed;}
 
-	public CMObject newInstance()
+	public SimpleExit newInstance()
 	{
 		try
 		{
-			return (SimpleExit)this.getClass().newInstance();
+			return this.getClass().newInstance();
 		}
 		catch(Exception e)
 		{
@@ -153,7 +153,7 @@ public class SimpleExit implements Exit
 		if(E.myEnvironmental!=null)
 			myEnvironmental=(Environmental)((Ownable)myEnvironmental.copyOf()).setOwner(this);
 	}
-	public CMObject copyOf()
+	public SimpleExit copyOf()
 	{
 		try
 		{

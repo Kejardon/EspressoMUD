@@ -15,7 +15,7 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public class DefaultPlayerStats implements PlayerStats
 {
 	public String ID(){return "DefaultPlayerStats";}
@@ -68,9 +68,9 @@ public class DefaultPlayerStats implements PlayerStats
 	
 	public MOB mob(){return mob;}
 	public void setMOB(MOB m){mob=m;}
-	public CMObject newInstance(){try{return (CMObject)getClass().newInstance();}catch(Exception e){return new DefaultPlayerStats();}}
+	@Override public DefaultPlayerStats newInstance(){try{return getClass().newInstance();}catch(Exception e){return new DefaultPlayerStats();}}
 	public void initializeClass(){}
-	public CMObject copyOf()
+	@Override public DefaultPlayerStats copyOf()
 	{
 		try
 		{

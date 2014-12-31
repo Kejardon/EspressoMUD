@@ -14,7 +14,7 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public class DefaultMessage implements CMMsg
 {
 	public String ID(){return "DefaultMessage";}
@@ -255,7 +255,7 @@ public class DefaultMessage implements CMMsg
 	public void setTools(Vector<CMObject> V){tools=V;}
 	public boolean addTool(CMObject O)
 	{
-		if(tools==null) tools=new Vector<CMObject>();
+		if(tools==null) tools=new Vector<>();
 		else if(tools.contains(O))
 			return false;
 		return tools.add(O);

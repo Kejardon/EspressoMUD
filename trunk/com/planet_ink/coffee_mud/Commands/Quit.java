@@ -11,12 +11,12 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public class Quit extends StdCommand
 {
 	public Quit(){access=new String[]{"QUIT","QUI","Q"};}
 
-	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
+	@Override public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		if(!mob.isMonster())
 		{
@@ -42,7 +42,7 @@ public class Quit extends StdCommand
 			{
 				if ((session!=null)&&(session.confirm("\r\nQuit -- are you sure (y/N)?","N")))
 				{
-					CMMsg msg=CMClass.getMsg(mob,null,null,EnumSet.of(CMMsg.MsgCode.QUIT),null);
+					CMMsg msg=CMClass.getMsg(mob,null,(Vector)null,EnumSet.of(CMMsg.MsgCode.QUIT),null);
 					Room R=mob.location();
 					if((R!=null)&&(R.okMessage(mob,msg))) 
 					{
@@ -63,6 +63,6 @@ public class Quit extends StdCommand
 	}
 
 	public int prompter(){return 2;}
-	public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
-	public boolean canBeOrdered(){return false;}
+	@Override public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
+	@Override public boolean canBeOrdered(){return false;}
 }

@@ -14,7 +14,7 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public class MixedEnvStats implements EnvStats, Ownable
 {
 	public String ID(){return "MixedEnvStats";}
@@ -130,9 +130,9 @@ public class MixedEnvStats implements EnvStats, Ownable
 		}
 	}
 
-	public CMObject newInstance(){try{return (CMObject)getClass().newInstance();}catch(Exception e){return new MixedEnvStats();}}
+	public MixedEnvStats newInstance(){try{return getClass().newInstance();}catch(Exception e){return new MixedEnvStats();}}
 	public void initializeClass(){}
-	public CMObject copyOf()
+	public MixedEnvStats copyOf()
 	{
 		try
 		{

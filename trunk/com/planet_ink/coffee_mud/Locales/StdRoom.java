@@ -21,7 +21,7 @@ if(get()==Thread.currentThread()) to check a lock.
 compareAndSet(null, Thread.currentThread()) to get a lock.
 set(null) to clear a lock (only do if this place got a lock). Done in a finally?
 */
-@SuppressWarnings("unchecked")
+
 public class StdRoom implements Room
 {
 	public String ID(){return "StdRoom";}
@@ -71,11 +71,11 @@ public class StdRoom implements Room
 	public void registerListeners(ListenHolder forThis){}
 
 	public void initializeClass(){}
-	public CMObject newInstance()
+	public StdRoom newInstance()
 	{
 		try
 		{
-			return (StdRoom)this.getClass().newInstance();
+			return this.getClass().newInstance();
 		}
 		catch(Exception e)
 		{
@@ -154,7 +154,7 @@ public class StdRoom implements Room
 		for(Behavior B : E.behaviors)
 			addBehavior((Behavior)B.copyOf());
 	}
-	public CMObject copyOf()
+	public StdRoom copyOf()
 	{
 		try
 		{

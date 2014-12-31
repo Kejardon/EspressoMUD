@@ -5,7 +5,7 @@ import java.util.*;
 	Copyright 2011 Kejardon
 	Hashmap with a list that can give an iterator of its contents, iterator always does its best to continue working.
 */
-@SuppressWarnings("unchecked")
+
 public class HashedList<E>
 {
 	private HashMap<E,ListNode<E>> set;

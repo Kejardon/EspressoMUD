@@ -11,20 +11,13 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public class Ignan extends StdLanguage
 {
 	public String ID() { return "Ignan"; }
 	public String name(){ return "Ignan";}
 	public static Vector wordLists=null;
-	public Ignan()
-	{
-		super();
-	}
-	public CMObject newInstance()
-	{
-		return new Ignan();
-	}
+
 	public Vector translationVector(String language)
 	{
 		if(wordLists==null)

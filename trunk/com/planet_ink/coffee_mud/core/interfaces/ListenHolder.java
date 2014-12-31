@@ -16,7 +16,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 A ListenHolder has objects it reports to when certain things happen.
 A Listener is one of those objects reported to.
 */
-@SuppressWarnings("unchecked")
+
 public interface ListenHolder extends Tickable {
 	public void addListener(Listener newAffect, EnumSet<Flags> flags);
 	public void removeListener(Listener oldAffect, EnumSet<Flags> flags);

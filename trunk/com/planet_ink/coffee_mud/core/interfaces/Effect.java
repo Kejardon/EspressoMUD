@@ -10,7 +10,7 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public interface Effect extends ListenHolder.AllListener, CMModifiable, CMSavable, Affectable
 {
 	public static final Flags[] dummyEFlagsArray=new Flags[0];
@@ -22,6 +22,9 @@ public interface Effect extends ListenHolder.AllListener, CMModifiable, CMSavabl
 	public void startTickDown(Affectable affected, int tickTime);
 	public Effect copyOnto(Affectable being);	//Should this have int asLevel? Not for now
 
+	@Override public Effect copyOf();
+	@Override public Effect newInstance();
+	
 	public enum Flags
 	{ Blessing, Curse, Poison, Drug, Magic, Natural }
 }

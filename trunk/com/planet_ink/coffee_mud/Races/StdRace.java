@@ -15,7 +15,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 	http://www.apache.org/licenses/LICENSE-2.0
 */
 //Defaults for typical carbon-based lifeform (mainly recoverTick)
-@SuppressWarnings("unchecked")
+
 public abstract class StdRace implements Race
 {
 	public static final EnumSet<ListenHolder.Flags> lFlags=EnumSet.noneOf(ListenHolder.Flags.class);

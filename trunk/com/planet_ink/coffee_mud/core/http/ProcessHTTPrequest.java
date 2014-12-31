@@ -30,7 +30,7 @@ import com.planet_ink.coffee_mud.core.exceptions.*;
 
 //TODO: Look over this and see how it works. Maybe.
 
-@SuppressWarnings("unchecked")
+
 public class ProcessHTTPrequest extends Thread implements ExternalHTTPRequests
 {
 	public String ID(){return "ProcessHTTPrequest";}

@@ -18,7 +18,7 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public class StdMOB implements MOB
 {
 //	private static final Vector empty=new Vector();
@@ -100,11 +100,11 @@ public class StdMOB implements MOB
 	//public EatCode getEat(){return myEatAction;}
 
 	public void initializeClass(){}
-	public CMObject newInstance()
+	public StdMOB newInstance()
 	{
 		try
 		{
-			return (StdMOB)this.getClass().newInstance();
+			return getClass().newInstance();
 		}
 		catch(Exception e)
 		{
@@ -228,7 +228,7 @@ public class StdMOB implements MOB
 //		if(E==null) return;
 	}
 
-	public CMObject copyOf()
+	@Override public StdMOB copyOf()
 	{
 		try
 		{
@@ -388,6 +388,7 @@ public class StdMOB implements MOB
 		&&(viewer.playerStats()!=null)
 		&&(!viewer.playerStats().isIntroducedTo(this)))
 			return CMLib.english().startWithAorAn(genericName()).toLowerCase();
+		//TODO: return raceDisplayName() + " (" + name() + ")" + " (" + displayStatus + ")"
 		return name();
 	}
 
@@ -400,7 +401,7 @@ public class StdMOB implements MOB
 		QueuedCommand qCom=null;
 		synchronized(commandQue)
 		{
-			if(commandQue.size()==0) return;
+			if(commandQue.isEmpty()) return;
 			qCom=commandQue.get(0);
 			if((currentCommand!=null)&&(currentCommand!=qCom))
 				if(!currentCommand.command.interruptCommand(currentCommand, qCom))

@@ -15,7 +15,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 	http://www.apache.org/licenses/LICENSE-2.0
 */
 //NOTE: As the MUD currently does not use XML I am mostly leaving this library untouched for the time being.
-@SuppressWarnings("unchecked")
+
 public class XMLManager extends StdLibrary
 {
 	public static final String HEX_DIGITS="0123456789ABCDEF";

@@ -6,7 +6,7 @@ import java.util.*;
 	Hashmap with a list that can give an ordered iterator of its contents, iterator always does its best to continue working.
 	Optimized for adding larger values first and smaller values later, removal time always the same (fast).
 */
-@SuppressWarnings("unchecked")
+
 public class SortedHashedList<E>
 {
 	private HashMap<E,ListNode<E>> set=new HashMap<E,ListNode<E>>();

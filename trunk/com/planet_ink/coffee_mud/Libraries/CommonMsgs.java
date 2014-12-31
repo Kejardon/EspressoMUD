@@ -17,7 +17,7 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public class CommonMsgs extends StdLibrary
 {
 	public String ID(){return "CommonMsgs";}
@@ -31,7 +31,7 @@ public class CommonMsgs extends StdLibrary
 	public boolean handleUnknownCommand(MOB mob, String command)
 	{
 		if(mob==null) return false;
-		Room R=mob.location();
+		//Room R=mob.location();
 		//String msgStr=unknownCommand();
 		mob.tell("Huh?"); return false;
 		/*
@@ -181,7 +181,7 @@ public class CommonMsgs extends StdLibrary
 		}
 		else
 			list=CMParms.toArrayList(items);
-		if(list.size()==0)
+		if(list.isEmpty())
 		{
 			if((mask!=null)&&(mask.length()>0))
 				msg.append("(nothing like that you can see right now)");
@@ -284,18 +284,18 @@ public class CommonMsgs extends StdLibrary
 			boolean longlook=msg.hasTargetCode(CMMsg.MsgCode.EXAMINE);
 			StringBuilder myDescription=new StringBuilder();
 			if(viewermob.playerStats().hasBits(PlayerStats.ATT_SYSOPMSGS))
-				myDescription.append("\r\nType :"+viewedmob.ID()).append(
-									"\r\nDesc : "+viewedmob.description()).append(
-									//"\r\nRoom :'"+((viewedmob.getStartRoom()==null)?"null":viewedmob.getStartRoom().roomID())).append(
-									"\r\n");
-			myDescription.append(viewedmob.displayName(viewermob)+" ");
-			myDescription.append("is here.\r\n");
-			//myDescription.append(viewedmob.healthText(viewermob)+"\r\n\r\n");
-			myDescription.append(viewedmob.description()+"\r\n\r\n");
+				myDescription.append("\r\nType :").append(viewedmob.ID())
+							 .append("\r\nDesc : ").append(viewedmob.description())
+							 //.append("\r\nRoom :'"+((viewedmob.getStartRoom()==null)?"null":viewedmob.getStartRoom().roomID())).append(
+							 .append("\r\n");
+			myDescription.append(viewedmob.displayName(viewermob)).append(" ")
+						.append("is here.\r\n")
+						//.append(viewedmob.healthText(viewermob)+"\r\n\r\n")
+						.append(viewedmob.description()).append("\r\n\r\n");
 
 			StringBuilder eq=getEquipment(viewermob,viewedmob);
 			if(eq.length() > 0)
-				myDescription.append("It is wearing:\r\n"+eq.toString());
+				myDescription.append("It is wearing:\r\n").append(eq.toString());
 			viewermob.tell(myDescription.toString());
 			/*if(longlook)
 			{
@@ -339,7 +339,7 @@ public class CommonMsgs extends StdLibrary
 			if(exit!=null)
 				Say.append(exit.exitListLook(mob, room2));
 			else if((room2!=null)&&(mob.playerStats().hasBits(PlayerStats.ATT_SYSOPMSGS)))
-				Say.append(room2.saveNum()+" via NULL");
+				Say.append(room2.saveNum()).append(" via NULL");
 			if(Say.length()>0)
 			{
 //				Dir=CMStrings.padRightPreserve(Directions.getDirectionName(d),5);

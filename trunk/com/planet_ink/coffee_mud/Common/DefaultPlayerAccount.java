@@ -14,7 +14,7 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public class DefaultPlayerAccount implements PlayerAccount
 {
 	public String ID(){return "DefaultPlayerAccount";}
@@ -43,9 +43,9 @@ public class DefaultPlayerAccount implements PlayerAccount
 		return true;
 	}
 
-	public CMObject newInstance(){try{return (CMObject)getClass().newInstance();}catch(Exception e){return new DefaultPlayerAccount();}}
+	@Override public DefaultPlayerAccount newInstance(){try{return getClass().newInstance();}catch(Exception e){return new DefaultPlayerAccount();}}
 	public void initializeClass(){}
-	public CMObject copyOf()
+	@Override public DefaultPlayerAccount copyOf()
 	{
 		try
 		{

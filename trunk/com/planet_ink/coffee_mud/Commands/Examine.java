@@ -11,14 +11,13 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public class Examine extends StdCommand
 {
 	public Examine(){access=new String[]{"EXAMINE","EXAM","EXA","LONGLOOK","LLOOK","LL"};}
 
-	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
+	@Override public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
-		String textMsg="<S-NAME> examine(s) ";
 		Interactable thisThang=null;
 		if((commands!=null)&&(commands.size()>1))
 		{
@@ -34,10 +33,10 @@ public class Examine extends StdCommand
 			thisThang=mob.location();
 		if(thisThang!=null)
 		{
-			String name="<T-NAMESELF>";
+			String textMsg="^[S-NAME] examine^s ^[T-NAMESELF] closely.";
 			if(thisThang==mob.location())
-				name="around";
-			CMMsg msg=CMClass.getMsg(mob,thisThang,null,EnumSet.of(CMMsg.MsgCode.EXAMINE),textMsg+name+" closely.");
+				textMsg="^[S-NAME] examine^s around closely.";
+			CMMsg msg=CMClass.getMsg(mob,thisThang,(Vector)null,EnumSet.of(CMMsg.MsgCode.EXAMINE),textMsg);
 			if((mob.location().doMessage(msg))
 				&&(thisThang instanceof Room))
 				CMLib.commands().lookAtExits((Room)thisThang,mob);
@@ -48,6 +47,6 @@ public class Examine extends StdCommand
 		return false;
 	}
 
-	public int commandType(MOB mob, String cmds){return CT_LOW_P_ACTION;}
-	public boolean canBeOrdered(){return true;}
+	@Override public int commandType(MOB mob, String cmds){return CT_LOW_P_ACTION;}
+	@Override public boolean canBeOrdered(){return true;}
 }

@@ -32,7 +32,7 @@ import java.util.*;
  single instance of the language that everything references. Need to repoint CMClass's loader from
  Effects\Languages to new folder, otherwise nothing besides languages point to these atm.
  */
-@SuppressWarnings("unchecked")
+
 public interface Language extends Effect
 {
 	public String writtenName();

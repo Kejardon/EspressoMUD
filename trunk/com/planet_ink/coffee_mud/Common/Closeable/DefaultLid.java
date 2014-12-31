@@ -32,8 +32,8 @@ public class DefaultLid implements Closeable, Ownable
 
 	//CMObject
 	public String ID(){return "DefaultLid";}
-	public CMObject newInstance(){return new DefaultLid();}
-	public CMObject copyOf(){return null;}
+	@Override public DefaultLid newInstance(){return new DefaultLid();}
+	@Override public DefaultLid copyOf(){return null;}
 	public void initializeClass(){}
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 

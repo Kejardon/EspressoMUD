@@ -28,8 +28,8 @@ public class DefaultEnvMap implements EnvMap
 	
 	//CMObject
 	public String ID(){return "DefaultEnvMap";}
-	public CMObject newInstance(){return new DefaultEnvMap();}
-	public CMObject copyOf(){return null;}	//TODO
+	@Override public DefaultEnvMap newInstance(){try {return getClass().newInstance();}catch(Exception e){Log.errOut("DefaultEnvMap", e);}return new DefaultEnvMap();}
+	@Override public DefaultEnvMap copyOf(){return null;}	//TODO
 	public void initializeClass(){}
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 

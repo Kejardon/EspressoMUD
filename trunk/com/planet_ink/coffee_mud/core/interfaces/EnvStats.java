@@ -91,6 +91,8 @@ public interface EnvStats extends CMCommon, CMModifiable, CMSavable
 	public void setMaterial(RawMaterial.Resource material);
 	public WVector<RawMaterial.Resource> materialSet();
 	public void setMaterials(WVector<RawMaterial.Resource> newMaterials);
+	@Override public EnvStats newInstance();
+	@Override public EnvStats copyOf();
 
 /*
 	public final static int STAT_LEVEL=0;

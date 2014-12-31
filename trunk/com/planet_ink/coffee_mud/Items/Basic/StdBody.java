@@ -14,7 +14,7 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public class StdBody extends StdItem implements Body
 {
 	public String ID(){	return "StdBody";}
@@ -155,18 +155,6 @@ public class StdBody extends StdItem implements Body
 		ListenHolder.O.addListener(this, newAffect, flags);
 	}
 
-	public CMObject newInstance()
-	{
-		try
-		{
-			return (CMObject)this.getClass().newInstance();
-		}
-		catch(Exception e)
-		{
-			Log.errOut(ID(),e);
-		}
-		return new StdBody();
-	}
 	protected void cloneFix(StdBody E)
 	{
 		charAffecters=new CopyOnWriteArrayList();

@@ -19,7 +19,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 	http://www.apache.org/licenses/LICENSE-2.0
 */
 //For a typical carbon-based lifeform
-@SuppressWarnings("unchecked")
+
 public class MOBCharStats extends DefaultCharStats
 {
 	public String ID(){return "MOBCharStats";}

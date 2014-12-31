@@ -14,7 +14,7 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public class CarbonBased extends StdRace
 {
 	public String ID(){	return "CarbonBased"; }
@@ -44,7 +44,7 @@ public class CarbonBased extends StdRace
 	{
 		public Eat(){access=new String[]{"EAT"};}
 		
-		public boolean execute(MOB mob, MOB.QueuedCommand commands)
+		@Override public boolean execute(MOB mob, MOB.QueuedCommand commands)
 		{
 			Body body=mob.body();
 			boolean didPrereqFlag=(commands.nextAct==1); //MOBEatFlag
@@ -109,7 +109,7 @@ public class CarbonBased extends StdRace
 			commands.nextAct+=results;
 			return true;
 		}
-		public int commandType(MOB mob, String cmds){return CT_LOW_P_ACTION;}
+		@Override public int commandType(MOB mob, String cmds){return CT_LOW_P_ACTION;}
 		public boolean securityCheck(MOB mob)
 		{
 			Body b=mob.body();
@@ -120,7 +120,7 @@ public class CarbonBased extends StdRace
 	{
 		public Drink(){access=new String[]{"DRINK"};}
 		
-		public boolean execute(MOB mob, MOB.QueuedCommand commands)
+		@Override public boolean execute(MOB mob, MOB.QueuedCommand commands)
 		{
 			if(commands.nextAct==0)
 				commands.nextAct=System.currentTimeMillis();
@@ -156,7 +156,7 @@ public class CarbonBased extends StdRace
 			commands.nextAct+=Tickable.TIME_TICK;
 			return true;
 		}
-		public int commandType(MOB mob, String cmds){return CT_LOW_P_ACTION;}
+		@Override public int commandType(MOB mob, String cmds){return CT_LOW_P_ACTION;}
 		public boolean securityCheck(MOB mob)
 		{
 			Body b=mob.body();

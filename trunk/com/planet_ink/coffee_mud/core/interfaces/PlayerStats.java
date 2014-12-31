@@ -11,7 +11,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 	http://www.apache.org/licenses/LICENSE-2.0
 */
 // Variables important for Player Characters, not applicable to NPCs
-@SuppressWarnings("unchecked")
+
 public interface PlayerStats extends CMCommon, CMModifiable, CMSavable, AccountStats
 {
 	public static final PlayerStats[] dummyPSArray=new PlayerStats[0];

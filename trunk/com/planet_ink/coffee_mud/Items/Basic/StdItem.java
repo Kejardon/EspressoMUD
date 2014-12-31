@@ -14,7 +14,7 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
-@SuppressWarnings("unchecked")
+
 public class StdItem implements Item
 {
 	public String ID(){	return "StdItem";}
@@ -275,11 +275,11 @@ public class StdItem implements Item
 	//public long lastAct(){return 0;}	//No Action ticks
 	//public long lastTick(){return lastTick;}
 
-	public CMObject newInstance()
+	public StdItem newInstance()
 	{
 		try
 		{
-			return (CMObject)this.getClass().newInstance();
+			return this.getClass().newInstance();
 		}
 		catch(Exception e)
 		{
@@ -307,7 +307,7 @@ public class StdItem implements Item
 		for(Behavior B : E.behaviors)
 			addBehavior((Behavior)B.copyOf());
 	}
-	public CMObject copyOf()
+	public StdItem copyOf()
 	{
 		try
 		{

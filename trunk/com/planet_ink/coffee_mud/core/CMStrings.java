@@ -9,7 +9,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 	http://www.apache.org/licenses/LICENSE-2.0
 */
 //Most of this file is still TODO because of colors. Also String expressions are for what?
-@SuppressWarnings("unchecked")
+
 public class CMStrings
 {
 	private CMStrings(){super();}
@@ -61,7 +61,7 @@ public class CMStrings
 	public static String repeat(String str1, int times)
 	{
 		if(times<=0) return "";
-		StringBuffer str=new StringBuffer(str1.length()*times);
+		StringBuilder str=new StringBuilder(str1.length()*times);
 		for(int i=0;i<times;i++)
 			str.append(str1);
 		return str.toString();
@@ -495,11 +495,11 @@ public class CMStrings
 		return str;
 	}
 	
-	public static Hashtable makeNumericHash(Object[] obj)
+	public static HashMap makeNumericHash(Object[] obj)
 	{
-		Hashtable H=new Hashtable();
+		HashMap H=new HashMap();
 		for(int i=0;i<obj.length;i++)
-			H.put(obj[i],Integer.valueOf(i));
+			H.put(obj[i],i);
 		return H;
 	}
 	
