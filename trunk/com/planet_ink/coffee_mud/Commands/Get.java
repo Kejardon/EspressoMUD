@@ -28,8 +28,8 @@ public class Get extends StdCommand
 		commands.removeElementAt(0);
 
 		//Object getFrom=null;
-		String whatToGet=null;
-		boolean containerAll=false;
+		String whatToGet;
+		boolean containerAll;
 		Vector<Interactable> containers=null;
 
 		int partition=CMLib.english().getPartitionIndex(commands, "from");
@@ -48,7 +48,7 @@ public class Get extends StdCommand
 			if(containerAll)
 			{
 				Vector<Interactable> V=CMLib.english().fetchInteractables(containerName,false,1,Integer.MAX_VALUE,mob.getItemCollection(),R.getItemCollection());
-				if(V.size()==0)
+				if(V.isEmpty())
 				{
 					mob.tell("You don't see '"+containerName+"' here.");
 					return false;
@@ -56,7 +56,7 @@ public class Get extends StdCommand
 				for(int i=V.size()-1;i>=0;i--)
 					if(!(V.get(i) instanceof Container))
 						V.remove(i);
-				if(V.size()==0)
+				if(V.isEmpty())
 				{
 					mob.tell("None of those are containers!");
 					return false;
@@ -93,18 +93,18 @@ public class Get extends StdCommand
 		done:
 		if(allFlag)
 		{
-			Vector<Interactable> getThese=null;
+			Vector<Interactable> getThese;
 			if(containers==null)
 			{
 				getThese=CMLib.english().fetchInteractables(whatToGet,false,1,maxToGet,R.getItemCollection());
-				if(getThese.size()==0)
+				if(getThese.isEmpty())
 				{
 					mob.tell("You don't see '"+unmodifiedWhatToGet+"' here.");
 					return false;
 				}
 				for(Item I : (Item[])getThese.toArray(Item.dummyItemArray))
 				{
-					CMMsg msg=CMClass.getMsg(mob,I,null,EnumSet.of(CMMsg.MsgCode.GET),"^[S-NAME] get^s ^[T-NAME].");
+					CMMsg msg=CMClass.getMsg(mob,I,(Vector)null,EnumSet.of(CMMsg.MsgCode.GET),"^[S-NAME] get^s ^[T-NAME].");
 					if(!R.doMessage(msg))
 					{
 						msg.returnMsg();
@@ -138,7 +138,7 @@ public class Get extends StdCommand
 		}
 		else
 		{
-			Interactable getThis=null;
+			Interactable getThis;
 			if(containers==null)
 			{
 				getThis=CMLib.english().fetchInteractable(whatToGet,false,1,R.getItemCollection());
@@ -147,7 +147,7 @@ public class Get extends StdCommand
 					mob.tell("You don't see '"+unmodifiedWhatToGet+"' here.");
 					return false;
 				}
-				CMMsg msg=CMClass.getMsg(mob,getThis,null,EnumSet.of(CMMsg.MsgCode.GET),"^[S-NAME] get^s ^[T-NAME].");
+				CMMsg msg=CMClass.getMsg(mob,getThis,(Vector)null,EnumSet.of(CMMsg.MsgCode.GET),"^[S-NAME] get^s ^[T-NAME].");
 				R.doMessage(msg);
 				msg.returnMsg();
 			}
@@ -158,7 +158,7 @@ public class Get extends StdCommand
 					getThis=CMLib.english().fetchInteractable(whatToGet,false,1,C.getItemCollection());
 					if(getThis!=null)
 					{
-						CMMsg msg=CMClass.getMsg(mob,getThis,null,EnumSet.of(CMMsg.MsgCode.GET),"^[S-NAME] get^s ^[T-NAME].");
+						CMMsg msg=CMClass.getMsg(mob,getThis,(Vector)null,EnumSet.of(CMMsg.MsgCode.GET),"^[S-NAME] get^s ^[T-NAME].");
 						R.doMessage(msg);
 						msg.returnMsg();
 						break done;

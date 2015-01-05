@@ -17,9 +17,9 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 
 public class DefaultMessage implements CMMsg
 {
-	public String ID(){return "DefaultMessage";}
+	@Override public String ID(){return "DefaultMessage";}
 	public CMObject newInstance(){try{return (CMObject)getClass().newInstance();}catch(Exception e){return new DefaultMessage();}}
-	public void initializeClass(){}
+	@Override public void initializeClass(){}
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 	public CMObject copyOf()
 	{

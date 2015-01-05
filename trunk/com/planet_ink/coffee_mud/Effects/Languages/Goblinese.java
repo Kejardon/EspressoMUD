@@ -14,14 +14,14 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 
 public class Goblinese extends StdLanguage
 {
-	public String ID() { return "Goblinese"; }
+	@Override public String ID() { return "Goblinese"; }
 	public String name(){ return "Goblinese";}
 	public static Vector wordLists=null;
 	public Goblinese()
 	{
 		super();
 	}
-	public Vector translationVector(String language)
+	@Override public Vector<String[]> translationVector(String language)
 	{
 		if(wordLists==null)
 		{

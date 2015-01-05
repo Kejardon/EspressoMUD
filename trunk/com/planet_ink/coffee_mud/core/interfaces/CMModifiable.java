@@ -30,17 +30,17 @@ public interface CMModifiable extends CMObject
 
 /*
 	//Non-modifiable class
-	public ModEnum[] totalEnumM(){return CMModifiable.dummyMEArray;}
-	public Enum[] headerEnumM(){return CMClass.dummyEnumArray;}
+	@Override public ModEnum[] totalEnumM(){return CMModifiable.dummyMEArray;}
+	@Override public Enum[] headerEnumM(){return CMClass.dummyEnumArray;}
 
 	//Typical non-extended CMModifiable class
-	public ModEnum[] totalEnumM(){return MCode.values();}
-	public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
+	@Override public ModEnum[] totalEnumM(){return MCode.values();}
+	@Override public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
 
 	//Typical extended CMModifiable class
 	private static ModEnum[] totalEnumM=null;
 	private static Enum[] headerEnumM=null;
-	public ModEnum[] totalEnumM()
+	@Override public ModEnum[] totalEnumM()
 	{
 		if(totalEnumM==null)
 		{
@@ -53,7 +53,7 @@ public interface CMModifiable extends CMObject
 		}
 		return totalEnumM;
 	}
-	public Enum[] headerEnumM()
+	@Override public Enum[] headerEnumM()
 	{
 		if(headerEnumM==null)
 		{

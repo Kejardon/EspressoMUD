@@ -65,10 +65,11 @@ public class DefaultSession extends Thread implements Session
 	//private long tickTotal=0;
 	private long lastKeystroke=0;
 	//private long promptLastShown=0;
+	private Future<LoginResult> login=null;
 
 	//private boolean[] serverTelnetCodes=new boolean[256];
 	private boolean[] clientTelnetCodes=new boolean[256];
-	protected DVector expectedTelnetCommands=new DVector(2);	//0==(byte[2])expected command, 1==(Long)timeout time for command. This is a list of requests to not respond to.
+	//protected DVector expectedTelnetCommands=new DVector(2);	//0==(byte[2])expected command, 1==(Long)timeout time for command. This is a list of requests to not respond to.
 	protected String terminalType="UNKNOWN";
 	protected long writeStartTime=0;
 
@@ -83,8 +84,32 @@ public class DefaultSession extends Thread implements Session
 	protected static AtomicInteger sessionCounter=new AtomicInteger(0);
 	//protected static int sessionCounter=0;
 	
-	protected final DVector pendingPrompts=new DVector(5);	//Integer, Wrapper/Thread, Future (sign of use/done), Cached message, IsBusy (True=thread is busy and not expecting input, False=expecting user input)
-	protected boolean[] promptNumbers=new boolean[MAX_PROMPTS];
+	protected static class PromptStruct<E>
+	{
+		public final int number;
+		public CommandCallWrap wrapper;
+		public Thread thread;
+		public Future<E> future;
+		public volatile boolean isBusy;
+		public volatile String message;
+		public PromptStruct(int i, CommandCallWrap w, Future f)
+		{
+			number=i;
+			wrapper=w;
+			future=f;
+			isBusy=true;
+		}
+		public PromptStruct(int i, Thread t, Future f)
+		{
+			number=i;
+			thread=t;
+			future=f;
+			isBusy=true;
+		}
+	}
+	//protected final DVector pendingPrompts=new DVector(5);	//Integer, Wrapper/Thread, Future (sign of use/done), Cached message, IsBusy (True=thread is busy and not expecting input, False=expecting user input)
+	//protected boolean[] promptNumbers=new boolean[MAX_PROMPTS];
+	protected final PromptStruct[] pendingPrompts=new PromptStruct[MAX_PROMPTS];
 	public static final int MAX_PROMPTS=10; //0 special prompt, and normal prompts 1-9.
 
 	protected volatile boolean activePrompt=false;
@@ -133,43 +158,11 @@ public class DefaultSession extends Thread implements Session
 	public void sendMSDPDirect(String name, String value)
 	{
 		output.add(MSDP_START+name+((char)2)+value+IAC_END);
-		/*
-		int tempSize=name.length();
-		char[] output=new char[tempSize+value.length()+7];
-		output[0]=(char)TELNET_IAC;
-		output[1]=(char)TELNET_SB;
-		output[2]=(char)TELNET_MSDP;
-		output[3]=(char)1;
-		name.getChars(0, tempSize, output, 4);
-		output[tempSize+4]=(char)2;
-		value.getChars(0, value.length(), output, tempSize+5);
-		output[output.length-2]=(char)TELNET_IAC;
-		output[output.length-1]=(char)TELNET_SE;
-		out.write(output);
-		*/
 	}
 	private static final String ATCP_START = String.valueOf(new char[]{TELNET_IAC, TELNET_SB, TELNET_ATCP,'M','S','D','P','.'});
 	public void sendATCPDirect(String name, String value)
 	{
 		output.add(ATCP_START+name+" "+value+IAC_END);
-		/*
-		int tempSize=name.length();
-		char[] output=new char[tempSize+value.length()+11];
-		output[0]=(char)TELNET_IAC;
-		output[1]=(char)TELNET_SB;
-		output[2]=(char)TELNET_ATCP;
-		output[3]='M';
-		output[4]='S';
-		output[5]='D';
-		output[6]='P';
-		output[7]='.';
-		name.getChars(0, tempSize, output, 8);
-		output[tempSize+8]=' ';
-		value.getChars(0, value.length(), output, tempSize+9);
-		output[output.length-2]=(char)TELNET_IAC;
-		output[output.length-1]=(char)TELNET_SE;
-		out.write(output);
-		*/
 	}
 
 	public static final String MSDPHeader=String.valueOf(new char[]{TELNET_IAC,TELNET_SB,TELNET_MSDP,1});
@@ -180,42 +173,10 @@ public class DefaultSession extends Thread implements Session
 		if(enMSDP)
 		{
 			output.add(MSDPHeader+name+((char)2)+value+IAC_END);
-			/*
-			int tempSize=name.length();
-			char[] output=new char[tempSize+value.length()+7];
-			output[0]=(char)TELNET_IAC;
-			output[1]=(char)TELNET_SB;
-			output[2]=(char)TELNET_MSDP;
-			output[3]=(char)1;
-			name.getChars(0, tempSize, output, 4);
-			output[tempSize+4]=(char)2;
-			value.getChars(0, value.length(), output, tempSize+5);
-			output[output.length-2]=(char)TELNET_IAC;
-			output[output.length-1]=(char)TELNET_SE;
-			out.write(output);
-			*/
 		}
 		else if(enATCP)
 		{
 			output.add(ATCPHeader+name+' '+value+IAC_END);
-			/*
-			int tempSize=name.length();
-			char[] output=new char[tempSize+value.length()+11];
-			output[0]=(char)TELNET_IAC;
-			output[1]=(char)TELNET_SB;
-			output[2]=(char)TELNET_ATCP;
-			output[3]='M';
-			output[4]='S';
-			output[5]='D';
-			output[6]='P';
-			output[7]='.';
-			name.getChars(0, tempSize, output, 8);
-			output[tempSize+8]=' ';
-			value.getChars(0, value.length(), output, tempSize+9);
-			output[output.length-2]=(char)TELNET_IAC;
-			output[output.length-1]=(char)TELNET_SE;
-			out.write(output);
-			*/
 		}
 	}
 	@Override public void setMSDPNew(String S)
@@ -362,25 +323,21 @@ public class DefaultSession extends Thread implements Session
 			checkPendingPrompts();
 			if(type==2)
 			{
-				if(!promptNumbers[0])
-				{
-					pendingPrompts.addRow(0, command, CMClass.threadPool.submit(command), null, Boolean.TRUE);
-					promptNumbers[0]=true;
-				}
+				if(pendingPrompts[0]==null)
+					pendingPrompts[0]=new PromptStruct(0, command, CMClass.threadPool.submit(command));
 				return;
 			}
 			//else { }
-			Integer I=null;
+			int I=-1;
 			for(int i=1;i<MAX_PROMPTS;i++)
 			{
-				if(promptNumbers[i]) continue;
+				if(pendingPrompts[i]!=null) continue;
 				I=i;
 				break;
 			}
-			if(I==null) {rawPrint("You have too many active prompts, finish some first.\r\n"); return;}
+			if(I==-1) {rawPrint("You have too many active prompts, finish some first.\r\n"); return;}
 			Future<Void> doneCheck=CMClass.threadPool.submit(command);
-			pendingPrompts.addRow(I, command, doneCheck, null, Boolean.TRUE);
-			promptNumbers[I]=true;
+			pendingPrompts[I]=new PromptStruct(I, command, doneCheck);
 		}
 	}
 	@Override
@@ -388,11 +345,12 @@ public class DefaultSession extends Thread implements Session
 	{
 		synchronized(pendingPrompts)
 		{
-			for(int i=pendingPrompts.size()-1;i>=0;i--)
+			for(PromptStruct p : pendingPrompts)
 			{
-				if(checkPendingPrompt(i) && (pendingPrompts.elementAt(i, 1)==command))
+				if(p==null) continue;
+				if(p.wrapper==command)
 				{
-					pendingPrompts.setElementAt(i, 1, Thread.currentThread());
+					p.thread=Thread.currentThread();
 					return;
 				}
 			}
@@ -406,25 +364,23 @@ public class DefaultSession extends Thread implements Session
 			checkPendingPrompts();
 			if(type==2)
 			{
-				if(!promptNumbers[0])
+				if(pendingPrompts[0]==null)
 				{
-					pendingPrompts.addRow(0, thread, response, null, Boolean.TRUE);
-					promptNumbers[0]=true;
+					pendingPrompts[0]=new PromptStruct(0, thread, response);
 					return true;
 				}
 				return false;
 			}
 			//else { }
-			Integer I=null;
+			Integer I=-1;
 			for(int i=1;i<MAX_PROMPTS;i++)
 			{
-				if(promptNumbers[i]) continue;
+				if(pendingPrompts[i]!=null) continue;
 				I=i;
 				break;
 			}
-			if(I==null) {rawPrint("You have too many active prompts, finish some first.\r\n"); return false;}
-			pendingPrompts.addRow(I, thread, response, null, Boolean.TRUE);
-			promptNumbers[I]=true;
+			if(I==-1) {rawPrint("You have too many active prompts, finish some first.\r\n"); return false;}
+			pendingPrompts[I]=new PromptStruct(I, thread, response);
 			return true;
 		}
 	}
@@ -445,20 +401,20 @@ public class DefaultSession extends Thread implements Session
 	@Override public String prompt(String Message, long maxTime)
 	{
 		Thread caller=Thread.currentThread();
-		Object[] promptData=null;
+		PromptStruct promptData=null;
 		synchronized(pendingPrompts)
 		{
-			for(int i=pendingPrompts.size()-1;i>=0;i--)
+			for(int i=0;i<pendingPrompts.length;i++)
 			{
-				if(checkPendingPrompt(i) && (((Thread)pendingPrompts.elementAt(i, 1))==caller))
+				if(checkPendingPrompt(i) && pendingPrompts[i].thread==caller)
 				{
-					promptData=pendingPrompts.elementsAt(i);
+					promptData=pendingPrompts[i];
 					break;
 				}
 			}
 		}
 		try{
-			int index=(Integer)promptData[0];
+			int index=promptData.number;
 			//if(promptData==null)	//This is an active prompt. Hijack flushInput.
 			if(index==0)
 			{
@@ -486,13 +442,13 @@ public class DefaultSession extends Thread implements Session
 			{
 				Message="-- Prompt "+index+" --\r\n"+Message+"\r\n-- End Prompt "+index+" --";
 			}
-			promptData[3]=Message;
-			promptData[4]=Boolean.FALSE;
+			promptData.message=Message;
+			promptData.isBusy=false;
 			print(Message);
 			try{Thread.sleep(maxTime>0?maxTime:DefaultPromptSleep);}catch(InterruptedException e){}
-			if(promptData[4]==Boolean.FALSE)
+			if(promptData.isBusy=false)
 			{
-				promptData[4]=Boolean.TRUE;
+				promptData.isBusy=true;
 				if(index==0)
 				{
 					activePrompt=false;
@@ -503,7 +459,7 @@ public class DefaultSession extends Thread implements Session
 				}
 				return "";
 			}
-			return (String)promptData[3];
+			return promptData.message;
 		}
 		catch(Exception e)
 		{
@@ -524,38 +480,37 @@ public class DefaultSession extends Thread implements Session
 	@Override public String newPrompt(String Message, long maxTime)
 	{
 		Thread caller=Thread.currentThread();
-		Object[] promptData=null;
+		PromptStruct promptData;
 		Future<Void> doneCheck=null;
 		synchronized(pendingPrompts)
 		{
 			checkPendingPrompts();
-			Integer I=null;
+			int I=-1;
 			for(int i=1;i<MAX_PROMPTS;i++)
 			{
-				if(promptNumbers[i]) continue;
+				if(pendingPrompts[i]!=null) continue;
 				I=i;
 				break;
 			}
-			if(I==null) {rawPrint("You have too many active prompts, finish some first.\r\n"); return "";}
-			doneCheck=new ManualFuture<Void>();
+			if(I==-1) {rawPrint("You have too many active prompts, finish some first.\r\n"); return "";}
+			doneCheck=new ManualFuture<>();
 			//pendingPrompts.addRow(I, caller, doneCheck, null, Boolean.TRUE);
-			promptData=new Object[]{I, caller, doneCheck, null, Boolean.TRUE};
-			pendingPrompts.addRow(promptData);
-			promptNumbers[I]=true;
+			promptData=new PromptStruct(I, caller, doneCheck);
+			pendingPrompts[I]=promptData;
 		}
 		try{
-			Message="-- Prompt "+promptData[0]+" --\r\n"+Message+"\r\n-- End Prompt "+promptData[0]+" --";
-			promptData[3]=Message;
-			promptData[4]=Boolean.FALSE;
+			Message="-- Prompt "+promptData.number+" --\r\n"+Message+"\r\n-- End Prompt "+promptData.number+" --";
+			promptData.message=Message;
+			promptData.isBusy=false;
 			print(Message);
 			try{Thread.sleep(maxTime>0?maxTime:DefaultPromptSleep);}catch(InterruptedException e){}
-			if(promptData[4]==Boolean.FALSE)
+			if(!promptData.isBusy)
 			{
-				promptData[4]=Boolean.TRUE;
-				print("\r\n-- Prompt "+promptData[0]+" has expired --\r\n");
+				promptData.isBusy=true;
+				print("\r\n-- Prompt "+promptData.number+" has expired --\r\n");
 				return "";
 			}
-			return (String)promptData[3];
+			return promptData.message;
 		}
 		catch(Exception e){}
 		finally{doneCheck.cancel(false);}
@@ -624,11 +579,6 @@ public class DefaultSession extends Thread implements Session
 	public static final String IACWont=String.valueOf(new char[]{TELNET_IAC,TELNET_WONT});
 	@Override public void changeTelnetMode(int telnetCode, boolean onOff) 
 	{
-		/*
-		char[] command={(char)TELNET_IAC,onOff?(char)TELNET_WILL:(char)TELNET_WONT,(char)telnetCode};
-		out.write(command);
-		out.flush();
-		*/
 		String command=(onOff?(IACWill):(IACWont))+(char)telnetCode;
 		output.add(command);
 		if(CMSecurity.isDebugging("TELNET")) Log.debugOut("Session","Sent: "+(onOff?"Will":"Won't")+" "+Session.TELNET_DESCS[telnetCode]);
@@ -637,13 +587,6 @@ public class DefaultSession extends Thread implements Session
 	private static final String IAC_START=String.valueOf(new char[]{TELNET_IAC,TELNET_SB});
 	@Override public void negotiateTelnetMode(int telnetCode)
 	{
-		/*
-		char[] command=(telnetCode==TELNET_TERMTYPE?
-		  (new char[]{(char)TELNET_IAC,(char)TELNET_SB,(char)telnetCode,(char)1,(char)TELNET_IAC,(char)TELNET_SE}):
-		  (new char[]{(char)TELNET_IAC,(char)TELNET_SB,(char)telnetCode,(char)TELNET_IAC,(char)TELNET_SE}));
-		out.write(command);
-		out.flush();
-		*/
 		String command=(telnetCode==TELNET_TERMTYPE?(IAC_START+((char)telnetCode)+((char)1)+IAC_END):(IAC_START+((char)telnetCode)+IAC_END));
 		output.add(command);
 		if(CMSecurity.isDebugging("TELNET")) Log.debugOut("Session","Negotiate-Sent: "+Session.TELNET_DESCS[telnetCode]);
@@ -947,7 +890,7 @@ public class DefaultSession extends Thread implements Session
 		}
 			
 		//TODO: Check for override for this session
-		CMColor.ColorCode color=CMColor.ColorCode.get(c);
+		CMColor.ColorCode color=CMLib.color().getCC(c);
 		return color==null?"":color.DefaultWholeString;
 	}
 	/*
@@ -1785,6 +1728,7 @@ public class DefaultSession extends Thread implements Session
 	public void flushInput()
 	{
 		String thisInput=input.toString().trim();
+		Log.debugOut("Input",thisInput); //TODO DELETE
 		//if(!activePrompt)
 			input.setLength(0);
 		if(clientTelnetCodes[TELNET_ECHO])
@@ -1825,24 +1769,25 @@ public class DefaultSession extends Thread implements Session
 			//int index=thisInput.indexOf(' ');
 			//answersPrompt=(index==-1?CMath.s_int(thisInput):CMath.s_int(thisInput.substring(0,index)));
 			//if(answersPrompt<=0) break doneInput;
-			Object[] promptData;
+			PromptStruct promptData;
 			synchronized(pendingPrompts)
 			{
 				checkPendingPrompts();
-				promptData=pendingPrompts.elementsAt(answersPrompt);
+				try { promptData=pendingPrompts[answersPrompt]; }
+				catch(IndexOutOfBoundsException e){promptData=null;}
 			}
 			if(promptData==null)
 			{
 				rawPrint("There is no prompt associated with that number.");
 			}
-			else if((Boolean)promptData[4])
+			else if(promptData.isBusy)
 			{
 				rawPrint("That prompt is not currently waiting for input.");
 			}
 			else if(thisInput.isEmpty() && answersPrompt!=0)
 			{
-				if(promptData[3]!=null)
-					print((String)promptData[3]);
+				if(promptData.message!=null)
+					print(promptData.message);
 				else //Probably a bug.
 					rawPrint("There is no previous message from this prompt!");
 				//if(index!=-1)
@@ -1855,9 +1800,10 @@ public class DefaultSession extends Thread implements Session
 			}
 			else
 			{
-				promptData[3]=thisInput;
-				promptData[4]=Boolean.TRUE;
-				((Thread)promptData[1]).interrupt();
+				promptData.message=thisInput;
+				promptData.isBusy=true;
+				promptData.thread.interrupt();
+				if(promptData.number==0) activePrompt=false;
 			}
 		}
 		else
@@ -2091,7 +2037,7 @@ public class DefaultSession extends Thread implements Session
 	 * @param login Future result of current login attempt
 	 * @return true if user has just logged out, otherwise false
 	 */
-	private boolean handleStatus(Future<LoginResult> login) throws InterruptedException,ExecutionException
+	private boolean handleStatus() throws InterruptedException,ExecutionException
 	{
 		while(true)
 		{
@@ -2195,12 +2141,11 @@ public class DefaultSession extends Thread implements Session
 		{
 			while((!killFlag)&&((++tries)<5))
 			{
-				Future<LoginResult> login=null;
 				mob=null;	//Don't think this is needed but playing safe
 				status=Session.STATUS_LOGIN;
 				while((!killFlag))
 				{
-					if(handleStatus(login)) break;
+					if(handleStatus()) break;
 					while((!killFlag)&&(CMLib.threads().isAllSuspended())&&(!CMSecurity.isASysOp(mob)))
 						try{Thread.sleep(2000);}catch(InterruptedException e){}
 					lastLoopTop=System.currentTimeMillis();
@@ -2219,8 +2164,16 @@ public class DefaultSession extends Thread implements Session
 						}
 					}
 					if(in.ready())
+					{
 						while(currentInputReader.checkInput(this));
+					}
 
+					String nextOut;
+					while((nextOut=output.poll())!=null)
+					{
+						out(nextOut);
+					}
+					
 					if(!afkFlag)
 					{
 						if(System.currentTimeMillis()-lastKeystroke>=600000)
@@ -2234,13 +2187,14 @@ public class DefaultSession extends Thread implements Session
 					}
 					try{Thread.sleep(100);}catch(InterruptedException e){}
 				}
+				Log.sysOut("DefaultSession","Logging out to prompt");
 				status=STATUS_LOGOUT;
 				previousCmd=""; // will let system know you are back in login menu
 			}
 		}
 		catch(Exception t) //IO and Socket exceptions at least, possibly others
 		{
-			if(!Log.isMaskedErrMsg(t.getMessage())&&((!killFlag)||(sock.isConnected())))
+			//if(!Log.isMaskedErrMsg(t.getMessage())&&((!killFlag)||(sock.isConnected())))
 				errorOut(t);
 		}
 		status=Session.STATUS_LOGOUT3;
@@ -2277,12 +2231,13 @@ public class DefaultSession extends Thread implements Session
 	}
 	protected void checkPendingPrompts()
 	{
-		Future<Void> prompt;
-		for(int i=pendingPrompts.size()-1;i>=0;i--)
-			if((prompt = (Future<Void>)pendingPrompts.elementAt(i, 2)).isDone())
+		for(int i=pendingPrompts.length-1;i>=0;i--)
+			if(pendingPrompts[i]!=null && pendingPrompts[i].future.isDone())
 			{
-				promptNumbers[(Integer)pendingPrompts.removeElementsAt(i)[0]]=false;
-				try {prompt.get();}
+				PromptStruct prompt=pendingPrompts[i];
+				pendingPrompts[i]=null;
+				if(prompt.number==0) activePrompt=false;
+				try {prompt.future.get();}
 				catch(ExecutionException | InterruptedException e)
 				{
 					Log.errOut("Prompt",e.getCause());
@@ -2291,11 +2246,12 @@ public class DefaultSession extends Thread implements Session
 	}
 	protected boolean checkPendingPrompt(int i)
 	{
-		Future<Void> prompt;
-		if((prompt = (Future<Void>)pendingPrompts.elementAt(i, 2)).isDone())
+		if(pendingPrompts[i]==null) return false;
+		if(pendingPrompts[i].future.isDone())
 		{
-			promptNumbers[(Integer)pendingPrompts.removeElementsAt(i)[0]]=false;
-			try {prompt.get();}
+			PromptStruct prompt=pendingPrompts[i];
+			pendingPrompts[i]=null;
+			try {prompt.future.get();}
 			catch(ExecutionException | InterruptedException e)
 			{
 				Log.errOut("Prompt",e.getCause());

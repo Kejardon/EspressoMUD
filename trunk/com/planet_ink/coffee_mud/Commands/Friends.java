@@ -119,7 +119,7 @@ public class Friends extends StdCommand
 		return false;
 	}
 	
-	public int prompter(){return 1;}
+	@Override public int prompter(){return 1;}
 	@Override public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	@Override public boolean canBeOrdered(){return false;}
 }

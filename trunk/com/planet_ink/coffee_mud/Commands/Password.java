@@ -42,6 +42,6 @@ public class Password extends StdCommand
 		return false;
 	}
 	@Override public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
-	public int prompter(){return 1;}
+	@Override public int prompter(){return 1;}
 	@Override public boolean canBeOrdered(){return false;}
 }

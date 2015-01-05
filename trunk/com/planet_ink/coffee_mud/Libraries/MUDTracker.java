@@ -17,7 +17,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 
 public class MUDTracker extends StdLibrary
 {
-	public String ID(){return "MUDTracker";}
+	@Override public String ID(){return "MUDTracker";}
 /*
 	public Vector findBastardTheBestWay(Room location,
 										Room destRoom,

@@ -22,6 +22,12 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 
 public interface MudHost
 {
+	public static class IPConnect
+	{
+		public final String IP;
+		public final long time;
+		public IPConnect(String s, long t){IP=s;time=t;}
+	}
 	/** the number of milliseconds between each savethread execution */
 	public final static long TIME_SAVETHREAD_SLEEP=60*60000; // 60 minutes, right now.
 	/** the number of milliseconds between each utilithread execution */

@@ -35,7 +35,7 @@ public class StdEffect implements Effect
 	protected boolean amDestroyed=false;
 	protected int[] effectsToLoad=null;
 
-	public String ID() { return "StdEffect"; }
+	@Override public String ID() { return "StdEffect"; }
 	public int priority(ListenHolder L){return Integer.MAX_VALUE;}
 	public void registerListeners(ListenHolder here)
 	{
@@ -52,7 +52,7 @@ public class StdEffect implements Effect
 		if(affected instanceof ListenHolder)
 			((ListenHolder)affected).removeListener(this, lFlags);
 	}
-	public void initializeClass() {}
+	@Override public void initializeClass() {}
 	public StdEffect(){}
 
 	public StdEffect newInstance()
@@ -151,16 +151,16 @@ public class StdEffect implements Effect
 	public void affectCharStats(CMObject affected, CharStats stats){}
 	public void affectEnvStats(Environmental affected, EnvStats stats){}
 
-	public boolean okMessage(ListenHolder.OkChecker myHost, CMMsg msg)
+	@Override public boolean okMessage(ListenHolder.OkChecker myHost, CMMsg msg)
 	{
 		for(OkChecker O : okCheckers)
 			if(!O.okMessage(myHost,msg))
 				return false;
 		return true;
 	}
-	public boolean respondTo(CMMsg msg, Object data){return true;}
-	public boolean respondTo(CMMsg msg){return true;}
-	public void executeMsg(ListenHolder.ExcChecker myHost, CMMsg msg)
+	@Override public boolean respondTo(CMMsg msg, Object data){return true;}
+	@Override public boolean respondTo(CMMsg msg){return true;}
+	@Override public void executeMsg(ListenHolder.ExcChecker myHost, CMMsg msg)
 	{
 		for(ExcChecker E : excCheckers)
 			E.executeMsg(myHost,msg);
@@ -288,10 +288,10 @@ public class StdEffect implements Effect
 	}
 
 	//CMModifiable and CMSavable
-	public SaveEnum[] totalEnumS(){return SCode.values();}
-	public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]} ;}
-	public ModEnum[] totalEnumM(){return MCode.values();}
-	public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
+	@Override public SaveEnum[] totalEnumS(){return SCode.values();}
+	@Override public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]} ;}
+	@Override public ModEnum[] totalEnumM(){return MCode.values();}
+	@Override public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
 	public int saveNum()
 	{
 		if((saveNum==0)&&(!amDestroyed))

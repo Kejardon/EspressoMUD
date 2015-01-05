@@ -88,5 +88,5 @@ public class Snoop extends StdCommand
 
 	@Override public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	@Override public boolean canBeOrdered(){return true;}
-	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,"SNOOP");}
+	@Override public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,"SNOOP");}
 }

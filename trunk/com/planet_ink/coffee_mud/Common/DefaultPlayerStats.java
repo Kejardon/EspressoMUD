@@ -18,7 +18,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 
 public class DefaultPlayerStats implements PlayerStats
 {
-	public String ID(){return "DefaultPlayerStats";}
+	@Override public String ID(){return "DefaultPlayerStats";}
 	protected final static int TELL_STACK_MAX_SIZE=50;
 	protected final static int GTELL_STACK_MAX_SIZE=50;
 
@@ -69,7 +69,7 @@ public class DefaultPlayerStats implements PlayerStats
 	public MOB mob(){return mob;}
 	public void setMOB(MOB m){mob=m;}
 	@Override public DefaultPlayerStats newInstance(){try{return getClass().newInstance();}catch(Exception e){return new DefaultPlayerStats();}}
-	public void initializeClass(){}
+	@Override public void initializeClass(){}
 	@Override public DefaultPlayerStats copyOf()
 	{
 		try
@@ -338,10 +338,10 @@ public class DefaultPlayerStats implements PlayerStats
 	}
 
 	//CMModifiable and CMSavable
-	public SaveEnum[] totalEnumS(){return SCode.values();}
-	public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]};}
-	public ModEnum[] totalEnumM(){return MCode.values();}
-	public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
+	@Override public SaveEnum[] totalEnumS(){return SCode.values();}
+	@Override public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]};}
+	@Override public ModEnum[] totalEnumM(){return MCode.values();}
+	@Override public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
 	public int saveNum()
 	{
 		if((saveNum==0)&&(!amDestroyed))

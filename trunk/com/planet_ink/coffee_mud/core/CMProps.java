@@ -269,6 +269,7 @@ public class CMProps extends Properties
 	* @param tagStartersToGet    the property tag to retreive.
 	* @return String    the value of the .ini file tag
 	*/
+	/* This code is terrible. Also unused.
 	public String[][] getStrsStarting(String tagStartersToGet)
 	{
 		DVector strBag = new DVector(2);
@@ -292,6 +293,7 @@ public class CMProps extends Properties
 		}
 		return strArray;
 	}
+	*/
 
 	/** retrieve a particular .ini file entry as a boolean
 	*

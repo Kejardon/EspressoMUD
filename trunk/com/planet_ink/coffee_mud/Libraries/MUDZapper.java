@@ -105,7 +105,7 @@ public class MUDZapper extends StdLibrary
 		+"+WEATHER -BLIZZARD (<WORD> those whenever the weather is BLIZZARD) \r\n"
 		+"-CHANCE 50 (<WORD> the given % of the time)";
 
-	public String ID(){return "MUDZapper";}
+	@Override public String ID(){return "MUDZapper";}
 
 	protected MOB nonCrashingMOB=null;
 	protected MOB nonCrashingMOB(){

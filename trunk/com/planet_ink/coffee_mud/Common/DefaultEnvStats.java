@@ -17,7 +17,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 
 public class DefaultEnvStats implements EnvStats, Ownable
 {
-	public String ID(){return "DefaultEnvStats";}
+	@Override public String ID(){return "DefaultEnvStats";}
 	protected double Speed=1.0;			// should be positive
 	protected CopyOnWriteArrayList<String> ambiances=new CopyOnWriteArrayList();
 	protected int width;
@@ -135,7 +135,7 @@ public class DefaultEnvStats implements EnvStats, Ownable
 	}
 
 	public DefaultEnvStats newInstance(){try{return (DefaultEnvStats)getClass().newInstance();}catch(Exception e){return new DefaultEnvStats();}}
-	public void initializeClass(){}
+	@Override public void initializeClass(){}
 	public DefaultEnvStats copyOf()
 	{
 		try
@@ -176,10 +176,10 @@ public class DefaultEnvStats implements EnvStats, Ownable
 	}
 
 	//CMModifiable and CMSavable
-	public SaveEnum[] totalEnumS(){return SCode.values();}
-	public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]};}
-	public ModEnum[] totalEnumM(){return MCode.values();}
-	public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
+	@Override public SaveEnum[] totalEnumS(){return SCode.values();}
+	@Override public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]};}
+	@Override public ModEnum[] totalEnumM(){return MCode.values();}
+	@Override public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
 	public int saveNum(){return 0;}
 	public void setSaveNum(int num){}
 	public boolean needLink(){return false;}

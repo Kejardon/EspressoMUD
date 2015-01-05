@@ -32,7 +32,7 @@ public class CoffeeMaker extends StdLibrary
 {
 	public static final ByteBuffer emptyBuffer=ByteBuffer.wrap(new byte[0]);
 
-	public String ID(){return "CoffeeMaker";}
+	@Override public String ID(){return "CoffeeMaker";}
 
 	protected byte[] toBytes(int i)
 	{
@@ -200,7 +200,7 @@ public class CoffeeMaker extends StdLibrary
 	}
 	public ByteBuffer savString(String val)
 	{
-		if(val.length()==0) return emptyBuffer;
+		if(val==null || val.length()==0) return emptyBuffer;
 		return ByteBuffer.wrap(val.getBytes(DBManager.charFormat));
 	}
 	public String loadString(ByteBuffer A)

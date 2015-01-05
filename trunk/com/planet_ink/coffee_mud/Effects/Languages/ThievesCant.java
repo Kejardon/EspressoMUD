@@ -21,7 +21,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 
 public class ThievesCant extends StdLanguage
 {
-	public String ID() { return "ThievesCant"; }
+	@Override public String ID() { return "ThievesCant"; }
 	public String name(){ return "Thieves Cant";}
 	public static Vector wordLists=null;
 	public ThievesCant()
@@ -29,7 +29,7 @@ public class ThievesCant extends StdLanguage
 		super();
 	}
 
-	public Vector translationVector(String language)
+	@Override public Vector<String[]> translationVector(String language)
 	{
 		if(wordLists==null)
 		{
@@ -50,7 +50,7 @@ public class ThievesCant extends StdLanguage
 		return wordLists;
 	}
 	private static final Hashtable hashwords=new Hashtable();
-	public Hashtable translationHash(String language)
+	@Override public Hashtable<String,String> translationHash(String language)
 	{
 		if((hashwords!=null)&&(hashwords.size()>0))
 			return hashwords;

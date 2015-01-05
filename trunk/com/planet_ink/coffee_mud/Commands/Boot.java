@@ -59,5 +59,5 @@ public class Boot extends StdCommand
 
 	@Override public int commandType(MOB mob, String cmds){return CT_NON_ACTION;}
 	@Override public boolean canBeOrdered(){return true;}
-	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,"BOOT");}
+	@Override public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,"BOOT");}
 }

@@ -17,7 +17,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 
 public class CMLister extends StdLibrary
 {
-	public String ID(){return "CMLister";}
+	@Override public String ID(){return "CMLister";}
 	public String itemSeenString(MOB viewer,
 								 Interactable item,
 								 boolean useName

@@ -34,7 +34,7 @@ public class Logoff extends StdCommand
 			{
 				if ((session != null)&& (session.confirm("\r\nLogout -- are you sure (y/N)?","N")))
 				{
-					CMMsg msg=CMClass.getMsg(mob,null,null,EnumSet.of(CMMsg.MsgCode.QUIT),null);
+					CMMsg msg=CMClass.getMsg(mob,null,(Vector)null,EnumSet.of(CMMsg.MsgCode.QUIT),null);
 					Room R=mob.location();
 					if((R!=null)&&(R.okMessage(mob,msg))) 
 					{
@@ -52,7 +52,7 @@ public class Logoff extends StdCommand
 		return false;
 	}
 
-	public int prompter(){return 2;}
+	@Override public int prompter(){return 2;}
 	@Override public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	@Override public boolean canBeOrdered(){return false;}
 }

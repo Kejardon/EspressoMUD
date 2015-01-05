@@ -30,7 +30,7 @@ public class Unlock extends StdCommand
 			mob.tell("You don't see '"+whatTounlock+"' here.");
 			return false;
 		}
-		CMMsg msg=CMClass.getMsg(mob,unlockThis,null,EnumSet.of(CMMsg.MsgCode.UNLOCK),"<S-NAME> unlock(s) <T-NAMESELF>.");
+		CMMsg msg=CMClass.getMsg(mob,unlockThis,(Vector)null,EnumSet.of(CMMsg.MsgCode.UNLOCK),"^[S-NAME] unlock^s ^[T-NAMESELF].");
 		mob.location().doMessage(msg);
 		msg.returnMsg();
 		return false;

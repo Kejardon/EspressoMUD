@@ -62,10 +62,10 @@ public interface ListenHolder extends Tickable {
 		public void clearAllListeners(){}
 		public int priority(ListenHolder forThis){return 0;}
 		public EnumSet<Flags> listenFlags(){return null;}
-		public boolean okMessage(OkChecker myHost, CMMsg msg){return true;}
-		public void executeMsg(ExcChecker myHost, CMMsg msg){}
-		public boolean respondTo(CMMsg msg){return true;}
-		public boolean respondTo(CMMsg msg, Object data){return true;}
+		@Override public boolean okMessage(OkChecker myHost, CMMsg msg){return true;}
+		@Override public void executeMsg(ExcChecker myHost, CMMsg msg){}
+		@Override public boolean respondTo(CMMsg msg){return true;}
+		@Override public boolean respondTo(CMMsg msg, Object data){return true;}
 	}
 	public static class InbetweenListener extends DummyListener
 	{
@@ -77,7 +77,7 @@ public interface ListenHolder extends Tickable {
 		public InbetweenListener(MsgListener rL, Object d){realListener=rL; data=d;}
 		protected InbetweenListener(){}
 		
-		public boolean respondTo(CMMsg msg) { return realListener.respondTo(msg, data); }
+		@Override public boolean respondTo(CMMsg msg) { return realListener.respondTo(msg, data); }
 		public static InbetweenListener newListener(MsgListener rL, Object d)
 		{
 			InbetweenListener lstn = ListenerCache.poll();

@@ -52,7 +52,7 @@ public class XMLManager extends StdLibrary
 		}
 	}
 
-	public String ID(){return "XMLManager";}
+	@Override public String ID(){return "XMLManager";}
 	
 	public String parseOutAngleBrackets(String s)
 	{

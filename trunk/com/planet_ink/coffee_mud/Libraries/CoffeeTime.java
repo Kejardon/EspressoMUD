@@ -36,7 +36,7 @@ public class CoffeeTime extends StdLibrary
 		"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"
 	};
 
-	public String ID(){return "CoffeeTime";}
+	@Override public String ID(){return "CoffeeTime";}
 	//public static TimeClock globalClock=null;
 //	protected TimeClock globalClock=null;
 	/**

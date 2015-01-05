@@ -24,7 +24,7 @@ set(null) to clear a lock (only do if this place got a lock). Done in a finally?
 
 public class StdRoom implements Room
 {
-	public String ID(){return "StdRoom";}
+	@Override public String ID(){return "StdRoom";}
 	protected String name="the room";
 	protected String display="Standard Room";
 	protected String desc="";
@@ -36,7 +36,7 @@ public class StdRoom implements Room
 	protected String plainDescOf;
 	protected Area myArea=null;
 	protected CopyOnWriteArrayList<ExitInstance> exits=new CopyOnWriteArrayList();
-	protected AtomicReference<Thread> activeThread=new AtomicReference<Thread>();
+	protected AtomicReference<Thread> activeThread=new AtomicReference<>();
 	protected long lockTime;
 	
 	protected CopyOnWriteArrayList<OkChecker> okCheckers=new CopyOnWriteArrayList();
@@ -67,11 +67,11 @@ public class StdRoom implements Room
 
 	public StdRoom(){}
 
-	public int priority(ListenHolder L){return Integer.MAX_VALUE;}
-	public void registerListeners(ListenHolder forThis){}
+	@Override public int priority(ListenHolder L){return Integer.MAX_VALUE;}
+	@Override public void registerListeners(ListenHolder forThis){}
 
-	public void initializeClass(){}
-	public StdRoom newInstance()
+	@Override public void initializeClass(){}
+	@Override public StdRoom newInstance()
 	{
 		try
 		{
@@ -84,15 +84,15 @@ public class StdRoom implements Room
 		return new StdRoom();
 	}
 
-	public Environmental getEnvObject() {
+	@Override public Environmental getEnvObject() {
 		if(myEnvironmental==null)
 			synchronized(this){if(myEnvironmental==null) myEnvironmental=(Environmental)((Ownable)CMClass.COMMON.getNew("DefaultEnvironmental")).setOwner(this);}
 		return myEnvironmental;
 	}
-	public String name(){ return name;}
-	public String plainName()
+	@Override public String name(){ return name;}
+	@Override public String plainName()
 	{
-		if(name==plainNameOf)
+		if(name==plainNameOf) //== is fine in this case
 			return plainName;
 		String newName=name;
 		String newPlain=CMLib.coffeeFilter().toRawString(newName);
@@ -103,11 +103,11 @@ public class StdRoom implements Room
 		}
 		return newPlain;
 	}
-	public void setName(String newName){name=newName; CMLib.database().saveObject(this);}
-	public String displayText(){return display;}
-	public String plainDisplayText()
+	@Override public void setName(String newName){name=newName; CMLib.database().saveObject(this);}
+	@Override public String displayText(){return display;}
+	@Override public String plainDisplayText()
 	{
-		if(display==plainDisplayOf)
+		if(display==plainDisplayOf) //== is fine in this case
 			return plainDisplay;
 		String newDisplay=display;
 		String newPlain=CMLib.coffeeFilter().toRawString(newDisplay);
@@ -118,11 +118,11 @@ public class StdRoom implements Room
 		}
 		return newPlain;
 	}
-	public void setDisplayText(String newDisplayText){display=newDisplayText; CMLib.database().saveObject(this);}
-	public String description(){return desc;}
-	public String plainDescription()
+	@Override public void setDisplayText(String newDisplayText){display=newDisplayText; CMLib.database().saveObject(this);}
+	@Override public String description(){return desc;}
+	@Override public String plainDescription()
 	{
-		if(desc==plainDescOf)
+		if(desc==plainDescOf) //== is fine in this case
 			return plainDesc;
 		String newDesc=desc;
 		String newPlain=CMLib.coffeeFilter().toRawString(newDesc);
@@ -133,7 +133,7 @@ public class StdRoom implements Room
 		}
 		return newPlain;
 	}
-	public void setDescription(String newDescription){desc=newDescription; CMLib.database().saveObject(this);}
+	@Override public void setDescription(String newDescription){desc=newDescription; CMLib.database().saveObject(this);}
 
 	protected void cloneFix(StdRoom E)
 	{
@@ -154,7 +154,7 @@ public class StdRoom implements Room
 		for(Behavior B : E.behaviors)
 			addBehavior((Behavior)B.copyOf());
 	}
-	public StdRoom copyOf()
+	@Override public StdRoom copyOf()
 	{
 		try
 		{
@@ -168,12 +168,12 @@ public class StdRoom implements Room
 			return this.newInstance();
 		}
 	}
-	public int numExits() { return exits.size(); }
-	public void addExit(Exit E, Room destination)
+	@Override public int numExits() { return exits.size(); }
+	@Override public void addExit(Exit E, Room destination)
 	{
 		addExit(E.makeInstance(this, destination));
 	}
-	public void addExit(ExitInstance R)
+	@Override public void addExit(ExitInstance R)
 	{
 		if(exits.addIfAbsent(R))
 			CMLib.database().saveObject(this);
@@ -185,58 +185,58 @@ public class StdRoom implements Room
 			CMLib.database().saveObject(this);
 	}
 	*/
-	public void removeExit(ExitInstance R)
+	@Override public void removeExit(ExitInstance R)
 	{
 		if(exits.remove(R))
 			CMLib.database().saveObject(this);
 	}
-	public Exit getExit(int i)
+	@Override public Exit getExit(int i)
 	{
 		try{ return exits.get(i).getExit(); }
 		catch(ArrayIndexOutOfBoundsException e){}
 		return null;
 	}
-	public Exit getExit(String target)
+	@Override public Exit getExit(String target)
 	{
 		//TODO: This totally doesn't work.
 //		return (Exit)CMLib.english().fetchInteractable(exits, target, true);
 		return null;
 	}
-	public Room getExitDestination(int i)
+	@Override public Room getExitDestination(int i)
 	{
 		try{ return exits.get(i).getDestination(); }
 		catch(ArrayIndexOutOfBoundsException e){}
 		return null;
 	}
-	public Room getExitDestination(Exit E)
+	@Override public Room getExitDestination(Exit E)
 	{
 		for(ExitInstance exit : exits)
 			if(exit.getExit()==E)
 				return exit.getDestination();
 		return null;
 	}
-	public ExitInstance getExitInstance(int i)
+	@Override public ExitInstance getExitInstance(int i)
 	{
 		try{ return exits.get(i); }
 		catch(ArrayIndexOutOfBoundsException e){}
 		return null;
 	}
-	public ExitInstance getExitInstance(String target)
+	@Override public ExitInstance getExitInstance(String target)
 	{
 		//Definitely need TODO
 		ExitInstance exit = (ExitInstance)CMLib.english().fetchInteractable(exits.iterator(),target,true);
 		if(exit!=null) return exit;
 		return (ExitInstance)CMLib.english().fetchInteractable(exits.iterator(),target,false);
 	}
-	public ExitInstance getExitInstance(Exit E, Room R)
+	@Override public ExitInstance getExitInstance(Exit E, Room R)
 	{
 		for(ExitInstance exit : exits)
 			if(exit.getExit() == E && exit.getDestination() == R)
 				return exit;
 		return null;
 	}
-	public boolean hasExit(ExitInstance I){return exits.contains(I);}
-	public Iterator<ExitInstance> getAllExits() { return exits.iterator(); }
+	@Override public boolean hasExit(ExitInstance I){return exits.contains(I);}
+	@Override public Iterator<ExitInstance> getAllExits() { return exits.iterator(); }
 	/*
 	public boolean changeExit(REMap R, Exit newExit)
 	{
@@ -258,14 +258,14 @@ public class StdRoom implements Room
 	}
 	*/
 
-	public Domain domain(){return myDom;} 
-	public Enclosure enclosure(){return myEnc;}
+	@Override public Domain domain(){return myDom;} 
+	@Override public Enclosure enclosure(){return myEnc;}
 
-	public Area getArea()
+	@Override public Area getArea()
 	{
 		return myArea;
 	}
-	public void setArea(Area newArea)
+	@Override public void setArea(Area newArea)
 	{
 		if(newArea!=myArea)
 		{
@@ -286,15 +286,15 @@ public class StdRoom implements Room
 		}
 	}
 	//Probably unnecessary now!
-	public void setAreaRaw(Area newArea)
+	@Override public void setAreaRaw(Area newArea)
 	{
 		myArea=newArea;
 		CMLib.database().saveObject(this);
 	}
-	public boolean hasPositions(){return positions!=null;}
-	public EnvMap.EnvLocation positionOf(Environmental.EnvHolder of){return positions.position(of);}
+	@Override public boolean hasPositions(){return positions!=null;}
+	@Override public EnvMap.EnvLocation positionOf(Environmental.EnvHolder of){return positions.position(of);}
 
-	public boolean okMessage(OkChecker myHost, CMMsg msg)
+	@Override public boolean okMessage(OkChecker myHost, CMMsg msg)
 	{
 		//boolean always=false;
 		//Interactable target=msg.target();
@@ -316,9 +316,9 @@ public class StdRoom implements Room
 	}
 	protected static ListenHolder.DummyListener LeaveResponse = new ListenHolder.DummyListener()
 	{
-		public boolean respondTo(CMMsg msg, Object data)
+		@Override public boolean respondTo(CMMsg msg, Object data)
 		{
-			StdRoom room = (StdRoom)data;
+			//StdRoom room = (StdRoom)data;
 			boolean always = msg.hasOthersCode(CMMsg.MsgCode.ALWAYS);
 			for(CMObject O : msg.tool())
 			if(O instanceof ExitInstance)
@@ -330,7 +330,7 @@ public class StdRoom implements Room
 				if(destination!=null && entrance!=null)
 				{
 					EnumSet<CMMsg.MsgCode> codeSet=always?EnumSet.of(CMMsg.MsgCode.ENTER,CMMsg.MsgCode.ALWAYS):EnumSet.of(CMMsg.MsgCode.ENTER);
-					CMMsg enterMessage=CMClass.getMsg(msg.source().clone(),null,entrance,codeSet,"^[S-NAME] enter(s).");
+					CMMsg enterMessage=CMClass.getMsg((Vector<Interactable>)msg.source().clone(),null,entrance,codeSet,"^[S-NAME] enter(s).");
 					if(destination.okMessage(destination, enterMessage)&&enterMessage.handleResponses())
 					{
 						msg.addTrailerHappens(destination, enterMessage);
@@ -343,13 +343,13 @@ public class StdRoom implements Room
 			return true;
 		}
 	};
-	public boolean respondTo(CMMsg msg, Object data){return true;} //Should never be called
-	public boolean respondTo(CMMsg msg){ return true; }
+	@Override public boolean respondTo(CMMsg msg, Object data){return true;} //Should never be called
+	@Override public boolean respondTo(CMMsg msg){ return true; }
 	//TODO NOTE FOR ITEM ROOMS:
 	//Room: If host is not a room, you are new host. Send to container and to items.
 	//Room: If host is a room (and not you), do not send to container, but do send to items.
 	//Item of Room: If host is a room, do not send to room UNLESS host is your container.
-	public void executeMsg(ExcChecker myHost, CMMsg msg)
+	@Override public void executeMsg(ExcChecker myHost, CMMsg msg)
 	{
 		Interactable target=msg.target();
 		for(CMMsg.MsgCode code : msg.othersCode())
@@ -397,8 +397,8 @@ public class StdRoom implements Room
 			if(mob.playerStats().hasBits(PlayerStats.ATT_SYSOPMSGS))
 			{
 				if(getArea()!=null)
-					Say.append("Area   : "+getArea().name()+"\r\n");
-				Say.append("SaveNum: "+saveNum()+"  ("+ID()+")\r\n");
+					Say.append("Area   : ").append(getArea().name()).append("\r\n");
+				Say.append("SaveNum: ").append(saveNum()).append("  (").append(ID()).append(")\r\n");
 			}
 			if(hasPositions())
 			{
@@ -422,10 +422,10 @@ public class StdRoom implements Room
 		}
 	}
 
-	public Tickable.TickStat getTickStatus(){return tickStatus;}
+	@Override public Tickable.TickStat getTickStatus(){return tickStatus;}
 	public void tickAct(){}
-	public int tickCounter(){return tickCount;}
-	public boolean tick(int tickTo)
+	@Override public int tickCounter(){return tickCount;}
+	@Override public boolean tick(int tickTo)
 	{
 		if(tickCount==0) tickCount=tickTo-1;
 		while(tickCount<tickTo)
@@ -448,11 +448,11 @@ public class StdRoom implements Room
 	//public long lastAct(){return 0;}	//No Action ticks
 	//public long lastTick(){return lastTick;}
 
-	public void recoverRoomStats()
+	@Override public void recoverRoomStats()
 	{
 		//TODO
 	}
-	public int compareTo(CMObject o)
+	@Override public int compareTo(CMObject o)
 	{
 		if(o instanceof Room)
 			return saveNum()-((CMSavable)o).saveNum();
@@ -460,7 +460,7 @@ public class StdRoom implements Room
 	}
 
 // actually this should not be called much. Execute Message should handle most of it instead I think? Maybe this should be called by execute message? Probably not...
-	public void bringHere(Item I, boolean andRiders)
+	@Override public void bringHere(Item I, boolean andRiders)
 	{
 		if(I==null) return;
 		CMObject o=I.container();
@@ -476,7 +476,7 @@ public class StdRoom implements Room
 
 		getItemCollection().addItem(I);
 	}
-	public void placeHere(Environmental.EnvHolder I, boolean andRiders, int x, int y, int z)
+	@Override public void placeHere(Environmental.EnvHolder I, boolean andRiders, int x, int y, int z)
 	{
 		if(I==null) return;
 		if(I instanceof Item) bringHere((Item)I, andRiders);
@@ -515,16 +515,16 @@ public class StdRoom implements Room
 		}
 	}
 
-	public boolean hasLock(Thread T)
+	@Override public boolean hasLock(Thread T)
 	{
 		return (activeThread.get()==T);
 	}
-	public boolean hasLock()
+	@Override public boolean hasLock()
 	{
 		return (activeThread.get()==Thread.currentThread());
 	}
 
-	public String undoLock()
+	@Override public String undoLock()
 	{
 		Thread T=activeThread.getAndSet(null);
 		return (T==null?"null":T.toString());
@@ -532,14 +532,14 @@ public class StdRoom implements Room
 	//0: Got a lock.
 	//1: Got a fresh lock, please return later.
 	//2: Failed to get a lock.
-	public int getLock(long time)
+	@Override public int getLock(long time)
 	{
 		Thread myThread=Thread.currentThread();
 		boolean freshLock=false;
 		int tries=0;
 		if(lockTime>0&&lockTime<System.currentTimeMillis())
 		{
-			boolean gotLock=false;
+			boolean gotLock;
 			synchronized(this)
 			{
 				gotLock=(lockTime>0&&lockTime<System.currentTimeMillis());
@@ -547,7 +547,7 @@ public class StdRoom implements Room
 				{
 					//Nothing else can set the lock at this point but this thread and the delayed thread.
 					lockTime=0;
-					freshLock=activeThread.getAndSet(myThread)!=myThread;
+					freshLock=activeThread.getAndSet(myThread)!=myThread; //TODO: I think I need to look at this logic
 				}
 			}
 			if(!gotLock)
@@ -560,7 +560,7 @@ public class StdRoom implements Room
 		}
 		else while(!(freshLock=activeThread.compareAndSet(null, myThread))&&(activeThread.get()!=myThread))
 			if(tries++<100)
-				try{myThread.sleep(10);}catch(InterruptedException e){}
+				try{Thread.sleep(10);}catch(InterruptedException e){}
 			else
 			{
 				Log.errOut("StdRoom",new RuntimeException(myThread+" Failed to get roomlock in "+saveNum()+". "+activeThread.get()+"\r\n"+CMClass.getStackTrace(activeThread.get())));
@@ -571,13 +571,13 @@ public class StdRoom implements Room
 		//if(freshLock) Log.errOut("StdRoom",new RuntimeException(myThread+" got roomlock in "+saveNum()+". "));
 		return freshLock?1:0;
 	}
-	public void returnLock()
+	@Override public void returnLock()
 	{
 		activeThread.compareAndSet(Thread.currentThread(), null);
 		//Log.errOut("StdRoom",new RuntimeException(Thread.currentThread()+" returned roomlock in "+saveNum()+". "));
 	}
 
-	public boolean doMessage(CMMsg msg)
+	@Override public boolean doMessage(CMMsg msg)
 	{
 		//Default lock time?
 		int lockStatus=getLock(0);
@@ -593,7 +593,7 @@ public class StdRoom implements Room
 			return false;
 		}catch(Exception e){if(lockStatus==1) returnLock(); throw e;}
 	}
-	public boolean doAndReturnMsg(CMMsg msg)
+	@Override public boolean doAndReturnMsg(CMMsg msg)
 	{
 		int lockStatus=getLock(0);
 		if(lockStatus==2) return false;
@@ -610,7 +610,7 @@ public class StdRoom implements Room
 			return false;
 		}catch(Exception e){if(lockStatus==1) returnLock(); throw e;}	//msg may not be returned. That's okay.
 	}
-	public void send(CMMsg msg)
+	@Override public void send(CMMsg msg)
 	{
 		int lockStatus=getLock(0);
 		if(lockStatus==2) return;
@@ -620,7 +620,7 @@ public class StdRoom implements Room
 		}catch(Exception e){if(lockStatus==1) returnLock(); throw e;}
 	}
 
-	public void show(Interactable source, String allMessage)
+	@Override public void show(Interactable source, String allMessage)
 	{
 		for(Iterator<Item> iter=getItemCollection().allItems();iter.hasNext();)
 		{
@@ -630,7 +630,7 @@ public class StdRoom implements Room
 				M.tell(source, null, allMessage);
 		}
 	}
-	public void show(Interactable source, 
+	@Override public void show(Interactable source, 
 						Interactable target, 
 						CMObject tool, 
 						String allMessage)
@@ -643,7 +643,7 @@ public class StdRoom implements Room
 				M.tell(source, target, tool, allMessage);
 		}
 	}
-	public void show(Interactable source,
+	@Override public void show(Interactable source,
 						Interactable target,
 						CMObject tool,
 						String srcMessage,
@@ -667,7 +667,7 @@ public class StdRoom implements Room
 	}
 
 	//NOTE: this doesn't handle exits currently.. Also, player/MOB ejection is TODO
-	public void destroy()
+	@Override public void destroy()
 	{
 		amDestroyed=true;
 
@@ -689,23 +689,23 @@ public class StdRoom implements Room
 		if(saveNum!=0)
 			CMLib.database().deleteObject(this);
 	}
-	public boolean amDestroyed(){return amDestroyed;}
+	@Override public boolean amDestroyed(){return amDestroyed;}
 
 	//This might not really be necessary. ..meh
-	public boolean isContent(Item E, boolean sub)
+	@Override public boolean isContent(Item E, boolean sub)
 	{
 		return getItemCollection().hasItem(E, sub);
 	}
-	public Item fetchItem(String itemID)
+	@Override public Item fetchItem(String itemID)
 	{
 		Item item=(Item)CMLib.english().fetchInteractable(getItemCollection().allItems(),itemID,true);
 		if(item==null) item=(Item)CMLib.english().fetchInteractable(inventory.allItems(),itemID,false);
 		return item;
 	}
-	public Vector<Item> fetchItems(String itemID)
+	@Override public Vector<Item> fetchItems(String itemID)
 	{
 		Vector items=CMLib.english().fetchInteractables(getItemCollection().allItems(),itemID,true);
-		if(items.size()==0)
+		if(items.isEmpty())
 			items=CMLib.english().fetchInteractables(inventory.allItems(),itemID,false);
 		return items;
 	}
@@ -715,7 +715,7 @@ public class StdRoom implements Room
 	 * and MOB's skills into consideration. Also be able to look in nearby rooms.
 	 * 
 	 */
-	public EnvMap.EnvLocation findObject(String findThis, MOB finder, EnvMap.EnvLocation lookingFromHere)
+	@Override public EnvMap.EnvLocation findObject(String findThis, MOB finder, EnvMap.EnvLocation lookingFromHere)
 	{
 		Vector<Interactable> targets=new Vector();
 		for(Iterator<Environmental.EnvHolder> iter=positions.allThings();iter.hasNext();)
@@ -728,7 +728,7 @@ public class StdRoom implements Room
 		if(thing==null) thing=CMLib.english().fetchInteractable(targets,findThis,false);
 		return (thing==null?null:positions.position(thing));
 	}
-	public MOB fetchInhabitant(String inhabitantID)
+	@Override public MOB fetchInhabitant(String inhabitantID)
 	{
 		MOB M=null;
 		if(inhabitantID.equals("ALL"))
@@ -755,9 +755,9 @@ public class StdRoom implements Room
 		}
 		return null;
 	}
-	public Vector<MOB> fetchInhabitants(String inhabitantID)
+	@Override public Vector<MOB> fetchInhabitants(String inhabitantID)
 	{
-		Vector<MOB> inhabs=new Vector<MOB>();
+		Vector<MOB> inhabs=new Vector<>();
 		MOB M=null;
 		if(inhabitantID.equals("ALL"))
 			for(Iterator<Item> iter=getItemCollection().allItems();iter.hasNext();)
@@ -772,7 +772,7 @@ public class StdRoom implements Room
 			for(int i=0;i<items.size();i++)
 				if((items.get(i) instanceof Body)&&((M=((Body)items.get(i)).mob())!=null))
 					inhabs.add(M);
-			if(inhabs.size()==0)
+			if(inhabs.isEmpty())
 			{
 				items=(Vector)CMLib.english().fetchInteractables(inventory.allItems(),inhabitantID, false);
 				for(int i=0;i<items.size();i++)
@@ -784,37 +784,37 @@ public class StdRoom implements Room
 	}
 
 	//Things listen to this really, not the other way around, so really simple code here.
-	public void removeListener(Listener oldAffect, EnumSet<ListenHolder.Flags> flags)
+	@Override public void removeListener(Listener oldAffect, EnumSet<ListenHolder.Flags> flags)
 	{
 		ListenHolder.O.removeListener(this, oldAffect, flags);
 		if((flags.contains(ListenHolder.Flags.TICK))&&(tickActers.isEmpty())&&(lFlags.remove(ListenHolder.Flags.TICK)))
 			if(myArea!=null)
 				myArea.removeTickingRoom(this);
 	}
-	public void addListener(Listener newAffect, EnumSet<ListenHolder.Flags> flags)
+	@Override public void addListener(Listener newAffect, EnumSet<ListenHolder.Flags> flags)
 	{
 		ListenHolder.O.addListener(this, newAffect, flags);
 		if((flags.contains(ListenHolder.Flags.TICK))&&(!tickActers.isEmpty())&&(lFlags.add(ListenHolder.Flags.TICK)))
 			if(myArea!=null)
 				myArea.addTickingRoom(this);
 	}
-	public void registerAllListeners() {}
-	public void clearAllListeners() {}
-	public CopyOnWriteArrayList<CharAffecter> charAffecters(){return null;}
-	public CopyOnWriteArrayList<EnvAffecter> envAffecters(){return null;}
-	public CopyOnWriteArrayList<OkChecker> okCheckers(){return okCheckers;}
-	public CopyOnWriteArrayList<ExcChecker> excCheckers(){return excCheckers;}
-	public CopyOnWriteArrayList<TickActer> tickActers(){return tickActers;}
-	public EnumSet<ListenHolder.Flags> listenFlags() {return lFlags;}
+	@Override public void registerAllListeners() {}
+	@Override public void clearAllListeners() {}
+	@Override public CopyOnWriteArrayList<CharAffecter> charAffecters(){return null;}
+	@Override public CopyOnWriteArrayList<EnvAffecter> envAffecters(){return null;}
+	@Override public CopyOnWriteArrayList<OkChecker> okCheckers(){return okCheckers;}
+	@Override public CopyOnWriteArrayList<ExcChecker> excCheckers(){return excCheckers;}
+	@Override public CopyOnWriteArrayList<TickActer> tickActers(){return tickActers;}
+	@Override public EnumSet<ListenHolder.Flags> listenFlags() {return lFlags;}
 
 	//Affectable
-	public void addEffect(Effect to)
+	@Override public void addEffect(Effect to)
 	{
 		affects.add(to);
 		to.setAffectedOne(this);
 		CMLib.database().saveObject(this);
 	}
-	public void delEffect(Effect to)
+	@Override public void delEffect(Effect to)
 	{
 		if(affects.remove(to))
 		{
@@ -822,18 +822,18 @@ public class StdRoom implements Room
 			CMLib.database().saveObject(this);
 		}
 	}
-	public boolean hasEffect(Effect to)
+	@Override public boolean hasEffect(Effect to)
 	{
 		return affects.contains(to);
 	}
-	public int numEffects(){return affects.size();}
-	public Effect fetchEffect(int index)
+	@Override public int numEffects(){return affects.size();}
+	@Override public Effect fetchEffect(int index)
 	{
 		try { return affects.get(index); }
 		catch(java.lang.ArrayIndexOutOfBoundsException x){}
 		return null;
 	}
-	public Vector<Effect> fetchEffect(String ID)
+	@Override public Vector<Effect> fetchEffect(String ID)
 	{
 		Vector<Effect> V=new Vector(1);
 		for(Effect E : affects)
@@ -841,17 +841,17 @@ public class StdRoom implements Room
 				V.add(E);
 		return V;
 	}
-	public Effect fetchFirstEffect(String ID)
+	@Override public Effect fetchFirstEffect(String ID)
 	{
 		for(Effect E : affects)
 			if(E.ID().equals(ID))
 				return E;
 		return null;
 	}
-	public Iterator<Effect> allEffects() { return affects.iterator(); }
+	@Override public Iterator<Effect> allEffects() { return affects.iterator(); }
 
 	//Behavable
-	public void addBehavior(Behavior to)
+	@Override public void addBehavior(Behavior to)
 	{
 		synchronized(behaviors)
 		{
@@ -861,7 +861,7 @@ public class StdRoom implements Room
 		}
 		CMLib.database().saveObject(this);
 	}
-	public void delBehavior(Behavior to)
+	@Override public void delBehavior(Behavior to)
 	{
 		if(behaviors.remove(to))
 		{
@@ -869,32 +869,32 @@ public class StdRoom implements Room
 			CMLib.database().saveObject(this);
 		}
 	}
-	public int numBehaviors()
+	@Override public int numBehaviors()
 	{
 		return behaviors.size();
 	}
-	public Behavior fetchBehavior(int index)
+	@Override public Behavior fetchBehavior(int index)
 	{
 		try { return behaviors.get(index); }
 		catch(java.lang.ArrayIndexOutOfBoundsException x){}
 		return null;
 	}
-	public Behavior fetchBehavior(String ID)
+	@Override public Behavior fetchBehavior(String ID)
 	{
 		for(Behavior B : behaviors)
 			if(B.ID().equals(ID))
 				return B;
 		return null;
 	}
-	public boolean hasBehavior(String ID)
+	@Override public boolean hasBehavior(String ID)
 	{
 		for(Behavior B : behaviors)
 			if(B.ID().equals(ID))
 				return true;
 		return false;
 	}
-	public Iterator<Behavior> allBehaviors() { return behaviors.iterator(); }
-	public ItemCollection getItemCollection()
+	@Override public Iterator<Behavior> allBehaviors() { return behaviors.iterator(); }
+	@Override public ItemCollection getItemCollection()
 	{
 		if(inventory==null) synchronized(this)
 		{
@@ -906,7 +906,7 @@ public class StdRoom implements Room
 		}
 		return inventory;
 	}
-	public void setItemCollection(ItemCollection newInv, boolean copyInto)
+	@Override public void setItemCollection(ItemCollection newInv, boolean copyInto)
 	{
 		ItemCollection oldInv=inventory;
 		inventory=newInv;
@@ -921,11 +921,11 @@ public class StdRoom implements Room
 	}
 
 	//CMModifiable and CMSavable
-	public SaveEnum[] totalEnumS(){return SCode.values();}
-	public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]} ;}
-	public ModEnum[] totalEnumM(){return MCode.values();}
-	public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
-	public int saveNum()
+	@Override public SaveEnum[] totalEnumS(){return SCode.values();}
+	@Override public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]} ;}
+	@Override public ModEnum[] totalEnumM(){return MCode.values();}
+	@Override public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
+	@Override public int saveNum()
 	{
 		if((saveNum==0)&&(!amDestroyed))
 		synchronized(this)
@@ -935,7 +935,7 @@ public class StdRoom implements Room
 		}
 		return saveNum;
 	}
-	public void setSaveNum(int num)
+	@Override public void setSaveNum(int num)
 	{
 		synchronized(this)
 		{
@@ -945,8 +945,8 @@ public class StdRoom implements Room
 			SIDLib.ROOM.assignNumber(num, this);
 		}
 	}
-	public boolean needLink(){return true;}
-	public void link()
+	@Override public boolean needLink(){return true;}
+	@Override public void link()
 	{
 		if(effectsToLoad!=null)
 		{
@@ -1022,8 +1022,8 @@ public class StdRoom implements Room
 				envMap.copyFrom(oldMap);
 		}
 	}
-	public void saveThis(){CMLib.database().saveObject(this);}
-	public void prepDefault(){getEnvObject(); getItemCollection();} //TODO: Env
+	@Override public void saveThis(){CMLib.database().saveObject(this);}
+	@Override public void prepDefault(){getEnvObject(); getItemCollection();} //TODO: Env
 
 	private enum SCode implements SaveEnum<StdRoom>{
 		ENV(){
@@ -1043,7 +1043,7 @@ public class StdRoom implements Room
 				if(newDom!=null) E.myDom=newDom; } },
 		ENC(){
 			public ByteBuffer save(StdRoom E){ return CMLib.coffeeMaker().savString(E.myEnc.name()); }
-			public int size(){return 4;}
+			public int size(){return 0;}
 			public void load(StdRoom E, ByteBuffer S){
 				Enclosure newEnc=(Enclosure)CMClass.valueOf(Enclosure.class, CMLib.coffeeMaker().loadString(S));
 				if(newEnc!=null) E.myEnc=newEnc; } },

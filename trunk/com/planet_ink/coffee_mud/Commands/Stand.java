@@ -24,7 +24,7 @@ public class Stand extends StdCommand
 			mob.tell("You are already standing!");
 		else
 */
-		CMMsg msg=CMClass.getMsg(mob,null,null,EnumSet.of(CMMsg.MsgCode.STAND),"<S-NAME> stand(s) up.");
+		CMMsg msg=CMClass.getMsg(mob,null,(Vector)null,EnumSet.of(CMMsg.MsgCode.STAND),"^[S-NAME] stand^s up.");
 		mob.location().doMessage(msg);
 		msg.returnMsg();
 		return false;

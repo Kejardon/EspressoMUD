@@ -51,7 +51,7 @@ public class Kill extends StdCommand
 		
 		if(reallyKill)
 		{
-			CMMsg msg=CMClass.getMsg(mob,target,null,EnumSet.of(CMMsg.MsgCode.VISUAL),"^F^<FIGHT^><S-NAME> touch(es) <T-NAMESELF>.^</FIGHT^>^?");
+			CMMsg msg=CMClass.getMsg(mob,target,(Vector)null,EnumSet.of(CMMsg.MsgCode.VISUAL),"^F^[S-NAME] touch^e ^[T-NAMESELF^].^?"); //<FIGHT></FIGHT>
 			CMLib.color().fixSourceFightColor(msg);
 			if(location.doMessage(msg))
 			{
@@ -65,13 +65,13 @@ public class Kill extends StdCommand
 		Interactable oldVictim=mob.getVictim();
 		if((oldVictim!=null)&&(oldVictim==target))
 		{
-			mob.tell("^f^<FIGHT^>You are already fighting "+mob.getVictim().name()+".^</FIGHT^>^?");
+			mob.tell("^fYou are already fighting "+mob.getVictim().name()+".^?"); //<FIGHT></FIGHT>
 			return false;
 		}
-		CMMsg msg=CMClass.getMsg(mob,target,null,EnumSet.of(CMMsg.MsgCode.ATTACK),null);
+		CMMsg msg=CMClass.getMsg(mob,target,(Vector)null,EnumSet.of(CMMsg.MsgCode.ATTACK),null);
 		if(location.okMessage(location,msg))
 		{
-			mob.tell("^f^<FIGHT^>You are now targeting "+target.name()+".^</FIGHT^>^?");
+			mob.tell("^fYou are now targeting "+target.name()+".^?"); //<FIGHT></FIGHT>
 			mob.setVictim(target);
 		}
 		msg.returnMsg();

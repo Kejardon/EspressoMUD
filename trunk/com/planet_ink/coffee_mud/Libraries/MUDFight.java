@@ -21,7 +21,7 @@ public class MUDFight extends StdLibrary
 	public static final int COMBAT_QUEUE=1;
 	public static final int COMBAT_MANUAL=2;
 
-	public String ID(){return "MUDFight";}
+	@Override public String ID(){return "MUDFight";}
 
 /*
 	public String lastStr="";

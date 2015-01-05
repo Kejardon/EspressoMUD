@@ -1,7 +1,7 @@
 package com.planet_ink.coffee_mud.application;
+import com.planet_ink.coffee_mud.Commands.DebugCommand;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
-import com.planet_ink.coffee_mud.core.exceptions.*;
 import com.planet_ink.coffee_mud.core.database.*;
 import com.planet_ink.coffee_mud.core.http.*;
 import com.planet_ink.coffee_mud.core.threads.*;
@@ -11,7 +11,6 @@ import java.io.PrintWriter; // for writing to sockets
 import java.io.IOException;
 import java.net.*;
 import java.util.*;
-import java.sql.*;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -29,7 +28,9 @@ public class MUD extends Thread implements MudHost
 	public static final String copyright="(C) 2010 - 2014 Kejardon";
 
 	protected static boolean bringDown=false;
-	private static DVector accessed=new DVector(2);	//List of connection attempts
+	//private static DVector accessed=new DVector(2);	//List of connection attempts
+	private static ArrayList<IPConnect> accessed=new ArrayList();
+
 	private static Vector<String> autoblocked=new Vector();	//List of connections to ignore
 	public static Vector<MUD> hosts=new Vector();	//List of ports, really.
 
@@ -202,13 +203,13 @@ public class MUD extends Thread implements MudHost
 					try{
 						for(int a=accessed.size()-1;a>=0;a--)
 						{
-							if((((Long)accessed.elementAt(a,1)).longValue()+LastConnectionDelay)<System.currentTimeMillis())
-								accessed.removeRow(a);
-							else
-							if(((String)accessed.elementAt(a,0)).equalsIgnoreCase(address))
+							IPConnect access=accessed.get(a);
+							if(access.time+LastConnectionDelay<System.currentTimeMillis())
+								accessed.remove(a);
+							else if(access.IP.equalsIgnoreCase(address))
 							{
 								anyAtThisAddress=true;
-								if((((Long)accessed.elementAt(a,1)).longValue()+ConnectionWindow)>System.currentTimeMillis())
+								if(access.time+ConnectionWindow>System.currentTimeMillis())
 									numAtThisAddress++;
 							}
 						}
@@ -227,7 +228,7 @@ public class MUD extends Thread implements MudHost
 						}
 					}catch(java.lang.ArrayIndexOutOfBoundsException e){}
 
-					accessed.addRow(address,Long.valueOf(System.currentTimeMillis()));
+					accessed.add(new IPConnect(address,System.currentTimeMillis()));
 				}
 			}
 
@@ -375,6 +376,9 @@ public class MUD extends Thread implements MudHost
 	}
 	public static void globalShutdown(Session S, boolean keepItDown)
 	{
+		//TODO: Delete this
+		Log.debugOut("Shutdown",DebugCommand.getFullThreadDump());
+		
 		CMProps.Bools.MUDSTARTED.setProperty(false);
 		CMProps.Bools.MUDSHUTTINGDOWN.setProperty(true);
 		//TODO: This should work on getting the MUD to a fixed state, and when accomplished report it.
@@ -652,11 +656,11 @@ public class MUD extends Thread implements MudHost
 					hosts.add(mud);
 				}
 
-				StringBuffer str=new StringBuffer("");
+				StringBuilder str=new StringBuilder("");
 				for(int m=0;m<hosts.size();m++)
 				{
 					MudHost mud=hosts.get(m);
-					str.append(" "+mud.getPort());
+					str.append(" ").append(mud.getPort());
 				}
 				CMProps.Strings.MUDPORTS.setProperty(str.toString());
 

@@ -45,11 +45,11 @@ public class OneToOneExitInstance implements ExitInstance
 	*/
 	public Exit getExit(){return myExit;}
 	public Room getDestination(){return leadsTo;}
-	public String ID(){return "OneToOneExitInstance";}
+	@Override public String ID(){return "OneToOneExitInstance";}
 	public Environmental getEnvObject() { return myExit.getEnvObject(); }
 	@Override public OneToOneExitInstance newInstance(){return new OneToOneExitInstance();}
 	@Override public OneToOneExitInstance copyOf(){return new OneToOneExitInstance(myExit, leadsTo);}
-	public void initializeClass(){}
+	@Override public void initializeClass(){}
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 
 	public String name(){return myExit.name();}
@@ -95,10 +95,10 @@ public class OneToOneExitInstance implements ExitInstance
 	public Tickable.TickStat getTickStatus(){return myExit.getTickStatus();}
 	public boolean tick(int tickTo){return false;}
 	public int tickCounter(){return 0;}
-	public boolean respondTo(CMMsg msg){return myExit.respondTo(msg);}
-	public boolean respondTo(CMMsg msg, Object data){return myExit.respondTo(msg, data);}
-	public boolean okMessage(OkChecker myHost, CMMsg msg){return myExit.okMessage(myHost, msg);}
-	public void executeMsg(ExcChecker myHost, CMMsg msg){myExit.executeMsg(myHost, msg);}
+	@Override public boolean respondTo(CMMsg msg){return myExit.respondTo(msg);}
+	@Override public boolean respondTo(CMMsg msg, Object data){return myExit.respondTo(msg, data);}
+	@Override public boolean okMessage(OkChecker myHost, CMMsg msg){return myExit.okMessage(myHost, msg);}
+	@Override public void executeMsg(ExcChecker myHost, CMMsg msg){myExit.executeMsg(myHost, msg);}
 	public boolean amDestroyed(){return destroyed;}
 	public void destroy()
 	{
@@ -110,10 +110,10 @@ public class OneToOneExitInstance implements ExitInstance
 
 	//CMModifiable and CMSavable
 	//CMModifiable and CMSavable
-	public SaveEnum[] totalEnumS(){return SCode.values();}
-	public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]} ;}
-	public ModEnum[] totalEnumM(){return MCode.values();}
-	public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
+	@Override public SaveEnum[] totalEnumS(){return SCode.values();}
+	@Override public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]} ;}
+	@Override public ModEnum[] totalEnumM(){return MCode.values();}
+	@Override public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
 	public int saveNum()
 	{
 		if(saveNum==0)//&&(!amDestroyed))

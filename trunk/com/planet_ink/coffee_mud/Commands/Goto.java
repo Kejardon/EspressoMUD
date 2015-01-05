@@ -76,5 +76,5 @@ public class Goto extends At
 
 	@Override public int commandType(MOB mob, String cmds){return CT_NON_ACTION;}
 	@Override public boolean canBeOrdered(){return true;}
-	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,"GOTO");}
+	@Override public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,"GOTO");}
 }

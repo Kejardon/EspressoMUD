@@ -33,9 +33,9 @@ import com.planet_ink.coffee_mud.core.exceptions.*;
 
 public class ProcessHTTPrequest extends Thread implements ExternalHTTPRequests
 {
-	public String ID(){return "ProcessHTTPrequest";}
+	@Override public String ID(){return "ProcessHTTPrequest";}
 	public CMObject newInstance(){try{return (CMObject)getClass().newInstance();}catch(Exception e){return new ProcessHTTPrequest();}}
-	public void initializeClass(){}
+	@Override public void initializeClass(){}
 	public void finalInitialize(){}
 	public CMObject copyOf(){try{return (CMObject)this.clone();}catch(Exception e){return newInstance();}}
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
@@ -117,7 +117,7 @@ public class ProcessHTTPrequest extends Thread implements ExternalHTTPRequests
 		if (page != null && sock != null && a_webServer != null)
 		{
 			synchronized(a_webServer.activeRequests){
-				a_webServer.activeRequests.addRow(this,Long.valueOf(System.currentTimeMillis()));
+				a_webServer.activeRequests.add(new HTTPserver.HTTPRequest(this,System.currentTimeMillis()));
 			}
 			this.start();
 		}
@@ -780,7 +780,7 @@ public class ProcessHTTPrequest extends Thread implements ExternalHTTPRequests
 		finally
 		{
 			synchronized(this.webServer.activeRequests){
-				webServer.activeRequests.removeElement(this);
+				webServer.activeRequests.remove(this);
 			}
 		}
 	}

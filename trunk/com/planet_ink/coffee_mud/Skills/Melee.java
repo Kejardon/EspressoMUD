@@ -14,11 +14,11 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 
 public class Melee extends StdSkill
 {
-	public String ID() {return "Melee";}
+	@Override public String ID() {return "Melee";}
 	
 	public int maxLevel(){return 100;}
 	public String playerFriendlyName(){return "Melee Combat";}
-	public void initializeClass()
+	@Override public void initializeClass()
 	{
 		initializeSkillRelations(
 				new String[]{"Combat"},

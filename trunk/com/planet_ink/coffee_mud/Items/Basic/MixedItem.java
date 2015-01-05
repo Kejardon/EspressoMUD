@@ -17,7 +17,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 
 public class MixedItem implements Item
 {
-	public String ID(){	return "MixedItem";}
+	@Override public String ID(){	return "MixedItem";}
 
 	protected String name="an ordinary item";
 	protected String display="a nondescript item sits here doing nothing.";
@@ -96,7 +96,7 @@ public class MixedItem implements Item
 		if(container instanceof ListenHolder)
 			((ListenHolder)container).removeListener(this, lFlags);
 	}
-	public void initializeClass(){}
+	@Override public void initializeClass(){}
 	public void setName(String newName){name=newName; CMLib.database().saveObject(this);}
 	public String name(){ return name;}
 	public String plainName()
@@ -377,7 +377,7 @@ public class MixedItem implements Item
 
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 
-	public boolean okMessage(ListenHolder.OkChecker myHost, CMMsg msg)
+	@Override public boolean okMessage(ListenHolder.OkChecker myHost, CMMsg msg)
 	{
 		Interactable target=msg.target();
 		for(CMMsg.MsgCode code : msg.othersCode())
@@ -397,7 +397,7 @@ public class MixedItem implements Item
 	}
 	protected static ListenHolder.DummyListener ItemGetResponse = new ListenHolder.DummyListener()
 	{
-		public boolean respondTo(CMMsg msg, Object data)
+		@Override public boolean respondTo(CMMsg msg, Object data)
 		{
 			MixedItem item = (MixedItem)data;
 			Interactable I = msg.firstSource();
@@ -412,9 +412,9 @@ public class MixedItem implements Item
 			return true;
 		}
 	};
-	public boolean respondTo(CMMsg msg, Object data){return true;}
-	public boolean respondTo(CMMsg msg){ return true;}
-	public void executeMsg(ListenHolder.ExcChecker myHost, CMMsg msg)
+	@Override public boolean respondTo(CMMsg msg, Object data){return true;}
+	@Override public boolean respondTo(CMMsg msg){ return true;}
+	@Override public void executeMsg(ListenHolder.ExcChecker myHost, CMMsg msg)
 	{
 		Interactable target=msg.target();
 		for(CMMsg.MsgCode code : msg.othersCode())
@@ -522,10 +522,10 @@ public class MixedItem implements Item
 	public boolean amDestroyed(){return destroyed;}
 
 	//CMModifiable and CMSavable
-	public SaveEnum[] totalEnumS(){return SCode.values();}
-	public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]} ;}
-	public ModEnum[] totalEnumM(){return MCode.values();}
-	public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
+	@Override public SaveEnum[] totalEnumS(){return SCode.values();}
+	@Override public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]} ;}
+	@Override public ModEnum[] totalEnumM(){return MCode.values();}
+	@Override public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
 	public int saveNum()
 	{
 		if((saveNum==0)&&(!destroyed))

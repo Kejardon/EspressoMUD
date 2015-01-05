@@ -22,7 +22,7 @@ public class MiscLib extends StdLibrary implements CMSavable, Runnable
 	//private SupportThread thread=null;
 	protected TimeClock globalClock=null;
 
-	public String ID(){return "MiscLib";}
+	@Override public String ID(){return "MiscLib";}
 	//public SupportThread getSupportThread() { return thread;}
 
 	/*public boolean activate() {
@@ -33,13 +33,13 @@ public class MiscLib extends StdLibrary implements CMSavable, Runnable
 			thread.start();
 		return true;
 	}
-	public void run() { CMLib.database().saveObject(this); }*/
+	@Override public void run() { CMLib.database().saveObject(this); }*/
 
-	public void run(){}
+	@Override public void run(){}
 	public MiscLib newInstance() {return this;}
 	public MiscLib copyOf() {return this;}
 
-	public boolean shutdown()
+	@Override public boolean shutdown()
 	{
 		CMLib.database().saveObject(this);
 		return true;
@@ -54,8 +54,8 @@ public class MiscLib extends StdLibrary implements CMSavable, Runnable
 	public void destroy(){}//har
 	public boolean amDestroyed(){return false;}//no
 
-	public SaveEnum[] totalEnumS(){return SCode.values();}
-	public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]};}
+	@Override public SaveEnum[] totalEnumS(){return SCode.values();}
+	@Override public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]};}
 	public int saveNum(){return 1;}
 	public void setSaveNum(int num){}
 	public boolean needLink(){return false;}

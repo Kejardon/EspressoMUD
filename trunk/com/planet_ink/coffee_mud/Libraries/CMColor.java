@@ -111,7 +111,7 @@ public class CMColor extends StdLibrary
 	public static final String COLOR_ENDITALIC="\033[23m";
 	public static final String COLOR_ENDUNDERLINE="\033[24m";
 
-	public String ID(){return "CMColor";}
+	@Override public String ID(){return "CMColor";}
 	
 	//public String[] clookup=null;
 	public String[] htlookup=null;
@@ -191,7 +191,7 @@ public class CMColor extends StdLibrary
 		final int ColorIndex;
 		final String DefaultColorString;
 	}*/
-	protected static final ArrayList<ColorCode> byIndex=new ArrayList();
+	protected static final ColorCode[] byIndex=new ColorCode[25];
 	protected static final ColorCode[] byChar=new ColorCode[128-32];
 	public static enum ColorCode
 	{
@@ -230,12 +230,13 @@ public class CMColor extends StdLibrary
 		{
 			Code=c;Index=i;DefaultString=s;
 			DefaultWholeString="\033"+s+"m";
-			byIndex.set(Index, this);
+			if(Index>=byIndex.length) Log.errOut("CMColor","byIndex array too short for "+Index);
+			else byIndex[Index]=this;
 			int charIndex=c-32;
 			if(charIndex>=0 && charIndex<96) byChar[charIndex]=this;
 		}
 		
-		public static ColorCode get(int i){return byIndex.get(i);}
+		public static ColorCode get(int i){return byIndex[i];}
 		public static ColorCode get(char c)
 		{
 			int charIndex=c-32;
@@ -243,7 +244,10 @@ public class CMColor extends StdLibrary
 			return null;
 		}
 	};
-	
+	public static ColorCode getCC(char c)
+	{
+		return ColorCode.get(c);
+	}
 	
 	/*public String[] standardHTMLlookups()
 	{

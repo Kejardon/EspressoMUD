@@ -20,26 +20,26 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 
 public class StdLanguage extends StdEffect implements Language
 {
-	public String ID() { return "StdLanguage"; }
+	@Override public String ID() { return "StdLanguage"; }
 	public String name(){ return "Languages";}
-	public String writtenName() { return name();}
+	@Override public String writtenName() { return name();}
 	private static final String[] triggerStrings = {"SPEAK"};
 	public String[] triggerStrings(){return triggerStrings;}
 
-	private static Hashtable emptyHash=new Hashtable();
-	private static Vector emptyVector=new Vector();
+	private static final Hashtable emptyHash=new Hashtable();
+	private static final Vector emptyVector=new Vector();
 	protected boolean spoken=false;
 	protected int proficiency=1;
 	private final static String consonants="bcdfghjklmnpqrstvwxz";
 	private final static String vowels="aeiouy";
-	public boolean beingSpoken(String language){return spoken;}
-	public void setBeingSpoken(String language, boolean beingSpoken){spoken=beingSpoken;}
-	public Hashtable translationHash(String language){ return emptyHash; }
-	public Vector translationVector(String language){ return emptyVector; }
+	@Override public boolean beingSpoken(String language){return spoken;}
+	@Override public void setBeingSpoken(String language, boolean beingSpoken){spoken=beingSpoken;}
+	@Override public Hashtable<String,String> translationHash(String language){ return emptyHash; }
+	@Override public Vector<String[]> translationVector(String language){ return emptyVector; }
 	
-	public Vector languagesSupported() {return CMParms.makeVector(ID());}
-	public boolean translatesLanguage(String language) { return ID().equalsIgnoreCase(language);}
-	public int getProficiency(String language) { 
+	@Override public Vector<String> languagesSupported() {return CMParms.makeVector(ID());}
+	@Override public boolean translatesLanguage(String language) { return ID().equalsIgnoreCase(language);}
+	@Override public int getProficiency(String language) { 
 		if(ID().equalsIgnoreCase(language))
 			return proficiency;
 		return 0;
@@ -53,7 +53,7 @@ public class StdLanguage extends StdEffect implements Language
 
 	protected String fixCase(String like,String make)
 	{
-		StringBuffer s=new StringBuffer(make);
+		StringBuilder s=new StringBuilder(make);
 		char lastLike=' ';
 		for(int x=0;x<make.length();x++)
 		{
@@ -68,7 +68,7 @@ public class StdLanguage extends StdEffect implements Language
 			return Character.toUpperCase(make);
 		return Character.toLowerCase(make);
 	}
-	public String translate(String language, String word)
+	@Override public String translate(String language, String word)
 	{
 		if(translationHash(language).containsKey(word.toUpperCase()))
 			return fixCase(word,(String)translationHash(language).get(word.toUpperCase()));
@@ -100,7 +100,7 @@ public class StdLanguage extends StdEffect implements Language
 	{
 		numToMess=numToMess/2;
 		if(numToMess==0) return words;
-		StringBuffer w=new StringBuffer(words);
+		StringBuilder w=new StringBuilder(words);
 		while(numToMess>0)
 		{
 			int x=CMLib.dice().roll(1,words.length(),-1);
@@ -119,13 +119,13 @@ public class StdLanguage extends StdEffect implements Language
 
 	public String scrambleAll(String language, String str, int numToMess)
 	{
-		StringBuffer newStr=new StringBuffer("");
+		StringBuilder newStr=new StringBuilder("");
 		int start=0;
 		int end=0;
 		int state=-1;
 		while(start<=str.length())
 		{
-			char c='\0';
+			char c;
 			if(end>=str.length())
 				c=' ';
 			else
@@ -145,7 +145,7 @@ public class StdLanguage extends StdEffect implements Language
 				if(Character.isDigit(c))
 				{ newStr.append(str.substring(start,end+1)); end++; start=end; state=1; }
 				else
-				{ newStr.append(translate(language,str.substring(start,end))+c); end++; start=end; state=-1; }
+				{ newStr.append(translate(language,str.substring(start,end))).append(c); end++; start=end; state=-1; }
 				break;
 			case 1:
 				if(Character.isLetterOrDigit(c))
@@ -162,7 +162,7 @@ public class StdLanguage extends StdEffect implements Language
 	{
 		if(E==null) return null;
 		Language winner=null;
-		Effect A=null;
+		Effect A;
 		for(int a=0;a<E.numEffects();a++) 
 		{
 			A=E.fetchEffect(a);
@@ -193,13 +193,13 @@ public class StdLanguage extends StdEffect implements Language
 		return true;
 	}
 
-	public boolean okMessage(ListenHolder.OkChecker myHost, CMMsg msg)
+	@Override public boolean okMessage(ListenHolder.OkChecker myHost, CMMsg msg)
 	{
 		if((affected instanceof MOB)&&(beingSpoken(ID())))
 			msg.addResponse(this, -2);	//Translated to the language before even being spoken
 		return super.okMessage(myHost,msg);
 	}
-	public boolean respondTo(CMMsg msg)
+	@Override public boolean respondTo(CMMsg msg)
 	{
 		//hm. What if multiple sources are speaking different languages?
 		if((msg.isSource((MOB)affected))
@@ -236,12 +236,12 @@ public class StdLanguage extends StdEffect implements Language
 //						msg.setTargetCode(CMMsg.TYP_SPEAK);
 //						msg.setSourceCode(CMMsg.TYP_SPEAK);
 //						msg.setOthersCode(CMMsg.TYP_SPEAK);
-						String reply=null;
+						String reply;
 						if((L==null)||(!L.beingSpoken(ID())))
 							reply="^[S-NAME] ^[S-IS-ARE] speaking "+name()+" and do^e not appear to understand ^[T-YOUPOSS] words.";
 						else
 							reply="^[S-NAME] ^[S-IS-ARE] having trouble understanding ^[T-YOUPOSS] pronunciation.";
-						msg.addTrailerMsg(source.location(), CMClass.getMsg((MOB)affected,source,null,EnumSet.of(CMMsg.MsgCode.VISUAL),reply));
+						msg.addTrailerMsg(source.location(), CMClass.getMsg((MOB)affected,source,(Vector)null,EnumSet.of(CMMsg.MsgCode.VISUAL),reply));
 					}
 					break;
 				}
@@ -284,7 +284,7 @@ public class StdLanguage extends StdEffect implements Language
 			//For starters, this is passing a null session to fullOutFilter, which I do not want
 			if(msg.target()!=null)
 				otherMes=CMLib.coffeeFilter().fullOutFilter(null,(MOB)affected,msg.firstSource(),msg.target(),msg.firstTool(),otherMes,false);
-			msg.addTrailerMsg(((MOB)affected).location(), CMClass.getMsg(msg.source(),(Interactable)affected,null,EnumSet.noneOf(CMMsg.MsgCode.class),null,msg.othersCode(),CMStrings.substituteSayInMessage(otherMes,sourceWords)+" (translated from "+name()+")",CMMsg.NO_EFFECT,null));
+			msg.addTrailerMsg(((MOB)affected).location(), CMClass.getMsg(msg.source(),(Interactable)affected,(Vector)null,EnumSet.noneOf(CMMsg.MsgCode.class),null,msg.othersCode(),CMStrings.substituteSayInMessage(otherMes,sourceWords)+" (translated from "+name()+")",CMMsg.NO_EFFECT,null));
 			return true;
 		}
 		return false;
@@ -297,7 +297,7 @@ public class StdLanguage extends StdEffect implements Language
 			String otherMes=msg.targetMessage();
 			if(msg.target()!=null)
 				otherMes=CMLib.coffeeFilter().fullOutFilter(null,(MOB)affected,msg.firstSource(),msg.target(),msg.firstTool(),otherMes,false);
-			msg.addTrailerMsg(((MOB)affected).location(), CMClass.getMsg(msg.source(),(Interactable)affected,null,CMMsg.NO_EFFECT,null,msg.targetCode(),CMStrings.substituteSayInMessage(otherMes,sourceWords)+" (translated from "+name()+")",CMMsg.NO_EFFECT,null));
+			msg.addTrailerMsg(((MOB)affected).location(), CMClass.getMsg(msg.source(),(Interactable)affected,(Vector)null,CMMsg.NO_EFFECT,null,msg.targetCode(),CMStrings.substituteSayInMessage(otherMes,sourceWords)+" (translated from "+name()+")",CMMsg.NO_EFFECT,null));
 			return true;
 		}
 		return false;
@@ -307,13 +307,13 @@ public class StdLanguage extends StdEffect implements Language
 	{
 		if(msg.hasSourceCode(CMMsg.MsgCode.CHANNEL))
 		{
-			msg.addTrailerMsg(((MOB)affected).location(), CMClass.getMsg(msg.source(),null,null,CMMsg.NO_EFFECT,null,CMMsg.NO_EFFECT,null,msg.othersCode(),CMStrings.substituteSayInMessage(msg.othersMessage(),sourceWords)+" (translated from "+name()+")"));
+			msg.addTrailerMsg(((MOB)affected).location(), CMClass.getMsg(msg.source(),null,(Vector)null,CMMsg.NO_EFFECT,null,CMMsg.NO_EFFECT,null,msg.othersCode(),CMStrings.substituteSayInMessage(msg.othersMessage(),sourceWords)+" (translated from "+name()+")"));
 			return true;
 		}
 		return false;
 	}
 	
-	public void executeMsg(ListenHolder.ExcChecker myHost, CMMsg msg)
+	@Override public void executeMsg(ListenHolder.ExcChecker myHost, CMMsg msg)
 	{
 		super.executeMsg(myHost,msg);
 

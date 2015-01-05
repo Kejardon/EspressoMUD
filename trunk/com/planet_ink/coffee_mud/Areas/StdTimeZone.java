@@ -16,7 +16,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 
 public class StdTimeZone extends StdArea
 {
-	public String ID(){	return "StdTimeZone";}
+	@Override public String ID(){	return "StdTimeZone";}
 
 	public StdTimeZone(){}
 	public void destroy()
@@ -48,7 +48,7 @@ public class StdTimeZone extends StdArea
 	//CMModifiable and CMSavable
 	private static ModEnum[] totalEnumM=null;
 	private static Enum[] headerEnumM=null;
-	public ModEnum[] totalEnumM()
+	@Override public ModEnum[] totalEnumM()
 	{
 		if(totalEnumM==null)
 		{
@@ -58,7 +58,7 @@ public class StdTimeZone extends StdArea
 		}
 		return totalEnumM;
 	}
-	public Enum[] headerEnumM()
+	@Override public Enum[] headerEnumM()
 	{
 		if(headerEnumM==null)
 		{
@@ -70,7 +70,7 @@ public class StdTimeZone extends StdArea
 	}
 	private static SaveEnum[] totalEnumS=null;
 	private static Enum[] headerEnumS=null;
-	public SaveEnum[] totalEnumS()
+	@Override public SaveEnum[] totalEnumS()
 	{
 		if(totalEnumS==null)
 		{
@@ -80,7 +80,7 @@ public class StdTimeZone extends StdArea
 		}
 		return totalEnumS;
 	}
-	public Enum[] headerEnumS()
+	@Override public Enum[] headerEnumS()
 	{
 		if(headerEnumS==null)
 		{

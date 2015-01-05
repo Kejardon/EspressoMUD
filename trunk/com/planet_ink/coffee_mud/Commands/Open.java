@@ -30,7 +30,7 @@ public class Open extends StdCommand
 			mob.tell("You don't see '"+whatToOpen+"' here.");
 			return false;
 		}
-		CMMsg msg=CMClass.getMsg(mob,openThis,null,EnumSet.of(CMMsg.MsgCode.OPEN),("<S-NAME> open(s) <T-NAMESELF>."));
+		CMMsg msg=CMClass.getMsg(mob,openThis,(Vector)null,EnumSet.of(CMMsg.MsgCode.OPEN),("^[S-NAME] open^s ^[T-NAMESELF]."));
 		mob.location().doMessage(msg);
 		msg.returnMsg();
 		return false;

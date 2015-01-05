@@ -46,7 +46,7 @@ public class CMClass extends ClassLoader
 			return ftask;
 		}
 	}
-	public static final ExecutorService threadPool=new CustomThreadPool(); //Executors.newCachedThreadPool();	//Gotta put it somewhere, here's a good spot
+	public static final CustomThreadPool threadPool=new CustomThreadPool(); //Executors.newCachedThreadPool();	//Gotta put it somewhere, here's a good spot
 	protected static boolean debugging=false;
 	//protected static Hashtable<String, Object> classes=new Hashtable();
 	//public static EnumSet<Objects> ItemTypes = EnumSet.of(Objects.ITEM, Objects.WEARABLE, Objects.WEAPON);

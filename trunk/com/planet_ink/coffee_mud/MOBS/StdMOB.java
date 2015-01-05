@@ -23,7 +23,7 @@ public class StdMOB implements MOB
 {
 //	private static final Vector empty=new Vector();
 
-	public String ID(){return "StdMOB";}
+	@Override public String ID(){return "StdMOB";}
 	protected String name="";
 	protected String plainName;
 	protected String plainNameOf;
@@ -99,7 +99,7 @@ public class StdMOB implements MOB
 	*/
 	//public EatCode getEat(){return myEatAction;}
 
-	public void initializeClass(){}
+	@Override public void initializeClass(){}
 	public StdMOB newInstance()
 	{
 		try
@@ -642,7 +642,7 @@ public class StdMOB implements MOB
 			location().registerListeners(this);
 	}
 */
-	public boolean okMessage(ListenHolder.OkChecker myHost, CMMsg msg)
+	@Override public boolean okMessage(ListenHolder.OkChecker myHost, CMMsg msg)
 	{
 		/*
 		Interactable target=msg.target();
@@ -694,7 +694,7 @@ public class StdMOB implements MOB
 	/*
 	protected static ListenHolder.DummyListener EatResponse
 	{
-		public boolean respondTo(CMMsg msg, Object data)
+		@Override public boolean respondTo(CMMsg msg, Object data)
 		{
 			MOB mob=(StdMOB)data;
 			Body body=mob.myBody;
@@ -795,9 +795,9 @@ public class StdMOB implements MOB
 	}
 	*/
 	
-	public boolean respondTo(CMMsg msg, Object data){return true;}
-	public boolean respondTo(CMMsg msg) { return true; }
-	public void executeMsg(ListenHolder.ExcChecker myHost, CMMsg msg)
+	@Override public boolean respondTo(CMMsg msg, Object data){return true;}
+	@Override public boolean respondTo(CMMsg msg) { return true; }
+	@Override public void executeMsg(ListenHolder.ExcChecker myHost, CMMsg msg)
 	{
 		if(msg.othersMessage()!=null)
 			tell(msg.firstSource(),msg.target(),msg.firstTool(),msg.othersMessage());
@@ -1001,10 +1001,10 @@ public class StdMOB implements MOB
 	}
 
 	//CMModifiable and CMSavable
-	public SaveEnum[] totalEnumS(){return SCode.values();}
-	public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]} ;}
-	public ModEnum[] totalEnumM(){return MCode.values();}
-	public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
+	@Override public SaveEnum[] totalEnumS(){return SCode.values();}
+	@Override public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]} ;}
+	@Override public ModEnum[] totalEnumM(){return MCode.values();}
+	@Override public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
 	public int saveNum()
 	{
 		if(saveNum==0)

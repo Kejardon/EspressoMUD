@@ -16,7 +16,7 @@ public class Take extends StdCommand
 {
 	public Take(){access=new String[]{"TAKE"};}
 
-	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,"ORDER")
+	@Override public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,"ORDER")
 		||CMSecurity.isAllowed(mob,"CMDMOBS")
 		||CMSecurity.isAllowed(mob,"CMDROOMS");}
 	
@@ -57,7 +57,7 @@ public class Take extends StdCommand
 			for(int i=getThese.size()-1;i>=0;i--)
 				if(!(getThese.get(i) instanceof Item))
 					getThese.remove(i);
-			if(getThese.size()==0)
+			if(getThese.isEmpty())
 			{
 				mob.tell("You don't see '"+thingToGive+"' on "+victim.name()+".");
 				return false;
@@ -66,7 +66,7 @@ public class Take extends StdCommand
 			//Also it's possible to 'take Someguy from Someguy'. This is silly but probably ok.
 			for(Item I : (Item[])getThese.toArray(Item.dummyItemArray))
 			{
-				CMMsg msg=CMClass.getMsg(mob,I,null,EnumSet.of(CMMsg.MsgCode.GET,CMMsg.MsgCode.ALWAYS),"<S-NAME> take(s) <T-NAME> from "+victim.name()+".");
+				CMMsg msg=CMClass.getMsg(mob,I,(Vector)null,EnumSet.of(CMMsg.MsgCode.GET,CMMsg.MsgCode.ALWAYS),"^[S-NAME] take^s ^[T-NAME] from "+victim.name()+".");
 				if(!R.doMessage(msg))
 				{
 					msg.returnMsg();
@@ -83,7 +83,7 @@ public class Take extends StdCommand
 				mob.tell("You don't see '"+thingToGive+"' on "+victim.name()+".");
 				return false;
 			}
-			CMMsg msg=CMClass.getMsg(mob,getThis,null,EnumSet.of(CMMsg.MsgCode.GET,CMMsg.MsgCode.ALWAYS),"<S-NAME> take(s) <T-NAME> from "+victim.name()+".");
+			CMMsg msg=CMClass.getMsg(mob,getThis,(Vector)null,EnumSet.of(CMMsg.MsgCode.GET,CMMsg.MsgCode.ALWAYS),"^[S-NAME] take^s ^[T-NAME] from "+victim.name()+".");
 			R.doMessage(msg);
 			msg.returnMsg();
 		}

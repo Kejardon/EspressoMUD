@@ -15,7 +15,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 
 public class Male extends StdGender
 {
-	public String ID(){return "Male";}
+	@Override public String ID(){return "Male";}
 
 	public String name(){return "male";}
 //	public char letter();

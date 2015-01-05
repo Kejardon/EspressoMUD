@@ -14,14 +14,14 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 
 public class Gnomish extends StdLanguage
 {
-	public String ID() { return "Gnomish"; }
+	@Override public String ID() { return "Gnomish"; }
 	public String name(){ return "Gnomish";}
 	public static Vector wordLists=null;
 	public Gnomish()
 	{
 		super();
 	}
-	public Vector translationVector(String language)
+	@Override public Vector<String[]> translationVector(String language)
 	{
 		if(wordLists==null)
 		{

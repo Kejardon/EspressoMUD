@@ -16,7 +16,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 */
 public class Dice extends StdLibrary
 {
-	public String ID(){return "Dice";}
+	@Override public String ID(){return "Dice";}
 	private Random randomizer = null;
 
 	public synchronized Random getRandomizer() {

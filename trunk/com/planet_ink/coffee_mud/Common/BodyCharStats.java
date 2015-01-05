@@ -22,23 +22,24 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 
 public class BodyCharStats extends DefaultCharStats
 {
-	public String ID(){return "BodyCharStats";}
+	@Override public String ID(){return "BodyCharStats";}
 	private static final Stat[] myStatOptions={Stat.CONSTITUTION, Stat.REACTIONS, Stat.INTELLIGENCE, Stat.STRENGTH, Stat.PRECISION, Stat.OBSERVATION};
 	private static final Save[] mySaveOptions={};
 	private static final Points[] myPointOptions={Points.FATIGUE, Points.HIT, Points.MANA, Points.HUNGER, Points.THIRST};
 
 	{
 		stat=new short[]{10, 10, 10, 10, 10, 10};
+		statTrain=new short[]{0, 0, 0, 0, 0, 0};
 		save=new short[]{};
 		points=new int[]{10, 10, 10, 10, 10};
 		pointsMax=new int[]{10, 10, 10, 10, 10};
 	}
 
-	public Stat[] getStatOptions(){return myStatOptions;}
-	public Save[] getSaveOptions(){return mySaveOptions;}
-	public Points[] getPointOptions(){return myPointOptions;}
+	@Override public Stat[] getStatOptions(){return myStatOptions;}
+	@Override public Save[] getSaveOptions(){return mySaveOptions;}
+	@Override public Points[] getPointOptions(){return myPointOptions;}
 
-	public int getStatIndex(Stat option)
+	@Override public int getStatIndex(Stat option)
 	{
 		switch(option)
 		{
@@ -51,7 +52,7 @@ public class BodyCharStats extends DefaultCharStats
 		}
 		return -1;
 	}
-	public int getPointsIndex(Points option)
+	@Override public int getPointsIndex(Points option)
 	{
 		switch(option)
 		{
@@ -63,7 +64,7 @@ public class BodyCharStats extends DefaultCharStats
 		}
 		return -1;
 	}
-	public int getSaveIndex(Save option)
+	@Override public int getSaveIndex(Save option)
 	{
 //		return option.ordinal();
 		return -1;
@@ -136,10 +137,10 @@ public class BodyCharStats extends DefaultCharStats
 	*/
 
 	//CMModifiable and CMSavable
-	public SaveEnum[] totalEnumS(){return SCode.values();}
-	public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]};}
-	public ModEnum[] totalEnumM(){return MCode.values();}
-	public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
+	@Override public SaveEnum[] totalEnumS(){return SCode.values();}
+	@Override public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]};}
+	@Override public ModEnum[] totalEnumM(){return MCode.values();}
+	@Override public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
 	/*
 	public int saveNum(){return 0;}
 	public void setSaveNum(int num){}

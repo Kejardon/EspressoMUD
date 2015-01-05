@@ -51,5 +51,5 @@ public class Shutdown extends StdCommand
 
 	@Override public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	@Override public boolean canBeOrdered(){return false;}
-	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,"SHUTDOWN");}
+	@Override public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,"SHUTDOWN");}
 }

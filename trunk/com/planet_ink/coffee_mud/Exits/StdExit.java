@@ -18,7 +18,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 
 public class StdExit implements Exit
 {
-	public String ID(){	return "StdExit";}
+	@Override public String ID(){	return "StdExit";}
 
 	protected String name="an ordinary pathway";
 	protected String display="an open passage to another place.";
@@ -138,7 +138,7 @@ public class StdExit implements Exit
 	public void registerAllListeners() { }
 	public void clearAllListeners() { }
 
-	public void initializeClass(){}
+	@Override public void initializeClass(){}
 	public String name(){ return name;}
 	public String plainName()
 	{
@@ -279,7 +279,7 @@ public class StdExit implements Exit
 		}
 	} */
 
-	public boolean okMessage(ListenHolder.OkChecker myHost, CMMsg msg)
+	@Override public boolean okMessage(ListenHolder.OkChecker myHost, CMMsg msg)
 	{
 		if(!myEnvironmental.okMessage(myHost, msg))
 			return false;
@@ -288,9 +288,9 @@ public class StdExit implements Exit
 				return false;
 		return true;
 	}
-	public boolean respondTo(CMMsg msg, Object data){return true;}
-	public boolean respondTo(CMMsg msg){return true;}
-	public void executeMsg(ListenHolder.ExcChecker myHost, CMMsg msg)
+	@Override public boolean respondTo(CMMsg msg, Object data){return true;}
+	@Override public boolean respondTo(CMMsg msg){return true;}
+	@Override public void executeMsg(ListenHolder.ExcChecker myHost, CMMsg msg)
 	{
 		myEnvironmental.executeMsg(myHost, msg);
 		for(ExcChecker O : excCheckers)
@@ -439,10 +439,10 @@ public class StdExit implements Exit
 	//public long lastAct(){return 0;}	//No Action ticks
 	//public long lastTick(){return lastTick;}
 
-	public SaveEnum[] totalEnumS(){return SCode.values();}
-	public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]} ;}
-	public ModEnum[] totalEnumM(){return MCode.values();}
-	public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
+	@Override public SaveEnum[] totalEnumS(){return SCode.values();}
+	@Override public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]} ;}
+	@Override public ModEnum[] totalEnumM(){return MCode.values();}
+	@Override public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
 	public int saveNum()
 	{
 		if((saveNum==0)&&(!amDestroyed))

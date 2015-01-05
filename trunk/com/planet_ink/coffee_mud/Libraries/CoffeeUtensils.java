@@ -23,7 +23,7 @@ public class CoffeeUtensils extends StdLibrary
 	public static final int LOOTFLAG_WORN=4;
 	public static final int LOOTFLAG_UNWORN=8;
 
-	public String ID(){return "CoffeeUtensils";}
+	@Override public String ID(){return "CoffeeUtensils";}
 	
 	public String niceCommaList(Vector V, boolean endAnd)
 	{

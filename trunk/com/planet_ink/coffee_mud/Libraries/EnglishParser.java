@@ -41,7 +41,7 @@ public class EnglishParser extends StdLibrary
 		public int toFind=1;
 	}
 
-	public String ID(){return "EnglishParser";}
+	@Override public String ID(){return "EnglishParser";}
 	private final static String[] articles={"a","an","all of","some one","a pair of","one of","all","the","some"};
 	private final static String[] basicArticles={"a","an","some one","all","the","some"};
 	public static boolean[] PUNCTUATION_TABLE=null;

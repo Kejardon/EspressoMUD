@@ -13,7 +13,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 */
 public class Temperature extends StdEffect
 {
-	public String ID() { return "Temperature"; }
+	@Override public String ID() { return "Temperature"; }
 //	public int temperature=0;
 	public boolean invoke(Affectable target, int asLevel)
 	{
@@ -49,7 +49,7 @@ public class Temperature extends StdEffect
 	/*
 	private static ModEnum[] totalEnumM=null;
 	private static Enum[] headerEnumM=null;
-	public ModEnum[] totalEnumM()
+	@Override public ModEnum[] totalEnumM()
 	{
 		if(totalEnumM==null)
 		{
@@ -59,7 +59,7 @@ public class Temperature extends StdEffect
 		}
 		return totalEnumM;
 	}
-	public Enum[] headerEnumM()
+	@Override public Enum[] headerEnumM()
 	{
 		if(headerEnumM==null)
 		{
@@ -71,7 +71,7 @@ public class Temperature extends StdEffect
 	}
 	private static SaveEnum[] totalEnumS=null;
 	private static Enum[] headerEnumS=null;
-	public SaveEnum[] totalEnumS()
+	@Override public SaveEnum[] totalEnumS()
 	{
 		if(totalEnumS==null)
 		{
@@ -81,7 +81,7 @@ public class Temperature extends StdEffect
 		}
 		return totalEnumS;
 	}
-	public Enum[] headerEnumS()
+	@Override public Enum[] headerEnumS()
 	{
 		if(headerEnumS==null)
 		{

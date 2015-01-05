@@ -28,10 +28,10 @@ public class StdBehavior implements Behavior
 	protected int saveNum=0;
 	protected boolean amDestroyed=false;
 
-	public String ID(){return "StdBehavior";}
+	@Override public String ID(){return "StdBehavior";}
 	public String name(){return ID();}
 	public Tickable.TickStat getTickStatus(){return tickStatus;}
-	public void initializeClass(){}
+	@Override public void initializeClass(){}
 	public int priority(ListenHolder L){return Integer.MAX_VALUE;}
 	public void registerListeners(ListenHolder here) { here.addListener(this, lFlags); }
 	public EnumSet<ListenHolder.Flags> listenFlags() {return lFlags;}
@@ -75,13 +75,13 @@ public class StdBehavior implements Behavior
 	public void setParms(String parameters){parms=parameters; CMLib.database().saveObject(this); }
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 
-	public void executeMsg(ListenHolder.ExcChecker myHost, CMMsg msg)
+	@Override public void executeMsg(ListenHolder.ExcChecker myHost, CMMsg msg)
 	{
 		return;
 	}
-	public boolean respondTo(CMMsg msg, Object data){return true;}
-	public boolean respondTo(CMMsg msg){return true;}
-	public boolean okMessage(ListenHolder.OkChecker myHost, CMMsg msg)
+	@Override public boolean respondTo(CMMsg msg, Object data){return true;}
+	@Override public boolean respondTo(CMMsg msg){return true;}
+	@Override public boolean okMessage(ListenHolder.OkChecker myHost, CMMsg msg)
 	{
 		return true;
 	}
@@ -115,10 +115,10 @@ public class StdBehavior implements Behavior
 	}
 
 	//CMModifiable and CMSavable
-	public SaveEnum[] totalEnumS(){return SCode.values();}
-	public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]} ;}
-	public ModEnum[] totalEnumM(){return MCode.values();}
-	public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
+	@Override public SaveEnum[] totalEnumS(){return SCode.values();}
+	@Override public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]} ;}
+	@Override public ModEnum[] totalEnumM(){return MCode.values();}
+	@Override public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
 	public int saveNum()
 	{
 		if((saveNum==0)&&(amDestroyed!=true))

@@ -17,7 +17,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 
 public class DefaultPlayerAccount implements PlayerAccount
 {
-	public String ID(){return "DefaultPlayerAccount";}
+	@Override public String ID(){return "DefaultPlayerAccount";}
 	protected HashSet<AccountStats> friends=new HashSet();
 	protected HashSet<MOB> ignored=new HashSet();
 	//protected HashSet<AccountStats> ignoredBy=new HashSet();
@@ -44,7 +44,7 @@ public class DefaultPlayerAccount implements PlayerAccount
 	}
 
 	@Override public DefaultPlayerAccount newInstance(){try{return getClass().newInstance();}catch(Exception e){return new DefaultPlayerAccount();}}
-	public void initializeClass(){}
+	@Override public void initializeClass(){}
 	@Override public DefaultPlayerAccount copyOf()
 	{
 		try
@@ -216,10 +216,10 @@ public class DefaultPlayerAccount implements PlayerAccount
 	}
 
 	//CMModifiable and CMSavable
-	public SaveEnum[] totalEnumS(){return SCode.values();}
-	public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]};}
-	public ModEnum[] totalEnumM(){return MCode.values();}
-	public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
+	@Override public SaveEnum[] totalEnumS(){return SCode.values();}
+	@Override public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]};}
+	@Override public ModEnum[] totalEnumM(){return MCode.values();}
+	@Override public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
 	public int saveNum()
 	{
 		if((saveNum==0)&&(!amDestroyed))

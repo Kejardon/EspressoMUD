@@ -38,7 +38,7 @@ public class Look extends StdCommand
 				textMsg="^[S-NAME] look^s around.";
 			else
 				textMsg="^[S-NAME] look^s at ^[T-NAMESELF].";
-			CMMsg msg=CMClass.getMsg(mob,thisThang,null,EnumSet.of(CMMsg.MsgCode.LOOK),textMsg);
+			CMMsg msg=CMClass.getMsg(mob,thisThang,(Vector)null,EnumSet.of(CMMsg.MsgCode.LOOK),textMsg);
 			if((mob.location().doMessage(msg))
 				&&(thisThang instanceof Room))
 				CMLib.commands().lookAtExits((Room)thisThang,mob);

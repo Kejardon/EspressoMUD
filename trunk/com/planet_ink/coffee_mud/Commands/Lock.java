@@ -31,7 +31,7 @@ public class Lock extends StdCommand
 			mob.tell("You don't see '"+whatTolock+"' here.");
 			return false;
 		}
-		CMMsg msg=CMClass.getMsg(mob,lockThis,null,EnumSet.of(CMMsg.MsgCode.LOCK),"<S-NAME> lock(s) <T-NAMESELF>.");
+		CMMsg msg=CMClass.getMsg(mob,lockThis,(Vector)null,EnumSet.of(CMMsg.MsgCode.LOCK),"^[S-NAME] lock^s ^[T-NAMESELF].");
 		mob.location().doMessage(msg);
 		msg.returnMsg();
 		return false;

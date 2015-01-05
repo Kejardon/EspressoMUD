@@ -20,7 +20,7 @@ public class Sniff extends StdCommand
 	{
 		if(commands.size()>1)
 		{
-			Interactable thisThang=null;
+			Interactable thisThang;
 			
 			String ID=CMParms.combine(commands,1);
 			if(ID.equalsIgnoreCase("SELF")||ID.equalsIgnoreCase("ME"))
@@ -29,10 +29,10 @@ public class Sniff extends StdCommand
 				thisThang=CMLib.english().fetchInteractable(ID,false,1,mob,mob.location());
 			if(thisThang!=null)
 			{
-				String name=" <T-NAMESELF>";
+				String name="^[S-NAME] sniff^s ^[T-NAMESELF].";
 				if(thisThang==mob.location())
-					name=" around";
-				CMMsg msg=CMClass.getMsg(mob,thisThang,null,EnumSet.of(CMMsg.MsgCode.SNIFF),"<S-NAME> sniff(s)"+name+".");
+					name="^[S-NAME] sniff^s around.";
+				CMMsg msg=CMClass.getMsg(mob,thisThang,(Vector)null,EnumSet.of(CMMsg.MsgCode.SNIFF),name);
 				mob.location().doMessage(msg);
 				msg.returnMsg();
 			}
@@ -41,7 +41,7 @@ public class Sniff extends StdCommand
 		}
 		else
 		{
-			CMMsg msg=CMClass.getMsg(mob,mob.location(),null,EnumSet.of(CMMsg.MsgCode.SNIFF),"<S-NAME> sniff(s) around.");
+			CMMsg msg=CMClass.getMsg(mob,mob.location(),(Vector)null,EnumSet.of(CMMsg.MsgCode.SNIFF),"[S-NAME] sniff^s around.");
 			mob.location().doMessage(msg);
 			msg.returnMsg();
 		}

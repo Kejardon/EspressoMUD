@@ -14,11 +14,11 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 
 public class Fey extends StdLanguage
 {
-	public String ID() { return "Fey"; }//Based on Gevey from http://www.kalieda.org/gevey/lexicon.html
+	@Override public String ID() { return "Fey"; }//Based on Gevey from http://www.kalieda.org/gevey/lexicon.html
 	public String name(){ return "Fey";}
 	public static Vector wordLists=null;	
 
-	public Vector translationVector(String language)
+	@Override public Vector<String[]> translationVector(String language)
 	{ 
 		if(wordLists==null)
 		{
@@ -39,7 +39,7 @@ public class Fey extends StdLanguage
 		return wordLists; 
 	}
 	private static final Hashtable hashwords=new Hashtable();
-	public Hashtable translationHash(String language)
+	@Override public Hashtable<String,String> translationHash(String language)
 	{
 		if((hashwords!=null)&&(hashwords.size()>0)) 
 			return hashwords;

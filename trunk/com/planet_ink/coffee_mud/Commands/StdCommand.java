@@ -19,7 +19,7 @@ public class StdCommand implements Command
 {
 	public StdCommand(){}
 	protected String ID=null;
-	public String ID()
+	@Override public String ID()
 	{
 		if(ID==null){
 			ID=this.getClass().getName();
@@ -32,7 +32,7 @@ public class StdCommand implements Command
 	//Importantish NOTE: Access strings should be in all caps, and not use `(' is ok) or ". Otherwise other normal ASCII values are fine.
 	protected String[] access=new String[0];
 	public String[] getAccessWords(){return access;}
-	public void initializeClass(){}
+	@Override public void initializeClass(){}
 	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		return true;
@@ -58,9 +58,9 @@ public class StdCommand implements Command
 	public boolean interruptCommand(MOB.QueuedCommand thisCommand, MOB.QueuedCommand interruptingCommand){return true;}
 	@Override public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	@Override public boolean canBeOrdered(){return true;}
-	public boolean securityCheck(MOB mob){return true;}
+	@Override public boolean securityCheck(MOB mob){return true;}
 	public CMObject newInstance(){return this;}
 	public CMObject copyOf() { return this; }
-	public int prompter(){return 0;}
+	@Override public int prompter(){return 0;}
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 }

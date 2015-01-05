@@ -15,10 +15,10 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 
 public class StdGender implements Gender
 {
-	public String ID(){return "StdGender";}
+	@Override public String ID(){return "StdGender";}
 	public CMObject newInstance(){return this;}
 	public CMObject copyOf(){return this;}
-	public void initializeClass(){}
+	@Override public void initializeClass(){}
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 
 	public String name(){return "NA";}

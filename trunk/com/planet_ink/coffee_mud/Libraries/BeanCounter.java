@@ -84,11 +84,11 @@ public class BeanCounter extends StdLibrary
 	}
 
 	
-	public String ID(){return "BeanCounter";}
+	@Override public String ID(){return "BeanCounter";}
 	public Hashtable<String,CMCurrency> currencies=new Hashtable<String,CMCurrency>();
 	public HashSet<String> allCurrencyNames=new HashSet<String>();
 
-	public void initializeClass()
+	@Override public void initializeClass()
 	{
 		createCurrencySet(defaultCurrencyDefinition);
 		createCurrencySet(copperStandard);

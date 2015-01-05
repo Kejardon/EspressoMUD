@@ -19,7 +19,7 @@ public class Sessions extends StdLibrary implements Runnable
 {
 	public final static long sleepTime=50;	//Check if there is input from users 20 times a second
 
-	public String ID(){return "Sessions";}
+	@Override public String ID(){return "Sessions";}
 	
 //	protected int lastSize=0;
 	
@@ -27,7 +27,7 @@ public class Sessions extends StdLibrary implements Runnable
 	public Vector<Session> all=new Vector();
 	public Session[] sessArray=Session.dummySessionArray;
 	
-	public SupportThread getSupportThread() { return thread;}
+	@Override public SupportThread getSupportThread() { return thread;}
 	
 	public Session elementAt(int x)
 	{
@@ -79,7 +79,7 @@ public class Sessions extends StdLibrary implements Runnable
 	{
 		Session S;
 		public SessionStopper(Session ses){S=ses;}
-		public void run()
+		@Override public void run()
 		{
 			S.kill(false);
 			try{Thread.sleep(1000);}catch(Exception e){}
@@ -92,7 +92,7 @@ public class Sessions extends StdLibrary implements Runnable
 			}
 		}
 	}
-	public boolean activate() {
+	@Override public boolean activate() {
 		if(thread==null)
 			thread=new SupportThread("THSessions", 60000, this, CMSecurity.isDebugging("UTILITHREAD"));
 		if(!thread.started)
@@ -100,7 +100,7 @@ public class Sessions extends StdLibrary implements Runnable
 		return true;
 	}
 	
-	public boolean shutdown() {
+	@Override public boolean shutdown() {
 		thread.shutdown();
 		return true;
 	}
@@ -128,7 +128,7 @@ public class Sessions extends StdLibrary implements Runnable
 		return null;
 	}
 	
-	public void run()
+	@Override public void run()
 	{
 		thread.status("checking player sessions.");
 		for(Session S : toArray())

@@ -47,11 +47,11 @@ public interface Room extends ItemCollection.ItemHolder, Interactable, CMSavable
 				return (((REMap)O).exit==exit)&&(((REMap)O).room==room);
 			return false;
 		}
-		public String ID(){return "REMap";}
+		@Override public String ID(){return "REMap";}
 		public Environmental getEnvObject() { return exit.getEnvObject(); }
 		public CMObject newInstance(){return null;}
 		public CMObject copyOf(){return new REMap(room, exit);}
-		public void initializeClass(){}
+		@Override public void initializeClass(){}
 		public int compareTo(CMObject O){return -1;}
 
 		public String name(){return exit.name();}
@@ -96,10 +96,10 @@ public interface Room extends ItemCollection.ItemHolder, Interactable, CMSavable
 		public Tickable.TickStat getTickStatus(){return Tickable.TickStat.Not;}
 		public boolean tick(int tickTo){return false;}
 		public int tickCounter(){return 0;}
-		public boolean respondTo(CMMsg msg){return true;}
-		public boolean respondTo(CMMsg msg, Object data){return true;}
-		public boolean okMessage(OkChecker myHost, CMMsg msg){return true;}
-		public void executeMsg(ExcChecker myHost, CMMsg msg){return;}
+		@Override public boolean respondTo(CMMsg msg){return true;}
+		@Override public boolean respondTo(CMMsg msg, Object data){return true;}
+		@Override public boolean okMessage(OkChecker myHost, CMMsg msg){return true;}
+		@Override public void executeMsg(ExcChecker myHost, CMMsg msg){return;}
 	}
 	*/
 /*

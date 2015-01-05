@@ -40,7 +40,11 @@ public class DebugCommand extends StdCommand
 		
 		return false;
 	}
-	public void panicDump(MOB mob, Vector commands)
+	public static void panicDump(MOB mob, Vector commands)
+	{
+		mob.tell(getFullThreadDump());
+	}
+	public static String getFullThreadDump()
 	{
 		StringBuffer lines=new StringBuffer("^xStatus|Name                 ^.^?\n\r");
 		try
@@ -56,9 +60,9 @@ public class DebugCommand extends StdCommand
 		{
 			lines.append("\n\rException while listing threads: ").append(e.getMessage()).append ("\n\r");
 		}
-		mob.tell(lines.toString());
+		return lines.toString();
 	}
-	public void dumpThreadGroup(StringBuffer lines,ThreadGroup tGroup)
+	public static void dumpThreadGroup(StringBuffer lines,ThreadGroup tGroup)
 	{
 		int ac = tGroup.activeCount();
 		int agc = tGroup.activeGroupCount();
@@ -91,7 +95,7 @@ public class DebugCommand extends StdCommand
 			lines.append("}\n\r");
 		}
 	}
-	public void dumpStack(StringBuffer lines,Thread theThread)
+	public static void dumpStack(StringBuffer lines,Thread theThread)
 	{
 		java.lang.StackTraceElement[] s=(java.lang.StackTraceElement[])theThread.getStackTrace();
 		//Would be nice: Exceptions here to skip

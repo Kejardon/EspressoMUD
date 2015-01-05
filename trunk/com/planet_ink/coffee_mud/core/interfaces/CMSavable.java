@@ -33,6 +33,9 @@ public interface CMSavable extends CMObject
 		//in other words save() on CMSubSavables needs to get ALL data for the subobject(including ID in case format mismatch!), as var data for the superobject, and start with a 2
 		public ByteBuffer save(U fromThis);
 		public void load(U toThis, ByteBuffer val);
+		//If positive, this is a fixed size field that will always take a certain amount of space.
+		//If -1, this is intended to be saved as part of a parent object. ONLY USABLE FOR TYPES THAT NEVER CHANGE
+		//If 0, this may have variable size
 		public int size();
 		public CMSavable subObject(U fromThis);
 //		public ByteBuffer namePrefix();
@@ -69,17 +72,17 @@ public interface CMSavable extends CMObject
 
 /*
 	//Non-saving class
-	public SaveEnum[] totalEnumS(){return CMSavable.dummySEArray;}
-	public Enum[] headerEnumS(){return CMClass.dummyEnumArray;}
+	@Override public SaveEnum[] totalEnumS(){return CMSavable.dummySEArray;}
+	@Override public Enum[] headerEnumS(){return CMClass.dummyEnumArray;}
 
 	//Typical non-extended CMSavable class
-	public SaveEnum[] totalEnumS(){return SCode.values();}
-	public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]};}
+	@Override public SaveEnum[] totalEnumS(){return SCode.values();}
+	@Override public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]};}
 	
 	//Typical extended CMSavable class
 	private static SaveEnum[] totalEnumS=null;
 	private static Enum[] headerEnumS=null;
-	public SaveEnum[] totalEnumS()
+	@Override public SaveEnum[] totalEnumS()
 	{
 		if(totalEnumS==null)
 		{
@@ -92,7 +95,7 @@ public interface CMSavable extends CMObject
 		}
 		return totalEnumS;
 	}
-	public Enum[] headerEnumS()
+	@Override public Enum[] headerEnumS()
 	{
 		if(headerEnumS==null)
 		{

@@ -18,18 +18,17 @@ public class Say extends StdCommand
 
 	@Override public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
-		String theWord="Say";
+		String theWord;
 		boolean toFlag=false;
 		{
 			String firstWord=commands.get(0).toUpperCase();
 			if(firstWord.startsWith("A"))
 				theWord="Ask";
-			else
-			if(firstWord.startsWith("Y"))
+			else if(firstWord.startsWith("Y"))
 				theWord="Yell";
 			else
 				theWord="Say";
-			if(firstWord.indexOf("T")>=0)
+			if(firstWord.contains("T"))
 				toFlag=true;
 		}
 
@@ -65,17 +64,17 @@ public class Say extends StdCommand
 			return false;
 		}
 
-		String toTarget=null;
+		String toTarget;
 		if((target!=null)&&(!theWord.equals("Ask")))
 		{
 			if(theWord.equals("Say"))
-				toTarget="^T^<SAY \""+mob.name()+"\"^><S-NAME> say(s) to <T-NAMESELF> '"+combinedCommands+"'^</SAY^>^?";
+				toTarget="^T^[S-NAME] say^s to ^[T-NAMESELF] '"+combinedCommands+"'^?"; //<SAY "mob.name()"></SAY>
 			else
-				toTarget="^T^<SAY \""+mob.name()+"\"^><S-NAME> yell(s) at <T-NAMESELF> '"+combinedCommands+"'^</SAY^>^?";
+				toTarget="^T^[S-NAME] yell^s at ^[T-NAMESELF] '"+combinedCommands+"'^?"; //<SAY "mob.name()"></SAY>
 		}
 		else
-			toTarget="^T^<SAY \""+mob.name()+"\"^><S-NAME> "+theWord.toLowerCase()+"(s) '"+combinedCommands+"'^</SAY^>^?";
-		CMMsg msg=CMClass.getMsg(mob,target,null,EnumSet.of(CMMsg.MsgCode.SPEAK),toTarget);
+			toTarget="^T^[S-NAME] "+theWord.toLowerCase()+"^s '"+combinedCommands+"'^?"; //<SAY "mob.name()"></SAY>
+		CMMsg msg=CMClass.getMsg(mob,target,(Vector)null,EnumSet.of(CMMsg.MsgCode.SPEAK),toTarget);
 		R.doMessage(msg);
 		msg.returnMsg();
 		return false;

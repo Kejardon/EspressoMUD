@@ -17,7 +17,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 
 public class StdArea implements Area
 {
-	public String ID(){return "StdArea";}
+	@Override public String ID(){return "StdArea";}
 	protected String name="the area";
 	protected SortedVector<Room> properRooms=new SortedVector<Room>();
 	protected Tickable.TickStat tickStatus=Tickable.TickStat.Not;
@@ -50,7 +50,7 @@ public class StdArea implements Area
 	public void setAuthorID(String authorID){author=authorID;}
 	public String getAuthorID(){return author;}
 
-	public void initializeClass(){}
+	@Override public void initializeClass(){}
 
 	public int ambientTemperature()
 	{
@@ -179,7 +179,7 @@ public class StdArea implements Area
 	public CopyOnWriteArrayList<ExcChecker> excCheckers(){return excCheckers;}
 	public CopyOnWriteArrayList<TickActer> tickActers(){return tickActers;}
 
-	public boolean okMessage(OkChecker myHost, CMMsg msg)
+	@Override public boolean okMessage(OkChecker myHost, CMMsg msg)
 	{
 /*
 		for(int i=0;i<msg.source().size();i++)
@@ -205,8 +205,8 @@ public class StdArea implements Area
 		*/
 		return true;
 	}
-	public boolean respondTo(CMMsg msg, Object data){return true;}
-	public boolean respondTo(CMMsg msg){return true;}
+	@Override public boolean respondTo(CMMsg msg, Object data){return true;}
+	@Override public boolean respondTo(CMMsg msg){return true;}
 
 	public void sendMessageEverywhere(CMMsg msg)
 	{
@@ -224,7 +224,7 @@ public class StdArea implements Area
 			R.show(source, target, tool, srcMessage, tarMessage, othMessage);
 	}
 
-	public void executeMsg(ExcChecker myHost, CMMsg msg)
+	@Override public void executeMsg(ExcChecker myHost, CMMsg msg)
 	{
 		for(ExcChecker O : excCheckers)
 			O.executeMsg(this, msg);
@@ -525,10 +525,10 @@ public class StdArea implements Area
 	public void removeParent(int Disowned) { parents.remove(Disowned); }
 
 	//CMModifiable and CMSavable
-	public SaveEnum[] totalEnumS(){return SCode.values();}
-	public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]} ;}
-	public ModEnum[] totalEnumM(){return MCode.values();}
-	public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
+	@Override public SaveEnum[] totalEnumS(){return SCode.values();}
+	@Override public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]} ;}
+	@Override public ModEnum[] totalEnumM(){return MCode.values();}
+	@Override public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
 	public int saveNum()
 	{
 		if((saveNum==0)&&(!amDestroyed))

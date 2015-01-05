@@ -18,7 +18,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 
 public class SimpleExit implements Exit
 {
-	public String ID(){	return "SimpleExit";}
+	@Override public String ID(){	return "SimpleExit";}
 
 	protected static EnumSet<ListenHolder.Flags> lFlags=EnumSet.of(ListenHolder.Flags.OK,ListenHolder.Flags.EXC);
 	protected boolean amDestroyed=false;
@@ -113,7 +113,7 @@ public class SimpleExit implements Exit
 	public void registerAllListeners() { }
 	public void clearAllListeners() { }
 
-	public void initializeClass(){}
+	@Override public void initializeClass(){}
 	public boolean visibleExit(MOB mob, Room destination){ return true; }
 	public String name(){ return "a wide open passage";}
 	public String plainName(){ return "a wide open passage";}
@@ -167,15 +167,15 @@ public class SimpleExit implements Exit
 			return this.newInstance();
 		}
 	}
-	public boolean okMessage(ListenHolder.OkChecker myHost, CMMsg msg)
+	@Override public boolean okMessage(ListenHolder.OkChecker myHost, CMMsg msg)
 	{
 		if(!myEnvironmental.okMessage(myHost, msg))
 			return false;
 		return true;
 	}
-	public boolean respondTo(CMMsg msg, Object data){return true;}
-	public boolean respondTo(CMMsg msg){return true;}
-	public void executeMsg(ListenHolder.ExcChecker myHost, CMMsg msg)
+	@Override public boolean respondTo(CMMsg msg, Object data){return true;}
+	@Override public boolean respondTo(CMMsg msg){return true;}
+	@Override public void executeMsg(ListenHolder.ExcChecker myHost, CMMsg msg)
 	{
 		myEnvironmental.executeMsg(myHost, msg);
 	}
@@ -223,10 +223,10 @@ public class SimpleExit implements Exit
 	//public long lastAct(){return 0;}	//No Action ticks
 	//public long lastTick(){return lastTick;}
 
-	public SaveEnum[] totalEnumS(){return SCode.values();}
-	public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]} ;}
-	public ModEnum[] totalEnumM(){return MCode.values();}
-	public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
+	@Override public SaveEnum[] totalEnumS(){return SCode.values();}
+	@Override public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]} ;}
+	@Override public ModEnum[] totalEnumM(){return MCode.values();}
+	@Override public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
 	public int saveNum()
 	{
 		if((saveNum==0)&&(!amDestroyed))

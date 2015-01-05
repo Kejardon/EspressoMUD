@@ -31,17 +31,17 @@ public class DefaultLid implements Closeable, Ownable
 	public Ownable setOwner(CMSavable owner){parent=owner; return this;}
 
 	//CMObject
-	public String ID(){return "DefaultLid";}
+	@Override public String ID(){return "DefaultLid";}
 	@Override public DefaultLid newInstance(){return new DefaultLid();}
 	@Override public DefaultLid copyOf(){return null;}
-	public void initializeClass(){}
+	@Override public void initializeClass(){}
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 
 	//CMModifiable and CMSavable
-	public SaveEnum[] totalEnumS(){return SCode.values();}
-	public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]} ;}
-	public ModEnum[] totalEnumM(){return MCode.values();}
-	public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
+	@Override public SaveEnum[] totalEnumS(){return SCode.values();}
+	@Override public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]} ;}
+	@Override public ModEnum[] totalEnumM(){return MCode.values();}
+	@Override public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
 	public int saveNum()
 	{
 /*		if((saveNum==0)&&(parent!=null))

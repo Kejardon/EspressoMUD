@@ -14,7 +14,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 
 public class Druidic extends StdLanguage
 {
-	public String ID() { return "Druidic"; }
+	@Override public String ID() { return "Druidic"; }
 	public String name(){ return "Druidic";}
 	public static Vector wordLists=null;
 	public Druidic()
@@ -22,7 +22,7 @@ public class Druidic extends StdLanguage
 		super();
 	}
 
-	public Vector translationVector(String language)
+	@Override public Vector<String[]> translationVector(String language)
 	{
 		if(wordLists==null)
 		{

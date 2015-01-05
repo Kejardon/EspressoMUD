@@ -16,7 +16,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 */
 public class StdCoins extends StdItem implements Coins
 {
-	public String ID(){	return "StdCoins";}
+	@Override public String ID(){	return "StdCoins";}
 //	public int value(){	return envStats().ability();}
 	protected long denomination=1;
 	protected long amount=0;
@@ -87,7 +87,7 @@ public class StdCoins extends StdItem implements Coins
 	//CMModifiable and CMSavable
 	private static ModEnum[] totalEnumM=null;
 	private static Enum[] headerEnumM=null;
-	public ModEnum[] totalEnumM()
+	@Override public ModEnum[] totalEnumM()
 	{
 		if(totalEnumM==null)
 		{
@@ -97,7 +97,7 @@ public class StdCoins extends StdItem implements Coins
 		}
 		return totalEnumM;
 	}
-	public Enum[] headerEnumM()
+	@Override public Enum[] headerEnumM()
 	{
 		if(headerEnumM==null)
 		{
@@ -109,7 +109,7 @@ public class StdCoins extends StdItem implements Coins
 	}
 	private static SaveEnum[] totalEnumS=null;
 	private static Enum[] headerEnumS=null;
-	public SaveEnum[] totalEnumS()
+	@Override public SaveEnum[] totalEnumS()
 	{
 		if(totalEnumS==null)
 		{
@@ -119,7 +119,7 @@ public class StdCoins extends StdItem implements Coins
 		}
 		return totalEnumS;
 	}
-	public Enum[] headerEnumS()
+	@Override public Enum[] headerEnumS()
 	{
 		if(headerEnumS==null)
 		{

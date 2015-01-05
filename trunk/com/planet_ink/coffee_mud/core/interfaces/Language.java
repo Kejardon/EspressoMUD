@@ -42,9 +42,9 @@ public interface Language extends Effect
 	public boolean beingSpoken(String language);
 	public void setBeingSpoken(String language, boolean beingSpoken);
 	// Returns the direct word<->word translation hashtable
-	public Hashtable translationHash(String language);
+	public Hashtable<String,String> translationHash(String language);
 	// Returns the word-length rough-translation vector of string arrays for the given language
-	public Vector translationVector(String language);
+	public Vector<String[]> translationVector(String language);
 	// Returns a language translation of the given word in the given language
 	public String translate(String language, String word);
 }

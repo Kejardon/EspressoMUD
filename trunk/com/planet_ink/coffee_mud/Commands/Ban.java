@@ -39,5 +39,5 @@ public class Ban extends StdCommand
 
 	@Override public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	@Override public boolean canBeOrdered(){return true;}
-	public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,"BAN");}
+	@Override public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,"BAN");}
 }

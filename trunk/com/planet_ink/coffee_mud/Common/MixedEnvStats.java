@@ -17,7 +17,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 
 public class MixedEnvStats implements EnvStats, Ownable
 {
-	public String ID(){return "MixedEnvStats";}
+	@Override public String ID(){return "MixedEnvStats";}
 	protected double Speed=1.0;			// should be positive
 	protected CopyOnWriteArrayList<String> ambiances=new CopyOnWriteArrayList();
 	protected int width;
@@ -131,7 +131,7 @@ public class MixedEnvStats implements EnvStats, Ownable
 	}
 
 	public MixedEnvStats newInstance(){try{return getClass().newInstance();}catch(Exception e){return new MixedEnvStats();}}
-	public void initializeClass(){}
+	@Override public void initializeClass(){}
 	public MixedEnvStats copyOf()
 	{
 		try
@@ -173,10 +173,10 @@ public class MixedEnvStats implements EnvStats, Ownable
 	}
 
 	//CMModifiable and CMSavable
-	public SaveEnum[] totalEnumS(){return SCode.values();}
-	public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]};}
-	public ModEnum[] totalEnumM(){return MCode.values();}
-	public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
+	@Override public SaveEnum[] totalEnumS(){return SCode.values();}
+	@Override public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]};}
+	@Override public ModEnum[] totalEnumM(){return MCode.values();}
+	@Override public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
 	public int saveNum(){return 0;}
 	public void setSaveNum(int num){}
 	public boolean needLink(){return false;}

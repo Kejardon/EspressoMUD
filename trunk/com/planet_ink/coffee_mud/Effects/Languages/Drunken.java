@@ -14,7 +14,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 
 public class Drunken extends StdLanguage
 {
-	public String ID() { return "Drunken"; }
+	@Override public String ID() { return "Drunken"; }
 	public String name(){ return "Drunken";}
 	public static Vector wordLists=null;
 	public Drunken()
@@ -22,7 +22,7 @@ public class Drunken extends StdLanguage
 		super();
 	}
 
-	public Vector translationVector(String language)
+	@Override public Vector<String[]> translationVector(String language)
 	{
 		return wordLists;
 	}
@@ -55,7 +55,7 @@ public class Drunken extends StdLanguage
 		return V;
 	}
 
-	public String translate(String language, String word)
+	@Override public String translate(String language, String word)
 	{
 		StringBuffer sbw=new StringBuffer(word);
 		Vector V=getSChoices(sbw);

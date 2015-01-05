@@ -27,7 +27,7 @@ public class CMChannels extends StdLibrary
 		WARRANTS, PLAYERREADONLY
 	};
 	
-	public String ID(){return "CMChannels";}
+	@Override public String ID(){return "CMChannels";}
 
 	//public int numChannelsLoaded=0;
 	public int numIChannelsLoaded=0;
@@ -169,7 +169,7 @@ public class CMChannels extends StdLibrary
 		channelQue=CMClass.dummyVectorArray;
 	}
 
-	public boolean shutdown()
+	@Override public boolean shutdown()
 	{
 		clearChannels();
 		return true;

@@ -20,7 +20,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 
 public class CMGenEditor extends StdLibrary
 {
-	public String ID(){return "CMGenEditor";}
+	@Override public String ID(){return "CMGenEditor";}
 
 	public <T extends CMModifiable> T genMiscSet(MOB mob, T E)
 	{

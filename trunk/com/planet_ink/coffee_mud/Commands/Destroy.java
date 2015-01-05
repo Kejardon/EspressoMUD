@@ -447,5 +447,5 @@ public class Destroy extends StdCommand
 	}
 	@Override public int commandType(MOB mob, String cmds){return CT_NON_ACTION;}
 	@Override public boolean canBeOrdered(){return false;}
-	public boolean securityCheck(MOB mob){return CMSecurity.isAllowedStartsWith(mob,"CMD");}
+	@Override public boolean securityCheck(MOB mob){return CMSecurity.isAllowedStartsWith(mob,"CMD");}
 }

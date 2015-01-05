@@ -16,21 +16,21 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 
 public class SignLanguage extends StdLanguage
 {
-	public String ID() { return "SignLanguage"; }
-	public String name(){ return "Sign Language";}
-	public String writtenName() { return "Braille";}
+	@Override public String ID() { return "SignLanguage"; }
+	@Override public String name(){ return "Sign Language";}
+	@Override public String writtenName() { return "Braille";}
 	public static Vector wordLists=null;
 	public SignLanguage()
 	{
 		super();
 	}
 
-	public Vector translationVector(String language)
+	@Override public Vector<String[]> translationVector(String language)
 	{
 		return wordLists;
 	}
 
-	protected boolean processSourceMessage(CMMsg msg, String str, int numToMess)
+	@Override protected boolean processSourceMessage(CMMsg msg, String str, int numToMess)
 	{
 		if(msg.sourceMessage()==null) return true;
 		int wordStart=msg.sourceMessage().indexOf('\'');
@@ -66,7 +66,7 @@ public class SignLanguage extends StdLanguage
 		return true;
 	}
 	
-	protected boolean processNonSourceMessages(CMMsg msg, String str, int numToMess)
+	@Override protected boolean processNonSourceMessages(CMMsg msg, String str, int numToMess)
 	{
 		String fullOtherMsgStr=(msg.othersMessage()==null)?msg.targetMessage():msg.othersMessage();
 		if(fullOtherMsgStr==null) return true;
@@ -107,22 +107,22 @@ public class SignLanguage extends StdLanguage
 		return true;
 	}
 	
-	protected boolean translateOthersMessage(CMMsg msg, String sourceWords)
+	@Override protected boolean translateOthersMessage(CMMsg msg, String sourceWords)
 	{
-		if((msg.othersMessage()!=null)&&(sourceWords!=null)&&(sourceWords!=null))
+		if((msg.othersMessage()!=null)&&(sourceWords!=null))
 		{
 			String otherMes=msg.othersMessage();
 			if((otherMes.lastIndexOf('\'')==otherMes.indexOf('\'')))
 				otherMes=otherMes.replace('.', ' ')+'\''+sourceWords+'\'';
 			if(msg.target()!=null)
 				otherMes=CMLib.coffeeFilter().fullOutFilter(null,(MOB)affected,msg.firstSource(),msg.target(),msg.firstTool(),otherMes,false);
-			msg.addTrailerMsg(((MOB)affected).location(), CMClass.getMsg(msg.firstSource(),(MOB)affected,null,CMMsg.NO_EFFECT,null,msg.othersCode(),CMStrings.substituteSayInMessage(otherMes,sourceWords)+" (translated from "+name()+")",CMMsg.NO_EFFECT,null));
+			msg.addTrailerMsg(((MOB)affected).location(), CMClass.getMsg(msg.source(),(MOB)affected,(Vector)null,CMMsg.NO_EFFECT,null,msg.othersCode(),CMStrings.substituteSayInMessage(otherMes,sourceWords)+" (translated from "+name()+")",CMMsg.NO_EFFECT,null));
 			return true;
 		}
 		return false;
 	}
 	
-	protected boolean translateTargetMessage(CMMsg msg, String sourceWords)
+	@Override protected boolean translateTargetMessage(CMMsg msg, String sourceWords)
 	{
 		if(msg.isTarget((MOB)affected)&&(msg.targetMessage()!=null))
 		{
@@ -131,20 +131,20 @@ public class SignLanguage extends StdLanguage
 				otherMes=otherMes.replace('.', ' ')+'\''+sourceWords+'\'';
 			if(msg.target()!=null)
 				otherMes=CMLib.coffeeFilter().fullOutFilter(null,(MOB)affected,msg.firstSource(),msg.target(),msg.firstTool(),otherMes,false);
-			msg.addTrailerMsg(((MOB)affected).location(), CMClass.getMsg(msg.firstSource(),(MOB)affected,null,CMMsg.NO_EFFECT,null,msg.targetCode(),CMStrings.substituteSayInMessage(otherMes,sourceWords)+" (translated from "+name()+")",CMMsg.NO_EFFECT,null));
+			msg.addTrailerMsg(((MOB)affected).location(), CMClass.getMsg(msg.source(),(MOB)affected,(Vector)null,CMMsg.NO_EFFECT,null,msg.targetCode(),CMStrings.substituteSayInMessage(otherMes,sourceWords)+" (translated from "+name()+")",CMMsg.NO_EFFECT,null));
 			return true;
 		}
 		return false;
 	}
 
-	protected boolean translateChannelMessage(CMMsg msg, String sourceWords)
+	@Override protected boolean translateChannelMessage(CMMsg msg, String sourceWords)
 	{
 		if(msg.hasSourceCode(CMMsg.MsgCode.CHANNEL)&&(msg.othersMessage()!=null))
 		{
 			String otherMes=msg.othersMessage();
 			if((otherMes.lastIndexOf('\'')==otherMes.indexOf('\'')))
 				otherMes=otherMes.replace('.', ' ')+'\''+sourceWords+'\'';
-			msg.addTrailerMsg(((MOB)affected).location(), CMClass.getMsg(msg.source().clone(),null,null,CMMsg.NO_EFFECT,null,CMMsg.NO_EFFECT,null,msg.othersCode(),CMStrings.substituteSayInMessage(otherMes,sourceWords)+" (translated from "+name()+")"));
+			msg.addTrailerMsg(((MOB)affected).location(), CMClass.getMsg(msg.source(),null,(Vector)null,CMMsg.NO_EFFECT,null,CMMsg.NO_EFFECT,null,msg.othersCode(),CMStrings.substituteSayInMessage(otherMes,sourceWords)+" (translated from "+name()+")"));
 			return true;
 		}
 		return false;

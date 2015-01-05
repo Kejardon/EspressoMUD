@@ -24,10 +24,10 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 
 public abstract class DefaultCharStats implements CharStats
 {
-	public String ID(){return "DefaultCharStats";}
+	@Override public String ID(){return "DefaultCharStats";}
 
-	public DefaultCharStats newInstance(){try{return getClass().newInstance();}catch(Exception e){return null;}}
-	public void initializeClass(){}
+	@Override public DefaultCharStats newInstance(){try{return getClass().newInstance();}catch(Exception e){return null;}}
+	@Override public void initializeClass(){}
 	protected CMSavable parent=null;
 	protected short[] stat;
 	protected short[] statTrain;
@@ -35,13 +35,13 @@ public abstract class DefaultCharStats implements CharStats
 	protected int[] points;
 	protected int[] pointsMax;
 
-	public Stat[] getStatOptions(){return dummyStatArray;}
-	public Save[] getSaveOptions(){return dummySaveArray;}
-	public Points[] getPointOptions(){return dummyPointsArray;}
+	@Override public Stat[] getStatOptions(){return dummyStatArray;}
+	@Override public Save[] getSaveOptions(){return dummySaveArray;}
+	@Override public Points[] getPointOptions(){return dummyPointsArray;}
 
 	//Ownable
-	public CMSavable owner(){return parent;}
-	public Ownable setOwner(CMSavable owner){parent=owner; return this;}
+	@Override public CMSavable owner(){return parent;}
+	@Override public Ownable setOwner(CMSavable owner){parent=owner; return this;}
 //	protected Body myBody=null;
 
 	/*
@@ -61,7 +61,7 @@ public abstract class DefaultCharStats implements CharStats
 	*/
 
 
-	public void copyInto(CharStats intoStats)
+	@Override public void copyInto(CharStats intoStats)
 	{
 		if(intoStats.ID()==ID())
 		{
@@ -73,7 +73,7 @@ public abstract class DefaultCharStats implements CharStats
 				newStats.parent.saveThis();
 		}
 	}
-	public void copyStatic(CharStats intoStats)
+	@Override public void copyStatic(CharStats intoStats)
 	{
 		if(intoStats.ID()==ID())
 		{
@@ -90,14 +90,14 @@ public abstract class DefaultCharStats implements CharStats
 			if(parent!=null) parent.saveThis();
 		}
 	}
-	public void resetState()
+	@Override public void resetState()
 	{
 		for(int i=0; i<points.length; i++)
 			points[i]=pointsMax[i];
 		if(parent!=null) parent.saveThis();
 	}
 
-	public DefaultCharStats copyOf()
+	@Override public DefaultCharStats copyOf()
 	{
 		//KINDA TODO
 		DefaultCharStats newOne=(DefaultCharStats)newInstance();
@@ -105,62 +105,62 @@ public abstract class DefaultCharStats implements CharStats
 		return newOne;
 	}
 
-	public short getSave(Save option)
+	@Override public short getSave(Save option)
 	{
 		int i=getSaveIndex(option);
 		if(i>=0) return save[i];
 		return -1;
 	}
-	public void setSave(Save option, short value)
+	@Override public void setSave(Save option, short value)
 	{
 		int i=getSaveIndex(option);
 		if(i>=0) { save[i]=value; if(parent!=null) parent.saveThis(); }
 	}
 
-	public short getTrain(Stat option)
+	@Override public short getTrain(Stat option)
 	{
 		int i=getStatIndex(option);
 		if(i>=0) return statTrain[i];
 		return -1;
 	}
-	public void setTrain(Stat option, short value)
+	@Override public void setTrain(Stat option, short value)
 	{
 		int i=getStatIndex(option);
 		if(i>=0) { statTrain[i]=value; if(parent!=null) parent.saveThis(); }
 	}
 
-	public short getStat(Stat option)
+	@Override public short getStat(Stat option)
 	{
 		int i=getStatIndex(option);
 		if(i>=0) return stat[i];
 		return -1;
 	}
 
-	public void setStat(Stat option, short value)
+	@Override public void setStat(Stat option, short value)
 	{
 		int i=getStatIndex(option);
 		if(i>=0) {stat[i]=value; if(parent!=null) parent.saveThis();}
 	}
 
-	public int getPoints(Points option)
+	@Override public int getPoints(Points option)
 	{
 		int i=getPointsIndex(option);
 		if(i>=0) return points[i];
 		return -1;
 	}
-	public double getPointsPercent(Points option)
+	@Override public double getPointsPercent(Points option)
 	{
 		int i=getPointsIndex(option);
 		if(i>=0) return ((double)points[i])/pointsMax[i];
 		return -1.0;
 	}
-	public boolean setPoints(Points option, int newVal)	//Return if it broke a min or max cap, do not cap yourself
+	@Override public boolean setPoints(Points option, int newVal)	//Return if it broke a min or max cap, do not cap yourself
 	{
 		int i=getPointsIndex(option);
 		if(i>=0) {points[i]=newVal; if(parent!=null) parent.saveThis(); return newVal>pointsMax[i];}
 		return false;
 	}
-	public boolean adjPoints(Points option, int byThisMuch)	//Cap, return if cap did something
+	@Override public boolean adjPoints(Points option, int byThisMuch)	//Cap, return if cap did something
 	{
 		int i=getPointsIndex(option);
 		if(i>=0)
@@ -183,13 +183,13 @@ public abstract class DefaultCharStats implements CharStats
 		return false;
 	}
 
-	public int getMaxPoints(Points option)
+	@Override public int getMaxPoints(Points option)
 	{
 		int i=getPointsIndex(option);
 		if(i>=0) return pointsMax[i];
 		return -1;
 	}
-	public boolean setMaxPoints(Points option, int newVal)	//Return if reduced below current, do not cap yourself
+	@Override public boolean setMaxPoints(Points option, int newVal)	//Return if reduced below current, do not cap yourself
 	{
 		int i=getPointsIndex(option);
 		if(i<0) return false;
@@ -197,7 +197,7 @@ public abstract class DefaultCharStats implements CharStats
 		if(parent!=null) parent.saveThis();
 		return newVal<points[i];
 	}
-	public boolean adjMaxPoints(Points option, int byThisMuch)	//Cap, return if cap did something
+	@Override public boolean adjMaxPoints(Points option, int byThisMuch)	//Cap, return if cap did something
 	{
 		int i=getPointsIndex(option);
 		if(i>=0)
@@ -253,16 +253,16 @@ public abstract class DefaultCharStats implements CharStats
 		sourceStats.saveThis(); //*
 	} */
 
-	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
+	@Override public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 
-	public boolean sameAs(CharStats E)
+	@Override public boolean sameAs(CharStats E)
 	{
 		if (E.equals(this)) return true;
 		return false;
 	}
 
-	public void destroy(){}	//TODO?
-	public boolean amDestroyed()
+	@Override public void destroy(){}	//TODO?
+	@Override public boolean amDestroyed()
 	{
 		if(parent!=null)
 			return parent.amDestroyed();
@@ -270,16 +270,16 @@ public abstract class DefaultCharStats implements CharStats
 	}
 
 	//CMModifiable and CMSavable
-	public SaveEnum[] totalEnumS(){return CMSavable.dummySEArray;}
-	public Enum[] headerEnumS(){return CMClass.dummyEnumArray;}
-	public ModEnum[] totalEnumM(){return CMModifiable.dummyMEArray;}
-	public Enum[] headerEnumM(){return CMClass.dummyEnumArray;}
-	public int saveNum(){return 0;}
-	public void setSaveNum(int num){}
-	public boolean needLink(){return false;}
-	public void link(){}
-	public void saveThis(){if(parent!=null) parent.saveThis();}
-	public void prepDefault(){}
+	@Override public SaveEnum[] totalEnumS(){return CMSavable.dummySEArray;}
+	@Override public Enum[] headerEnumS(){return CMClass.dummyEnumArray;}
+	@Override public ModEnum[] totalEnumM(){return CMModifiable.dummyMEArray;}
+	@Override public Enum[] headerEnumM(){return CMClass.dummyEnumArray;}
+	@Override public int saveNum(){return 0;}
+	@Override public void setSaveNum(int num){}
+	@Override public boolean needLink(){return false;}
+	@Override public void link(){}
+	@Override public void saveThis(){if(parent!=null) parent.saveThis();}
+	@Override public void prepDefault(){}
 
 	/*
 	private enum SCode implements SaveEnum{

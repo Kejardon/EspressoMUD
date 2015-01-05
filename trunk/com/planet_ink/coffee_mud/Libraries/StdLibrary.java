@@ -16,7 +16,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 */
 public class StdLibrary implements CMLibrary
 {
-	public String ID(){return "StdLibrary";}
+	@Override public String ID(){return "StdLibrary";}
 	public CMObject newInstance()
 	{
 		try
@@ -31,10 +31,10 @@ public class StdLibrary implements CMLibrary
 	}
 	public CMObject copyOf(){try{return (CMObject)this.clone();}catch(Exception e){return newInstance();}}
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
-	public void initializeClass(){}
+	@Override public void initializeClass(){}
 	public void finalInitialize(){}
-	public boolean activate(){ return true;}
+	@Override public boolean activate(){ return true;}
 	public void propertiesLoaded(){ }
-	public boolean shutdown(){ return true;}
-	public SupportThread getSupportThread() { return null;}
+	@Override public boolean shutdown(){ return true;}
+	@Override public SupportThread getSupportThread() { return null;}
 }

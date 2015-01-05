@@ -34,7 +34,7 @@ public class Knock extends StdCommand
 		Interactable I=CMLib.english().fetchInteractable(knockWhat, false, 1, mob.location());
 		if(I!=null)
 		{
-			CMMsg msg=CMClass.getMsg(mob,I,null,EnumSet.of(CMMsg.MsgCode.KNOCK),"<S-NAME> knock(s) on <T-NAMESELF>.");
+			CMMsg msg=CMClass.getMsg(mob,I,(Vector)null,EnumSet.of(CMMsg.MsgCode.KNOCK),"^[S-NAME] knock^s on ^[T-NAMESELF].");
 			if(volume!=-1)
 				msg.setValue(volume);
 			mob.location().doMessage(msg);

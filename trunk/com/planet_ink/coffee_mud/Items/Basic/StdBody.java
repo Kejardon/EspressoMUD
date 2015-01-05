@@ -17,7 +17,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 
 public class StdBody extends StdItem implements Body
 {
-	public String ID(){	return "StdBody";}
+	@Override public String ID(){	return "StdBody";}
 
 	protected CopyOnWriteArrayList<CharAffecter> charAffecters=new CopyOnWriteArrayList();
 	//protected WVector<Race> myRaces=new WVector();	//make HybridBody for this instead
@@ -28,7 +28,7 @@ public class StdBody extends StdItem implements Body
 	protected CharStats baseCharStats;//=(CharStats)((Ownable)CMClass.COMMON.getNew("BodyCharStats")).setOwner(this);
 	protected CharStats charStats;//=(CharStats)((Ownable)CMClass.COMMON.getNew("BodyCharStats")).setOwner(this);
 	protected int[] birthday={-1, -1, -1};
-	public void initializeClass(){super.initializeClass(); myRace=CMClass.RACE.get("StdRace");} //Make sure CMClass's instance has non-null race
+	@Override public void initializeClass(){super.initializeClass(); myRace=CMClass.RACE.get("StdRace");} //Make sure CMClass's instance has non-null race
 	protected EatCode myEatAction=null;//defaultEatCode;
 
 	public StdBody()
@@ -39,24 +39,24 @@ public class StdBody extends StdItem implements Body
 //		desc="";
 	}
 
-	public EatCode getEat(){return (myEatAction==null?myRace:myEatAction);}
+	@Override public EatCode getEat(){return (myEatAction==null?myRace:myEatAction);}
 //	public Environmental getEnvObject() {return myEnvironmental;}
 
-	public MOB mob(){return myMob;}
-	public Body setMob(MOB mob){myMob=mob; return this;}
+	@Override public MOB mob(){return myMob;}
+	@Override public Body setMob(MOB mob){myMob=mob; return this;}
 
-	public int[] birthday(){return birthday;}
+	@Override public int[] birthday(){return birthday;}
 //	public int initializeBirthday(int ageHours, Race R) { }
 
-	public CharStats baseCharStats(){
+	@Override public CharStats baseCharStats(){
 		if(baseCharStats==null)
 			synchronized(this){if(baseCharStats==null) setBaseCharStats((CharStats)CMClass.COMMON.getNew("BodyCharStats"));}
 		return baseCharStats;}
-	public CharStats charStats(){
+	@Override public CharStats charStats(){
 		if(charStats==null)
 			synchronized(this){if(charStats==null) setBaseCharStats((CharStats)CMClass.COMMON.getNew("BodyCharStats"));}
 		return charStats;}
-	public void recoverCharStats()
+	@Override public void recoverCharStats()
 	{
 		baseCharStats.copyStatic(charStats);
 		for(CharAffecter C : charAffecters)
@@ -64,7 +64,7 @@ public class StdBody extends StdItem implements Body
 		//CMLib.database().saveObject(this);
 	}
 
-	public void setBaseCharStats(CharStats newBaseCharStats)
+	@Override public void setBaseCharStats(CharStats newBaseCharStats)
 	{
 		baseCharStats=(CharStats)((Ownable)newBaseCharStats.copyOf()).setOwner(this);
 		charStats=(CharStats)((Ownable)CMClass.COMMON.getNew(newBaseCharStats.ID())).setOwner(this);
@@ -73,7 +73,7 @@ public class StdBody extends StdItem implements Body
 		CMLib.database().saveObject(this);
 	}
 
-	public String healthText(MOB viewer)
+	@Override public String healthText(MOB viewer)
 	{
 //		String mxp="^<!ENTITY vicmaxhp \""+charStats().getMaxPoints(CharStats.Points.HIT)+"\"^>^<!ENTITY vichp \""+charStats().getPoints(CharStats.Points.HIT)+"\"^>^<Health^>^<HealthText \""+name()+"\"^>";
 		//TODO: Race stuff for healthText
@@ -89,15 +89,15 @@ public class StdBody extends StdItem implements Body
 		return healthDescs[pct].replace("<MOB>",myMob.displayName(viewer));
 	}
 
-	public boolean amDead(){return dead;}
-	public Body killMeDead()
+	@Override public boolean amDead(){return dead;}
+	@Override public Body killMeDead()
 	{
 		dead=true;
 		charStats().setPoints(CharStats.Points.HIT, 0);
 		CMLib.database().saveObject(this);
 		return this;
 	}
-	public void bringToLife(Room newLocation, boolean resetStats)
+	@Override public void bringToLife(Room newLocation, boolean resetStats)
 	{
 		newLocation.bringHere(this, false);
 		//setContainer(newLocation);
@@ -108,7 +108,7 @@ public class StdBody extends StdItem implements Body
 			charStats().resetState();
 		}
 	}
-	public void bringToLife()
+	@Override public void bringToLife()
 	{
 		dead=false;
 		if(baseCharStats().getPoints(CharStats.Points.HIT)<=0)
@@ -119,16 +119,16 @@ public class StdBody extends StdItem implements Body
 				charStats().setMaxPoints(CharStats.Points.HIT, 1);
 		CMLib.database().saveObject(this);
 	}
-	public boolean isComposite(){return false;}
-	public Race race(){return myRace;}
-	public WVector<Race> raceSet(){return null;}
-	public boolean isRace(Race R){return myRace==R;}
-	public void setRace(Race R)
+	@Override public boolean isComposite(){return false;}
+	@Override public Race race(){return myRace;}
+	@Override public WVector<Race> raceSet(){return null;}
+	@Override public boolean isRace(Race R){return myRace==R;}
+	@Override public void setRace(Race R)
 	{
 		myRace=R;
 		CMLib.database().saveObject(this);
 	}
-	public void setRaces(WVector<Race> R)
+	@Override public void setRaces(WVector<Race> R)
 	{
 		if(R.size()==1)
 		{
@@ -136,21 +136,21 @@ public class StdBody extends StdItem implements Body
 			CMLib.database().saveObject(this);
 		}
 	}
-	public void addRace(Race R){}	//Not supported by StdBody, need HybridBody
-	public String raceName()
+	@Override public void addRace(Race R){}	//Not supported by StdBody, need HybridBody
+	@Override public String raceName()
 	{
 		return myRace.name();
 	}
-	public void setGender(Gender G){myGender=G; CMLib.database().saveObject(this);}
-	public Gender gender(){return ((myGender==null)?(CMClass.GENDER.get("StdGender")):myGender);}
+	@Override public void setGender(Gender G){myGender=G; CMLib.database().saveObject(this);}
+	@Override public Gender gender(){return ((myGender==null)?(CMClass.GENDER.get("StdGender")):myGender);}
 
 	//Affectable/Behavable shared
-	public CopyOnWriteArrayList<CharAffecter> charAffecters(){return charAffecters;}
-	public void removeListener(Listener oldAffect, EnumSet flags)
+	@Override public CopyOnWriteArrayList<CharAffecter> charAffecters(){return charAffecters;}
+	@Override public void removeListener(Listener oldAffect, EnumSet flags)
 	{
 		ListenHolder.O.removeListener(this, oldAffect, flags);
 	}
-	public void addListener(Listener newAffect, EnumSet flags)
+	@Override public void addListener(Listener newAffect, EnumSet flags)
 	{
 		ListenHolder.O.addListener(this, newAffect, flags);
 	}
@@ -168,13 +168,13 @@ public class StdBody extends StdItem implements Body
 		super.cloneFix(E);
 		
 	}
-	public int value() { return baseGoldValue(); }
-	public void setBaseValue(int newValue) { }
-	public void setWornOut(int worn) { }
-	public boolean damagable() {return false;}
-	public void setDamagable(boolean bool){}
+	@Override public int value() { return baseGoldValue(); }
+	@Override public void setBaseValue(int newValue) { }
+	@Override public void setWornOut(int worn) { }
+	@Override public boolean damagable() {return false;}
+	@Override public void setDamagable(boolean bool){}
 
-	protected boolean doTick()
+	@Override protected boolean doTick()
 	{
 		tickStatus=Tickable.TickStat.Start;
 		if(!dead)
@@ -187,22 +187,22 @@ public class StdBody extends StdItem implements Body
 
 	protected static ListenHolder.DummyListener RefuseEatResponseLive = new ListenHolder.DummyListener()
 	{
-		public boolean respondTo(CMMsg msg, Object data)
+		@Override public boolean respondTo(CMMsg msg, Object data)
 		{
 			StdBody body=(StdBody)data;
 			MOB mob=body.myMob;
 			Interactable target=msg.target();
 			Room room=mob.location();
-			if((mob!=null) && (target!=null) && (room.hasLock()))
+			if((target!=null) && (room.hasLock()))
 			{
-				room.doAndReturnMsg(CMClass.getMsg(mob, target, null, EnumSet.of(CMMsg.MsgCode.VISUAL), "^[S-NAME] prevent^s ^[T-NAME] from trying to eat ^[S-HIM-HER]"));
+				room.doAndReturnMsg(CMClass.getMsg(mob, target, (Vector)null, EnumSet.of(CMMsg.MsgCode.VISUAL), "^[S-NAME] prevent^s ^[T-NAME] from trying to eat ^[S-HIM-HER]"));
 			}
 			return false;
 		}
 	};
 	protected static ListenHolder.DummyListener CheckBiteResponse = new ListenHolder.DummyListener()
 	{
-		public boolean respondTo(CMMsg msg, Object data)
+		@Override public boolean respondTo(CMMsg msg, Object data)
 		{
 			StdBody body=(StdBody)data;
 			if(!body.getEat().satisfiesEatReqs(msg))
@@ -212,7 +212,7 @@ public class StdBody extends StdItem implements Body
 				Interactable target=(thing instanceof Interactable)?(Interactable)thing:null;
 				if((target!=null)&&(room.hasLock()))
 				{
-					room.doAndReturnMsg(CMClass.getMsg(body, target, null, EnumSet.of(CMMsg.MsgCode.VISUAL), "^[S-NAME] tr^y to chew on ^[T-NAME] but can't eat ^[T-HIM-HER]."));
+					room.doAndReturnMsg(CMClass.getMsg(body, target, (Vector)null, EnumSet.of(CMMsg.MsgCode.VISUAL), "^[S-NAME] tr^y to chew on ^[T-NAME] but can't eat ^[T-HIM-HER]."));
 				}
 				return false;
 			}
@@ -222,7 +222,7 @@ public class StdBody extends StdItem implements Body
 
 
 
-	public boolean okMessage(ListenHolder.OkChecker myHost, CMMsg msg)
+	@Override public boolean okMessage(ListenHolder.OkChecker myHost, CMMsg msg)
 	{
 		if(!super.okMessage(myHost, msg))
 			return false;
@@ -262,8 +262,8 @@ public class StdBody extends StdItem implements Body
 		if(myMob==null) return true;
 		return myMob.okMessage(myHost, msg);
 	}
-	public boolean respondTo(CMMsg msg){ return true; }
-	public void executeMsg(ListenHolder.ExcChecker myHost, CMMsg msg)
+	@Override public boolean respondTo(CMMsg msg){ return true; }
+	@Override public void executeMsg(ListenHolder.ExcChecker myHost, CMMsg msg)
 	{
 		super.executeMsg(myHost, msg);
 		Interactable target=msg.target();
@@ -292,7 +292,7 @@ public class StdBody extends StdItem implements Body
 		if(myMob!=null) myMob.executeMsg(myHost, msg);
 	}
 
-	public void destroy()
+	@Override public void destroy()
 	{
 		dead=true;
 		super.destroy();
@@ -302,7 +302,7 @@ public class StdBody extends StdItem implements Body
 	//CMModifiable and CMSavable
 	private static ModEnum[] totalEnumM=null;
 	private static Enum[] headerEnumM=null;
-	public ModEnum[] totalEnumM()
+	@Override public ModEnum[] totalEnumM()
 	{
 		if(totalEnumM==null)
 		{
@@ -312,7 +312,7 @@ public class StdBody extends StdItem implements Body
 		}
 		return totalEnumM;
 	}
-	public Enum[] headerEnumM()
+	@Override public Enum[] headerEnumM()
 	{
 		if(headerEnumM==null)
 		{
@@ -324,7 +324,7 @@ public class StdBody extends StdItem implements Body
 	}
 	private static SaveEnum[] totalEnumS=null;
 	private static Enum[] headerEnumS=null;
-	public SaveEnum[] totalEnumS()
+	@Override public SaveEnum[] totalEnumS()
 	{
 		if(totalEnumS==null)
 		{
@@ -334,7 +334,7 @@ public class StdBody extends StdItem implements Body
 		}
 		return totalEnumS;
 	}
-	public Enum[] headerEnumS()
+	@Override public Enum[] headerEnumS()
 	{
 		if(headerEnumS==null)
 		{

@@ -19,7 +19,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 
 public class RawCMaterial extends StdLibrary
 {
-	public String ID(){return "RawCMaterial";}
+	@Override public String ID(){return "RawCMaterial";}
  
 	public String genericType(Item I) {
 //		if(I instanceof RawMaterial)

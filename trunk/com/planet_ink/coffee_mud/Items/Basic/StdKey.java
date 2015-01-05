@@ -18,7 +18,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 public class StdKey extends StdItem implements Key
 {
 	protected String key="skeleton";
-	public String ID(){	return "StdKey";}
+	@Override public String ID(){	return "StdKey";}
 	public StdKey()
 	{
 		super();
@@ -37,7 +37,7 @@ public class StdKey extends StdItem implements Key
 	//CMModifiable and CMSavable
 	private static ModEnum[] totalEnumM=null;
 	private static Enum[] headerEnumM=null;
-	public ModEnum[] totalEnumM()
+	@Override public ModEnum[] totalEnumM()
 	{
 		if(totalEnumM==null)
 		{
@@ -47,7 +47,7 @@ public class StdKey extends StdItem implements Key
 		}
 		return totalEnumM;
 	}
-	public Enum[] headerEnumM()
+	@Override public Enum[] headerEnumM()
 	{
 		if(headerEnumM==null)
 		{
@@ -59,7 +59,7 @@ public class StdKey extends StdItem implements Key
 	}
 	private static SaveEnum[] totalEnumS=null;
 	private static Enum[] headerEnumS=null;
-	public SaveEnum[] totalEnumS()
+	@Override public SaveEnum[] totalEnumS()
 	{
 		if(totalEnumS==null)
 		{
@@ -69,7 +69,7 @@ public class StdKey extends StdItem implements Key
 		}
 		return totalEnumS;
 	}
-	public Enum[] headerEnumS()
+	@Override public Enum[] headerEnumS()
 	{
 		if(headerEnumS==null)
 		{

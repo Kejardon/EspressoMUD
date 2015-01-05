@@ -30,7 +30,7 @@ public interface ExitInstance extends Interactable, CMSavable, CMModifiable //It
 
 		public Exit e;
 		public Room r;
-		public String ID() {return "ComparableEI";}
+		@Override public String ID() {return "ComparableEI";}
 		public static ComparableEI newCEI(Room R, Exit E)
 		{
 			ComparableEI map = CEICache.poll();
@@ -104,7 +104,7 @@ public interface ExitInstance extends Interactable, CMSavable, CMModifiable //It
 		public TickStat getTickStatus() {return null;}
 		public boolean tick(int tickTo) {return false;}
 		public int tickCounter() {return 0;}
-		public void initializeClass() {}
+		@Override public void initializeClass() {}
 		public void addEffect(Effect to) {}
 		public void delEffect(Effect to) {}
 		public boolean hasEffect(Effect to) {return false;}
@@ -113,15 +113,15 @@ public interface ExitInstance extends Interactable, CMSavable, CMModifiable //It
 		public Vector<Effect> fetchEffect(String ID) {return null;}
 		public Effect fetchFirstEffect(String ID) {return null;}
 		public Iterator<Effect> allEffects() {return null;}
-		public boolean respondTo(CMMsg msg) {return true;}
-		public boolean respondTo(CMMsg msg, Object data) {return true;}
-		public void executeMsg(ExcChecker myHost, CMMsg msg) {}
+		@Override public boolean respondTo(CMMsg msg) {return true;}
+		@Override public boolean respondTo(CMMsg msg, Object data) {return true;}
+		@Override public void executeMsg(ExcChecker myHost, CMMsg msg) {}
 		public void registerListeners(ListenHolder forThis) {}
 		public void registerAllListeners() {}
 		public void clearAllListeners() {}
 		public int priority(ListenHolder forThis) {return 0;}
 		public EnumSet<Flags> listenFlags() {return null;}
-		public boolean okMessage(OkChecker myHost, CMMsg msg) {return true;}
+		@Override public boolean okMessage(OkChecker myHost, CMMsg msg) {return true;}
 		public void addBehavior(Behavior to) {}
 		public void delBehavior(Behavior to) {}
 		public boolean hasBehavior(String ID) {return false;}
@@ -129,8 +129,8 @@ public interface ExitInstance extends Interactable, CMSavable, CMModifiable //It
 		public Behavior fetchBehavior(int index) {return null;}
 		public Behavior fetchBehavior(String ID) {return null;}
 		public Iterator<Behavior> allBehaviors(){return null;}
-		public SaveEnum[] totalEnumS() {return null;}
-		public Enum[] headerEnumS() {return null;}
+		@Override public SaveEnum[] totalEnumS() {return null;}
+		@Override public Enum[] headerEnumS() {return null;}
 		public int saveNum() {return 0;}
 		public void setSaveNum(int num) {}
 		public boolean needLink() {return false;}
@@ -139,7 +139,7 @@ public interface ExitInstance extends Interactable, CMSavable, CMModifiable //It
 		public void destroy() {}
 		public boolean amDestroyed() {return false;}
 		public void prepDefault() {}
-		public ModEnum[] totalEnumM() {return null;}
-		public Enum[] headerEnumM() {return null;}
+		@Override public ModEnum[] totalEnumM() {return null;}
+		@Override public Enum[] headerEnumM() {return null;}
 	}
 }

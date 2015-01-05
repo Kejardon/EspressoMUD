@@ -35,15 +35,15 @@ public class Whisper extends StdCommand
 		}
 		String combinedCommands=CMParms.combine(commands,1);
 
-		CMMsg msg=null;
+		CMMsg msg;
 		if(target==null)
-			msg=CMClass.getMsg(mob,null,null,EnumSet.of(CMMsg.MsgCode.SPEAK),"^T<S-NAME> whisper(s) to <S-HIM-HERSELF> '"+combinedCommands+"'.^?",
+			msg=CMClass.getMsg(mob,null,(Vector)null,EnumSet.of(CMMsg.MsgCode.SPEAK),"^T^[S-NAME] whisper^s to ^[S-HIM-HERSELF] '"+combinedCommands+"'.^?",
 										  EnumSet.noneOf(CMMsg.MsgCode.class),null,
-										  EnumSet.of(CMMsg.MsgCode.SPEAK),"^T<S-NAME> whisper(s) to <S-HIM-HERSELF>.^?");
+										  EnumSet.of(CMMsg.MsgCode.SPEAK),"^T^[S-NAME] whisper^s to ^[S-HIM-HERSELF].^?");
 		else
-			msg=CMClass.getMsg(mob,target,null,EnumSet.of(CMMsg.MsgCode.SPEAK),"^T^<WHISPER \""+target.name()+"\"^><S-NAME> whisper(s) to <T-NAMESELF> '"+combinedCommands+"'.^</WHISPER^>^?"
-										   ,EnumSet.of(CMMsg.MsgCode.SPEAK),"^T^<WHISPER \""+target.name()+"\"^><S-NAME> whisper(s) to <T-NAMESELF> '"+combinedCommands+"'^</WHISPER^>.^?"
-										   ,EnumSet.of(CMMsg.MsgCode.SPEAK),"^T<S-NAME> whisper(s) something to <T-NAMESELF>.^</WHISPER^>^?");
+			msg=CMClass.getMsg(mob,target,(Vector)null,EnumSet.of(CMMsg.MsgCode.SPEAK),"^T^[S-NAME] whisper^s to ^[T-NAMESELF] '"+combinedCommands+"'.^?" //<WHISPER "target.name()"></WHISPER>
+										   ,EnumSet.of(CMMsg.MsgCode.SPEAK),"^T^[S-NAME] whisper^s to ^[T-NAMESELF] '"+combinedCommands+"'.^?" //<WHISPER "target.name()"></WHISPER>
+										   ,EnumSet.of(CMMsg.MsgCode.SPEAK),"^T^[S-NAME] whisper^s something to ^[T-NAMESELF].^?");
 		R.doMessage(msg);
 		msg.returnMsg();
 		return false;

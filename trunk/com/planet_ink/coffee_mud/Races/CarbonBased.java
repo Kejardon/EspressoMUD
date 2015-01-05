@@ -17,13 +17,13 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 
 public class CarbonBased extends StdRace
 {
-	public String ID(){	return "CarbonBased"; }
-	public String name(){ return "CarbonBased"; }
-	public String racialCategory(){return "CarbonBased";}
+	@Override public String ID(){	return "CarbonBased"; }
+	@Override public String name(){ return "CarbonBased"; }
+	@Override public String racialCategory(){return "CarbonBased";}
 	
-	public HashMap<String, Body.BodyPart> bodyMap(){return null;}
+	@Override public HashMap<String, Body.BodyPart> bodyMap(){return null;}
 	
-	public void initializeClass()
+	@Override public void initializeClass()
 	{
 		if(ID()!="CarbonBased") return;
 		Command newCommand=new Eat();
@@ -34,7 +34,7 @@ public class CarbonBased extends StdRace
 		CMClass.COMMAND.add(newCommand);
 	}
 
-	public void trainStat(Body body, Stat stat, CMMsg message)
+	@Override public void trainStat(Body body, Stat stat, CMMsg message)
 	{
 		//TODO. Read message, affect limbs/body.
 		throw new UnsupportedOperationException("Not supported yet.");
@@ -110,7 +110,7 @@ public class CarbonBased extends StdRace
 			return true;
 		}
 		@Override public int commandType(MOB mob, String cmds){return CT_LOW_P_ACTION;}
-		public boolean securityCheck(MOB mob)
+		@Override public boolean securityCheck(MOB mob)
 		{
 			Body b=mob.body();
 			return ((b!=null)&&(b.charStats().getPointsIndex(CharStats.Points.HUNGER)>=0));
@@ -148,7 +148,7 @@ public class CarbonBased extends StdRace
 				*/
 			}
 			
-			boolean success=mob.location().doAndReturnMsg(CMClass.getMsg(mob,target,null,EnumSet.of(CMMsg.MsgCode.DRINK),"^[S-NAME] drink^s ^[T-NAME]."));
+			boolean success=mob.location().doAndReturnMsg(CMClass.getMsg(mob,target,(Vector)null,EnumSet.of(CMMsg.MsgCode.DRINK),"^[S-NAME] drink^s ^[T-NAME]."));
 			if(!success||target.amDestroyed()||mob.body().charStats().getPointsPercent(CharStats.Points.THIRST)>=1)
 				return false;
 			
@@ -157,16 +157,16 @@ public class CarbonBased extends StdRace
 			return true;
 		}
 		@Override public int commandType(MOB mob, String cmds){return CT_LOW_P_ACTION;}
-		public boolean securityCheck(MOB mob)
+		@Override public boolean securityCheck(MOB mob)
 		{
 			Body b=mob.body();
 			return ((b!=null)&&(b.charStats().getPointsIndex(CharStats.Points.THIRST)>=0));
 		}
 	}
 
-	public long sendEat(MOB mob, Body body, Vector<Interactable> items)
+	@Override public long sendEat(MOB mob, Body body, Vector<Interactable> items)
 	{
-		if(items.size()==0) return 0;
+		if(items.isEmpty()) return 0;
 		Item I=(Item)items.get(0);
 		
 		if(body.isComposite())
@@ -202,7 +202,7 @@ public class CarbonBased extends StdRace
 		return Tickable.TIME_TICK;
 	}
 	//Execute msg sort of code. Should not need any sanity checks.
-	public boolean handleEat(CMMsg msg)
+	@Override public boolean handleEat(CMMsg msg)
 	{
 		int amountToEat=msg.value();
 		if(amountToEat == 0) return false;
@@ -247,7 +247,7 @@ public class CarbonBased extends StdRace
 		}
 		return true;
 	}
-	public void applyDiet(Body body, Item source, int volume)
+	@Override public void applyDiet(Body body, Item source, int volume)
 	{
 		if(source.isComposite())
 		{
@@ -278,7 +278,7 @@ public class CarbonBased extends StdRace
 			stats.adjPoints(CharStats.Points.HUNGER, (int)(volume*waterContent(mat)));
 		}
 	}
-	public int diet(Body body, RawMaterial.Resource mat)
+	@Override public int diet(Body body, RawMaterial.Resource mat)
 	{
 		/*
 		switch(mat)
@@ -344,7 +344,7 @@ public class CarbonBased extends StdRace
 		}
 		return (float)0.0;
 	}
-	public boolean satisfiesEatReqs(CMMsg msg)
+	@Override public boolean satisfiesEatReqs(CMMsg msg)
 	{
 		Interactable target=msg.target();
 		Body body=(target instanceof Body)?(Body)target:null;
@@ -376,7 +376,7 @@ public class CarbonBased extends StdRace
 		}
 		return true;
 	}
-	public boolean satisfiesEatPrereqs(CMMsg msg)
+	@Override public boolean satisfiesEatPrereqs(CMMsg msg)
 	{
 		Interactable source=msg.firstSource();
 		MOB mob=(source instanceof MOB)?(MOB)source:null;
@@ -397,7 +397,7 @@ public class CarbonBased extends StdRace
 		}
 		return true;
 	}
-	public ArrayList<MOB.QueuedCommand> eatPrereqs(MOB mob, Body body, Vector<Interactable> items)
+	@Override public ArrayList<MOB.QueuedCommand> eatPrereqs(MOB mob, Body body, Vector<Interactable> items)
 	{
 		//TODO: Go to object. Pick up if needed?
 		for(int i=0;i<items.size();i++)
@@ -460,15 +460,15 @@ public class CarbonBased extends StdRace
 			}
 			break;
 		}
-		if(items.size()==0) return null;
+		if(items.isEmpty()) return null;
 		return CMClass.emptyAL;
 	}
-	public int getMaxBiteSize(Body body)
+	@Override public int getMaxBiteSize(Body body)
 	{
 		//TODO eventually: Base bite size off of head size or something more specific
 		return 10;
 	}
-	public int getBiteSize(Body body, Item source)
+	@Override public int getBiteSize(Body body, Item source)
 	{
 		//TODO eventually: Base bite size off of head size or something more specific. Also source's hardness?
 		long max=source.getEnvObject().envStats().volume();
@@ -553,7 +553,7 @@ public class CarbonBased extends StdRace
 		int mpRegen=1+2*wil;
 		stats.adjPoints(CharStats.Points.MANA, mpRegen);
 	}
-	public void recoverTick(Body body, CharStats stats)
+	@Override public void recoverTick(Body body, CharStats stats)
 	{
 		CharStats sourceStats=body.charStats();
 		if(sourceStats==null) return;

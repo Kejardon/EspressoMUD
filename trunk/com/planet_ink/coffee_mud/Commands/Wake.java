@@ -19,12 +19,12 @@ public class Wake extends StdCommand
 	@Override public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
 		commands.removeElementAt(0);
-		if(commands.size()==0)
+		if(commands.isEmpty())
 		{
 //			if(!CMLib.flags().isSleeping(mob))
 //				mob.tell("You aren't sleeping!?");
 //			else
-			CMMsg msg=CMClass.getMsg(mob,null,null,EnumSet.of(CMMsg.MsgCode.STAND),"<S-NAME> awake(s) and stand(s) up.");
+			CMMsg msg=CMClass.getMsg(mob,null,(Vector)null,EnumSet.of(CMMsg.MsgCode.STAND),"^[S-NAME] awake^s and stand^s up.");
 			mob.location().doMessage(msg);
 			msg.returnMsg();
 		}

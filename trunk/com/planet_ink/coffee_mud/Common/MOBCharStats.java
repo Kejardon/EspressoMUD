@@ -22,7 +22,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 
 public class MOBCharStats extends DefaultCharStats
 {
-	public String ID(){return "MOBCharStats";}
+	@Override public String ID(){return "MOBCharStats";}
 	private static final Stat[] myStatOptions={Stat.REACTIONS, Stat.INTELLIGENCE, Stat.STRENGTH, Stat.PRECISION, Stat.OBSERVATION, Stat.WILLPOWER};
 	private static final Save[] mySaveOptions={};
 	private static final Points[] myPointOptions={Points.FOCUS};
@@ -119,10 +119,10 @@ public class MOBCharStats extends DefaultCharStats
 
 
 	//CMModifiable and CMSavable
-	public SaveEnum[] totalEnumS(){return SCode.values();}
-	public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]};}
-	public ModEnum[] totalEnumM(){return MCode.values();}
-	public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
+	@Override public SaveEnum[] totalEnumS(){return SCode.values();}
+	@Override public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]};}
+	@Override public ModEnum[] totalEnumM(){return MCode.values();}
+	@Override public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
 /*
 	public int saveNum(){return 0;}
 	public void setSaveNum(int num){}

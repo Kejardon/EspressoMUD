@@ -14,14 +14,14 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 
 public class Gigantic extends StdLanguage
 {
-	public String ID() { return "Gigantic"; }
+	@Override public String ID() { return "Gigantic"; }
 	public String name(){ return "Gigantic";}
 	public static Vector wordLists=null;
 	public Gigantic()
 	{
 		super();
 	}
-	public Vector translationVector(String language)
+	@Override public Vector<String[]> translationVector(String language)
 	{
 		if(wordLists==null)
 		{
@@ -47,7 +47,7 @@ public class Gigantic extends StdLanguage
 		return msg.toUpperCase();
 	}
 /*
-	public boolean okMessage(Environmental myHost, CMMsg msg)
+	@Override public boolean okMessage(Environmental myHost, CMMsg msg)
 	{
 		if((beingSpoken(ID()))
 		&&(affected instanceof MOB)
@@ -67,7 +67,7 @@ public class Gigantic extends StdLanguage
 	}
 */
 	private static final Hashtable hashwords=new Hashtable();
-	public Hashtable translationHash(String language)
+	@Override public Hashtable<String,String> translationHash(String language)
 	{
 		if((hashwords!=null)&&(hashwords.size()>0))
 			return hashwords;

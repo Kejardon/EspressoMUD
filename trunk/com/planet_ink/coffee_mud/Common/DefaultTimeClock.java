@@ -20,10 +20,10 @@ public class DefaultTimeClock implements TimeClock, Ownable
 {
 	protected CMSavable parent;
 
-	public String ID(){return "DefaultTimeClock";}
+	@Override public String ID(){return "DefaultTimeClock";}
 	public String name(){return "Time Object";}
 	public DefaultTimeClock newInstance(){try{return getClass().newInstance();}catch(Exception e){return new DefaultTimeClock();}}
-	public void initializeClass(){}
+	@Override public void initializeClass(){}
 	//public long lastTick=0;
 
 	//Ownable
@@ -406,10 +406,10 @@ public class DefaultTimeClock implements TimeClock, Ownable
 		return true;
 	}
 
-	public SaveEnum[] totalEnumS(){return SCode.values();}
-	public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]} ;}
-	public ModEnum[] totalEnumM(){return MCode.values();}
-	public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
+	@Override public SaveEnum[] totalEnumS(){return SCode.values();}
+	@Override public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]} ;}
+	@Override public ModEnum[] totalEnumM(){return MCode.values();}
+	@Override public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
 	public int saveNum(){return 0;}
 	public void setSaveNum(int num){}
 	public boolean needLink(){return false;}

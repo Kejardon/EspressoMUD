@@ -20,7 +20,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 
 public class CommonMsgs extends StdLibrary
 {
-	public String ID(){return "CommonMsgs";}
+	@Override public String ID(){return "CommonMsgs";}
 
 	protected final static int LOOK_LONG=0;
 	protected final static int LOOK_NORMAL=1;
@@ -227,13 +227,13 @@ public class CommonMsgs extends StdLibrary
 		if(location==null) return;
 		if((isPrivate)&&(target!=null))
 		{
-			CMMsg msg=CMClass.getMsg(mob,target,null,EnumSet.of(CMMsg.MsgCode.SPEAK),"^[S-NAME] say^s '"+text+"^.' to ^[T-NAMESELF].");
+			CMMsg msg=CMClass.getMsg(mob,target,(Vector)null,EnumSet.of(CMMsg.MsgCode.SPEAK),"^[S-NAME] say^s '"+text+"^.' to ^[T-NAMESELF].");
 			location.doAndReturnMsg(msg);
 		}
 		else if(!isPrivate)
 		{
 			String str="^[S-NAME] say^s '"+text+((target==null)?"^.'":"^.' to ^[T-NAMESELF].");
-			CMMsg msg=CMClass.getMsg(mob,target,null,EnumSet.of(CMMsg.MsgCode.SPEAK),str);
+			CMMsg msg=CMClass.getMsg(mob,target,(Vector)null,EnumSet.of(CMMsg.MsgCode.SPEAK),str);
 			location.doAndReturnMsg(msg);
 		}
 	}

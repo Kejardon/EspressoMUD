@@ -23,7 +23,7 @@ public class CMMap extends StdLibrary implements Runnable
 {
 	public final static long ROOM_EXPIRATION_MILLIS=2500000;
 	
-	public String ID(){return "CMMap";}
+	@Override public String ID(){return "CMMap";}
 	protected Area[] sortedAreas=Area.dummyAreaArray;
 	protected SortedVector<Area> areasList = new SortedVector<Area>();
 	protected Hashtable<CMMsg.MsgCode,CopyOnWriteArrayList<ListenHolder.MsgListener>> globalHandlers=new Hashtable();
@@ -32,8 +32,8 @@ public class CMMap extends StdLibrary implements Runnable
 	//protected Exit openExit;
 	//protected SortedVector<Exit> exits = new SortedVector();
 
-	public SupportThread getSupportThread() { return thread;}
-	public void initializeClass()
+	@Override public SupportThread getSupportThread() { return thread;}
+	@Override public void initializeClass()
 	{
 		//openExit=CMClass.EXIT.get("OpenExit");
 		CMClass.LOCALE.add(LimboRoom);
@@ -257,8 +257,10 @@ public class CMMap extends StdLibrary implements Runnable
 		for(CMMsg.MsgCode category : categories)
 		{
 			CopyOnWriteArrayList<ListenHolder.MsgListener> V=globalHandlers.get(category);
+			Log.debugOut("CMMap","Got a global");
 			if(V!=null)
 			try{
+				Log.debugOut("CMMap","Sending to global");
 				ListenHolder.MsgListener[] listeners=(ListenHolder.MsgListener[])V.toArray(new ListenHolder.MsgListener[0]);
 				for(ListenHolder.MsgListener O : listeners)
 				{
@@ -281,6 +283,7 @@ public class CMMap extends StdLibrary implements Runnable
 				for(ListenHolder.MsgListener O : listeners)
 					O.executeMsg(host,msg);
 			} catch(Exception x){Log.errOut("CMMap",x);}
+			Log.debugOut("CMMap","Done with global");
 		}
 		return true;
 	}
@@ -928,7 +931,7 @@ public class CMMap extends StdLibrary implements Runnable
 		}
 		return returnResponse(rooms,room);
 	}
-	public boolean activate() 
+	@Override public boolean activate() 
 	{
 		if(thread==null)
 			thread=new SupportThread("THMap"+Thread.currentThread().getThreadGroup().getName().charAt(0), 
@@ -938,7 +941,7 @@ public class CMMap extends StdLibrary implements Runnable
 		return true;
 	}
 	
-	public boolean shutdown() {
+	@Override public boolean shutdown() {
 		areasList.clear();
 		sortedAreas=Area.dummyAreaArray;
 		globalHandlers.clear();
@@ -946,7 +949,7 @@ public class CMMap extends StdLibrary implements Runnable
 		return true;
 	}
 	
-	public void run()
+	@Override public void run()
 	{
 		return;
 	}

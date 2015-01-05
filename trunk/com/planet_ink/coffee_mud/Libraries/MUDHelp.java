@@ -19,7 +19,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 
 public class MUDHelp extends StdLibrary
 {
-	public String ID(){return "MUDHelp";}
+	@Override public String ID(){return "MUDHelp";}
 
 	public String getHelpText(String helpStr, MOB forMOB, boolean favorAHelp)
 	{ return getHelpText(helpStr, forMOB, favorAHelp, false);}
@@ -406,7 +406,7 @@ public class MUDHelp extends StdLibrary
 		return helpFile;
 	}
 	
-	public boolean shutdown() {
+	@Override public boolean shutdown() {
 		unloadHelpFile(null);
 		return true;
 	}

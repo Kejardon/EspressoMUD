@@ -56,7 +56,18 @@ public class HTTPserver extends Thread implements MudHost
 
 	protected FileGrabber pageGrabber=new FileGrabber(this);
 	//protected FileGrabber templateGrabber=new FileGrabber(this);
-	public DVector activeRequests=new DVector(2);
+	public ArrayList<HTTPRequest> activeRequests=new ArrayList<>();
+	public static class HTTPRequest
+	{
+		public final ProcessHTTPrequest request;
+		public final long time;
+		public HTTPRequest(ProcessHTTPrequest r,long t){request=r;time=t;}
+		@Override public boolean equals(Object o){
+			if(o instanceof ProcessHTTPrequest)
+				return o==request;
+			return super.equals(o);
+		}
+	}
 
 	public HTTPserver(MudHost a_mud, String a_name, int num)
 	{
@@ -334,12 +345,12 @@ public class HTTPserver extends Thread implements MudHost
 			long time=System.currentTimeMillis();
 			for(int a=activeRequests.size()-1;a>=0;a--)
 			{
-				ProcessHTTPrequest P=(ProcessHTTPrequest)activeRequests.elementAt(a, 0);
-				long pTime=((Long)activeRequests.elementAt(a,1)).longValue();
+				ProcessHTTPrequest P=activeRequests.get(a).request;
+				long pTime=activeRequests.get(a).time;
 				if((time-pTime)>(60*1000*60))
 				{
 					V.addElement(P);
-					activeRequests.removeRow(a);
+					activeRequests.remove(a);
 				}
 			}
 		}

@@ -2,7 +2,6 @@ package com.planet_ink.coffee_mud.Commands;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
 
-import com.planet_ink.coffee_mud.Libraries.*;
 
 import java.util.*;
 
@@ -27,7 +26,7 @@ public class List extends StdCommand
 		ThreadGroup tgArray[] = new ThreadGroup [agc+1];
 		tGroup.enumerate(tArray,false);
 		tGroup.enumerate(tgArray,false);
-		lines.append(" ^HTGRP^?  ^H" + tGroup.getName() + "^?\r\n");
+		lines.append(" ^HTGRP^?  ^H").append(tGroup.getName()).append("^?\r\n");
 		for (int i = 0; i<ac; ++i) {
 			if (tArray[i] != null) {
 				if((tArray[i] instanceof Tickable)&&(((Tickable)tArray[i]).getTickStatus()==Tickable.TickStat.Not)) continue;
@@ -498,31 +497,21 @@ public class List extends StdCommand
 					mob.tell("File '"+f.getName()+"' does not exist.");
 					return; }
 				Vector V=Resources.getFileLineVector(f.text());
-				Hashtable entries = new Hashtable();
+				HashedCollection<StringCount> entries=new HashedCollection<>();
+				//Hashtable entries = new Hashtable();
 				for(int v=0;v<V.size();v++) {
 					String s=(String)V.elementAt(v);
 					if(s.indexOf(" Help  Help")==19) {
 						int x=s.indexOf("wanted help on",19);
 						String helpEntry=s.substring(x+14).trim().toLowerCase();
-						int[] sightings=(int[])entries.get(helpEntry);
+						StringCount sightings=entries.get(helpEntry);
 						if(sightings==null) {
-							sightings=new int[1];
-							if(CMLib.help().getHelpText(helpEntry,mob,false)!=null) sightings[0]=-1;
-							entries.put(helpEntry,sightings); }
-						if(sightings[0]>=0) sightings[0]++;
-						else sightings[0]--; } }
-				Hashtable readyEntries = new Hashtable(entries.size());
-				for(Enumeration e=entries.keys();e.hasMoreElements();) {
-					Object key=e.nextElement();
-					int[] val=(int[])entries.get(key);
-					readyEntries.put(key,Integer.valueOf(val[0])); }
-				DVector sightingsDV=DVector.toDVector(readyEntries);
-				sightingsDV.sortBy(1);
+							sightings=new StringCount(helpEntry,CMLib.help().getHelpText(helpEntry,mob,false)!=null);
+							entries.add(sightings); }
+						else sightings.count++; } }
+				TreeSet<StringCount> sorted=new TreeSet<>();
 				StringBuffer str=new StringBuffer("^HHelp entries, sorted by popularity: ^N\r\n");
-				for(int d=0;d<sightingsDV.size();d++) str.append("^w"+CMStrings.padRight(sightingsDV.elementAt(d,1).toString(),4))
-					   .append(" ")
-					   .append(sightingsDV.elementAt(d,0).toString())
-					   .append("\r\n");
+				for(StringCount s : sorted) str.append("^w").append(CMStrings.padRight(Integer.toString(s.count),4)).append(" ").append(s.string).append("\r\n");
 				mob.session().wraplessPrint(str.toString()+"^N"); } },
 		ACCOUNTS(new String[] {"CMDPLAYERS","STAT"}){
 			public void list(MOB mob, String rest){
@@ -615,6 +604,29 @@ public class List extends StdCommand
 		public boolean isAllowed(MOB mob) {
 			for(String S : securityList) if(CMSecurity.isAllowed(mob,S)) return true;
 			return false; } }
+	private static class StringCount implements Comparable<StringCount>
+	{
+		public String string;
+		public int count;
+		public boolean found;
+		public StringCount(String s, boolean f) {string=s; found=f; count=1;}
+		@Override public int hashCode()
+		{
+			return string.hashCode();
+		}
+		@Override public boolean equals(Object O)
+		{
+			if(O instanceof String)
+				return string.equals(O);
+			else if (O instanceof StringCount)
+				return ((StringCount)O).count==count;
+			return false;
+		}
+		@Override public int compareTo(StringCount o)
+		{
+			return o.count-count;
+		}
+	}
 	private static final ListOption[] allOptions=ListOption.values();
 
 /*
@@ -675,5 +687,5 @@ public class List extends StdCommand
 
 	@Override public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	@Override public boolean canBeOrdered(){return true;}
-	public boolean securityCheck(MOB mob){return getAnyCode(mob)!=null;}
+	@Override public boolean securityCheck(MOB mob){return getAnyCode(mob)!=null;}
 }

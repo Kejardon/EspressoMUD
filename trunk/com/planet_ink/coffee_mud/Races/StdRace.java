@@ -27,13 +27,13 @@ public abstract class StdRace implements Race
 
 	//public HashMap<String, Body.BodyPart> bodyMap(){return null;}
 
-	public CMObject newInstance(){return this;}
-	public void initializeClass(){}
-	public EnumSet<ListenHolder.Flags> listenFlags() {return lFlags;}
-	public int priority(ListenHolder L){return Integer.MAX_VALUE;}
-	public void registerListeners(ListenHolder here) { }
-	public void registerAllListeners(){}
-	public void clearAllListeners(){}
+	@Override public StdRace newInstance(){return this;}
+	@Override public void initializeClass(){}
+	@Override public EnumSet<ListenHolder.Flags> listenFlags() {return lFlags;}
+	@Override public int priority(ListenHolder L){return Integer.MAX_VALUE;}
+	@Override public void registerListeners(ListenHolder here) { }
+	@Override public void registerAllListeners(){}
+	@Override public void clearAllListeners(){}
 
 	//protected static final Vector empty=new Vector();
 	//protected String baseStatChgDesc = "";
@@ -44,81 +44,81 @@ public abstract class StdRace implements Race
 
 	//public StdRace() {}
 
-	public int availabilityCode(){return -1;}
+	@Override public int availabilityCode(){return -1;}
 
-	public Gender[] possibleGenders(){return myGenders;}
+	@Override public Gender[] possibleGenders(){return myGenders;}
 
 	public int fertile(String S){return -100;}
 
-	public CMObject copyOf()
+	@Override public CMObject copyOf()
 	{
 		return this;
 	}
 
-	public void affectEnvStats(Environmental affected, EnvStats affectableStats)
+	@Override public void affectEnvStats(Environmental affected, EnvStats affectableStats)
 	{
 	}
-	public void affectCharStats(MOB affectedMob, CharStats charStats)
+	@Override public void affectCharStats(MOB affectedMob, CharStats charStats)
 	{
 	}
-	public boolean okMessage(ListenHolder.OkChecker myBody, CMMsg msg)
+	@Override public boolean okMessage(ListenHolder.OkChecker myBody, CMMsg msg)
 	{
 		return true;
 	}
-	public boolean respondTo(CMMsg msg, Object data){return true;}
+	@Override public boolean respondTo(CMMsg msg, Object data){return true;}
 	//This really isn't supported! Don't call this respondTo
-	public boolean respondTo(CMMsg msg){return true;}
+	@Override public boolean respondTo(CMMsg msg){return true;}
 	public boolean respondTo(Body myBody, CMMsg msg){return true;}
-	public void executeMsg(ListenHolder.ExcChecker myBody, CMMsg msg)
+	@Override public void executeMsg(ListenHolder.ExcChecker myBody, CMMsg msg)
 	{
 	}
 
-	public void recoverTick(Body body, CharStats stats)
+	@Override public void recoverTick(Body body, CharStats stats)
 	{
 	}
-	public long sendEat(MOB mob, Body body, Vector<Interactable> items)
+	@Override public long sendEat(MOB mob, Body body, Vector<Interactable> items)
 	{
 		return -1;
 	}
-	public boolean handleEat(CMMsg msg)
+	@Override public boolean handleEat(CMMsg msg)
 	{
 		return false;
 	}
-	public ArrayList<MOB.QueuedCommand> eatPrereqs(MOB mob, Body body, Vector<Interactable> items) //Vector<Item> failed
+	@Override public ArrayList<MOB.QueuedCommand> eatPrereqs(MOB mob, Body body, Vector<Interactable> items) //Vector<Item> failed
 	{
 		mob.tell("You don't need to eat.");
 		return null;
 	}
-	public boolean satisfiesEatReqs(CMMsg msg)
+	@Override public boolean satisfiesEatReqs(CMMsg msg)
 	{
 		Interactable source=msg.firstSource();
 		if(source instanceof MOB)
 			((MOB)source).tell("You don't need to eat.");
 		return false;
 	}
-	public boolean satisfiesEatPrereqs(CMMsg msg)
+	@Override public boolean satisfiesEatPrereqs(CMMsg msg)
 	{
 		Interactable source=msg.firstSource();
 		if(source instanceof MOB)
 			((MOB)source).tell("You don't need to eat.");
 		return false;
 	}
-	public int diet(Body body, RawMaterial.Resource material)
+	@Override public int diet(Body body, RawMaterial.Resource material)
 	{
 		return 0;
 	}
-	public void applyDiet(Body body, Item source, int volume)
+	@Override public void applyDiet(Body body, Item source, int volume)
 	{
 	}
-	public int getBiteSize(Body body, Item source)
-	{
-		return 0;
-	}
-	public int getMaxBiteSize(Body body)
+	@Override public int getBiteSize(Body body, Item source)
 	{
 		return 0;
 	}
-	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
+	@Override public int getMaxBiteSize(Body body)
+	{
+		return 0;
+	}
+	@Override public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 
 	/*
 	public String getStatAdjDesc()
@@ -133,7 +133,6 @@ public abstract class StdRace implements Race
 
 	public boolean sameAs(Race E)
 	{
-		if(!(E instanceof StdRace)) return false;
-		return true;
+		return E==this;
 	}
 }

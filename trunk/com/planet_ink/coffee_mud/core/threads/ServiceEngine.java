@@ -18,7 +18,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 
 public class ServiceEngine implements CMLibrary, Runnable
 {
-	public String ID(){return "ServiceEngine";}
+	@Override public String ID(){return "ServiceEngine";}
 	private SupportThread thread=null;
 	//protected HashedList<Tick> ticks=new HashedList<Tick>();
 	protected HashedList<TickArea> areas=new HashedList<TickArea>();
@@ -28,7 +28,7 @@ public class ServiceEngine implements CMLibrary, Runnable
 	protected GlobalTicker mainTime=new GlobalTicker();	//Also handles globalTickCount
 
 	public CMObject newInstance(){try{return (CMObject)getClass().newInstance();}catch(Exception e){return new ServiceEngine();}}
-	public void initializeClass(){}
+	@Override public void initializeClass(){}
 	public void finalInitialize(){}
 	public CMObject copyOf(){try{return (CMObject)this.clone();}catch(Exception e){return newInstance();}}
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}

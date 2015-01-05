@@ -158,7 +158,7 @@ public class DirtyLanguage extends StdLibrary
 		{"ZU","Zulu"}
 	};
 
-	public String ID(){return "DirtyLanguage";}
+	@Override public String ID(){return "DirtyLanguage";}
 	
 	/*protected String language="en";
 	protected String country="TX";

@@ -62,7 +62,7 @@ public class Quit extends StdCommand
 		return false;
 	}
 
-	public int prompter(){return 2;}
+	@Override public int prompter(){return 2;}
 	@Override public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	@Override public boolean canBeOrdered(){return false;}
 }

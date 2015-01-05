@@ -33,8 +33,8 @@ public class Order extends StdCommand
 		if((whomToOrder.toUpperCase().startsWith("ALL."))||(whomToOrder.toUpperCase().startsWith("ALL "))){ allFlag=true; whomToOrder=whomToOrder.substring(4);}
 		if(whomToOrder.toUpperCase().endsWith(".ALL")){ allFlag=true; whomToOrder=whomToOrder.substring(0,whomToOrder.length()-4);}
 		
-		MOB target=null;
-		Vector<MOB> V=null;
+		MOB target;
+		Vector<MOB> V;
 		if(allFlag)
 			V=mob.location().fetchInhabitants(whomToOrder);
 		else
@@ -43,7 +43,7 @@ public class Order extends StdCommand
 			target=mob.location().fetchInhabitant(whomToOrder);
 			if(target!=null) V.add(target);
 		}
-		if(V.size()==0)
+		if(V.isEmpty())
 		{
 			mob.tell("You don't see them here.");
 			return false;
@@ -73,7 +73,7 @@ public class Order extends StdCommand
 				mob.tell(target.name()+" can't do that.");
 			else
 			{
-				CMMsg msg=CMClass.getMsg(mob,target,null,EnumSet.of(CMMsg.MsgCode.ORDER),"^T<S-NAME> order(s) <T-NAMESELF> to '"+order+"'^?.");
+				CMMsg msg=CMClass.getMsg(mob,target,(Vector)null,EnumSet.of(CMMsg.MsgCode.ORDER),"^T^[S-NAME] order^s ^[T-NAMESELF] to '"+order+"'^?.");
 				//NOTE: Will probably remove this enqueCommand and put it in StdMOB's reaction...
 				if(mob.location().doMessage(msg))
 					target.enqueCommand(CMParms.combine(commands,0),metaFlags|Command.METAFLAG_ORDER);

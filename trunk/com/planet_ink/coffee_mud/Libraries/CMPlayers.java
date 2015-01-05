@@ -18,7 +18,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 
 public class CMPlayers extends StdLibrary implements Runnable
 {
-	public String ID(){return "CMPlayers";}
+	@Override public String ID(){return "CMPlayers";}
 	//Ideally, new ConcurrentHashMap(size, 0.75, 2);
 	public ConcurrentHashMap<String, MOB> playersList = null;//new ConcurrentHashMap();
 	public ConcurrentHashMap<String, PlayerAccount> accountsList = null;//new ConcurrentHashMap();
@@ -26,7 +26,7 @@ public class CMPlayers extends StdLibrary implements Runnable
 	public ArrayList<PlayerAccount> accountsQueue = new ArrayList();
 
 	private SupportThread thread=null;
-	public SupportThread getSupportThread() { return thread;}
+	@Override public SupportThread getSupportThread() { return thread;}
 	
 	public int numPlayers() { return playersList.size(); }
 	public void queuePlayer(MOB newOne)	//Should only be called by a single thread at MUD boot, so no synch stuff
@@ -95,7 +95,7 @@ public class CMPlayers extends StdLibrary implements Runnable
 			if((M!=null)&&(!S.killFlag())&&(M.name().equals(deadMOB.name())))
 				deadMOB=S.mob();
 		}*/
-		CMMsg msg=CMClass.getMsg(deadMOB,null,null,EnumSet.of(CMMsg.MsgCode.RETIRE),(quiet)?null:"A horrible death cry is heard throughout the land.");
+		CMMsg msg=CMClass.getMsg(deadMOB,null,(Vector)null,EnumSet.of(CMMsg.MsgCode.RETIRE),(quiet)?null:"A horrible death cry is heard throughout the land.");
 		CMLib.map().sendGlobalMessage(deadMOB, EnumSet.of(CMMsg.MsgCode.RETIRE), msg);
 		//TODO: If this is done it should use a different message
 		//Room deadLoc=deadMOB.location();
@@ -119,7 +119,7 @@ public class CMPlayers extends StdLibrary implements Runnable
 		//CMLib.database().deleteObject(deadAccount);
 		Log.sysOut("Scoring",deadAccount.accountName()+" has been deleted.");
 	}
-	public boolean activate() {
+	@Override public boolean activate() {
 		if(thread==null)
 			thread=new SupportThread("THPlayers"+Thread.currentThread().getThreadGroup().getName().charAt(0), 
 					MudHost.TIME_SAVETHREAD_SLEEP, this, CMSecurity.isDebugging("SAVETHREAD"));
@@ -139,7 +139,7 @@ public class CMPlayers extends StdLibrary implements Runnable
 */		return true;
 	}
 	
-	public boolean shutdown() {
+	@Override public boolean shutdown() {
 		//playersList.clear();
 		thread.shutdown();
 		return true;
@@ -150,11 +150,10 @@ public class CMPlayers extends StdLibrary implements Runnable
 		if(thread.status.equalsIgnoreCase("sleeping"))
 		{
 			thread.interrupt();
-			return;
 		}
 	}
 
-	public void run()
+	@Override public void run()
 	{
 		if((!CMSecurity.isDisabled("SAVETHREAD"))
 		&&(!CMSecurity.isDisabled("PLAYERTHREAD")))

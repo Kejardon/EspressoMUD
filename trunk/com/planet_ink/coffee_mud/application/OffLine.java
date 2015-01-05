@@ -20,7 +20,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 public class OffLine extends Thread implements MudHost
 {
 	public static Vector mudThreads=new Vector();
-	public static DVector accessed=new DVector(2);
+	public static Vector<IPConnect> accessed=new Vector();
 	public static Vector autoblocked=new Vector();
 
 	public static boolean serverIsRunning = false;
@@ -168,13 +168,13 @@ public class OffLine extends Thread implements MudHost
 			try{
 				for(int a=accessed.size()-1;a>=0;a--)
 				{
-					if((((Long)accessed.elementAt(a,1)).longValue()+LastConnectionDelay)<System.currentTimeMillis())
-						accessed.removeRow(a);
-					else
-					if(((String)accessed.elementAt(a,0)).trim().equalsIgnoreCase(address))
+					IPConnect access=accessed.get(a);
+					if(access.time+LastConnectionDelay<System.currentTimeMillis())
+						accessed.remove(a);
+					else if(access.IP.equalsIgnoreCase(address))
 					{
 						anyAtThisAddress=true;
-						if((((Long)accessed.elementAt(a,1)).longValue()+ConnectionWindow)>System.currentTimeMillis())
+						if(access.time+ConnectionWindow>System.currentTimeMillis())
 							numAtThisAddress++;
 					}
 				}
@@ -193,7 +193,7 @@ public class OffLine extends Thread implements MudHost
 				}
 			}catch(java.lang.ArrayIndexOutOfBoundsException e){}
 
-			accessed.addRow(address,Long.valueOf(System.currentTimeMillis()));
+			accessed.add(new IPConnect(address,System.currentTimeMillis()));
 			if(proceed!=0)
 			{
 				System.out.println("Blocking a connection from "+address+" on port "+port);

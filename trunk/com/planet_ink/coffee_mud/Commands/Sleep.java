@@ -27,7 +27,7 @@ public class Sleep extends StdCommand
 */
 		if(commands.size()<=1)
 		{
-			CMMsg msg=CMClass.getMsg(mob,null,null,EnumSet.of(CMMsg.MsgCode.SLEEP),"<S-NAME> lay(s) down and take(s) a nap.");
+			CMMsg msg=CMClass.getMsg(mob,null,(Vector)null,EnumSet.of(CMMsg.MsgCode.SLEEP),"^[S-NAME] lay^s down and take^s a nap.");
 			mob.location().doMessage(msg);
 			msg.returnMsg();
 			return false;
@@ -41,8 +41,8 @@ public class Sleep extends StdCommand
 			mob.tell("You don't see '"+possibleRideable+"' here.");
 			return false;
 		}
-		String mountStr="<S-NAME> sleep(s) on <T-NAME>.";
-		CMMsg msg=CMClass.getMsg(mob,I,null,EnumSet.of(CMMsg.MsgCode.SLEEP),mountStr);
+		String mountStr="^[S-NAME] sleep^s on ^[T-NAME].";
+		CMMsg msg=CMClass.getMsg(mob,I,(Vector)null,EnumSet.of(CMMsg.MsgCode.SLEEP),mountStr);
 		mob.location().doMessage(msg);
 		msg.returnMsg();
 		return false;

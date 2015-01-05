@@ -14,11 +14,11 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 
 public class Combat extends StdSkill
 {
-	public String ID() {return "Combat";}
+	@Override public String ID() {return "Combat";}
 	//public boolean satisfiesPrerequisites(MOB mob){return true;}
 	public int maxLevel(){return 20;}
 	public String playerFriendlyName(){return "Combat";}
-	public void initializeClass()
+	@Override public void initializeClass()
 	{
 		initializeSkillRelations(
 				new String[]{"Melee"},

@@ -32,5 +32,5 @@ public class Topics extends ATopics
 
 	@Override public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	@Override public boolean canBeOrdered(){return true;}
-	public boolean securityCheck(MOB mob){return true;}
+	@Override public boolean securityCheck(MOB mob){return true;}
 }

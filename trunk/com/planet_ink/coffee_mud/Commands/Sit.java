@@ -27,7 +27,7 @@ public class Sit extends StdCommand
 */
 		if(commands.size()<=1)
 		{
-			CMMsg msg=CMClass.getMsg(mob,null,null,EnumSet.of(CMMsg.MsgCode.SIT),"<S-NAME> sit(s) down and take(s) a rest.");
+			CMMsg msg=CMClass.getMsg(mob,null,(Vector)null,EnumSet.of(CMMsg.MsgCode.SIT),"^[S-NAME] sit^s down and take^s a rest.");
 			mob.location().doMessage(msg);
 			msg.returnMsg();
 			return false;
@@ -41,8 +41,8 @@ public class Sit extends StdCommand
 			mob.tell("You don't see '"+possibleRideable+"' here.");
 			return false;
 		}
-		String mountStr="<S-NAME> sit(s) on <T-NAME>.";
-		CMMsg msg=CMClass.getMsg(mob,I,null,EnumSet.of(CMMsg.MsgCode.SIT),mountStr);
+		String mountStr="^[S-NAME] sit^s on ^[T-NAME].";
+		CMMsg msg=CMClass.getMsg(mob,I,(Vector)null,EnumSet.of(CMMsg.MsgCode.SIT),mountStr);
 		mob.location().doMessage(msg);
 		msg.returnMsg();
 		return false;
