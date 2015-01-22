@@ -8,7 +8,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
-EspressoMUD copyright 2011 Kejardon
+EspressoMUD copyright 2015 Kejardon
 
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
@@ -54,12 +54,42 @@ public interface MOB extends ItemCollection.ItemHolder, Interactable, CMSavable,
 			QCCache.offer(this);
 		}
 	}
+	public static class PostPrereqCommand extends QueuedCommand	//Nothing more than a storage object instead of having an Object[] and typecasting stuff
+	{
+		protected static final ConcurrentLinkedQueue<PostPrereqCommand> PPCCache = new ConcurrentLinkedQueue();
+		
+		protected PostPrereqCommand(){}
+		
+		public CMMsg parsedData;
+		public static PostPrereqCommand newPPC()
+		{
+			PostPrereqCommand queued = PPCCache.poll();
+			if(queued==null)
+				return new PostPrereqCommand();
+			return queued;
+		}
+		@Override public void returnThis()
+		{
+			nextAct=0;
+			command=null;
+			cmdString=null;
+			commandType=0;
+			data=null;
+			metaFlags=0;
+			if(parsedData!=null)
+			{
+				parsedData.returnMsg();
+				parsedData = null;
+			}
+			PPCCache.offer(this);
+		}
+	}
 	public static class Skilltable extends Hashtable<Skill, MOBSkill>
 	{
 		//max level around 2369038960
 		public long totalEXP=0;
 		public int level=0;
-		public HashSet<Skill> forgettingSkills=new HashSet<Skill>();
+		public HashSet<Skill> forgettingSkills=new HashSet<>();
 		public boolean changeState(Skill key, int state)
 		{
 			MOBSkill skill=get(key);
@@ -347,6 +377,7 @@ public interface MOB extends ItemCollection.ItemHolder, Interactable, CMSavable,
 	public void tell(String msg);
 	public void enqueCommand(QueuedCommand qCom, boolean alwaysAtEnd);
 	public void enqueCommand(QueuedCommand qCom, QueuedCommand afterCommand);
+	public void enqueCommands(ArrayList<QueuedCommand> qCom, QueuedCommand afterCommand);
 	public void enqueCommand(String commands, int metaFlags);
 	public int commandQueSize();
 	public boolean doCommand(QueuedCommand command);	//currently return is sorta meaningless

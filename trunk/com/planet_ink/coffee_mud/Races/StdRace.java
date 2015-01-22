@@ -76,6 +76,99 @@ public abstract class StdRace implements Race
 	@Override public void recoverTick(Body body, CharStats stats)
 	{
 	}
+	
+	@Override public ActionCode getAction(ActionCode.Type T)
+	{
+		switch(T)
+		{
+			case GET: return defaultGetCode;
+			case GIVE: return defaultGiveCode;
+			case MOVE: return defaultMoveCode;
+		}
+		return null;
+	}
+	//TOOO
+	public static final ActionCode defaultGetCode=new ActionCode()
+	{
+		@Override public ArrayList<MOB.QueuedCommand> prereqs(MOB mob, Body body, CMMsg msg) {
+			return CMClass.emptyAL;
+		}
+
+		@Override public long sendAction(MOB mob, Body body, CMMsg msg) {
+			return 0;
+		}
+
+		@Override public boolean satisfiesPrereqs(CMMsg msg) {
+			return true;
+		}
+
+		@Override public void handleAction(CMMsg msg) {
+		}
+	};
+	public static final ActionCode defaultGiveCode=new ActionCode()
+	{
+		@Override public ArrayList<MOB.QueuedCommand> prereqs(MOB mob, Body body, CMMsg msg)
+		{
+			//TODO: Calculate if mob's body can reach
+			return CMClass.emptyAL;
+		}
+
+		@Override public long sendAction(MOB mob, Body body, CMMsg msg)
+		{
+			//TODO: Calculate if mob's body can reach
+			for(CMObject I : (CMObject[])msg.tool().toArray(CMObject.dummyCMOArray))
+			{
+				CMMsg msg2=CMClass.getMsg(body,msg.target(),I,EnumSet.of(CMMsg.MsgCode.GIVE),"^[S-NAME] give^s ^[O-NAME] to ^[T-NAMESELF].");
+				if(!mob.location().doMessage(msg2))
+				{
+					msg2.returnMsg();
+					return -1;
+				}
+				msg2.returnMsg();
+			}
+			return 0;
+		}
+
+		@Override public boolean satisfiesPrereqs(CMMsg msg)
+		{
+			//TODO: Calculate if mob's body can reach
+			return true;
+		}
+
+		@Override public void handleAction(CMMsg msg)
+		{
+			Vector<CMObject> objects=msg.tool();
+			Interactable target = msg.target();
+			if(target instanceof MOB) {
+				MOB mob=((MOB)target);
+				CMObject I;
+				for(int i=0;i<objects.size();i++)
+					if((I=objects.get(i)) instanceof Item)
+						mob.giveItem((Item)I);
+			}
+			
+		}
+		
+	};
+	//TOOO
+	public static final ActionCode defaultMoveCode=new ActionCode()
+	{
+		@Override public ArrayList<MOB.QueuedCommand> prereqs(MOB mob, Body body, CMMsg msg) {
+			return CMClass.emptyAL;
+		}
+
+		@Override public long sendAction(MOB mob, Body body, CMMsg msg) {
+			return 0;
+		}
+
+		@Override public boolean satisfiesPrereqs(CMMsg msg) {
+			return true;
+		}
+
+		@Override public void handleAction(CMMsg msg) {
+		}
+	};
+	
 	@Override public long sendEat(MOB mob, Body body, Vector<Interactable> items)
 	{
 		return -1;

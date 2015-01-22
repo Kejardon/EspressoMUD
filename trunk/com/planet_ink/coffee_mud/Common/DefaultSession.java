@@ -1977,6 +1977,7 @@ public class DefaultSession extends Thread implements Session
 		else
 		{
 			saveMOBTime();
+			mob.setSession(null);
 			mob=null;
 		}
 	}

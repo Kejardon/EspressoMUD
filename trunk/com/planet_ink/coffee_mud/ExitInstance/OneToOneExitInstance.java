@@ -146,7 +146,7 @@ public class OneToOneExitInstance implements ExitInstance
 		}
 		if(roomToLoad!=0)
 		{
-			leadsTo = SIDLib.ROOM.get(exitToLoad);
+			leadsTo = SIDLib.ROOM.get(roomToLoad);
 			if(leadsTo==null)
 				Log.errOut("ExitInstance","Important room not found: "+roomToLoad);
 			roomToLoad=0;

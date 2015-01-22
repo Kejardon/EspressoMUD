@@ -31,7 +31,7 @@ public class StdCommand implements Command
 
 	//Importantish NOTE: Access strings should be in all caps, and not use `(' is ok) or ". Otherwise other normal ASCII values are fine.
 	protected String[] access=new String[0];
-	public String[] getAccessWords(){return access;}
+	@Override public String[] getAccessWords(){return access;}
 	@Override public void initializeClass(){}
 	public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
 	{
@@ -41,7 +41,7 @@ public class StdCommand implements Command
 	{
 		return execute(mob, CMParms.parse(commands.cmdString, -1), commands.metaFlags);
 	}
-	public MOB.QueuedCommand prepCommand(MOB mob, String commands, int metaflags)
+	@Override public MOB.QueuedCommand prepCommand(MOB mob, String commands, int metaflags)
 	{
 		MOB.QueuedCommand commandInstance=MOB.QueuedCommand.newQC();
 		commandInstance.command=this;
@@ -55,12 +55,12 @@ public class StdCommand implements Command
 		return true;
 	}
 */
-	public boolean interruptCommand(MOB.QueuedCommand thisCommand, MOB.QueuedCommand interruptingCommand){return true;}
+	@Override public boolean interruptCommand(MOB.QueuedCommand thisCommand, MOB.QueuedCommand interruptingCommand){return true;}
 	@Override public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	@Override public boolean canBeOrdered(){return true;}
 	@Override public boolean securityCheck(MOB mob){return true;}
-	public CMObject newInstance(){return this;}
-	public CMObject copyOf() { return this; }
+	@Override public CMObject newInstance(){return this;}
+	@Override public CMObject copyOf() { return this; }
 	@Override public int prompter(){return 0;}
-	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
+	@Override public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 }

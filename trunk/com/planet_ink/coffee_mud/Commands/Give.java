@@ -14,6 +14,25 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 
 public class Give extends StdCommand
 {
+	public static final Command PPGive=new StdCommand()
+	{
+		{
+			ID="PPGive";
+		}
+		@Override public boolean execute(MOB mob, MOB.QueuedCommand commands)
+		{
+			MOB.PostPrereqCommand cmd=(MOB.PostPrereqCommand)commands;
+			Body body=mob.body();
+			ActionCode code=body.getAction(ActionCode.Type.GIVE);
+			CMMsg msg=cmd.parsedData;
+			ArrayList<MOB.QueuedCommand> prereqs = code.prereqs(mob, body, msg);
+			if(prereqs!=null && prereqs.isEmpty())
+				code.sendAction(mob, body, msg);
+			else
+				msg.returnMsg();
+			return false;
+		}
+	};
 	public Give(){access=new String[]{"GIVE","GI"};}
 
 	@Override public boolean execute(MOB mob, Vector<String> commands, int metaFlags)
@@ -44,7 +63,7 @@ public class Give extends StdCommand
 		if(maxToGive<0) return false;
 		
 		String thingToGive=CMParms.combine(commands,0,partition);
-		Vector<Item> V=new Vector();
+		Vector<Item> V;
 		boolean allFlag=(commands.size()>0)?commands.elementAt(0).equalsIgnoreCase("all"):false;
 		if(thingToGive.toUpperCase().startsWith("ALL.")){ allFlag=true; thingToGive="ALL "+thingToGive.substring(4);}
 		if(thingToGive.toUpperCase().endsWith(".ALL")){ allFlag=true; thingToGive="ALL "+thingToGive.substring(0,thingToGive.length()-4);}
@@ -52,7 +71,7 @@ public class Give extends StdCommand
 		if(allFlag)
 		{
 			V=mob.fetchInventories(thingToGive);
-			if(V.size()==0)
+			if(V.isEmpty())
 			{
 				mob.tell("You don't seem to have '"+thingToGive+"'.");
 				return false;
@@ -69,17 +88,28 @@ public class Give extends StdCommand
 			V=new Vector();
 			V.add(I);
 		}
-
-		for(Item I : (Item[])V.toArray(Item.dummyItemArray))
+		CMMsg msg=CMClass.getMsg(mob,recipient,(Vector)V,EnumSet.of(CMMsg.MsgCode.GIVE),"");
+		Body body=mob.body();
+		ActionCode code=body.getAction(ActionCode.Type.GIVE);
+		ArrayList<MOB.QueuedCommand> prereqs = code.prereqs(mob, body, msg);
+		if(prereqs==null)
 		{
-			CMMsg msg=CMClass.getMsg(mob,recipient,I,EnumSet.of(CMMsg.MsgCode.GIVE),"<S-NAME> give(s) <O-NAME> to <T-NAMESELF>.");
-			if(!mob.location().doMessage(msg))
-			{
-				msg.returnMsg();
-				break;
-			}
 			msg.returnMsg();
+			return false;
 		}
+		if(prereqs.isEmpty())
+		{
+			code.sendAction(mob, body, msg);
+			return false;
+		}
+		MOB.PostPrereqCommand ppc = MOB.PostPrereqCommand.newPPC();
+		prereqs.add(ppc);
+		ppc.parsedData=msg;
+		ppc.commandType=CT_LOW_P_ACTION;
+		ppc.metaFlags=metaFlags;
+		ppc.command=PPGive;
+		//TODO: Anything else needed here?
+		mob.enqueCommands(prereqs, null);
 		return false;
 	}
 	@Override public int commandType(MOB mob, String cmds){return CT_LOW_P_ACTION;}

@@ -299,8 +299,7 @@ public class DBManager implements CMLibrary, Runnable	//extends Thread
 		protected int getPos(int position)
 		{
 			int start=1;	//first is end of file, ignore it!
-			int numEntries=freeSpaces.size();
-			int end=numEntries;
+			int end=freeSpaces.size();
 			while(start!=end)
 			{
 				int mid=(start+end-1)/2;
@@ -311,8 +310,11 @@ public class DBManager implements CMLibrary, Runnable	//extends Thread
 			}
 			return start;
 		}
+		// Only called during loading. freeSpaces only has one entry (0,0) before first call,
+		// claimSpace popuplates with used spaces starting from 0.
 		public void claimSpace(int position, int size)
 		{
+			//Is this space part of freespace 0 (end-of-file?)
 			int extraSpace=freeSpaces.get(0).Int-position;
 			if(extraSpace>=0)
 			{
@@ -320,6 +322,7 @@ public class DBManager implements CMLibrary, Runnable	//extends Thread
 				//No need to check for overlap from a previous free space, it would have been swallowed by 0 if it existed.
 				if(extraSpace>0)
 					freeSpaces.add(new SimpleInt(position), extraSpace);
+				return;
 			}
 			int start=getPos(position)-1;	//start should contain the index of the free space that contains the space claimed by this
 //			boolean reachesStart=(freeSpaces.get(start).Int==position);
@@ -330,7 +333,7 @@ public class DBManager implements CMLibrary, Runnable	//extends Thread
 					freeSpaces.remove(start);
 				else
 				{
-					freeSpaces.get(start).Int=position;
+					freeSpaces.get(start).Int=position+size; //+size?
 					freeSpaces.setWeight(start, freeSpaces.weight(start)-size);
 				}
 			}
@@ -345,6 +348,7 @@ public class DBManager implements CMLibrary, Runnable	//extends Thread
 				}
 			}
 		}
+		//size is at minimum 1
 		public void returnSpace(int position, int size)
 		{
 			int start=getPos(position);
@@ -391,7 +395,7 @@ public class DBManager implements CMLibrary, Runnable	//extends Thread
 		public int[] getFreeSpace(int size)
 		{
 			int[] results=new int[2];
-			if(freeSpaces.weight(freeSpaces.largestWeight())>=size)
+			if(freeSpaces.largestWeight()!=-1 && freeSpaces.weight(freeSpaces.largestWeight())>=size)
 				for(int i=1;i<freeSpaces.size();i++)
 					if(freeSpaces.weight(i)>=size)
 					{

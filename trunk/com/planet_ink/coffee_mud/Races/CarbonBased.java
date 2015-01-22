@@ -18,7 +18,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 public class CarbonBased extends StdRace
 {
 	@Override public String ID(){	return "CarbonBased"; }
-	@Override public String name(){ return "CarbonBased"; }
+	@Override public String name(){ return "carbon based lifeform"; }
 	@Override public String racialCategory(){return "CarbonBased";}
 	
 	@Override public HashMap<String, Body.BodyPart> bodyMap(){return null;}

@@ -229,7 +229,7 @@ public class CMColor extends StdLibrary
 		ColorCode(char c, int i, String s)
 		{
 			Code=c;Index=i;DefaultString=s;
-			DefaultWholeString="\033"+s+"m";
+			DefaultWholeString="\033["+s+"m";
 			if(Index>=byIndex.length) Log.errOut("CMColor","byIndex array too short for "+Index);
 			else byIndex[Index]=this;
 			int charIndex=c-32;

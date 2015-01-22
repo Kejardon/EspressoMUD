@@ -52,6 +52,9 @@ public interface Race extends StatsAffecting, ListenHolder.MsgListener, CMObject
 	public void trainStat(Body body, CharStats.Stat stat, CMMsg message);
 	
 	public void recoverTick(Body body, CharStats stats);
+	
+	public ActionCode getAction(ActionCode.Type T);
+	
 	//Return expected nutritional value of material
 	//Below -100 is 'completely unable to eat'.
 	public int diet(Body body, RawMaterial.Resource material);

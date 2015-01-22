@@ -19,8 +19,8 @@ public class StdItem implements Item
 {
 	@Override public String ID(){	return "StdItem";}
 
-	protected String name="an ordinary item";
-	protected String display="a nondescript item sits here doing nothing.";
+	protected String name="";
+	protected String display="";
 	protected String desc="";
 	protected String plainName;
 	protected String plainNameOf;
@@ -75,12 +75,13 @@ public class StdItem implements Item
 	public StdItem(){}
 	@Override public void initializeClass(){}
 	public void setName(String newName){name=newName; CMLib.database().saveObject(this);}
-	public String name(){ return name;}
+	public String name(){ return name==""?"an ordinary item":name;}
 	public String plainName()
 	{
-		if(name==plainNameOf)
+		String fullName=name();
+		if(fullName.equals(plainNameOf))
 			return plainName;
-		String newName=name;
+		String newName=fullName;
 		String newPlain=CMLib.coffeeFilter().toRawString(newName);
 		synchronized(this)
 		{
@@ -89,13 +90,14 @@ public class StdItem implements Item
 		}
 		return newPlain;
 	}
-	public String displayText(){return display;}
+	public String displayText(){return display==""?"a nondescript item sits here doing nothing.":display;}
 	public void setDisplayText(String newDisplayText){display=newDisplayText; CMLib.database().saveObject(this);}
 	public String plainDisplayText()
 	{
-		if(display==plainDisplayOf)
+		String fullDisplay=displayText();
+		if(fullDisplay.equals(plainDisplayOf))
 			return plainDisplay;
-		String newDisplay=display;
+		String newDisplay=fullDisplay;
 		String newPlain=CMLib.coffeeFilter().toRawString(newDisplay);
 		synchronized(this)
 		{
@@ -108,9 +110,10 @@ public class StdItem implements Item
 	public void setDescription(String newDescription){desc=newDescription; CMLib.database().saveObject(this);}
 	public String plainDescription()
 	{
-		if(desc==plainDescOf)
+		String fullDesc=description();
+		if(fullDesc.equals(plainDescOf))
 			return plainDesc;
-		String newDesc=desc;
+		String newDesc=fullDesc;
 		String newPlain=CMLib.coffeeFilter().toRawString(newDesc);
 		synchronized(this)
 		{
@@ -772,7 +775,7 @@ public class StdItem implements Item
 		DESCRIPTION(){
 			public String brief(StdItem E){return E.desc;}
 			public String prompt(StdItem E){return ""+E.desc;}
-			public void mod(StdItem E, MOB M){E.setDescription(CMLib.genEd().stringPrompt(M, ""+E.display, false));} },
+			public void mod(StdItem E, MOB M){E.setDescription(CMLib.genEd().stringPrompt(M, ""+E.desc, false));} },
 		STACKNAME(){
 			public String brief(StdItem E){return E.stackName;}
 			public String prompt(StdItem E){return ""+E.stackName;}

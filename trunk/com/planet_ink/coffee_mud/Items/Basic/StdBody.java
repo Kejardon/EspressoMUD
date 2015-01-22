@@ -30,16 +30,31 @@ public class StdBody extends StdItem implements Body
 	protected int[] birthday={-1, -1, -1};
 	@Override public void initializeClass(){super.initializeClass(); myRace=CMClass.RACE.get("StdRace");} //Make sure CMClass's instance has non-null race
 	protected EatCode myEatAction=null;//defaultEatCode;
+	protected HashMap<ActionCode.Type,ActionCode> actionMap=null;//defaultActCode;
 
 	public StdBody()
 	{
-		name="a generic body";
-		display="a nondescript person is here.";
+		name="";
+		display="";
 		lFlags.add(ListenHolder.Flags.TICK);
 //		desc="";
 	}
+	@Override public String name()
+	{
+		if(name!="") return name;
+		if(myMob!=null && myMob.name().length()>0)
+			return CMLib.english().startWithAorAn(myRace.name())+" ("+myMob.name()+")";
+		return CMLib.english().startWithAorAn(myRace.name());
+	}
+	@Override public String displayText(){return display==""?(name()+" is here."):display;}
 
 	@Override public EatCode getEat(){return (myEatAction==null?myRace:myEatAction);}
+	@Override public ActionCode getAction(ActionCode.Type T)
+	{
+		ActionCode code=null;
+		if(actionMap!=null) code=actionMap.get(T);
+		return code==null?myRace.getAction(T):code;
+	}
 //	public Environmental getEnvObject() {return myEnvironmental;}
 
 	@Override public MOB mob(){return myMob;}
@@ -247,6 +262,24 @@ public class StdBody extends StdItem implements Body
 					msg.addResponse(ListenHolder.InbetweenListener.newListener(RefuseEatResponseLive, this), 9);
 				}
 				break;
+			case GIVE:
+				if(msg.isSource(this))
+				{
+					getAction(ActionCode.Type.GIVE).satisfiesPrereqs(msg);
+				}
+				break;
+			case GET:
+				if(msg.isSource(this))
+				{
+					getAction(ActionCode.Type.GET).satisfiesPrereqs(msg);
+				}
+				break;
+			case MOVE:
+				if(msg.isSource(this))
+				{
+					getAction(ActionCode.Type.MOVE).satisfiesPrereqs(msg);
+				}
+				break;
 			/*
 			case DRINK:
 				if(target==this)
@@ -275,6 +308,24 @@ public class StdBody extends StdItem implements Body
 				if(target==this)
 				{
 					getEat().handleEat(msg);
+				}
+				break;
+			case GIVE:
+				if(msg.isSource(this))
+				{
+					getAction(ActionCode.Type.GIVE).handleAction(msg);
+				}
+				break;
+			case GET:
+				if(msg.isSource(this))
+				{
+					getAction(ActionCode.Type.GET).handleAction(msg);
+				}
+				break;
+			case MOVE:
+				if(msg.isSource(this))
+				{
+					getAction(ActionCode.Type.MOVE).handleAction(msg);
 				}
 				break;
 			/*
@@ -417,6 +468,6 @@ public class StdBody extends StdItem implements Body
 		RACE(){
 			public String brief(StdBody E){return E.myRace.name();}
 			public String prompt(StdBody E){return "";}
-			public void mod(StdBody E, MOB M){E.myRace=CMLib.genEd().racePrompt(M);} },
+			public void mod(StdBody E, MOB M){Race R=CMLib.genEd().racePrompt(M); if(R!=null)E.myRace=R;} },
 		; }
 }

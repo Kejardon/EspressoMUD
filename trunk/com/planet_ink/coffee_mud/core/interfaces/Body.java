@@ -60,6 +60,7 @@ public interface Body extends Item	//, Rideable
 	public Gender gender();
 
 	public EatCode getEat();
+	public ActionCode getAction(ActionCode.Type T);
 
 //	TODO: Make Gender object in this folder
 //	public Gender gender();

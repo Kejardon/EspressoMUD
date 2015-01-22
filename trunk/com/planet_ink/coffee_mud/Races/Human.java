@@ -15,7 +15,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 public class Human extends CarbonBased
 {
 	@Override public String ID(){	return "Human"; }
-	public String name(){ return "Human"; }
+	public String name(){ return "human"; }
 	public String racialCategory(){return "Human";}
 	public int availabilityCode(){return 1;}
 	public Human()

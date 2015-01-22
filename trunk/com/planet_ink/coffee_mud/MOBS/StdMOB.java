@@ -544,6 +544,21 @@ public class StdMOB implements MOB
 				CMLib.threads().startTickDown(this);
 		}
 	}
+	@Override public void enqueCommands(ArrayList<QueuedCommand> qCom, QueuedCommand afterCommand)
+	{
+		synchronized(commandQue)
+		{
+			int index=0;
+			if(afterCommand!=null) index=commandQue.indexOf(afterCommand);
+			if(index==-1) index=0;
+			commandQue.addAll(index, qCom);
+			if((index==0)&&(nextAct>System.currentTimeMillis()+100)&&(CMLib.threads().deleteTick(this)))
+			{
+				nextAct=qCom.get(0).nextAct;
+				CMLib.threads().startTickDown(this);
+			}
+		}
+	}
 	public void enqueCommand(QueuedCommand qCom, QueuedCommand afterCommand)
 	{
 		synchronized(commandQue)

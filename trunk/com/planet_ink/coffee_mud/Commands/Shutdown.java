@@ -21,7 +21,7 @@ public class Shutdown extends StdCommand
 		if(mob.isMonster()) return false;
 		boolean keepItDown=true;
 		boolean noPrompt=false;
-		String externalCommand=null;
+		//String externalCommand=null;
 		for(int i=commands.size()-1;i>=1;i--)
 		{
 			String s=commands.elementAt(i);
@@ -49,6 +49,7 @@ public class Shutdown extends StdCommand
 		return false;
 	}
 
+	@Override public int prompter(){return 2;}
 	@Override public int commandType(MOB mob, String cmds){return CT_SYSTEM;}
 	@Override public boolean canBeOrdered(){return false;}
 	@Override public boolean securityCheck(MOB mob){return CMSecurity.isAllowed(mob,"SHUTDOWN");}

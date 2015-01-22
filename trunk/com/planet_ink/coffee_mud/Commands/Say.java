@@ -55,7 +55,7 @@ public class Say extends StdCommand
 				mob.tell("You don't see "+whom+" here to speak to.");
 				return false;
 			}
-			commands.remove(1);
+			commands.remove(0);
 		}
 		String combinedCommands=CMParms.combineWithQuotes(commands,0);
 		if(combinedCommands.equals(""))

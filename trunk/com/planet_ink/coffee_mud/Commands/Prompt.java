@@ -30,10 +30,10 @@ public class Prompt extends StdCommand
 			if(("DEFAULT").startsWith(str.toUpperCase()))
 				pstats.setPrompt("");
 			else
-			if(mob.session().confirm("Change your prompt to: "+str+", are you sure (Y/n)?","Y"))
+			//if(mob.session().confirm("Change your prompt to: "+str+", are you sure (Y/n)?","Y"))
 			{
 				pstats.setPrompt(str);
-				mob.session().rawPrintln("Your prompt is currently now set at:\r\n"+pstats.getPrompt());
+				mob.session().rawPrintln("Your prompt is now set at:\r\n"+pstats.getPrompt());
 			}
 		}
 		return false;
