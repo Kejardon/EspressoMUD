@@ -17,7 +17,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 */
 public class DefaultBind implements Bind
 {
-	protected CMSavable parent=null;
+	protected CMObject parent=null;
 	protected Item ItemA;
 	protected Item ItemB;
 	protected int bindType;
@@ -40,8 +40,8 @@ public class DefaultBind implements Bind
 	public void setStrength(int str){strength=str;}
 
 	//Ownable
-	public CMSavable owner(){return parent;}
-	public Ownable setOwner(CMSavable owner){parent=owner; return this;}
+	public CMObject owner(){return parent;}
+	public Ownable setOwner(CMObject owner){parent=owner; return this;}
 
 	public void destroy()
 	{

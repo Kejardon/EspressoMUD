@@ -15,6 +15,8 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 	http://www.apache.org/licenses/LICENSE-2.0
 */
 
+//TODO: Redo this to be like StdItem probably
+
 public class MixedItem implements Item
 {
 	@Override public String ID(){	return "MixedItem";}

@@ -18,7 +18,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 public class DefaultItemCol implements ItemCollection, Ownable
 {
 	protected CopyOnWriteArrayList<Item> inventory=new CopyOnWriteArrayList();
-	protected CMSavable parent=null;
+	protected CMObject parent=null;
 	protected int maxweight=0;
 	protected int maxsize=0;
 	protected int[] itemsToLoad=null;
@@ -33,8 +33,8 @@ public class DefaultItemCol implements ItemCollection, Ownable
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 
 	//Ownable
-	public CMSavable owner(){return parent;}
-	public Ownable setOwner(CMSavable owner){parent=owner; return this;}
+	public CMObject owner(){return parent;}
+	public Ownable setOwner(CMObject owner){parent=owner; return this;}
 
 	public void destroy()	//TODO/NOTE: Item contents should be dumped onto the ground when a container is broken before this is called.
 	{

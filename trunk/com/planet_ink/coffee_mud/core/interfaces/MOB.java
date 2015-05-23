@@ -89,7 +89,28 @@ public interface MOB extends ItemCollection.ItemHolder, Interactable, CMSavable,
 		//max level around 2369038960
 		public long totalEXP=0;
 		public int level=0;
-		public HashSet<Skill> forgettingSkills=new HashSet<>();
+		public HashSet<Skill> forgettingSkills;
+		
+		public Skilltable()
+		{
+			forgettingSkills=new HashSet<>();
+		}
+		protected Skilltable(Skilltable clone)
+		{
+			totalEXP=clone.totalEXP;
+			level=clone.level;
+			forgettingSkills=(HashSet)clone.forgettingSkills.clone();
+			for(Skill S : clone.keySet())
+			{
+				this.put(S, (MOBSkill)clone.get(S).clone());
+			}
+		}
+		
+		@Override public Skilltable clone()
+		{
+			return new Skilltable(this);
+		}
+		
 		public boolean changeState(Skill key, int state)
 		{
 			MOBSkill skill=get(key);
@@ -252,7 +273,7 @@ public interface MOB extends ItemCollection.ItemHolder, Interactable, CMSavable,
 		}
 	}
 	//TODO: Rehaul this class to be more friendly with the structure.
-	public static class MOBSkill
+	public static class MOBSkill implements Cloneable
 	{
 		public static final int FORGETTING=0;
 		public static final int MAINTAINING=1;
@@ -297,6 +318,23 @@ public interface MOB extends ItemCollection.ItemHolder, Interactable, CMSavable,
 		{
 			mySkill=skill;
 			EXP=exp;
+		}
+		protected MOBSkill(MOBSkill clone)
+		{
+			mySkill=clone.mySkill;
+			learningState=clone.learningState;
+			EXP=clone.EXP;
+			EXPBoost=clone.EXPBoost;
+			uncappedEXPBoost=clone.uncappedEXPBoost;
+			levelBoost=clone.levelBoost;
+			level=clone.level;
+			baseLevel=clone.baseLevel;
+		}
+		@Override public MOBSkill clone()
+		{
+			try {return (MOBSkill)super.clone();}
+			catch(CloneNotSupportedException e){}
+			return new MOBSkill(this);
 		}
 		//I actually like the efficiency of this EXP crawler, I might not need to rehaul this class.
 		public void calculateLevel(Skilltable source)

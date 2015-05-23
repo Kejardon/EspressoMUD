@@ -38,17 +38,22 @@ public class CMFile
 
 	public static final URL codeURL;
 	public static final URL baseURL;
+	public static final URL workURL;
 	public static final URI codeURI;
 	public static final URI baseURI;
+	public static final URI workURI;
 	public static final JarFile mainJAR;
 	static {
 		String codePath = CMFile.class.getResource("CMFile.class").toString();
 		codePath = codePath.substring(0, codePath.length()-(5+1+6+1+4)); //class . CMFile / core
 		String basePath = codePath.substring(0, codePath.length()-(1+10+1+10+1+3)); // / coffee_mud / planet_ink / com
+		//String workingDir = System.getProperty("user.dir");
 		URL tempCodeURL = null;
 		URI tempCodeURI = null;
 		URL tempBaseURL = null;
 		URI tempBaseURI = null;
+		URL tempWorkURL = null;
+		URI tempWorkURI = null;
 		JarFile tempJAR = null;
 		try {
 			if(basePath.endsWith(".jar!/") && basePath.startsWith("jar:")) {
@@ -59,6 +64,8 @@ public class CMFile
 			tempCodeURI = new URI(codePath);
 			tempBaseURL = new URL(basePath);
 			tempBaseURI = new URI(basePath);
+			tempWorkURI = new File(".").toURI();
+			tempWorkURL = tempWorkURI.toURL();
 		} catch(URISyntaxException | IOException e) {
 			System.exit(-1);
 		}
@@ -66,6 +73,8 @@ public class CMFile
 		codeURI = tempCodeURI;
 		baseURL = tempBaseURL;
 		baseURI = tempBaseURI;
+		workURL = tempWorkURL;
+		workURI = tempWorkURI;
 		mainJAR = tempJAR;
 	}
         
@@ -83,12 +92,15 @@ public class CMFile
 	//private long modifiedDateTime=System.currentTimeMillis();
 	private File localFile=null;
 	private JarEntry jarFile=null;
+	private boolean codeDir=false;
 	//private String parentDir=null;
 
 	public CMFile(String filename, MOB user, boolean pleaseLogErrors)
-	{ super(); buildCMFile(filename,user,pleaseLogErrors,false);}
+	{ super(); buildCMFile(filename,user,pleaseLogErrors,false,false);}
 	public CMFile(String filename, MOB user, boolean pleaseLogErrors, boolean forceAllow)
-	{ super(); buildCMFile(filename,user,pleaseLogErrors,forceAllow);}
+	{ super(); buildCMFile(filename,user,pleaseLogErrors,forceAllow,false);}
+	public CMFile(String filename, MOB user, boolean pleaseLogErrors, boolean forceAllow, boolean code)
+	{ super(); buildCMFile(filename,user,pleaseLogErrors,forceAllow,code);}
 
 	/* TODO: handle JAR paths
 	public static String getProperExistingPath(String absolutePath)
@@ -134,7 +146,7 @@ public class CMFile
 		return absolutePath;
 	}
 	*/
-	private void buildCMFile(String absolutePath, MOB user, boolean pleaseLogErrors, boolean forceAllow)
+	private void buildCMFile(String absolutePath, MOB user, boolean pleaseLogErrors, boolean forceAllow, boolean code)
 	{
 		accessor=user;
 		localFile=null;
@@ -151,13 +163,16 @@ public class CMFile
 		}
 		//parentDir=path;
 		localPath=path.replace('/',pathSeparator);
+		codeDir=code;
 		// fill in all we can
 		//vfsBits=EnumSet.noneOf(Flags.class);
-		String ioPath=getIOReadableLocalPathAndName();
 		try{
 			URI thisURI = new URI(absolutePath);
 			if(!thisURI.isAbsolute()) {
-				thisURI = baseURI.resolve(thisURI);
+				if(code)
+					thisURI = baseURI.resolve(thisURI);
+				else
+					thisURI = workURI.resolve(thisURI);
 			}
 			if(thisURI.getScheme().equals("jar")) {
 				if(mainJAR!=null)
@@ -183,6 +198,7 @@ public class CMFile
 			File localDir=new File(".");
 			int endZ=-1;
 			boolean found=true;
+			String ioPath=getIOReadableLocalPathAndName();
 			while((!localFile.exists())&&(endZ<ioPath.length())&&(localDir.exists())&&(localDir.isDirectory())&&(found))
 			{
 				int startZ=endZ+1;
@@ -234,7 +250,7 @@ public class CMFile
 
 	}
 
-	public CMFile getParent(){return new CMFile(path,accessor,false,false);}
+	public CMFile getParent(){return new CMFile(path,accessor,false,false,codeDir);}
 
 	public boolean mustOverwrite()
 	{
@@ -323,7 +339,7 @@ public class CMFile
 		try
 		{
 			if(localFile!=null)
-				reader=new BufferedReader(new InputStreamReader(new FileInputStream(getIOReadableLocalPathAndName()),inCharSet));
+				reader=new BufferedReader(new InputStreamReader(new FileInputStream(localFile.getCanonicalPath()),inCharSet));
 			else if(jarFile!=null)
 				reader=new BufferedReader(new InputStreamReader(mainJAR.getInputStream(jarFile),inCharSet));
 			else {
@@ -375,7 +391,7 @@ public class CMFile
 		try
 		{
 			if(localFile!=null)
-				F=new BufferedReader(new InputStreamReader(new FileInputStream(getIOReadableLocalPathAndName()),inCharSet));
+				F=new BufferedReader(new InputStreamReader(new FileInputStream(localFile.getCanonicalPath()),inCharSet));
 			else if(jarFile!=null)
 				F=new BufferedReader(new InputStreamReader(mainJAR.getInputStream(jarFile),inCharSet));
 			else {
@@ -422,7 +438,7 @@ public class CMFile
 		try
 		{
 			if(localFile!=null)
-				fileIn = new DataInputStream( new BufferedInputStream( new FileInputStream(getIOReadableLocalPathAndName()) ) );
+				fileIn = new DataInputStream( new BufferedInputStream( new FileInputStream(localFile.getCanonicalPath()) ) );
 			else if(jarFile!=null)
 				fileIn=new DataInputStream(new BufferedInputStream(mainJAR.getInputStream(jarFile)));
 			else {
@@ -640,7 +656,7 @@ public class CMFile
 			for(int i=0;i<list.length;i++)
 			{
 				F2=list[i];
-				CMFile CF=new CMFile(subPath+F2.getName(),accessor,false);
+				CMFile CF=new CMFile(subPath+F2.getName(),accessor,false,false,codeDir);
 				finalDir[i]=CF;
 			}
 			return finalDir;
@@ -651,7 +667,7 @@ public class CMFile
 			CMFile[] finalDir=new CMFile[foundFiles.size()];
 			for(int i=0;i<foundFiles.size();i++) {
 				//Try to find real files first, then go to JAR files
-				finalDir[i]=new CMFile(subPath+foundFiles.get(i), accessor, false);
+				finalDir[i]=new CMFile(subPath+foundFiles.get(i), accessor, false,false,codeDir);
 			}
 			return finalDir;
 		}

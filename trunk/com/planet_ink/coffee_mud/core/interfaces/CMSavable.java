@@ -53,8 +53,8 @@ public interface CMSavable extends CMObject
 //		public void loadFixed(ByteBuffer val);
 	}
 */
-	@Override public CMSavable newInstance();
-	@Override public CMSavable copyOf();
+	//@Override public CMSavable newInstance();
+	//@Override public CMSavable copyOf();
 	public SaveEnum[] totalEnumS();
 	public Enum[] headerEnumS();
 	public int saveNum();
@@ -84,31 +84,14 @@ public interface CMSavable extends CMObject
 	private static Enum[] headerEnumS=null;
 	@Override public SaveEnum[] totalEnumS()
 	{
-		if(totalEnumS==null)
-		{
-			SaveEnum[] arrA=SCode.values();
-			SaveEnum[] arrB=super.totalEnumS();
-			SaveEnum[] total=new SaveEnum[arrA.length+arrB.length];
-			System.arraycopy(arrA, 0, total, 0, arrA.length);
-			System.arraycopy(arrB, 0, total, arrA.length, arrB.length);
-			totalEnumS=total;
-		}
+		if(totalEnumS==null) totalEnumS=CMParms.appendToArray(SCode.values(), super.totalEnumS(), SaveEnum[].class);
 		return totalEnumS;
 	}
 	@Override public Enum[] headerEnumS()
 	{
-		if(headerEnumS==null)
-		{
-			Enum[] arrA=new Enum[] {SCode.values()[0]};
-			Enum[] arrB=super.headerEnumS();
-			Enum[] total=new Enum[arrA.length+arrB.length];
-			System.arraycopy(arrA, 0, total, 0, arrA.length);
-			System.arraycopy(arrB, 0, total, arrA.length, arrB.length);
-			headerEnumS=total;
-		}
+		if(headerEnumS==null) headerEnumS=CMParms.appendToArray(new Enum[] {SCode.values()[0]}, super.headerEnumS(), Enum[].class);
 		return headerEnumS;
 	}
-
 	//The actual enum/code/parser
 	//IMPORTANT NOTES: ALL SAVEENUMS MUST HAVE 3-LETTER NAMES
 	private static enum SCode implements SaveEnum{

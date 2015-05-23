@@ -28,7 +28,7 @@ public abstract class DefaultCharStats implements CharStats
 
 	@Override public DefaultCharStats newInstance(){try{return getClass().newInstance();}catch(Exception e){return null;}}
 	@Override public void initializeClass(){}
-	protected CMSavable parent=null;
+	protected CMObject parent=null;
 	protected short[] stat;
 	protected short[] statTrain;
 	protected short[] save;
@@ -40,8 +40,8 @@ public abstract class DefaultCharStats implements CharStats
 	@Override public Points[] getPointOptions(){return dummyPointsArray;}
 
 	//Ownable
-	@Override public CMSavable owner(){return parent;}
-	@Override public Ownable setOwner(CMSavable owner){parent=owner; return this;}
+	@Override public CMObject owner(){return parent;}
+	@Override public Ownable setOwner(CMObject owner){parent=owner; return this;}
 //	protected Body myBody=null;
 
 	/*
@@ -69,8 +69,7 @@ public abstract class DefaultCharStats implements CharStats
 			copyStatic(newStats);
 			for(int i=0; i<points.length; i++)
 				newStats.points[i]=points[i];
-			if(newStats.parent!=null)
-				newStats.parent.saveThis();
+			newStats.saveThis();
 		}
 	}
 	@Override public void copyStatic(CharStats intoStats)
@@ -87,14 +86,14 @@ public abstract class DefaultCharStats implements CharStats
 			for(int i=0; i<save.length; i++)
 				newStats.save[i]=save[i];
 			newStats.parent=parent;
-			if(parent!=null) parent.saveThis();
+			saveThis();
 		}
 	}
 	@Override public void resetState()
 	{
 		for(int i=0; i<points.length; i++)
 			points[i]=pointsMax[i];
-		if(parent!=null) parent.saveThis();
+		saveThis();
 	}
 
 	@Override public DefaultCharStats copyOf()
@@ -114,7 +113,7 @@ public abstract class DefaultCharStats implements CharStats
 	@Override public void setSave(Save option, short value)
 	{
 		int i=getSaveIndex(option);
-		if(i>=0) { save[i]=value; if(parent!=null) parent.saveThis(); }
+		if(i>=0) { save[i]=value; saveThis(); }
 	}
 
 	@Override public short getTrain(Stat option)
@@ -126,7 +125,7 @@ public abstract class DefaultCharStats implements CharStats
 	@Override public void setTrain(Stat option, short value)
 	{
 		int i=getStatIndex(option);
-		if(i>=0) { statTrain[i]=value; if(parent!=null) parent.saveThis(); }
+		if(i>=0) { statTrain[i]=value; saveThis(); }
 	}
 
 	@Override public short getStat(Stat option)
@@ -139,7 +138,7 @@ public abstract class DefaultCharStats implements CharStats
 	@Override public void setStat(Stat option, short value)
 	{
 		int i=getStatIndex(option);
-		if(i>=0) {stat[i]=value; if(parent!=null) parent.saveThis();}
+		if(i>=0) {stat[i]=value; saveThis();}
 	}
 
 	@Override public int getPoints(Points option)
@@ -157,7 +156,7 @@ public abstract class DefaultCharStats implements CharStats
 	@Override public boolean setPoints(Points option, int newVal)	//Return if it broke a min or max cap, do not cap yourself
 	{
 		int i=getPointsIndex(option);
-		if(i>=0) {points[i]=newVal; if(parent!=null) parent.saveThis(); return newVal>pointsMax[i];}
+		if(i>=0) {points[i]=newVal; saveThis(); return newVal>pointsMax[i];}
 		return false;
 	}
 	@Override public boolean adjPoints(Points option, int byThisMuch)	//Cap, return if cap did something
@@ -169,16 +168,16 @@ public abstract class DefaultCharStats implements CharStats
 			if(points[i]>pointsMax[i])
 			{
 				points[i]=pointsMax[i];
-				if(parent!=null) parent.saveThis();
+				saveThis();
 				return true;
 			}
 			else if(points[i]<0)
 			{
 				points[i]=0;
-				if(parent!=null) parent.saveThis();
+				saveThis();
 				return true;
 			}
-			if(parent!=null) parent.saveThis();
+			saveThis();
 		}
 		return false;
 	}
@@ -194,7 +193,7 @@ public abstract class DefaultCharStats implements CharStats
 		int i=getPointsIndex(option);
 		if(i<0) return false;
 		pointsMax[i]=newVal;
-		if(parent!=null) parent.saveThis();
+		saveThis();
 		return newVal<points[i];
 	}
 	@Override public boolean adjMaxPoints(Points option, int byThisMuch)	//Cap, return if cap did something
@@ -212,10 +211,10 @@ public abstract class DefaultCharStats implements CharStats
 			if(points[i]>pointsMax[i])
 			{
 				points[i]=pointsMax[i];
-				if(parent!=null) parent.saveThis();
+				saveThis();
 				return true;
 			}
-			if(parent!=null) parent.saveThis();
+			saveThis();
 			return change;
 		}
 		return false;
@@ -249,7 +248,7 @@ public abstract class DefaultCharStats implements CharStats
 
 		//TODO: Focus causing fatigue?
 		setPoints(Points.FOCUS, current);
-		/*if(parent!=null) parent.saveThis();
+		/*saveThis();
 		sourceStats.saveThis(); //*
 	} */
 
@@ -264,8 +263,8 @@ public abstract class DefaultCharStats implements CharStats
 	@Override public void destroy(){}	//TODO?
 	@Override public boolean amDestroyed()
 	{
-		if(parent!=null)
-			return parent.amDestroyed();
+		if(parent instanceof CMSavable)
+			return ((CMSavable)parent).amDestroyed();
 		return true;
 	}
 
@@ -278,7 +277,7 @@ public abstract class DefaultCharStats implements CharStats
 	@Override public void setSaveNum(int num){}
 	@Override public boolean needLink(){return false;}
 	@Override public void link(){}
-	@Override public void saveThis(){if(parent!=null) parent.saveThis();}
+	@Override public void saveThis(){if(parent instanceof CMSavable) ((CMSavable)parent).saveThis();}
 	@Override public void prepDefault(){}
 
 	/*

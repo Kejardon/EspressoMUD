@@ -18,7 +18,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 
 public class DefaultTimeClock implements TimeClock, Ownable
 {
-	protected CMSavable parent;
+	protected CMObject parent;
 
 	@Override public String ID(){return "DefaultTimeClock";}
 	public String name(){return "Time Object";}
@@ -27,8 +27,8 @@ public class DefaultTimeClock implements TimeClock, Ownable
 	//public long lastTick=0;
 
 	//Ownable
-	public CMSavable owner(){return parent;}
-	public Ownable setOwner(CMSavable owner)
+	public CMObject owner(){return parent;}
+	public Ownable setOwner(CMObject owner)
 	{
 		if(parent==null)
 		{
@@ -60,6 +60,25 @@ public class DefaultTimeClock implements TimeClock, Ownable
 	protected String[] weekNames={};
 	protected String[] yearNames={"year #"};
 	
+	public DefaultTimeClock(){}
+	public DefaultTimeClock(DefaultTimeClock clone)
+	{
+		tickCount = clone.tickCount;
+		year = clone.year;
+		baseYear = clone.baseYear;
+		month = clone.month;
+		day = clone.day;
+		hour = clone.hour;
+		subHour = clone.subHour;
+		baseTime = clone.baseTime;
+		hoursInDay = clone.hoursInDay;
+		monthsInYear = clone.monthsInYear.clone();
+		daysInMonth = clone.daysInMonth;
+		dawnToDusk = clone.dawnToDusk.clone();
+		weekNames = clone.weekNames.clone();
+		yearNames = clone.yearNames.clone();
+	}
+	
 	public Tickable.TickStat getTickStatus(){return tickStatus;}
 	protected void recalcTime()	//Assume current time is accurate, get new baseTime
 	{
@@ -75,7 +94,7 @@ public class DefaultTimeClock implements TimeClock, Ownable
 		multiplier*=monthsInYear.length;
 		baseYear=year;
 		baseTime=System.currentTimeMillis()-revertThisFar;
-		if(parent!=null)parent.saveThis();
+		saveThis();
 	}
 	protected void setBaseTime(long newTime, int newBaseYear)	//Absolute base values
 	{
@@ -91,7 +110,7 @@ public class DefaultTimeClock implements TimeClock, Ownable
 		tempTime=tempTime/daysInMonth;
 		month=(int)(tempTime%monthsInYear.length);
 		year=(int)(tempTime/monthsInYear.length);
-		if(parent!=null)parent.saveThis();
+		saveThis();
 /*		long tempHour=(tempTime)/Tickable.TIME_TICKS_PER_MUDHOUR;
 		long tempDay=tempHour/hoursInDay;
 		hour=(int)(tempHour%hoursInDay);
@@ -110,7 +129,7 @@ public class DefaultTimeClock implements TimeClock, Ownable
 	public void setMonthsInYear(String[] months){monthsInYear=months; recalcTime();}
 	public int[] getDawnToDusk(){return dawnToDusk;}
 	public String[] getYearNames(){return yearNames;}
-	public void setYearNames(String[] years){yearNames=years; if(parent!=null)parent.saveThis();}
+	public void setYearNames(String[] years){yearNames=years; saveThis();}
 	public void setDawnToDusk(int dawn, int day, int dusk, int night)
 	{ 
 		dawnToDusk[TIME_DAWN]=dawn;
@@ -214,6 +233,8 @@ public class DefaultTimeClock implements TimeClock, Ownable
 	
 	public DefaultTimeClock copyOf()
 	{
+		return new DefaultTimeClock(this);
+		/*
 		try
 		{
 			DefaultTimeClock C=(DefaultTimeClock)this.clone();
@@ -223,6 +244,7 @@ public class DefaultTimeClock implements TimeClock, Ownable
 		{
 			return new DefaultTimeClock();
 		}
+		*/
 	}
 
 /*	public String deriveEllapsedTimeString(long millis)
@@ -401,8 +423,8 @@ public class DefaultTimeClock implements TimeClock, Ownable
 	}
 	public boolean amDestroyed()
 	{
-		if(parent!=null)
-			return parent.amDestroyed();
+		if(parent instanceof CMSavable)
+			return ((CMSavable)parent).amDestroyed();
 		return true;
 	}
 
@@ -414,7 +436,7 @@ public class DefaultTimeClock implements TimeClock, Ownable
 	public void setSaveNum(int num){}
 	public boolean needLink(){return false;}
 	public void link(){}
-	public void saveThis(){if(parent!=null)parent.saveThis();}
+	public void saveThis(){if(parent instanceof CMSavable)((CMSavable)parent).saveThis();}
 	public void prepDefault(){}
 
 	private enum SCode implements SaveEnum<DefaultTimeClock>{

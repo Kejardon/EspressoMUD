@@ -19,21 +19,38 @@ public class MixedEnvStats implements EnvStats, Ownable
 {
 	@Override public String ID(){return "MixedEnvStats";}
 	protected double Speed=1.0;			// should be positive
-	protected CopyOnWriteArrayList<String> ambiances=new CopyOnWriteArrayList();
+	protected final CopyOnWriteArrayList<String> ambiances;//=new CopyOnWriteArrayList();
 	protected int width;
 	protected int length;
 	protected int height;
 	protected int weight;
 	protected long volume;
 	protected int magic;
-	protected CMSavable parent;
-	protected WVector<RawMaterial.Resource> materials=new WVector();
+	protected CMObject parent;
+	protected WVector<RawMaterial.Resource> materials;//=new WVector();
 
 	//Ownable
-	public CMSavable owner(){return parent;}
-	public Ownable setOwner(CMSavable owner){parent=owner; return this;}
+	public CMObject owner(){return parent;}
+	public Ownable setOwner(CMObject owner){parent=owner; return this;}
 
-	public MixedEnvStats(){}
+	public MixedEnvStats()
+	{
+		materials=new WVector();
+		ambiances=new CopyOnWriteArrayList();
+	}
+	public MixedEnvStats(MixedEnvStats clone)
+	{
+		//super(clone);
+		Speed = clone.Speed;
+		ambiances = (CopyOnWriteArrayList)clone.ambiances.clone();
+		width = clone.width;
+		length = clone.length;
+		height = clone.height;
+		weight = clone.weight;
+		volume = clone.volume;
+		magic = clone.magic;
+		materials = clone.materials.clone();
+	}
 
 	public EnvShape shape(){return null;}
 	public int ability(){return magic;}
@@ -56,19 +73,19 @@ public class MixedEnvStats implements EnvStats, Ownable
 	public long volume(){return volume;}
 
 	public void setShape(EnvShape newShape){}
-	public void setWeight(int newWeight){weight=newWeight; if(parent!=null)parent.saveThis();}
-	public void setSpeed(double newSpeed){Speed=newSpeed; if(parent!=null)parent.saveThis();}
-	public void setAbility(int newAdjustment){magic=newAdjustment; if(parent!=null)parent.saveThis();}
-	public void setHeight(int newHeight){height=newHeight; if(parent!=null)parent.saveThis();}
-	public void setLength(int newLength){length=newLength; if(parent!=null)parent.saveThis();}
-	public void setWidth(int newWidth){weight=newWidth; if(parent!=null)parent.saveThis();}
+	public void setWeight(int newWeight){weight=newWeight; saveThis();}
+	public void setSpeed(double newSpeed){Speed=newSpeed; saveThis();}
+	public void setAbility(int newAdjustment){magic=newAdjustment; saveThis();}
+	public void setHeight(int newHeight){height=newHeight; saveThis();}
+	public void setLength(int newLength){length=newLength; saveThis();}
+	public void setWidth(int newWidth){weight=newWidth; saveThis();}
 	public void setMaterial(RawMaterial.Resource newMaterial)
 	{
 		materials.clear();
 		materials.add(newMaterial);
-		if(parent!=null) parent.saveThis();
+		saveThis();
 	}
-	public void setMaterials(WVector<RawMaterial.Resource> newMaterials){materials = newMaterials; if(parent!=null)parent.saveThis();}
+	public void setMaterials(WVector<RawMaterial.Resource> newMaterials){materials = newMaterials; saveThis();}
 	public void setVolume(long newVolume){volume=newVolume;}
 	public void recalcLengthsFromVolume()
 	{
@@ -114,7 +131,7 @@ public class MixedEnvStats implements EnvStats, Ownable
 					return;
 			ambiances.add(ambiance);
 		}
-		if(parent!=null)parent.saveThis();
+		saveThis();
 	}
 	public void delAmbiance(String ambiance)
 	{
@@ -124,7 +141,7 @@ public class MixedEnvStats implements EnvStats, Ownable
 				if(S.equalsIgnoreCase(ambiance))
 				{
 					ambiances.remove(S);
-					if(parent!=null)parent.saveThis();
+					saveThis();
 					return;
 				}
 		}
@@ -134,6 +151,8 @@ public class MixedEnvStats implements EnvStats, Ownable
 	@Override public void initializeClass(){}
 	public MixedEnvStats copyOf()
 	{
+		return new MixedEnvStats(this);
+		/*
 		try
 		{
 			MixedEnvStats E=(MixedEnvStats)this.clone();
@@ -145,6 +164,7 @@ public class MixedEnvStats implements EnvStats, Ownable
 		{
 			return new MixedEnvStats();
 		}
+		*/
 	}
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 	public void copyInto(EnvStats intoStats)
@@ -158,7 +178,7 @@ public class MixedEnvStats implements EnvStats, Ownable
 			copy.weight=weight;
 			copy.magic=magic;
 			copy.Speed=Speed;
-			copy.ambiances=(CopyOnWriteArrayList<String>)ambiances.clone();
+			copy.ambiances.clear(); copy.ambiances.addAll(ambiances);
 			copy.materials=(WVector)materials.clone();
 			copy.saveThis();
 		}
@@ -167,8 +187,8 @@ public class MixedEnvStats implements EnvStats, Ownable
 	public void destroy(){}
 	public boolean amDestroyed()
 	{
-		if(parent!=null)
-			return parent.amDestroyed();
+		if(parent instanceof CMSavable)
+			return ((CMSavable)parent).amDestroyed();
 		return true;
 	}
 
@@ -181,7 +201,7 @@ public class MixedEnvStats implements EnvStats, Ownable
 	public void setSaveNum(int num){}
 	public boolean needLink(){return false;}
 	public void link(){}
-	public void saveThis(){if(parent!=null)parent.saveThis();}
+	public void saveThis(){if(parent instanceof CMSavable) ((CMSavable)parent).saveThis();}
 	public void prepDefault(){}
 
 	private enum SCode implements SaveEnum<MixedEnvStats>{
@@ -202,7 +222,7 @@ public class MixedEnvStats implements EnvStats, Ownable
 		AMB(){
 			public ByteBuffer save(MixedEnvStats E){ return CMLib.coffeeMaker().savAString((String[])E.ambiances.toArray(CMClass.dummyStringArray)); }
 			public int size(){return 0;}
-			public void load(MixedEnvStats E, ByteBuffer S){ E.ambiances=new CopyOnWriteArrayList(CMLib.coffeeMaker().loadAString(S)); } },
+			public void load(MixedEnvStats E, ByteBuffer S){ CMParms.addAll(E.ambiances, CMLib.coffeeMaker().loadAString(S)); } },
 		MAT(){
 			public ByteBuffer save(MixedEnvStats E){ return CMLib.coffeeMaker().getEnumWVector(E.materials); }
 			public int size(){return 0;}

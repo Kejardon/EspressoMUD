@@ -1,5 +1,4 @@
 package com.planet_ink.coffee_mud.Exits;
-import com.planet_ink.coffee_mud.ExitInstance.OneToOneExitInstance;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.*;
 import com.planet_ink.coffee_mud.Libraries.*;
@@ -16,69 +15,73 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 	http://www.apache.org/licenses/LICENSE-2.0
 */
 
-public class StdExit implements Exit
+public class StdExit extends AbstractSaveInteractable implements Exit
 {
-	@Override public String ID(){	return "StdExit";}
+	@Override protected int AI_ENABLES(){return AI_ENV|AI_AFFECTS|AI_BEHAVES|AI_OK|AI_EXC|AI_TICK|AI_NAME|AI_DISP|AI_DESC;}
+	@Override public String ID(){return "StdExit";}
+	@Override protected SIDLib.Objects SID(){return SIDLib.EXIT;}
 
-	protected String name="an ordinary pathway";
-	protected String display="an open passage to another place.";
-	protected String desc="";
-	protected String plainName;
-	protected String plainNameOf;
-	protected String plainDisplay;
-	protected String plainDisplayOf;
-	protected String plainDesc;
-	protected String plainDescOf;
 	protected boolean visible=true;
-	protected OneToOneExitInstance exitInstA;
-	protected OneToOneExitInstance exitInstB;
+	protected ExitInstance exitInstA;
+	protected ExitInstance exitInstB;
 
-	protected EnumSet<ListenHolder.Flags> lFlags=EnumSet.of(ListenHolder.Flags.OK,ListenHolder.Flags.EXC);
-	protected CopyOnWriteArrayList<OkChecker> okCheckers=new CopyOnWriteArrayList();
-	protected CopyOnWriteArrayList<ExcChecker> excCheckers=new CopyOnWriteArrayList();
-	protected CopyOnWriteArrayList<TickActer> tickActers=new CopyOnWriteArrayList();
-	protected CopyOnWriteArrayList<Effect> affects=new CopyOnWriteArrayList();
-	protected CopyOnWriteArrayList<Behavior> behaviors=new CopyOnWriteArrayList();
-	protected long lastTick=0;
-	protected Tickable.TickStat tickStatus=Tickable.TickStat.Not;
-	protected int tickCount=0;
-	protected boolean amDestroyed=false;
+	//protected EnumSet<ListenHolder.Flags> lFlags=EnumSet.of(ListenHolder.Flags.OK,ListenHolder.Flags.EXC);
+	//protected CopyOnWriteArrayList<OkChecker> okCheckers=new CopyOnWriteArrayList();
+	//protected CopyOnWriteArrayList<ExcChecker> excCheckers=new CopyOnWriteArrayList();
+	//protected CopyOnWriteArrayList<TickActer> tickActers=new CopyOnWriteArrayList();
+	//protected CopyOnWriteArrayList<Effect> affects=new CopyOnWriteArrayList();
+	//protected CopyOnWriteArrayList<Behavior> behaviors=new CopyOnWriteArrayList();
+	//protected long lastTick=0;
+	//protected Tickable.TickStat tickStatus=Tickable.TickStat.Not;
+	//protected int tickCount=0;
+	//protected boolean amDestroyed=false;
 
-	protected Environmental myEnvironmental;//=(Environmental)((Ownable)CMClass.COMMON.getNew("DefaultEnvironmental")).setOwner(this);
+	//protected Environmental myEnvironmental;//=(Environmental)((Ownable)CMClass.COMMON.getNew("DefaultEnvironmental")).setOwner(this);
 	protected Closeable myDoor=null;
 
-	protected int saveNum=0;
+	//protected int saveNum=0;
 	protected int doorToLoad=0;
-	protected int[] effectsToLoad=null;
-	protected int[] behavesToLoad=null;
+	//protected int[] effectsToLoad=null;
+	//protected int[] behavesToLoad=null;
 
 	public StdExit(){}
+	protected StdExit(StdExit clone)
+	{
+		super(clone);
+		visible = clone.visible;
+		if(clone.exitInstA!=null) { exitInstA=clone.exitInstA.copyOf(); exitInstA.setExit(this); }
+		if(clone.exitInstB!=null) { exitInstB=clone.exitInstB.copyOf(); exitInstB.setExit(this); }
+		if(clone.myDoor!=null) { myDoor=clone.myDoor.copyOf();  } //myDoor.setOwner(this);
+		
+	}
 
+	/*
 	public Environmental getEnvObject(){
 		if(myEnvironmental==null)
 			synchronized(this){if(myEnvironmental==null) myEnvironmental=(Environmental)((Ownable)CMClass.COMMON.getNew("DefaultEnvironmental")).setOwner(this);}
 		return myEnvironmental;
 	}
-	public Closeable getLidObject() {return myDoor;}
+	*/
+	@Override public Closeable getLidObject() {return myDoor;}
 
-	public String directLook(MOB mob, Room destination)
+	@Override public String directLook(MOB mob, Room destination)
 	{
-		String s=display;
+		String s=displayText();
 		if((myDoor==null)||(!myDoor.closed()))
 			s+=" It leads to "+destination.displayText();
 		return s;
 	}
-	public String exitListLook(MOB mob, Room destination)
+	@Override public String exitListLook(MOB mob, Room destination)
 	{
 		if((myDoor==null)||(!myDoor.closed()))
 			return destination.displayText();
 		return name;
 	}
-	public boolean visibleExit(MOB mob, Room destination) {return visible; }
-	public void setVisible(boolean b){visible = b; CMLib.database().saveObject(this);}
-	public ExitInstance makeInstance(Room source, Room destination)
+	@Override public boolean visibleExit(MOB mob, Room destination) {return visible; }
+	@Override public void setVisible(boolean b){visible = b; CMLib.database().saveObject(this);}
+	@Override public ExitInstance makeInstance(Room source, Room destination)
 	{
-		OneToOneExitInstance otherExit;
+		ExitInstance otherExit;
 		boolean isA;
 		if(exitInstA==null)
 		{
@@ -93,7 +96,10 @@ public class StdExit implements Exit
 		else return null;
 		if(otherExit!=null && (otherExit.getDestination()!=source || !destination.hasExit(otherExit)))
 			return null;
-		OneToOneExitInstance newInstance=new OneToOneExitInstance(this, destination);
+		//StdExitInstance newInstance=new StdExitInstance(this, destination);
+		ExitInstance newInstance=CMClass.EXITINSTANCE.getNew("StdExitInstance");
+		newInstance.setExit(this);
+		newInstance.setDestination(destination);
 		if(isA)
 			exitInstA=newInstance;
 		else
@@ -101,9 +107,9 @@ public class StdExit implements Exit
 		CMLib.database().saveObject(newInstance);
 		return newInstance;
 	}
-	public void removeInstance(ExitInstance myInstance, boolean both)
+	@Override public void removeInstance(ExitInstance myInstance, boolean both)
 	{
-		OneToOneExitInstance alsoRemove=null;
+		ExitInstance alsoRemove=null;
 		if(myInstance==exitInstA)
 		{
 			exitInstA=null;
@@ -127,118 +133,49 @@ public class StdExit implements Exit
 		myInstance.destroy();
 	}
 
-	public ExitInstance oppositeOf(ExitInstance myInstance, Room destination)
+	@Override public ExitInstance oppositeOf(ExitInstance myInstance, Room destination)
 	{
 		if(myInstance==exitInstA) return exitInstB;
 		else if(myInstance==exitInstB) return exitInstA;
 		return null;
 	}
-	public int priority(ListenHolder L){return Integer.MAX_VALUE;}
-	public void registerListeners(ListenHolder here) { here.addListener(this, lFlags); }
-	public void registerAllListeners() { }
-	public void clearAllListeners() { }
+	@Override public int priority(ListenHolder L){return Integer.MAX_VALUE;}
+	@Override public void registerListeners(ListenHolder here) { here.addListener(this, lFlags); }
+	@Override public void registerAllListeners() { }
+	@Override public void clearAllListeners() { }
 
-	@Override public void initializeClass(){}
-	public String name(){ return name;}
-	public String plainName()
-	{
-		if(name==plainNameOf)
-			return plainName;
-		String newName=name;
-		String newPlain=CMLib.coffeeFilter().toRawString(newName);
-		synchronized(this)
-		{
-			plainName=newPlain;
-			plainNameOf=newName;
-		}
-		return newPlain;
-	}
-	public void setName(String newName){name=newName; CMLib.database().saveObject(this);}
-	public String displayText(){return display;}
-	public String plainDisplayText()
-	{
-		if(display==plainDisplayOf)
-			return plainDisplay;
-		String newDisplay=display;
-		String newPlain=CMLib.coffeeFilter().toRawString(newDisplay);
-		synchronized(this)
-		{
-			plainDisplay=newPlain;
-			plainDisplayOf=newDisplay;
-		}
-		return newPlain;
-	}
-	public void setDisplayText(String newDisplayText){display=newDisplayText; CMLib.database().saveObject(this);}
-	public String description(){return desc;}
-	public String plainDescription()
-	{
-		if(desc==plainDescOf)
-			return plainDesc;
-		String newDesc=desc;
-		String newPlain=CMLib.coffeeFilter().toRawString(newDesc);
-		synchronized(this)
-		{
-			plainDesc=newPlain;
-			plainDescOf=newDesc;
-		}
-		return newPlain;
-	}
-	public void setDescription(String newDescription){desc=newDescription; CMLib.database().saveObject(this);}
+	//@Override public void initializeClass(){}
+	@Override public String name(){ return name==""?"an ordinary pathway":name;}
+	@Override public String displayText(){return display==""?"an open passage to another place.":display;}
+	@Override public String description(){return desc;}
 
-	public void destroy()
+	@Override public void destroy()
 	{
-		//clearAllListeners();
-		amDestroyed=true;
-		myEnvironmental.destroy();
 		if(myDoor!=null) myDoor.destroy();
-		for(Effect E : affects)
-			E.setAffectedOne(null);
-		affects.clear();
-		for(Behavior B : behaviors)
-			B.startBehavior(null);
-		behaviors.clear();
-		if(saveNum!=0)	//NOTE: I think this should be a standard destroy() check?
-			CMLib.database().deleteObject(this);
 		if(exitInstA!=null)
 			exitInstA.destroy();
 		if(exitInstB!=null)
 			exitInstB.destroy();
+		super.destroy();
 	}
-	public boolean amDestroyed(){return amDestroyed;}
+	//public boolean amDestroyed(){return amDestroyed;}
 
-	public StdExit newInstance()
+	@Override public StdExit newInstance()
 	{
-		try
-		{
-			return this.getClass().newInstance();
-		}
-		catch(Exception e)
-		{
-			Log.errOut(ID(),e);
-		}
+		try{return this.getClass().newInstance();}catch(Exception e){Log.errOut(ID(),e);}
 		return new StdExit();
 	} 
+	/*
 	protected void cloneFix(StdExit E)
 	{
-		okCheckers=new CopyOnWriteArrayList();
-		excCheckers=new CopyOnWriteArrayList();
-		tickActers=new CopyOnWriteArrayList();
-		lFlags=lFlags.clone();
-		affects=new CopyOnWriteArrayList();
-		behaviors=new CopyOnWriteArrayList();
-		tickStatus=Tickable.TickStat.Not;
-		if(E.myEnvironmental!=null)
-			myEnvironmental=(Environmental)((Ownable)myEnvironmental.copyOf()).setOwner(this);
-		if(E.myDoor!=null)
-			myDoor=E.myDoor.copyOf();
-
-		for(Effect A : E.affects)
-			affects.add(A.copyOnto(this));
-		for(Behavior B : E.behaviors)
-			addBehavior(B.copyOf());
+		super.cloneFix(this);
+		//TODO: clone instances, change exits of instances to this Exit.
 	}
-	public StdExit copyOf()
+	*/
+	@Override public StdExit copyOf()
 	{
+		return new StdExit(this);
+		/*
 		try
 		{
 			StdExit E=(StdExit)this.clone();
@@ -246,10 +183,8 @@ public class StdExit implements Exit
 			E.cloneFix(this);
 			return E;
 		}
-		catch(CloneNotSupportedException e)
-		{
-			return this.newInstance();
-		}
+		catch(CloneNotSupportedException e){return this.newInstance();}
+		*/
 	} 
 /*	protected Rideable findALadder(MOB mob, Room room)
 	{
@@ -296,264 +231,93 @@ public class StdExit implements Exit
 		for(ExcChecker O : excCheckers)
 			O.executeMsg(myHost, msg);
 	}
-	public int compareTo(CMObject o)
-	{
-//		if(o instanceof Exit)
-//			return exitID.compareTo(((Exit)o).exitID());
-		return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));
-	}
-
-	//Affectable
-	public void addEffect(Effect to)
-	{
-		affects.add(to);
-		to.setAffectedOne(this);
-		CMLib.database().saveObject(this);
-	}
-	public void delEffect(Effect to)
-	{
-		if(affects.remove(to))
-		{
-			to.setAffectedOne(null);
-			CMLib.database().saveObject(this);
-		}
-	}
-	public boolean hasEffect(Effect to)
-	{
-		return affects.contains(to);
-	}
-	public int numEffects(){return affects.size();}
-	public Effect fetchEffect(int index)
-	{
-		try { return affects.get(index); }
-		catch(java.lang.ArrayIndexOutOfBoundsException x){}
-		return null;
-	}
-	public Vector<Effect> fetchEffect(String ID)
-	{
-		Vector<Effect> V=new Vector(1);
-		for(Effect E : affects)
-			if(E.ID().equals(ID))
-				V.add(E);
-		return V;
-	}
-	public Effect fetchFirstEffect(String ID)
-	{
-		for(Effect E : affects)
-			if(E.ID().equals(ID))
-				return E;
-		return null;
-	}
-	public Iterator<Effect> allEffects() { return affects.iterator(); }
-
-	//Behavable
-	public void addBehavior(Behavior to)
-	{
-		synchronized(behaviors)
-		{
-			if(fetchBehavior(to.ID())!=null) return;
-			to.startBehavior(this);
-			behaviors.add(to);
-		}
-		CMLib.database().saveObject(this);
-	}
-	public void delBehavior(Behavior to)
-	{
-		if(behaviors.remove(to))
-		{
-			to.startBehavior(null);
-			CMLib.database().saveObject(this);
-		}
-	}
-	public int numBehaviors()
-	{
-		return behaviors.size();
-	}
-	public Behavior fetchBehavior(int index)
-	{
-		try { return behaviors.get(index); }
-		catch(java.lang.ArrayIndexOutOfBoundsException x){}
-		return null;
-	}
-	public Behavior fetchBehavior(String ID)
-	{
-		for(Behavior B : behaviors)
-			if(B.ID().equals(ID))
-				return B;
-		return null;
-	}
-	public boolean hasBehavior(String ID)
-	{
-		for(Behavior B : behaviors)
-			if(B.ID().equals(ID))
-				return true;
-		return false;
-	}
-	public Iterator<Behavior> allBehaviors() { return behaviors.iterator(); }
+	//@Override public int compareTo(CMObject o){return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 
 	//Affectable/Behavable shared
-	public CopyOnWriteArrayList<CharAffecter> charAffecters(){return null;}
-	public CopyOnWriteArrayList<EnvAffecter> envAffecters(){return null;}	//TODO: Should this give the environmental's instead?
-	public CopyOnWriteArrayList<OkChecker> okCheckers(){return okCheckers;}
-	public CopyOnWriteArrayList<ExcChecker> excCheckers(){return excCheckers;}
-	public CopyOnWriteArrayList<TickActer> tickActers(){return tickActers;}
+	//public CopyOnWriteArrayList<CharAffecter> charAffecters(){return null;}
+	//public CopyOnWriteArrayList<EnvAffecter> envAffecters(){return null;}	//TODO: Should this give the environmental's instead?
+	//public CopyOnWriteArrayList<OkChecker> okCheckers(){return okCheckers;}
+	//public CopyOnWriteArrayList<ExcChecker> excCheckers(){return excCheckers;}
+	//public CopyOnWriteArrayList<TickActer> tickActers(){return tickActers;}
 
-	public void removeListener(Listener oldAffect, EnumSet flags)
+	@Override public void removeListener(Listener oldAffect, EnumSet flags)
 	{
 		ListenHolder.O.removeListener(this, oldAffect, flags);
 		if((flags.contains(ListenHolder.Flags.TICK))&&(tickActers.isEmpty())&&(lFlags.remove(ListenHolder.Flags.TICK)))
 			CMLib.threads().delExit(this);
 	}
-	public void addListener(Listener newAffect, EnumSet flags)
+	@Override public void addListener(Listener newAffect, EnumSet flags)
 	{
 		ListenHolder.O.addListener(this, newAffect, flags);
 		if((flags.contains(ListenHolder.Flags.TICK))&&(!tickActers.isEmpty())&&(lFlags.add(ListenHolder.Flags.TICK)))
 			CMLib.threads().addExit(this);
 	}
-	public EnumSet<ListenHolder.Flags> listenFlags() {return lFlags;}
+	//public EnumSet<ListenHolder.Flags> listenFlags() {return lFlags;}
 	//Tickable
-	public Tickable.TickStat getTickStatus(){return tickStatus;}
-	public boolean tick(int tickTo)
+	//public Tickable.TickStat getTickStatus(){return tickStatus;}
+	@Override public boolean tick(int tickTo)
 	{
-		if(tickCount==0) tickCount=tickTo-1;
-		else if(tickTo>tickCount+10)
-			tickTo=tickCount+10;
-		while(tickCount<tickTo)
-		{
-			tickCount++;
-			if(!doTick()) {tickCount=0; return false;}	//Possibly also lFlags.remove(ListenHolder.Flags.TICK);
-		}
-		return true;
-	}
-	public int tickCounter(){return tickCount;}
-	public void tickAct(){}
-	protected boolean doTick()
-	{
-		tickStatus=Tickable.TickStat.Listener;
-		for(TickActer T : tickActers)
-			if(!T.tick(tickCount))
-				tickActers.remove(T);
-		tickStatus=Tickable.TickStat.Not;
-		return (tickActers.size()>0);
+		boolean result=super.tick(tickTo);
+		if(!result) lFlags.remove(ListenHolder.Flags.TICK);
+		return result;
 	}
 	//public long lastAct(){return 0;}	//No Action ticks
 	//public long lastTick(){return lastTick;}
 
-	@Override public SaveEnum[] totalEnumS(){return SCode.values();}
-	@Override public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]} ;}
-	@Override public ModEnum[] totalEnumM(){return MCode.values();}
-	@Override public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
-	public int saveNum()
+	private static ModEnum[] totalEnumM=null;
+	private static Enum[] headerEnumM=null;
+	@Override public ModEnum[] totalEnumM()
 	{
-		if((saveNum==0)&&(!amDestroyed))
-		synchronized(this)
-		{
-			if(saveNum==0)
-				saveNum=SIDLib.EXIT.getNumber(this);
-		}
-		return saveNum;
+		if(totalEnumM==null) totalEnumM=CMParms.appendToArray(MCode.values(), super.totalEnumM(), ModEnum[].class);
+		return totalEnumM;
 	}
-	public void setSaveNum(int num)
+	@Override public Enum[] headerEnumM()
 	{
-		synchronized(this)
-		{
-			if(saveNum!=0)
-				SIDLib.EXIT.removeNumber(saveNum);
-			saveNum=num;
-			SIDLib.EXIT.assignNumber(num, this);
-		}
+		if(headerEnumM==null) headerEnumM=CMParms.appendToArray(new Enum[] {MCode.values()[0]}, super.headerEnumM(), Enum[].class);
+		return headerEnumM;
 	}
-	public boolean needLink(){return true;}
-	public void link()
+	private static SaveEnum[] totalEnumS=null;
+	private static Enum[] headerEnumS=null;
+	@Override public SaveEnum[] totalEnumS()
 	{
-		if(effectsToLoad!=null)
-		{
-			for(int SID : effectsToLoad)
-			{
-				Effect to = SIDLib.EFFECT.get(SID);
-				if(to==null) continue;
-				affects.add(to);
-				to.setAffectedOne(this);
-			}
-			effectsToLoad=null;
-		}
-		if(behavesToLoad!=null)
-		{
-			for(int SID : behavesToLoad)
-			{
-				Behavior to = SIDLib.BEHAVIOR.get(SID);
-				if(to==null) continue;
-				to.startBehavior(this);
-				behaviors.add(to);
-			}
-			behavesToLoad=null;
-		}
+		if(totalEnumS==null) totalEnumS=CMParms.appendToArray(SCode.values(), super.totalEnumS(), SaveEnum[].class);
+		return totalEnumS;
 	}
-	public void linkMe(ExitInstance myInstance)
+	@Override public Enum[] headerEnumS()
 	{
-		if(!(myInstance instanceof OneToOneExitInstance))
-		{
-			Log.errOut(ID(),"Incorrect ExitInstance type attempting to link");
-		}
-		if(exitInstA==null) exitInstA=(OneToOneExitInstance)myInstance;
-		else if(exitInstB==null) exitInstB=(OneToOneExitInstance)myInstance;
+		if(headerEnumS==null) headerEnumS=CMParms.appendToArray(new Enum[] {SCode.values()[0]}, super.headerEnumS(), Enum[].class);
+		return headerEnumS;
+	}
+	//@Override public boolean needLink(){return true;}
+	//@Override public void link(){super.link();}
+	@Override public void linkMe(ExitInstance myInstance)
+	{
+		if(exitInstA==null) exitInstA=myInstance;
+		else if(exitInstB==null) exitInstB=myInstance;
 		else Log.errOut(ID(),"ExitInstance attempting to link to full Exit");
 	}
-	public void saveThis(){CMLib.database().saveObject(this);}
-	public void prepDefault(){}
+	//public void prepDefault(){}
 
-	public void finalize()
+	@Override public void finalize() throws Throwable
 	{
 		//Clean up the database. This might be a good thing to have in all CMSavables, but Exits in particular should have it!
 		if((CMProps.Bools.MUDSTARTED.property())&&(!CMProps.Bools.MUDSHUTTINGDOWN.property()))
 			destroy();
-		//super.finalize();
+		super.finalize();
+	}
+	
+	@Override public void saveThis()
+	{
+		super.saveThis();
+		if(exitInstA!=null) exitInstA.saveThis();
+		if(exitInstB!=null) exitInstB.saveThis();
 	}
 
 	private enum SCode implements SaveEnum<StdExit>{
-		ENV(){
-			public ByteBuffer save(StdExit E){
-				if(E.myEnvironmental==null) return CoffeeMaker.emptyBuffer;
-				return CMLib.coffeeMaker().savSubFull(E.myEnvironmental); }
-			public int size(){return -1;}
-			public CMSavable subObject(StdExit fromThis){return fromThis.myEnvironmental;}
-			public void load(StdExit E, ByteBuffer S){
-				Environmental old=E.myEnvironmental;
-				E.myEnvironmental=(Environmental)CMLib.coffeeMaker().loadSub(S, E, this);
-				if(E.myEnvironmental!=null) ((Ownable)E.myEnvironmental).setOwner(E);
-				if((old!=null)&&(old!=E.myEnvironmental)) old.destroy(); } },
-		DSP(){
-			public ByteBuffer save(StdExit E){
-				if(E.display=="an open passage to another place.") return CoffeeMaker.emptyBuffer;
-				return CMLib.coffeeMaker().savString(E.display); }
-			public int size(){return 0;}
-			public void load(StdExit E, ByteBuffer S){ E.display=CMLib.coffeeMaker().loadString(S); } },
-		DSC(){
-			public ByteBuffer save(StdExit E){ return CMLib.coffeeMaker().savString(E.desc); }
-			public int size(){return 0;}
-			public void load(StdExit E, ByteBuffer S){ E.desc=CMLib.coffeeMaker().loadString(S); } },
-		EFC(){
-			public ByteBuffer save(StdExit E){
-				if(E.affects.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.affects.toArray(CMSavable.dummyCMSavableArray));
-				return CoffeeMaker.emptyBuffer; }
-			public int size(){return 0;}
-			public void load(StdExit E, ByteBuffer S){ E.effectsToLoad=CMLib.coffeeMaker().loadAInt(S); } },
-		BHV(){
-			public ByteBuffer save(StdExit E){
-				if(E.behaviors.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.behaviors.toArray(CMSavable.dummyCMSavableArray));
-				return CoffeeMaker.emptyBuffer; }
-			public int size(){return 0;}
-			public void load(StdExit E, ByteBuffer S){ E.behavesToLoad=CMLib.coffeeMaker().loadAInt(S); } },
 		VIS(){
 			public ByteBuffer save(StdExit E){ return (ByteBuffer)ByteBuffer.wrap(new byte[1]).put(E.visible?(byte)1:(byte)0).rewind(); }
 			public int size(){return 1;}
 			public void load(StdExit E, ByteBuffer S){ E.visible=(S.get()!=0); } },
-		NAM(){
-			public ByteBuffer save(StdExit E){
-				if(E.name=="an ordinary pathway") return CoffeeMaker.emptyBuffer;
-				return CMLib.coffeeMaker().savString(E.name); }
-			public int size(){return 0;}
-			public void load(StdExit E, ByteBuffer S){ E.name=CMLib.coffeeMaker().loadString(S); } },
 		CLS(){
 			public ByteBuffer save(StdExit E){
 				if(E.myDoor==null) return CoffeeMaker.emptyBuffer;
@@ -568,34 +332,10 @@ public class StdExit implements Exit
 		;
 		public CMSavable subObject(StdExit fromThis){return null;} }
 	private enum MCode implements ModEnum<StdExit>{
-		ENVIRONMENTAL(){
-			public String brief(StdExit E){return E.getEnvObject().ID();}
-			public String prompt(StdExit E){return "";}
-			public void mod(StdExit E, MOB M){CMLib.genEd().genMiscSet(M, E.myEnvironmental);} },
-		DISPLAY(){
-			public String brief(StdExit E){return E.display;}
-			public String prompt(StdExit E){return ""+E.display;}
-			public void mod(StdExit E, MOB M){E.display=CMLib.genEd().stringPrompt(M, ""+E.display, false);} },
-		DESCRIPTION(){
-			public String brief(StdExit E){return E.display;}
-			public String prompt(StdExit E){return ""+E.display;}
-			public void mod(StdExit E, MOB M){E.display=CMLib.genEd().stringPrompt(M, ""+E.display, false);} },
-		EFFECTS(){
-			public String brief(StdExit E){return ""+E.affects.size();}
-			public String prompt(StdExit E){return "";}
-			public void mod(StdExit E, MOB M){CMLib.genEd().modAffectable(E, M);} },
-		BEHAVIORS(){
-			public String brief(StdExit E){return ""+E.behaviors.size();}
-			public String prompt(StdExit E){return "";}
-			public void mod(StdExit E, MOB M){CMLib.genEd().modBehavable(E, M);} },
 		VISIBLE(){
 			public String brief(StdExit E){return ""+E.visible;}
 			public String prompt(StdExit E){return ""+E.visible;}
 			public void mod(StdExit E, MOB M){E.visible=CMLib.genEd().booleanPrompt(M, ""+E.visible);} },
-		NAME(){
-			public String brief(StdExit E){return E.name;}
-			public String prompt(StdExit E){return E.name;}
-			public void mod(StdExit E, MOB M){E.name=CMLib.genEd().stringPrompt(M, E.name, false);} },
 		DOOR(){
 			public String brief(StdExit E){return (E.myDoor==null)?("null"):(E.myDoor.ID());}
 			public String prompt(StdExit E){return "";}
@@ -607,9 +347,11 @@ public class StdExit implements Exit
 					else if(action=='D') {E.myDoor.destroy(); E.myDoor=null;} } } }
 		; }
 
+	/*
 	public boolean sameAs(Interactable E)
 	{
 		if(!(E instanceof StdExit)) return false;
 		return true;
 	}
+	*/
 }

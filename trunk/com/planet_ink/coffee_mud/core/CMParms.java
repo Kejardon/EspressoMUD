@@ -15,6 +15,12 @@ public class CMParms
 	private CMParms(){super();}
 	private static CMParms inst=new CMParms();
 	public static CMParms instance(){return inst;}
+	public static Iterator EmptyIterator = new Iterator()
+	{
+		@Override public boolean hasNext() { return false; }
+		@Override public Object next() { throw new NoSuchElementException(); }
+		@Override public void remove() { throw new UnsupportedOperationException(); }
+	};
 
 	public static String firstWord(String str)
 	{
@@ -39,6 +45,49 @@ public class CMParms
 		if(spaceIndex>=0)
 			return str.substring(0, spaceIndex);
 		return str;
+	}
+	
+	private static class AddCollection<E> implements Collection<E>
+	{
+		E[] array;
+		@Override public int size() { return array.length; }
+		@Override public boolean isEmpty() { return array.length == 0; }
+		@Override public boolean contains(Object o) {
+			throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		}
+		@Override public Iterator<E> iterator() {
+			throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		}
+		@Override public Object[] toArray() { return array; }
+		@Override public <T> T[] toArray(T[] a) { return (T[])array; }
+		@Override public boolean add(E e) {
+			throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		}
+		@Override public boolean remove(Object o) {
+			throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		}
+		@Override public boolean containsAll(Collection<?> c) {
+			throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		}
+		@Override public boolean addAll(Collection<? extends E> c) {
+			throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		}
+		@Override public boolean removeAll(Collection<?> c) {
+			throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		}
+		@Override public boolean retainAll(Collection<?> c) {
+			throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		}
+		@Override public void clear() {
+			throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		}
+	}
+	
+	public static <E> void addAll(Collection<E> col, E[] array)
+	{
+		AddCollection<E> temp=new AddCollection();
+		temp.array = array;
+		col.addAll(temp);
 	}
 	//Combine methods: Take a Collection (usually Vector<String>), and mesh them into a single String
 	public static String combine(Vector commands, int startAt, int endAt)

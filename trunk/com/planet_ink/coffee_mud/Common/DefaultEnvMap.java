@@ -21,7 +21,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 public class DefaultEnvMap implements EnvMap
 {
 	protected ConcurrentHashMap<EnvHolder, EnvLocation> inventory=new ConcurrentHashMap();
-	protected CMSavable parent=null;
+	protected CMObject parent=null;
 	protected int[] itemsToLoad=null;
 	protected int saveNum=0;
 	protected boolean amDestroyed=false;
@@ -34,8 +34,8 @@ public class DefaultEnvMap implements EnvMap
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 
 	//Ownable
-	public CMSavable owner(){return parent;}
-	public Ownable setOwner(CMSavable owner){parent=owner; return this;}
+	public CMObject owner(){return parent;}
+	public Ownable setOwner(CMObject owner){parent=owner; return this;}
 
 	public void destroy()
 	{

@@ -1,8 +1,3 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
-
 package com.planet_ink.coffee_mud.core.interfaces;
 
 import com.planet_ink.coffee_mud.core.*;
@@ -21,7 +16,11 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 public interface ExitInstance extends Interactable, CMSavable, CMModifiable //Item?
 {
 	public Exit getExit();
+	public void setExit(Exit e);
+	public void setDestination(Room r);
 	public Room getDestination();
+	public void setInRoom(Room r);
+	public Room getInRoom();
 	@Override public ExitInstance newInstance();
 	@Override public ExitInstance copyOf();
 	public static class ComparableEI implements ExitInstance
@@ -83,7 +82,10 @@ public interface ExitInstance extends Interactable, CMSavable, CMModifiable //It
 		
 		public Exit getExit() { return e; }
 		public Room getDestination() {return r;}
-		
+		public void setExit(Exit e){this.e = e;}
+		public void setDestination(Room r){this.r = r;}
+		public void setInRoom(Room r){}
+		public Room getInRoom(){return null;}
 		public String name() { return null; }
 		public String plainName() { return null; }
 		public void setName(String newName) { }

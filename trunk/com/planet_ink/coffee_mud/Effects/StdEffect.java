@@ -34,6 +34,22 @@ public class StdEffect implements Effect
 	protected int saveNum=0;
 	protected boolean amDestroyed=false;
 	protected int[] effectsToLoad=null;
+	
+	public StdEffect(){}
+	public StdEffect(StdEffect clone)
+	{
+		//super(clone);
+		tickDown=clone.tickDown;
+
+		myFlags.addAll(clone.myFlags);
+		lFlags.addAll(clone.lFlags);
+
+		for(Effect A : clone.affects)
+			affects.add(A.copyOnto(this));
+		
+		unInvoked = clone.unInvoked;
+		
+	}
 
 	@Override public String ID() { return "StdEffect"; }
 	public int priority(ListenHolder L){return Integer.MAX_VALUE;}
@@ -53,7 +69,6 @@ public class StdEffect implements Effect
 			((ListenHolder)affected).removeListener(this, lFlags);
 	}
 	@Override public void initializeClass() {}
-	public StdEffect(){}
 
 	public StdEffect newInstance()
 	{
@@ -76,6 +91,10 @@ public class StdEffect implements Effect
 	}
 	public Effect copyOnto(Affectable being)
 	{
+		StdEffect E = this.copyOf();
+		being.addEffect(E);
+		return E;
+		/*
 		try
 		{
 			StdEffect E=(StdEffect)this.clone();
@@ -90,7 +109,9 @@ public class StdEffect implements Effect
 			E.startTickDown(being, tickDown);
 			return E;
 		}
+		*/
 	}
+	/*
 	protected void cloneFix(StdEffect E)
 	{
 		okCheckers=new CopyOnWriteArrayList();
@@ -104,8 +125,11 @@ public class StdEffect implements Effect
 		for(Effect A : E.affects)
 			affects.add(A.copyOnto(this));
 	}
+	*/
 	public StdEffect copyOf()
 	{
+		return new StdEffect(this);
+		/*
 		try
 		{
 			StdEffect E=(StdEffect)this.clone();
@@ -117,6 +141,7 @@ public class StdEffect implements Effect
 		{
 			return this.newInstance();
 		}
+		*/
 	}
 
 	public Affectable affecting()

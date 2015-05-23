@@ -19,7 +19,7 @@ public class CustomRideable implements Rideable, Ownable
 {
 
 	protected CopyOnWriteArrayList<Item> riders=new CopyOnWriteArrayList();
-	protected CMSavable parent=null;
+	protected CMObject parent=null;
 	protected int saveNum=0;
 	protected boolean mobile=false;
 	protected String putString="on";
@@ -38,8 +38,8 @@ public class CustomRideable implements Rideable, Ownable
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 
 	//Ownable
-	public CMSavable owner(){return parent;}
-	public Ownable setOwner(CMSavable owner){parent=owner; return this;}
+	public CMObject owner(){return parent;}
+	public Ownable setOwner(CMObject owner){parent=owner; return this;}
 
 	public void destroy()
 	{

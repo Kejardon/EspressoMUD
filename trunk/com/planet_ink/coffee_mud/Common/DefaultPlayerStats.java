@@ -56,9 +56,32 @@ public class DefaultPlayerStats implements PlayerStats
 	
 	protected int bitmap=0;
 
-	public DefaultPlayerStats() {
-		super();
+	public DefaultPlayerStats() {}
+	public DefaultPlayerStats(DefaultPlayerStats clone)
+	{
+		synchronized(clone.securityGroups) {securityGroups=(HashSet)clone.securityGroups.clone();}
+		synchronized(clone.friends) {friends=(HashSet)clone.friends.clone();}
+		synchronized(clone.ignored) {ignored=(HashSet)clone.ignored.clone();}
+		synchronized(clone.ignoredBy) {ignoredBy=(HashSet)clone.ignoredBy.clone();}
+		synchronized(clone.introductions) {introductions=(HashSet)clone.introductions.clone();}
+		synchronized(clone.tellStack) {tellStack=(LinkedList)clone.tellStack.clone(); }
+		synchronized(clone.alias) {alias=(HashMap)clone.alias.clone();}
+		lastIP = clone.lastIP.clone();
+		//protected long LastDateTime=System.currentTimeMillis();
+		//protected long lastUpdated=0;
+		channelMask=clone.channelMask;
+		Password=clone.Password;
+		colorStr=clone.colorStr;
+		prompt=clone.prompt;
+		//protected PlayerAccount account = null;
+		wrap=clone.wrap;
+		pageBreak=clone.pageBreak;
+		replyTo=clone.replyTo;
+		replyType=clone.replyType;
+		replyTime=clone.replyTime;
+		//protected MOB mob=null;
 	}
+	
 	
 /*	public boolean sameAs(PlayerStats E)
 	{
@@ -72,6 +95,8 @@ public class DefaultPlayerStats implements PlayerStats
 	@Override public void initializeClass(){}
 	@Override public DefaultPlayerStats copyOf()
 	{
+		return new DefaultPlayerStats(this);
+		/*
 		try
 		{
 			DefaultPlayerStats O=(DefaultPlayerStats)this.clone();
@@ -93,6 +118,7 @@ public class DefaultPlayerStats implements PlayerStats
 		{
 			return new DefaultPlayerStats();
 		}
+		*/
 	}
 	public byte[] lastIP(){return lastIP;}
 	public void setLastIP(byte[] ip)

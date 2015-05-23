@@ -800,7 +800,7 @@ public class DBManager implements CMLibrary, Runnable	//extends Thread
 					if(saveNum==0) continue;	//Deleted entry, skip
 					format.fileMap.put(new SimpleInt(saveNum), new SimpleInt(fileIndex));
 					format.claimFreeEntry(fileIndex);
-					CMSavable thisObj=format.myObject.newInstance();
+					CMSavable thisObj=(CMSavable)format.myObject.newInstance();
 					thisObj.setSaveNum(saveNum);	//This will also register the object with its associated SID library.
 					for(int parserNum=0;parserNum<parsers.length;parserNum++)
 					try {

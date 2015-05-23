@@ -4,6 +4,7 @@ import com.planet_ink.coffee_mud.Libraries.*;
 
 import java.util.*;
 import java.lang.ref.WeakReference;
+import java.util.concurrent.CopyOnWriteArrayList;
 /*
 EspressoMUD copyright 2011 Kejardon
 
@@ -31,24 +32,58 @@ public class SIDLib
 	//AREA
 	public static final int LimboAreaSaveNum=1;
 	
-	public static final Objects<MOB> CREATURE=new Objects<MOB>(MOB.class,"CREATURE");
-	public static final Objects<Rideable> RIDEABLE=new Objects<Rideable>(Rideable.class,"RIDEABLE");
-	public static final Objects<Behavior> BEHAVIOR=new Objects<Behavior>(Behavior.class,"BEHAVIOR");
-	public static final Objects<Effect> EFFECT=new Objects<Effect>(Effect.class,"EFFECT");
-	public static final Objects<Room> ROOM=new Objects<Room>(Room.class,"ROOM");
-	public static final Objects<Item> ITEM=new Objects<Item>(Item.class,"ITEM");
-	public static final Objects<Area> AREA=new Objects<Area>(Area.class,"AREA");
-	public static final Objects<Exit> EXIT=new Objects<Exit>(Exit.class,"EXIT");
-	public static final Objects<ItemCollection> ITEMCOLLECTION=new Objects<ItemCollection>(ItemCollection.class,"ITEMCOLLECTION");
-	public static final Objects<EnvMap> ENVMAP=new Objects<EnvMap>(EnvMap.class,"ENVMAP");
-	public static final Objects<AccountStats> ACCOUNTSTATS=new Objects<AccountStats>(AccountStats.class,"ACCOUNTSTATS");
-	public static final Objects<BindCollection> BINDCOLLECTION=new Objects<BindCollection>(BindCollection.class,"BINDCOLLECTION");
-	public static final Objects<Bind> BIND=new Objects<Bind>(Bind.class,"BIND");
-	public static final Objects<ExitInstance> EXITINSTANCE=new Objects<ExitInstance>(ExitInstance.class,"EXITINSTANCE");
+	public static void loadEffects(int[] effectsToLoad, CopyOnWriteArrayList<Effect> affects, Affectable target)
+	{
+		if(effectsToLoad == null) return;
+		for(int SID : effectsToLoad)
+		{
+			Effect to = SIDLib.EFFECT.get(SID);
+			if(to==null) continue;
+			affects.add(to);
+			to.setAffectedOne(target);
+		}
+	}
+	public static void loadBehaves(int[] behavesToLoad, CopyOnWriteArrayList<Behavior> behaviors, Behavable target)
+	{
+		if(behavesToLoad == null) return;
+		for(int SID : behavesToLoad)
+		{
+			Behavior to = SIDLib.BEHAVIOR.get(SID);
+			if(to==null) continue;
+			behaviors.add(to);
+			to.startBehavior(target);
+		}
+	}
+	public static CMObject loadRide(int rideToLoad, Item target)
+	{
+		Rideable rideable=SIDLib.RIDEABLE.get(rideToLoad);
+		if(rideable!=null)
+		{
+			rideable.addRider(target);
+			return Ownable.O.getOwnerFrom(rideable);
+		}
+		return null;
+	}
+	
+	public static final Objects<MOB> CREATURE=new Objects<>(MOB.class,"CREATURE");
+	public static final Objects<Rideable> RIDEABLE=new Objects<>(Rideable.class,"RIDEABLE");
+	public static final Objects<Behavior> BEHAVIOR=new Objects<>(Behavior.class,"BEHAVIOR");
+	public static final Objects<Effect> EFFECT=new Objects<>(Effect.class,"EFFECT");
+	public static final Objects<Room> ROOM=new Objects<>(Room.class,"ROOM");
+	//public static final Objects<Wall> WALL=new Objects<>(Wall.class,"WALL");
+	public static final Objects<Item> ITEM=new Objects<>(Item.class,"ITEM");
+	public static final Objects<Area> AREA=new Objects<>(Area.class,"AREA");
+	public static final Objects<Exit> EXIT=new Objects<>(Exit.class,"EXIT");
+	public static final Objects<ItemCollection> ITEMCOLLECTION=new Objects<>(ItemCollection.class,"ITEMCOLLECTION");
+	public static final Objects<EnvMap> ENVMAP=new Objects<>(EnvMap.class,"ENVMAP");
+	public static final Objects<AccountStats> ACCOUNTSTATS=new Objects<>(AccountStats.class,"ACCOUNTSTATS");
+	public static final Objects<BindCollection> BINDCOLLECTION=new Objects<>(BindCollection.class,"BINDCOLLECTION");
+	public static final Objects<Bind> BIND=new Objects<>(Bind.class,"BIND");
+	public static final Objects<ExitInstance> EXITINSTANCE=new Objects<>(ExitInstance.class,"EXITINSTANCE");
 	public static class Objects<U extends CMSavable>
 	{
-		private static final HashMap<String, Objects> objectsNames=new HashMap<String, Objects>();
-		private static Vector<Objects> objVector=new Vector(10);
+		private static final HashMap<String, Objects> objectsNames=new HashMap<>();
+		private static final Vector<Objects> objVector=new Vector(10);
 		private static Objects[] values;
 		public static Objects[] values()
 		{
@@ -61,7 +96,7 @@ public class SIDLib
 		public final Class myClass;
 		public final String name;
 		private int saveNumber=10000;	//1-9999 reserved for non-transient objects that may exist in several places at once.
-		private HashMap<Integer, WeakReference<U>> assignedNumbers=new HashMap();
+		private final HashMap<Integer, WeakReference<U>> assignedNumbers=new HashMap();
 
 		public Objects(Class S, String name)
 		{

@@ -22,8 +22,8 @@ public interface CMModifiable extends CMObject
 		public String prompt(U fromThis);
 		public void mod(U toThis, MOB mob);
 	}
-	@Override public CMModifiable newInstance();
-	@Override public CMModifiable copyOf();
+	//@Override public CMModifiable newInstance();
+	//@Override public CMModifiable copyOf();
 
 	public ModEnum[] totalEnumM();
 	public Enum[] headerEnumM();
@@ -42,28 +42,12 @@ public interface CMModifiable extends CMObject
 	private static Enum[] headerEnumM=null;
 	@Override public ModEnum[] totalEnumM()
 	{
-		if(totalEnumM==null)
-		{
-			ModEnum[] arrA=MCode.values();
-			ModEnum[] arrB=super.totalEnumM();
-			ModEnum[] total=new ModEnum[arrA.length+arrB.length];
-			System.arraycopy(arrA, 0, total, 0, arrA.length);
-			System.arraycopy(arrB, 0, total, arrA.length, arrB.length);
-			totalEnumM=total;
-		}
+		if(totalEnumM==null) totalEnumM=CMParms.appendToArray(MCode.values(), super.totalEnumM(), ModEnum[].class);
 		return totalEnumM;
 	}
 	@Override public Enum[] headerEnumM()
 	{
-		if(headerEnumM==null)
-		{
-			Enum[] arrA=new Enum[] {MCode.values()[0]};
-			Enum[] arrB=super.headerEnumM();
-			Enum[] total=new Enum[arrA.length+arrB.length];
-			System.arraycopy(arrA, 0, total, 0, arrA.length);
-			System.arraycopy(arrB, 0, total, arrA.length, arrB.length);
-			headerEnumM=total;
-		}
+		if(headerEnumM==null) headerEnumM=CMParms.appendToArray(new Enum[] {MCode.values()[0]}, super.headerEnumM(), Enum[].class);
 		return headerEnumM;
 	}
 	//The actual enum/code/parser

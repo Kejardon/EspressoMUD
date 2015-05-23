@@ -20,7 +20,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 public class DefaultBindCollection implements BindCollection, Ownable
 {
 	protected CopyOnWriteArrayList<Bind> inventory=new CopyOnWriteArrayList();
-	protected CMSavable parent=null;
+	protected CMObject parent=null;
 	protected int[] bindsToLoad=null;
 	protected int saveNum=0;
 	protected boolean amDestroyed=false;
@@ -44,8 +44,8 @@ public class DefaultBindCollection implements BindCollection, Ownable
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 
 	//Ownable
-	public CMSavable owner(){return parent;}
-	public Ownable setOwner(CMSavable owner){parent=owner; return this;}
+	public CMObject owner(){return parent;}
+	public Ownable setOwner(CMObject owner){parent=owner; return this;}
 
 	public void destroy()
 	{

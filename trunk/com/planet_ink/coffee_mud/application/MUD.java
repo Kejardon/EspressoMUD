@@ -25,7 +25,7 @@ public class MUD extends Thread implements MudHost
 	private static final float HOST_VERSION_MAJOR=(float)1.0;
 	private static final long  HOST_VERSION_MINOR=0;
 	private static final long LastConnectionDelay=(5*60*1000);
-	public static final String copyright="(C) 2010 - 2014 Kejardon";
+	public static final String copyright="(C) 2010 - 2015 Kejardon";
 
 	protected static boolean bringDown=false;
 	//private static DVector accessed=new DVector(2);	//List of connection attempts

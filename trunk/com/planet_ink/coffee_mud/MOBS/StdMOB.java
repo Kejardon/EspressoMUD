@@ -19,14 +19,14 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 	http://www.apache.org/licenses/LICENSE-2.0
 */
 
-public class StdMOB implements MOB
+public class StdMOB extends AbstractSaveInteractable implements MOB
 {
 //	private static final Vector empty=new Vector();
+	@Override protected int AI_ENABLES(){return AI_AFFECTS|AI_BEHAVES|AI_CHAR|AI_OK|AI_EXC|AI_TICK|AI_NAME;}
 
 	@Override public String ID(){return "StdMOB";}
-	protected String name="";
-	protected String plainName;
-	protected String plainNameOf;
+	@Override protected SIDLib.Objects SID(){return SIDLib.CREATURE;}
+	//protected String name="";
 
 	protected QueuedCommand currentCommand=null;
 	protected ArrayList<QueuedCommand> commandQue=new ArrayList();
@@ -44,15 +44,15 @@ public class StdMOB implements MOB
 	protected Tickable.TickStat actStatus=Tickable.TickStat.Not;
 
 	/* containers of items and attributes*/
-	protected EnumSet<ListenHolder.Flags> lFlags=EnumSet.of(ListenHolder.Flags.OK,ListenHolder.Flags.EXC,ListenHolder.Flags.TICK);
-	protected CopyOnWriteArrayList<CharAffecter> charAffecters=new CopyOnWriteArrayList();
-	protected CopyOnWriteArrayList<OkChecker> okCheckers=new CopyOnWriteArrayList();
-	protected CopyOnWriteArrayList<ExcChecker> excCheckers=new CopyOnWriteArrayList();
-	protected CopyOnWriteArrayList<TickActer> tickActers=new CopyOnWriteArrayList();
-	protected CopyOnWriteArrayList<Effect> affects=new CopyOnWriteArrayList();
-	protected CopyOnWriteArrayList<Behavior> behaviors=new CopyOnWriteArrayList();
-	protected int tickCount=0;
-	protected Tickable.TickStat tickStatus=Tickable.TickStat.Not;
+	//protected EnumSet<ListenHolder.Flags> lFlags=EnumSet.of(ListenHolder.Flags.OK,ListenHolder.Flags.EXC,ListenHolder.Flags.TICK);
+	//protected CopyOnWriteArrayList<CharAffecter> charAffecters=new CopyOnWriteArrayList();
+	//protected CopyOnWriteArrayList<OkChecker> okCheckers=new CopyOnWriteArrayList();
+	//protected CopyOnWriteArrayList<ExcChecker> excCheckers=new CopyOnWriteArrayList();
+	//protected CopyOnWriteArrayList<TickActer> tickActers=new CopyOnWriteArrayList();
+	//protected CopyOnWriteArrayList<Effect> affects=new CopyOnWriteArrayList();
+	//protected CopyOnWriteArrayList<Behavior> behaviors=new CopyOnWriteArrayList();
+	//protected int tickCount=0;
+	//protected Tickable.TickStat tickStatus=Tickable.TickStat.Not;
 
 	//protected EatCode myEatAction=null;//defaultEatCode;
 
@@ -63,23 +63,42 @@ public class StdMOB implements MOB
 
 	// the core state values
 	protected Interactable victim=null;
-	protected boolean amDestroyed=false;
+	//protected boolean amDestroyed=false;
 
-	protected Vector<String> titles=new Vector();
+	protected Vector<String> titles;
 	protected Body myBody=null;
 
-	protected Skilltable skillSet=new Skilltable();
+	protected Skilltable skillSet;
 
-	protected int saveNum=0;
-	protected int[] effectsToLoad=null;
-	protected int[] behavesToLoad=null;
+	//protected int saveNum=0;
+	//protected int[] effectsToLoad=null;
+	//protected int[] behavesToLoad=null;
 	protected int bodyToLink=0;
 	protected int itemCollectionToLoad=0;
 	protected int playerStatsToLink=0;
 
 	public StdMOB()
 	{
-//		((Ownable)inventory).setOwner(this);
+		titles=new Vector();
+		skillSet=new Skilltable();
+	}
+	protected StdMOB(StdMOB clone)
+	{
+		//Important note: Body is NOT cloned by this
+		super(clone);
+		if(clone.baseCharStats!=null)
+		{
+			baseCharStats=clone.baseCharStats.copyOf();
+			charStats=(CharStats)CMClass.COMMON.getNew(baseCharStats.ID());
+			baseCharStats.copyStatic(charStats);
+		}
+		//if(clone.inventory!=null) inventory=(ItemCollection)((Ownable)clone.inventory.copyOf()).setOwner(this);
+		titles=(Vector<String>)clone.titles.clone();
+		skillSet=(Skilltable)clone.skillSet.clone();
+		
+		//Don't set owner until all values have been set, so we don't save this during constructor
+		baseCharStats.setOwner(this);
+		charStats.setOwner(this);
 	}
 
 	/*
@@ -100,20 +119,13 @@ public class StdMOB implements MOB
 	//public EatCode getEat(){return myEatAction;}
 
 	@Override public void initializeClass(){}
-	public StdMOB newInstance()
+	@Override public StdMOB newInstance()
 	{
-		try
-		{
-			return getClass().newInstance();
-		}
-		catch(Exception e)
-		{
-			Log.errOut(ID(),e);
-		}
+		try{return getClass().newInstance();}catch(Exception e){Log.errOut(ID(),e);}
 		return new StdMOB();
 	}
 
-	public void setName(String newName)
+	@Override public void setName(String newName)
 	{
 		String oldName=name;
 		name=newName;
@@ -122,28 +134,12 @@ public class StdMOB implements MOB
 		else
 			CMLib.database().saveObject(this);
 	}
-	public String name()
+	@Override public String name(){return name;}
+	@Override public String titledName()
 	{
 		return name;
 	}
-	public String plainName()
-	{
-		if(name==plainNameOf)
-			return plainName;
-		String newName=name;
-		String newPlain=CMLib.coffeeFilter().toRawString(newName);
-		synchronized(this)
-		{
-			plainName=newPlain;
-			plainNameOf=newName;
-		}
-		return newPlain;
-	}
-	public String titledName()
-	{
-		return name;
-	}
-	public void setBody(Body newBody)
+	@Override public void setBody(Body newBody)
 	{
 		if(newBody!=null)
 			newBody.setMob(this);
@@ -152,15 +148,15 @@ public class StdMOB implements MOB
 //		charStats.setBody(newBody);
 		CMLib.database().saveObject(this);
 	}
-	public Body body(){return myBody;}
-	public void setDescription(String S){}
-	public String description(){return "";}
-	public String plainDescription(){return "";}
-	public void setDisplayText(String S){}
-	public String displayText(){return "";}
-	public String plainDisplayText(){return "";}
+	@Override public Body body(){return myBody;}
+	@Override public void setDescription(String S){}
+	@Override public String description(){return "";}
+	@Override public String plainDescription(){return "";}
+	@Override public void setDisplayText(String S){}
+	@Override public String displayText(){return "";}
+	@Override public String plainDisplayText(){return "";}
 
-	public ItemCollection getItemCollection()
+	@Override public ItemCollection getItemCollection()
 	{
 		if(inventory==null) synchronized(this)
 		{
@@ -172,78 +168,64 @@ public class StdMOB implements MOB
 		}
 		return inventory;
 	}
-	public Environmental getEnvObject()
+	@Override public Environmental getEnvObject()
 	{
 		if(myBody!=null)
 			return myBody.getEnvObject();
 		return null;
 	}
-	public void setItemCollection(ItemCollection newInv, boolean copyInto)
+	@Override public void setItemCollection(ItemCollection newInv, boolean copyInto)
 	{
 		ItemCollection oldInv=inventory;
 		inventory=newInv;
 		if(copyInto && oldInv!=null)
 			newInv.copyFrom(oldInv);
+		CMLib.database().saveObject(this);
 	}
 
 	//TODO: Put this in body and fix it.
-	public String genericName()
+	@Override public String genericName()
 	{
 //		if(charStats().age()>0)
 //			return charStats().ageName().toLowerCase()+" "+charStats().raceName().toLowerCase();
 //		return charStats().raceName().toLowerCase();
 		return name;
 	}
-	public int priority(ListenHolder L){return Integer.MAX_VALUE;}
-	public void registerListeners(ListenHolder forThis){}
-	public void registerAllListeners() {}
-	public void clearAllListeners() {}
+	@Override public int priority(ListenHolder L){return Integer.MAX_VALUE;}
+	@Override public void registerListeners(ListenHolder forThis){}
+	@Override public void registerAllListeners() {}
+	@Override public void clearAllListeners() {}
 
-	public boolean amDestroyed(){return amDestroyed;}
+	//public boolean amDestroyed(){return amDestroyed;}
+	/*
 	protected void cloneFix(StdMOB E)
 	{
-		charAffecters=new CopyOnWriteArrayList();
-		okCheckers=new CopyOnWriteArrayList();
-		excCheckers=new CopyOnWriteArrayList();
-		tickActers=new CopyOnWriteArrayList();
-		affects=new CopyOnWriteArrayList();
-		behaviors=new CopyOnWriteArrayList();
+		super.cloneFix(E);
+		
 		commandQue=new ArrayList();
 		nextAct=0;
 		currentCommand=null;
-		if(baseCharStats!=null) setBaseCharStats((CharStats)baseCharStats.copyOf());
+		if(baseCharStats!=null)
+		{
+			setBaseCharStats((CharStats)baseCharStats.copyOf());
+		}
 		playerStats=null;
 		mySession=null;
 		myTempSession=null;
-		tickStatus=Tickable.TickStat.Not;
-		tickCount=0;
-		if(inventory!=null) inventory=(ItemCollection)((Ownable)inventory.copyOf()).setOwner(this);
+		//if(inventory!=null) inventory=(ItemCollection)((Ownable)inventory.copyOf()).setOwner(this);
 		victim=null;
 		titles=(Vector<String>)titles.clone();
-		
-		for(Effect A : E.affects)
-			affects.add(A.copyOnto(this));
-		for(Behavior B : E.behaviors)
-			addBehavior((Behavior)B.copyOf());
-//		if(E==null) return;
 	}
+	*/
 
 	@Override public StdMOB copyOf()
 	{
-		try
-		{
-			StdMOB E=(StdMOB)this.clone();
-			E.saveNum=0;
-			E.cloneFix(this);
-			return E;
-		}
-		catch(CloneNotSupportedException e)
-		{
-			return this.newInstance();
-		}
+		return new StdMOB(this);
+		//E.saveNum=0;
+		//E.cloneFix(this);
 	}
 
-	public CharStats baseCharStats()
+	@Override public CharStats baseCharStats()
 	{
 		if(baseCharStats==null) synchronized(this){
 			if(baseCharStats==null)
@@ -252,7 +234,7 @@ public class StdMOB implements MOB
 
 		return baseCharStats;
 	}
-	public CharStats charStats()
+	@Override public CharStats charStats()
 	{
 		if(charStats==null) synchronized(this){
 			if(charStats==null)
@@ -260,7 +242,7 @@ public class StdMOB implements MOB
 		}
 		return charStats;
 	}
-	public void recoverCharStats()
+	@Override public void recoverCharStats()
 	{
 		baseCharStats().copyStatic(charStats());
 		for(CharAffecter A : charAffecters)
@@ -269,50 +251,49 @@ public class StdMOB implements MOB
 	}
 //	public void resetToMaxState() { charStats.resetState(); }
 
-	public void setBaseCharStats(CharStats newBaseCharStats)
+	@Override public void setBaseCharStats(CharStats newBaseCharStats)
 	{
 		baseCharStats=(CharStats)((Ownable)newBaseCharStats.copyOf()).setOwner(this);
 		charStats=(CharStats)((Ownable)CMClass.COMMON.getNew(newBaseCharStats.ID())).setOwner(this);
 		recoverCharStats();
 		charStats.resetState();
 	}
-	public void affectEnvStats(Environmental affected, EnvStats affectableStats) { }
-	public PlayerStats playerStats() { return playerStats; }
-	public void setPlayerStats(PlayerStats newStats) {
+	//public void affectEnvStats(Environmental affected, EnvStats affectableStats) { }
+	@Override public PlayerStats playerStats() { return playerStats; }
+	@Override public void setPlayerStats(PlayerStats newStats) {
 		playerStats=newStats;
 		if(newStats!=null)
 			newStats.setMOB(this);
+		CMLib.database().saveObject(this);
 	}
-	public MOBSkill getSkill(Skill S) { return skillSet.get(S); }
-	public Set<Skill> knownSkills() { return skillSet.keySet(); }
-	public boolean changeSkillState(Skill key, int state) {return skillSet.changeState(key, state);}
+	@Override public MOBSkill getSkill(Skill S) { return skillSet.get(S); }
+	@Override public Set<Skill> knownSkills() { return skillSet.keySet(); }
+	@Override public boolean changeSkillState(Skill key, int state)
+	{
+		boolean result = skillSet.changeState(key, state);
+		CMLib.database().saveObject(this);
+		return result;
+	}
 
-	public void destroy()
+	@Override public void destroy()
 	{
 		if(mySession!=null){ mySession.kill(false); try{Thread.sleep(1000);}catch(Exception e){} mySession=null;}
-		for(Effect E : affects)
-			E.setAffectedOne(null);
-		affects.clear();
-		for(Behavior B : behaviors)
-			B.startBehavior(null);
-		behaviors.clear();
 		if(inventory!=null)
 			inventory.destroy();
 		commandQue.clear();
 		nextAct=0;
 		victim=null;
-		amDestroyed=true;
 		if((myBody!=null)&&(!myBody.amDestroyed())) myBody=null;
-		CMLib.database().deleteObject(this);
+		super.destroy();
 	}
 
-	public Interactable getVictim()
+	@Override public Interactable getVictim()
 	{
 		return victim;
 	}
 
 	//This almost definitely needs to be redone.
-	public void setVictim(Interactable target)
+	@Override public void setVictim(Interactable target)
 	{
 		if(target==null)
 		{
@@ -329,7 +310,7 @@ public class StdMOB implements MOB
 		}
 	}
 
-	public Room location()
+	@Override public Room location()
 	{
 		return CMLib.map().roomLocation(myBody.container());
 		/*
@@ -342,19 +323,19 @@ public class StdMOB implements MOB
 		return null;
 		*/
 	}
-	public void setLocation(Room newPlace)
+	@Override public void setLocation(Room newPlace)
 	{
 		if(myBody==null) return;
 		myBody.setContainer(newPlace);
 	}
-	public boolean goDistance(int[] distance, EnvMap.EnvLocation start, Room room)
+	@Override public boolean goDistance(int[] distance, EnvMap.EnvLocation start, Room room)
 	{
 		//TODO. Instantaneous for now, needs to be gradual and depend on MOB's speed/move type eventually
 		room.placeHere(myBody, true, distance[0]+start.x, distance[1]+start.y, distance[2]+start.z);
 		return true;
 	}
 	//Eventually, return QueuedCommands? Or make this queue the commands itself?
-	public boolean goToThing(EnvMap.EnvLocation thing, EnvMap.EnvLocation start, Room room)
+	@Override public boolean goToThing(EnvMap.EnvLocation thing, EnvMap.EnvLocation start, Room room)
 	{
 		//TODO. Instantaneous for now, needs to be gradual and depend on MOB's speed/move type eventually
 		if(thing.item instanceof ExitInstance)
@@ -366,21 +347,21 @@ public class StdMOB implements MOB
 			room.placeHere(myBody, true, thing.x, thing.y, thing.z);
 		return true;
 	}
-	public Session session()
+	@Override public Session session()
 	{
 		if(myTempSession!=null) return myTempSession;
 		return mySession;
 	}
-	public void setSession(Session newSession)
+	@Override public void setSession(Session newSession)
 	{
 		mySession=newSession;
 	}
-	public void setTempSession(Session newSession)
+	@Override public void setTempSession(Session newSession)
 	{
 		myTempSession=newSession;
 	}
 
-	public String displayName(MOB viewer)
+	@Override public String displayName(MOB viewer)
 	{
 		if((CMProps.Bools.INTRODUCTIONSYSTEM.property())
 		&&(playerStats()!=null)
@@ -392,10 +373,10 @@ public class StdMOB implements MOB
 		return name();
 	}
 
-	public double actions(){return freeActions;}
-	public void setActions(double remain){freeActions=remain;}
-	public int commandQueSize(){return commandQue.size();}
-	public void run()
+	@Override public double actions(){return freeActions;}
+	@Override public void setActions(double remain){freeActions=remain;}
+	@Override public int commandQueSize(){return commandQue.size();}
+	@Override public void run()
 	{
 		actStatus=Tickable.TickStat.Start;
 		QueuedCommand qCom=null;
@@ -437,7 +418,7 @@ public class StdMOB implements MOB
 		actStatus=Tickable.TickStat.Not;
 	}
 
-	public boolean doCommand(QueuedCommand qCom)
+	@Override public boolean doCommand(QueuedCommand qCom)
 	{
 		//Log.sysOut("MOB",""+Thread.currentThread()+" is doing "+qCom.command.ID()+" for "+mySession);
 		int type=qCom.command.prompter();
@@ -522,9 +503,9 @@ public class StdMOB implements MOB
 		}
 		dequeCommand();
 	}*/
-	public long nextAct(){synchronized(commandQue){return nextAct;}}
+	@Override public long nextAct(){synchronized(commandQue){return nextAct;}}
 
-	public void enqueCommand(QueuedCommand qCom, boolean alwaysAtEnd)
+	@Override public void enqueCommand(QueuedCommand qCom, boolean alwaysAtEnd)
 	{
 		synchronized(commandQue)
 		{
@@ -559,7 +540,7 @@ public class StdMOB implements MOB
 			}
 		}
 	}
-	public void enqueCommand(QueuedCommand qCom, QueuedCommand afterCommand)
+	@Override public void enqueCommand(QueuedCommand qCom, QueuedCommand afterCommand)
 	{
 		synchronized(commandQue)
 		{
@@ -575,7 +556,7 @@ public class StdMOB implements MOB
 		}
 	}
 
-	public void enqueCommand(String commands, int metaFlags)
+	@Override public void enqueCommand(String commands, int metaFlags)
 	{
 		if(commands==null) return;
 		Command O=CMLib.english().findCommand(this,commands);
@@ -608,20 +589,20 @@ public class StdMOB implements MOB
 		//dequeCommand();
 	}
 
-	public CopyOnWriteArrayList<CharAffecter> charAffecters(){return charAffecters;}
-	public CopyOnWriteArrayList<EnvAffecter> envAffecters(){return null;}
-	public CopyOnWriteArrayList<OkChecker> okCheckers(){return okCheckers;}
-	public CopyOnWriteArrayList<ExcChecker> excCheckers(){return excCheckers;}
-	public CopyOnWriteArrayList<TickActer> tickActers(){return tickActers;}
-	public void removeListener(Listener oldAffect, EnumSet flags)
+	//public CopyOnWriteArrayList<CharAffecter> charAffecters(){return charAffecters;}
+	//public CopyOnWriteArrayList<EnvAffecter> envAffecters(){return null;}
+	//public CopyOnWriteArrayList<OkChecker> okCheckers(){return okCheckers;}
+	//public CopyOnWriteArrayList<ExcChecker> excCheckers(){return excCheckers;}
+	//public CopyOnWriteArrayList<TickActer> tickActers(){return tickActers;}
+	@Override public void removeListener(Listener oldAffect, EnumSet flags)
 	{
 		ListenHolder.O.removeListener(this, oldAffect, flags);
 	}
-	public void addListener(Listener newAffect, EnumSet flags)
+	@Override public void addListener(Listener newAffect, EnumSet flags)
 	{
 		ListenHolder.O.addListener(this, newAffect, flags);
 	}
-	public EnumSet<ListenHolder.Flags> listenFlags() {return lFlags;}
+	//public EnumSet<ListenHolder.Flags> listenFlags() {return lFlags;}
 /*	public void recheckListeners()
 	{
 		charAffecters=new Vector<CharAffecter>();
@@ -672,7 +653,7 @@ public class StdMOB implements MOB
 		return true;
 	}
 
-	public void tell(Interactable source, Interactable target, Vector<CMObject> tools, String msg)
+	@Override public void tell(Interactable source, Interactable target, Vector<CMObject> tools, String msg)
 	{
 		CMObject tool=null;
 		if(tools!=null&&tools.size()>0) tool=tools.get(0);
@@ -683,7 +664,7 @@ public class StdMOB implements MOB
 				S.stdPrintln(source,target,tool,msg);
 		}
 	}
-	public void tell(Interactable source, Interactable target, CMObject tool, String msg)
+	@Override public void tell(Interactable source, Interactable target, CMObject tool, String msg)
 	{
 		if((mySession!=null)&&(msg!=null))
 		{
@@ -692,7 +673,7 @@ public class StdMOB implements MOB
 				S.stdPrintln(source,target,tool,msg);
 		}
 	}
-	public void tell(Interactable source, Interactable target, String msg)
+	@Override public void tell(Interactable source, Interactable target, String msg)
 	{
 		if((mySession!=null)&&(msg!=null))
 		{
@@ -702,7 +683,7 @@ public class StdMOB implements MOB
 		}
 	}
 
-	public void tell(String msg)
+	@Override public void tell(String msg)
 	{
 		tell(this,this,msg);
 	}
@@ -820,50 +801,31 @@ public class StdMOB implements MOB
 			O.executeMsg(myHost, msg);
 	}
 
-	public void affectCharStats(MOB affectedMob, CharStats affectableStats){}
+	//public void affectCharStats(MOB affectedMob, CharStats affectableStats){}
 
-	public Tickable.TickStat getTickStatus(){return tickStatus;}
-	public Tickable.TickStat getActStatus(){return actStatus;}
-	public int tickCounter(){return tickCount;}
-	public void tickAct(){}	//Currently unused in favor of run()
-	public boolean tick(int tickTo)
-	{
-		if(tickCount==0) tickCount=tickTo-1;
-		else if(tickTo>tickCount+10)
-			tickTo=tickCount+10;
-		while(tickCount<tickTo)
-		{
-			tickCount++;
-			doTick();
-		}
-		return true;
-	}
-	protected void doTick()
-	{
-		tickStatus=Tickable.TickStat.Listener;
-		for(TickActer T : tickActers)
-			if(!T.tick(tickCount))
-				tickActers.remove(T);
-		tickStatus=Tickable.TickStat.Not;
-	}
+	//public Tickable.TickStat getTickStatus(){return tickStatus;}
+	@Override public Tickable.TickStat getActStatus(){return actStatus;}
+	//public int tickCounter(){return tickCount;}
+	//public void tickAct(){}	//Currently unused in favor of run()
+
 	//public long lastAct(){return lastAct;}	//No Action ticks
 	//public long lastTick(){return lastTick;}
 
-	public boolean isMonster()
+	@Override public boolean isMonster()
 	{
 		return playerStats==null;
 	}
 
-	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
+	//public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 
-	public Item fetchInventory(String itemName)
+	@Override public Item fetchInventory(String itemName)
 	{
 		//Interactable[] items=getItemCollection().toArray(Interactable.dummyInteractableArray);
 		Item item=(Item)CMLib.english().fetchInteractable(getItemCollection().allItems(),itemName,true);
 		if(item==null) item=(Item)CMLib.english().fetchInteractable(inventory.allItems(),itemName,false);
 		return item;
 	}
-	public Vector<Item> fetchInventories(String itemName)
+	@Override public Vector<Item> fetchInventories(String itemName)
 	{ 
 		//Interactable[] items=getItemCollection().toArray(Interactable.dummyInteractableArray);
 		Vector V=CMLib.english().fetchInteractables(getItemCollection().allItems(),itemName,true);
@@ -872,7 +834,7 @@ public class StdMOB implements MOB
 		return V;
 	}
 
-	public boolean willFollowOrdersOf(MOB mob)
+	@Override public boolean willFollowOrdersOf(MOB mob)
 	{
 		if(isMonster()&&CMSecurity.isAllowed(mob,"ORDER"))
 			return true;
@@ -883,7 +845,7 @@ public class StdMOB implements MOB
 		return false;
 	}
 
-	public void setActiveTitle(String S)
+	@Override public void setActiveTitle(String S)
 	{
 		synchronized(titles)
 		{
@@ -891,7 +853,7 @@ public class StdMOB implements MOB
 				titles.add(0, S);
 		}
 	}
-	public String getActiveTitle()
+	@Override public String getActiveTitle()
 	{
 		String s;
 		synchronized(titles)
@@ -903,109 +865,21 @@ public class StdMOB implements MOB
 			return s;
 		return s.substring(1,s.length()-1);
 	}
-	public String[] getTitles()
+	@Override public String[] getTitles()
 	{
 		return titles.toArray(CMClass.dummyStringArray);
 	}
-	public void addTitle(String title){synchronized(titles){if(titles.contains(title)) return; titles.add(title);}}
-	public void removeTitle(String title){synchronized(titles){titles.remove(title);}}
+	@Override public void addTitle(String title){synchronized(titles){if(titles.contains(title)) return; titles.add(title);}}
+	@Override public void removeTitle(String title){synchronized(titles){titles.remove(title);}}
 
-	//Affectable
-	public void addEffect(Effect to)
-	{
-		affects.add(to);
-		to.setAffectedOne(this);
-		CMLib.database().saveObject(this);
-	}
-	public void delEffect(Effect to)
-	{
-		if(affects.remove(to))
-		{
-			to.setAffectedOne(null);
-			CMLib.database().saveObject(this);
-		}
-	}
-	public boolean hasEffect(Effect to)
-	{
-		return affects.contains(to);
-	}
-	public int numEffects(){return affects.size();}
-	public Effect fetchEffect(int index)
-	{
-		try { return affects.get(index); }
-		catch(java.lang.ArrayIndexOutOfBoundsException x){}
-		return null;
-	}
-	public Vector<Effect> fetchEffect(String ID)
-	{
-		Vector<Effect> V=new Vector(1);
-		for(Effect E : affects)
-			if(E.ID().equals(ID))
-				V.add(E);
-		return V;
-	}
-	public Effect fetchFirstEffect(String ID)
-	{
-		for(Effect E : affects)
-			if(E.ID().equals(ID))
-				return E;
-		return null;
-	}
-	public Iterator<Effect> allEffects() { return affects.iterator(); }
-
-	//Behavable
-	public void addBehavior(Behavior to)
-	{
-		synchronized(behaviors)
-		{
-			if(fetchBehavior(to.ID())!=null) return;
-			to.startBehavior(this);
-			behaviors.add(to);
-		}
-		CMLib.database().saveObject(this);
-	}
-	public void delBehavior(Behavior to)
-	{
-		if(behaviors.remove(to))
-		{
-			to.startBehavior(null);
-			CMLib.database().saveObject(this);
-		}
-	}
-	public int numBehaviors()
-	{
-		return behaviors.size();
-	}
-	public Behavior fetchBehavior(int index)
-	{
-		try { return behaviors.get(index); }
-		catch(java.lang.ArrayIndexOutOfBoundsException x){}
-		return null;
-	}
-	public Behavior fetchBehavior(String ID)
-	{
-		for(Behavior B : behaviors)
-			if(B.ID().equals(ID))
-				return B;
-		return null;
-	}
-	public boolean hasBehavior(String ID)
-	{
-		for(Behavior B : behaviors)
-			if(B.ID().equals(ID))
-				return true;
-		return false;
-	}
-	public Iterator<Behavior> allBehaviors() { return behaviors.iterator(); }
-
-	public void giveItem(Item item)
+	@Override public void giveItem(Item item)
 	{
 		if(item.container()!=null)
 			ItemCollection.O.getFrom(item.container()).removeItem(item);
 		getItemCollection().addItem(item);
 	}
 
-	public boolean isMine(Interactable env)
+	@Override public boolean isMine(Interactable env)
 	{
 		if(env instanceof Item)
 		{
@@ -1016,55 +890,34 @@ public class StdMOB implements MOB
 	}
 
 	//CMModifiable and CMSavable
-	@Override public SaveEnum[] totalEnumS(){return SCode.values();}
-	@Override public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]} ;}
-	@Override public ModEnum[] totalEnumM(){return MCode.values();}
-	@Override public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
-	public int saveNum()
+	private static ModEnum[] totalEnumM=null;
+	private static Enum[] headerEnumM=null;
+	@Override public ModEnum[] totalEnumM()
 	{
-		if(saveNum==0)
-		synchronized(this)
-		{
-			if(saveNum==0)
-				saveNum=SIDLib.CREATURE.getNumber(this);
-		}
-		return saveNum;
+		if(totalEnumM==null) totalEnumM=CMParms.appendToArray(MCode.values(), super.totalEnumM(), ModEnum[].class);
+		return totalEnumM;
 	}
-	public void setSaveNum(int num)
+	@Override public Enum[] headerEnumM()
 	{
-		synchronized(this)
-		{
-			if(saveNum!=0)
-				SIDLib.CREATURE.removeNumber(saveNum);
-			saveNum=num;
-			SIDLib.CREATURE.assignNumber(num, this);
-		}
+		if(headerEnumM==null) headerEnumM=CMParms.appendToArray(new Enum[] {MCode.values()[0]}, super.headerEnumM(), Enum[].class);
+		return headerEnumM;
 	}
-	public boolean needLink(){return true;}
-	public void link()
+	private static SaveEnum[] totalEnumS=null;
+	private static Enum[] headerEnumS=null;
+	@Override public SaveEnum[] totalEnumS()
 	{
-		if(effectsToLoad!=null)
-		{
-			for(int SID : effectsToLoad)
-			{
-				Effect to = SIDLib.EFFECT.get(SID);
-				if(to==null) continue;
-				affects.add(to);
-				to.setAffectedOne(this);
-			}
-			effectsToLoad=null;
-		}
-		if(behavesToLoad!=null)
-		{
-			for(int SID : behavesToLoad)
-			{
-				Behavior to = SIDLib.BEHAVIOR.get(SID);
-				if(to==null) continue;
-				to.startBehavior(this);
-				behaviors.add(to);
-			}
-			behavesToLoad=null;
-		}
+		if(totalEnumS==null) totalEnumS=CMParms.appendToArray(SCode.values(), super.totalEnumS(), SaveEnum[].class);
+		return totalEnumS;
+	}
+	@Override public Enum[] headerEnumS()
+	{
+		if(headerEnumS==null) headerEnumS=CMParms.appendToArray(new Enum[] {SCode.values()[0]}, super.headerEnumS(), Enum[].class);
+		return headerEnumS;
+	}
+	//public boolean needLink(){return true;}
+	@Override public void link()
+	{
+		super.link();
 		if(bodyToLink!=0)
 		{
 			setBody((Body)SIDLib.ITEM.get(bodyToLink));
@@ -1108,10 +961,10 @@ public class StdMOB implements MOB
 			playerStatsToLink=0;
 		}
 	}
-	public void saveThis(){CMLib.database().saveObject(this);}
-	public void prepDefault(){getItemCollection();}
+	//public void saveThis(){CMLib.database().saveObject(this);}
+	@Override public void prepDefault(){getItemCollection();}
 
-	public void trainStat(Stat stat, CMMsg message) {
+	@Override public void trainStat(Stat stat, CMMsg message) {
 		Body body = myBody;
 		if(body.isComposite())
 		{
@@ -1126,10 +979,6 @@ public class StdMOB implements MOB
 	}
 
 	private enum SCode implements SaveEnum<StdMOB>{
-		NAM(){
-			public ByteBuffer save(StdMOB E){ return CMLib.coffeeMaker().savString(E.name); }
-			public int size(){return 0;}
-			public void load(StdMOB E, ByteBuffer S){ E.name=CMLib.coffeeMaker().loadString(S); } },
 		BCS(){
 			public ByteBuffer save(StdMOB E){ return CMLib.coffeeMaker().savSubFull(E.baseCharStats()); }
 			public int size(){return -1;}
@@ -1152,18 +1001,6 @@ public class StdMOB implements MOB
 			public ByteBuffer save(StdMOB E){ return CMLib.coffeeMaker().savAString((String[])E.titles.toArray(CMClass.dummyStringArray)); }
 			public int size(){return 0;}
 			public void load(StdMOB E, ByteBuffer S){ for(String newT : CMLib.coffeeMaker().loadAString(S)) E.titles.add(newT); } },
-		EFC(){
-			public ByteBuffer save(StdMOB E){
-				if(E.affects.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.affects.toArray(CMSavable.dummyCMSavableArray));
-				return CoffeeMaker.emptyBuffer; }
-			public int size(){return 0;}
-			public void load(StdMOB E, ByteBuffer S){ E.effectsToLoad=CMLib.coffeeMaker().loadAInt(S); } },
-		BHV(){
-			public ByteBuffer save(StdMOB E){
-				if(E.behaviors.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.behaviors.toArray(CMSavable.dummyCMSavableArray));
-				return CoffeeMaker.emptyBuffer; }
-			public int size(){return 0;}
-			public void load(StdMOB E, ByteBuffer S){ E.behavesToLoad=CMLib.coffeeMaker().loadAInt(S); } },
 		BDY(){
 			public ByteBuffer save(StdMOB E){
 				ByteBuffer data=ByteBuffer.wrap(new byte[4]);
@@ -1218,14 +1055,6 @@ public class StdMOB implements MOB
 			public String brief(StdMOB E){return E.getItemCollection().ID()+" "+E.inventory.numItems();}
 			public String prompt(StdMOB E){return "";}
 			public void mod(StdMOB E, MOB M){CMLib.genEd().genMiscSet(M, E.inventory);} },
-		EFFECTS(){
-			public String brief(StdMOB E){return ""+E.affects.size();}
-			public String prompt(StdMOB E){return "";}
-			public void mod(StdMOB E, MOB M){CMLib.genEd().modAffectable(E, M);} },
-		BEHAVIORS(){
-			public String brief(StdMOB E){return ""+E.behaviors.size();}
-			public String prompt(StdMOB E){return "";}
-			public void mod(StdMOB E, MOB M){CMLib.genEd().modBehavable(E, M);} },
 		BODY(){
 			public String brief(StdMOB E){return E.myBody==null?"null":E.myBody.ID();}
 			public String prompt(StdMOB E){return "";}
@@ -1291,9 +1120,11 @@ public class StdMOB implements MOB
 				M.tell(tellMob.toString()); } },
 		; }
 
+	/*
 	public boolean sameAs(Interactable E)
 	{
 		if(!(E instanceof StdMOB)) return false;
 		return true;
 	}
+	*/
 }

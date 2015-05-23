@@ -43,16 +43,26 @@ public class StdBehavior implements Behavior
 	public void affectCharStats(CMObject affected, CharStats affectableStats){}
 
 	public StdBehavior() {}
+	public StdBehavior(StdBehavior clone)
+	{
+		parms=clone.parms;
+
+		lFlags.addAll(clone.lFlags);
+	}
 
 	public Behavable behaver(){return behaver;}
 
 	public StdBehavior newInstance() { try{return getClass().newInstance();}catch(Exception e){Log.errOut("StdBehavior", e);} return new StdBehavior(); }
+	/*
 	public void cloneFix(StdBehavior E)
 	{
 		//parms=E.getParms();	//Not actually necessary as Strings are immutable
 	}
+	*/
 	public StdBehavior copyOf()
 	{
+		return new StdBehavior(this);
+		/*
 		try
 		{
 			StdBehavior B=(StdBehavior)this.clone();
@@ -61,6 +71,7 @@ public class StdBehavior implements Behavior
 			return B;
 		}
 		catch(CloneNotSupportedException e) { return newInstance(); }
+		*/
 	}
 	public void startBehavior(Behavable forMe)
 	{

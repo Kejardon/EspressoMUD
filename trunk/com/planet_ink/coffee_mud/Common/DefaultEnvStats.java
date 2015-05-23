@@ -19,7 +19,7 @@ public class DefaultEnvStats implements EnvStats, Ownable
 {
 	@Override public String ID(){return "DefaultEnvStats";}
 	protected double Speed=1.0;			// should be positive
-	protected CopyOnWriteArrayList<String> ambiances=new CopyOnWriteArrayList();
+	protected CopyOnWriteArrayList<String> ambiances;//=new CopyOnWriteArrayList();
 	protected int width;
 	protected int length;
 	protected int height;
@@ -27,15 +27,34 @@ public class DefaultEnvStats implements EnvStats, Ownable
 	protected EnvShape shape;
 	protected long volume;
 	protected int magic;
-	protected CMSavable parent;
-	protected RawMaterial.Resource material=null;//RawMaterial.Resource.NOTHING;
+	protected CMObject parent;
+	protected RawMaterial.Resource material;//=null;//RawMaterial.Resource.NOTHING;
 	//TODO: Material should probably be stored here? Still need to decide how
 
+	public DefaultEnvStats()
+	{
+		//material=clone.material;
+		material=RawMaterial.Resource.NOTHING;
+		ambiances=new CopyOnWriteArrayList();
+	}
+	public DefaultEnvStats(DefaultEnvStats clone)
+	{
+		//super(clone);
+		Speed = clone.Speed;
+		ambiances = (CopyOnWriteArrayList)clone.ambiances.clone();
+		width = clone.width;
+		length = clone.length;
+		height = clone.height;
+		weight = clone.weight;
+		shape = clone.shape;
+		volume = clone.volume;
+		magic = clone.magic;
+		material = clone.material;
+	}
+	
 	//Ownable
-	public CMSavable owner(){return parent;}
-	public Ownable setOwner(CMSavable owner){parent=owner; return this;}
-
-	public DefaultEnvStats(){}
+	public CMObject owner(){return parent;}
+	public Ownable setOwner(CMObject owner){parent=owner; return this;}
 
 	public EnvShape shape(){return shape;}
 	public int ability(){return magic;}
@@ -57,16 +76,16 @@ public class DefaultEnvStats implements EnvStats, Ownable
 	public WVector<RawMaterial.Resource> materialSet(){return null;}
 	public long volume(){return volume;}
 
-	public void setShape(EnvShape newShape){shape=newShape; if(parent!=null)parent.saveThis();}
-	public void setWeight(int newWeight){weight=newWeight; if(parent!=null)parent.saveThis();}
-	public void setSpeed(double newSpeed){Speed=newSpeed; if(parent!=null)parent.saveThis();}
-	public void setAbility(int newAdjustment){magic=newAdjustment; if(parent!=null)parent.saveThis();}
-	public void setHeight(int newHeight){height=newHeight; if(parent!=null)parent.saveThis();}
-	public void setLength(int newLength){length=newLength; if(parent!=null)parent.saveThis();}
-	public void setWidth(int newWidth){weight=newWidth; if(parent!=null)parent.saveThis();}
-	public void setMaterial(RawMaterial.Resource newMaterial){material=newMaterial; if(parent!=null)parent.saveThis();}
+	public void setShape(EnvShape newShape){shape=newShape; saveThis();}
+	public void setWeight(int newWeight){weight=newWeight; saveThis();}
+	public void setSpeed(double newSpeed){Speed=newSpeed; saveThis();}
+	public void setAbility(int newAdjustment){magic=newAdjustment; saveThis();}
+	public void setHeight(int newHeight){height=newHeight; saveThis();}
+	public void setLength(int newLength){length=newLength; saveThis();}
+	public void setWidth(int newWidth){weight=newWidth; saveThis();}
+	public void setMaterial(RawMaterial.Resource newMaterial){material=newMaterial; saveThis();}
 	public void setMaterials(WVector<RawMaterial.Resource> newMats){}
-	public void setVolume(long newVolume){volume=newVolume; if(parent!=null)parent.saveThis();}
+	public void setVolume(long newVolume){volume=newVolume; saveThis();}
 	public void recalcLengthsFromVolume()
 	{
 		/*
@@ -118,7 +137,7 @@ public class DefaultEnvStats implements EnvStats, Ownable
 					return;
 			ambiances.add(ambiance);
 		}
-		if(parent!=null)parent.saveThis();
+		saveThis();
 	}
 	public void delAmbiance(String ambiance)
 	{
@@ -128,7 +147,7 @@ public class DefaultEnvStats implements EnvStats, Ownable
 				if(S.equalsIgnoreCase(ambiance))
 				{
 					ambiances.remove(S);
-					if(parent!=null)parent.saveThis();
+					saveThis();
 					return;
 				}
 		}
@@ -138,6 +157,8 @@ public class DefaultEnvStats implements EnvStats, Ownable
 	@Override public void initializeClass(){}
 	public DefaultEnvStats copyOf()
 	{
+		return new DefaultEnvStats(this);
+		/*
 		try
 		{
 			DefaultEnvStats E=(DefaultEnvStats)this.clone();
@@ -148,6 +169,7 @@ public class DefaultEnvStats implements EnvStats, Ownable
 		{
 			return new DefaultEnvStats();
 		}
+		*/
 	}
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 	public void copyInto(EnvStats intoStats)
@@ -170,8 +192,8 @@ public class DefaultEnvStats implements EnvStats, Ownable
 	public void destroy(){}
 	public boolean amDestroyed()
 	{
-		if(parent!=null)
-			return parent.amDestroyed();
+		if(parent instanceof CMSavable)
+			return ((CMSavable)parent).amDestroyed();
 		return true;
 	}
 
@@ -184,7 +206,7 @@ public class DefaultEnvStats implements EnvStats, Ownable
 	public void setSaveNum(int num){}
 	public boolean needLink(){return false;}
 	public void link(){}
-	public void saveThis(){if(parent!=null)parent.saveThis();}
+	public void saveThis(){if(parent instanceof CMSavable)((CMSavable)parent).saveThis();}
 	public void prepDefault(){}
 
 	private enum SCode implements SaveEnum<DefaultEnvStats>{

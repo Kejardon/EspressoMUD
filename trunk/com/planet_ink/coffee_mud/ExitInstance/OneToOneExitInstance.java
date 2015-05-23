@@ -1,8 +1,3 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
-
 package com.planet_ink.coffee_mud.ExitInstance;
 
 import com.planet_ink.coffee_mud.core.interfaces.*;
@@ -20,6 +15,9 @@ EspressoMUD copyright 2011 Kejardon
 Licensed under the Apache License, Version 2.0. You may obtain a copy of the license at
 	http://www.apache.org/licenses/LICENSE-2.0
 */
+/*
+I'll leave this file as an example but most of the time it probably makes more sense to directly code ExitInstances into Exits
+*/
 
 public class OneToOneExitInstance implements ExitInstance
 {
@@ -28,71 +26,67 @@ public class OneToOneExitInstance implements ExitInstance
 	
 	protected boolean destroyed=false;
 	protected int saveNum=0;
-
+	
 	protected int exitToLoad=0;
 	protected int roomToLoad=0;
 	
 	public OneToOneExitInstance(){}
 	public OneToOneExitInstance(Exit exit, Room room){myExit=exit; leadsTo=room;}
 
-	/*
-	public boolean equals(Object O)
-	{
-		if(O instanceof OneToOneExitInstance)
-			return (((OneToOneExitInstance)O).myExit==myExit)&&(((OneToOneExitInstance)O).leadsTo==leadsTo);
-		return false;
-	}
-	*/
-	public Exit getExit(){return myExit;}
-	public Room getDestination(){return leadsTo;}
+	@Override public Exit getExit(){return myExit;}
+	@Override public void setExit(Exit e){myExit = e;}
+	@Override public Room getDestination(){return leadsTo;}
+	@Override public void setDestination(Room r){leadsTo = r;}
+	@Override public void setInRoom(Room r){}
+	@Override public Room getInRoom(){return null;}
 	@Override public String ID(){return "OneToOneExitInstance";}
-	public Environmental getEnvObject() { return myExit.getEnvObject(); }
+	@Override public Environmental getEnvObject() { return myExit.getEnvObject(); }
 	@Override public OneToOneExitInstance newInstance(){return new OneToOneExitInstance();}
 	@Override public OneToOneExitInstance copyOf(){return new OneToOneExitInstance(myExit, leadsTo);}
 	@Override public void initializeClass(){}
-	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
+	@Override public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 
-	public String name(){return myExit.name();}
-	public String plainName(){return myExit.plainName();}
-	public void setName(String newName){myExit.setName(newName);}
-	public String displayText(){return myExit.directLook(null, leadsTo);}
-	public String plainDisplayText(){return CMLib.coffeeFilter().toRawString(myExit.directLook(null, leadsTo));}
-	public void setDisplayText(String newDisplayText){myExit.setDisplayText(newDisplayText);}
-	public String description(){return myExit.description();}
-	public String plainDescription(){return myExit.plainDescription();}
-	public void setDescription(String newDescription){myExit.setDescription(newDescription);}
+	@Override public String name(){return myExit.name();}
+	@Override public String plainName(){return myExit.plainName();}
+	@Override public void setName(String newName){myExit.setName(newName);}
+	@Override public String displayText(){return myExit.directLook(null, leadsTo);}
+	@Override public String plainDisplayText(){return CMLib.coffeeFilter().toRawString(myExit.directLook(null, leadsTo));}
+	@Override public void setDisplayText(String newDisplayText){myExit.setDisplayText(newDisplayText);}
+	@Override public String description(){return myExit.description();}
+	@Override public String plainDescription(){return myExit.plainDescription();}
+	@Override public void setDescription(String newDescription){myExit.setDescription(newDescription);}
 
-	public void addBehavior(Behavior to){myExit.addBehavior(to);}
-	public void delBehavior(Behavior to){myExit.delBehavior(to);}
-	public boolean hasBehavior(String ID){return myExit.hasBehavior(ID);}
-	public int numBehaviors(){return myExit.numBehaviors();}
-	public Behavior fetchBehavior(int index){return myExit.fetchBehavior(index);}
-	public Behavior fetchBehavior(String ID){return myExit.fetchBehavior(ID);}
-	public Iterator<Behavior> allBehaviors(){return myExit.allBehaviors();}
+	@Override public void addBehavior(Behavior to){myExit.addBehavior(to);}
+	@Override public void delBehavior(Behavior to){myExit.delBehavior(to);}
+	@Override public boolean hasBehavior(String ID){return myExit.hasBehavior(ID);}
+	@Override public int numBehaviors(){return myExit.numBehaviors();}
+	@Override public Behavior fetchBehavior(int index){return myExit.fetchBehavior(index);}
+	@Override public Behavior fetchBehavior(String ID){return myExit.fetchBehavior(ID);}
+	@Override public Iterator<Behavior> allBehaviors(){return myExit.allBehaviors();}
 
-	public void addEffect(Effect to){myExit.addEffect(to);}
-	public void delEffect(Effect to){myExit.delEffect(to);}
-	public boolean hasEffect(Effect to){return myExit.hasEffect(to);}
-	public int numEffects(){return myExit.numEffects();}
-	public Effect fetchEffect(int index){return myExit.fetchEffect(index);}
-	public Vector<Effect> fetchEffect(String ID){return myExit.fetchEffect(ID);}
-	public Effect fetchFirstEffect(String ID){return myExit.fetchFirstEffect(ID);}
-	public Iterator<Effect> allEffects(){return myExit.allEffects();}
+	@Override public void addEffect(Effect to){myExit.addEffect(to);}
+	@Override public void delEffect(Effect to){myExit.delEffect(to);}
+	@Override public boolean hasEffect(Effect to){return myExit.hasEffect(to);}
+	@Override public int numEffects(){return myExit.numEffects();}
+	@Override public Effect fetchEffect(int index){return myExit.fetchEffect(index);}
+	@Override public Vector<Effect> fetchEffect(String ID){return myExit.fetchEffect(ID);}
+	@Override public Effect fetchFirstEffect(String ID){return myExit.fetchFirstEffect(ID);}
+	@Override public Iterator<Effect> allEffects(){return myExit.allEffects();}
 
-	public CopyOnWriteArrayList<CharAffecter> charAffecters(){return myExit.charAffecters();}
-	public CopyOnWriteArrayList<EnvAffecter> envAffecters(){return myExit.envAffecters();}
-	public CopyOnWriteArrayList<OkChecker> okCheckers(){return myExit.okCheckers();}
-	public CopyOnWriteArrayList<ExcChecker> excCheckers(){return myExit.excCheckers();}
-	public CopyOnWriteArrayList<TickActer> tickActers(){return myExit.tickActers();}
-	public void removeListener(Listener oldAffect, EnumSet flags){myExit.removeListener(oldAffect, flags);}
-	public void addListener(Listener newAffect, EnumSet flags){myExit.addListener(newAffect, flags);}
-	public void registerListeners(ListenHolder forThis){myExit.registerListeners(forThis);}
-	public void registerAllListeners(){myExit.registerAllListeners();}
-	public void clearAllListeners(){myExit.clearAllListeners();}
-	public int priority(ListenHolder forThis){return myExit.priority(forThis);}
-	public EnumSet<ListenHolder.Flags> listenFlags() {return myExit.listenFlags();}
+	@Override public CopyOnWriteArrayList<CharAffecter> charAffecters(){return myExit.charAffecters();}
+	@Override public CopyOnWriteArrayList<EnvAffecter> envAffecters(){return myExit.envAffecters();}
+	@Override public CopyOnWriteArrayList<OkChecker> okCheckers(){return myExit.okCheckers();}
+	@Override public CopyOnWriteArrayList<ExcChecker> excCheckers(){return myExit.excCheckers();}
+	@Override public CopyOnWriteArrayList<TickActer> tickActers(){return myExit.tickActers();}
+	@Override public void removeListener(Listener oldAffect, EnumSet flags){myExit.removeListener(oldAffect, flags);}
+	@Override public void addListener(Listener newAffect, EnumSet flags){myExit.addListener(newAffect, flags);}
+	@Override public void registerListeners(ListenHolder forThis){myExit.registerListeners(forThis);}
+	@Override public void registerAllListeners(){myExit.registerAllListeners();}
+	@Override public void clearAllListeners(){myExit.clearAllListeners();}
+	@Override public int priority(ListenHolder forThis){return myExit.priority(forThis);}
+	@Override public EnumSet<ListenHolder.Flags> listenFlags() {return myExit.listenFlags();}
 	//Special case for ticking. This will never tick. Exits have a special tick method.
-	public Tickable.TickStat getTickStatus(){return myExit.getTickStatus();}
+	@Override public Tickable.TickStat getTickStatus(){return myExit.getTickStatus();}
 	public boolean tick(int tickTo){return false;}
 	public int tickCounter(){return 0;}
 	@Override public boolean respondTo(CMMsg msg){return myExit.respondTo(msg);}

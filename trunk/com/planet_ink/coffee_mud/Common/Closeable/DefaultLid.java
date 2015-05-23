@@ -23,12 +23,12 @@ public class DefaultLid implements Closeable, Ownable
 	protected boolean closed=false;
 	protected boolean closeable=true;
 	protected boolean obvious=true;
-	protected CMSavable parent;
+	protected CMObject parent;
 //	protected int saveNum=0;
 
 	//Ownable
-	public CMSavable owner(){return parent;}
-	public Ownable setOwner(CMSavable owner){parent=owner; return this;}
+	public CMObject owner(){return parent;}
+	public Ownable setOwner(CMObject owner){parent=owner; return this;}
 
 	//CMObject
 	@Override public String ID(){return "DefaultLid";}
@@ -65,17 +65,17 @@ public class DefaultLid implements Closeable, Ownable
 	}
 	public boolean needLink(){return false;}
 	public void link(){}
-	public void saveThis(){if(parent!=null) parent.saveThis();}
+	public void saveThis(){if(parent instanceof CMSavable) ((CMSavable)parent).saveThis();}
 	public void prepDefault(){}
 
 	//Closeable
 	public String keyName(){return key;}
-	public void setKeyName(String keyName){key=keyName; if(parent!=null) parent.saveThis();}
-	public void setLocked(boolean bool){locked=bool; if(parent!=null) parent.saveThis();}
-	public void setLock(boolean bool){haslock=bool; if(parent!=null) parent.saveThis();}
-	public void setClosed(boolean bool){closed=bool; if(parent!=null) parent.saveThis();}
-	public void setClosable(boolean bool){closeable=bool; if(parent!=null) parent.saveThis();}
-	public void setObvious(boolean bool){obvious=bool; if(parent!=null) parent.saveThis();}
+	public void setKeyName(String keyName){key=keyName; saveThis();}
+	public void setLocked(boolean bool){locked=bool; saveThis();}
+	public void setLock(boolean bool){haslock=bool; saveThis();}
+	public void setClosed(boolean bool){closed=bool; saveThis();}
+	public void setClosable(boolean bool){closeable=bool; saveThis();}
+	public void setObvious(boolean bool){obvious=bool; saveThis();}
 	public boolean locked(){return locked;}
 	public boolean hasLock(){return haslock;}
 	public boolean closed(){return closed;}
@@ -88,7 +88,7 @@ public class DefaultLid implements Closeable, Ownable
 		haslock=newHasALock;
 		locked=newIsLocked;
 		obvious=newObvious;
-		if(parent!=null) parent.saveThis();
+		saveThis();
 	}
 	public void destroy()
 	{
@@ -101,8 +101,8 @@ public class DefaultLid implements Closeable, Ownable
 	}
 	public boolean amDestroyed()
 	{
-		if(parent!=null)
-			return parent.amDestroyed();
+		if(parent instanceof CMSavable)
+			return ((CMSavable)parent).amDestroyed();
 		return true;
 	}
 

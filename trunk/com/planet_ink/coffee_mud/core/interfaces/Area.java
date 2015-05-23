@@ -17,7 +17,11 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
  * include other areas in a parent->child relationship.  
  * @author Bo Zimmerman, Jeremy Vyska
  */
-
+/*
+Further more, areas will have a size. Rooms and subareas will be positioned within the area (TODO). Areas will generally solve the
+question of 'if I leave this room in this direction, do I run into something within X distance?' (Find it in this area, go up to
+the next area to ask, or 'no')
+*/
 public interface Area extends Environmental.EnvHolder, ListenHolder.MsgListener, Affectable, CMModifiable, CMSavable//, Comparable<Area>
 {
 	public static Area[] dummyAreaArray=new Area[0];

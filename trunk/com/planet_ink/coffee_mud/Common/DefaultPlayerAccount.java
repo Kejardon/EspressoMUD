@@ -37,6 +37,20 @@ public class DefaultPlayerAccount implements PlayerAccount
 	protected int[] ignoredToAdd=null;
 	protected int[] playersToAdd=null;
 
+	public DefaultPlayerAccount(){}
+	public DefaultPlayerAccount(DefaultPlayerAccount clone)
+	{
+		friends=(HashSet)clone.friends.clone();
+		ignored=(HashSet)clone.ignored.clone();
+		fullPlayers.addAll(clone.fullPlayers);
+		accountName=clone.accountName;
+		lastIP=clone.lastIP;
+		Password=clone.Password;
+		bitmap=clone.bitmap;
+		accBitmap=clone.accBitmap;
+		
+	}
+	
 	public boolean sameAs(PlayerAccount E)
 	{
 		if(!(E instanceof DefaultPlayerAccount)) return false;
@@ -47,6 +61,8 @@ public class DefaultPlayerAccount implements PlayerAccount
 	@Override public void initializeClass(){}
 	@Override public DefaultPlayerAccount copyOf()
 	{
+		return new DefaultPlayerAccount(this);
+		/*
 		try
 		{
 			DefaultPlayerAccount O=(DefaultPlayerAccount)this.clone();
@@ -59,6 +75,7 @@ public class DefaultPlayerAccount implements PlayerAccount
 		{
 			return new DefaultPlayerAccount();
 		}
+		*/
 	}
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 	public byte[] lastIP(){return lastIP;}

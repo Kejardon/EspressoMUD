@@ -16,7 +16,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 
 public class StdTimeZone extends StdArea
 {
-	@Override public String ID(){	return "StdTimeZone";}
+	@Override public String ID(){ return "StdTimeZone"; }
 
 	public StdTimeZone(){}
 	public void destroy()
@@ -50,44 +50,24 @@ public class StdTimeZone extends StdArea
 	private static Enum[] headerEnumM=null;
 	@Override public ModEnum[] totalEnumM()
 	{
-		if(totalEnumM==null)
-		{
-			ModEnum[] arrA=MCode.values();
-			ModEnum[] arrB=super.totalEnumM();
-			totalEnumM=CMParms.appendToArray(arrA, arrB, ModEnum[].class);
-		}
+		if(totalEnumM==null) totalEnumM=CMParms.appendToArray(MCode.values(), super.totalEnumM(), ModEnum[].class);
 		return totalEnumM;
 	}
 	@Override public Enum[] headerEnumM()
 	{
-		if(headerEnumM==null)
-		{
-			Enum[] arrA=new Enum[] {MCode.values()[0]};
-			Enum[] arrB=super.headerEnumM();
-			headerEnumM=CMParms.appendToArray(arrA, arrB, Enum[].class);
-		}
+		if(headerEnumM==null) headerEnumM=CMParms.appendToArray(new Enum[] {MCode.values()[0]}, super.headerEnumM(), Enum[].class);
 		return headerEnumM;
 	}
 	private static SaveEnum[] totalEnumS=null;
 	private static Enum[] headerEnumS=null;
 	@Override public SaveEnum[] totalEnumS()
 	{
-		if(totalEnumS==null)
-		{
-			SaveEnum[] arrA=SCode.values();
-			SaveEnum[] arrB=super.totalEnumS();
-			totalEnumS=CMParms.appendToArray(arrA, arrB, SaveEnum[].class);
-		}
+		if(totalEnumS==null) totalEnumS=CMParms.appendToArray(SCode.values(), super.totalEnumS(), SaveEnum[].class);
 		return totalEnumS;
 	}
 	@Override public Enum[] headerEnumS()
 	{
-		if(headerEnumS==null)
-		{
-			Enum[] arrA=new Enum[] {SCode.values()[0]};
-			Enum[] arrB=super.headerEnumS();
-			headerEnumS=CMParms.appendToArray(arrA, arrB, Enum[].class);
-		}
+		if(headerEnumS==null) headerEnumS=CMParms.appendToArray(new Enum[] {SCode.values()[0]}, super.headerEnumS(), Enum[].class);
 		return headerEnumS;
 	}
 	public void link()	//Hijack this to ensure children's timeobject

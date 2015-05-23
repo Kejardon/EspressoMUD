@@ -30,11 +30,15 @@ public class CMGenEditor extends StdLibrary
 		if(E instanceof CMSavable)
 			promptText.append(((CMSavable)E).saveNum()).append('\n');
 		if(E instanceof Ownable)
-		{
-			if(((Ownable)E).owner()==null)
+		{ Ownable owned = (Ownable)E; CMObject owner=owned.owner();
+			if(owner==null)
 				promptText.append("Null owner!!\n");
 			else
-				promptText.append(((Ownable)E).owner().ID()).append(": ").append(((Ownable)E).owner().saveNum()).append('\n');
+			{
+				promptText.append(owner.ID());
+				if(owner instanceof CMSavable) promptText.append(": ").append(((CMSavable)owner).saveNum());
+				promptText.append('\n');
+			}
 		}
 		if(E instanceof Item)
 		{

@@ -18,13 +18,20 @@ A Listener is one of those objects reported to.
 */
 
 public interface ListenHolder extends Tickable {
+	//Add the Listener to the arrays it requests to be added to.
 	public void addListener(Listener newAffect, EnumSet<Flags> flags);
+	//Remove the Listener from the arrays it requests to be removed from.
 	public void removeListener(Listener oldAffect, EnumSet<Flags> flags);
 //	public void recheckListeners();	//actually uh, not sure if this will work. Maybe this should be used to check for bad listeners?
+	//Objects polled when ListenHolder is calculating character stats
 	public CopyOnWriteArrayList<CharAffecter> charAffecters();
+	//Objects polled when ListenHolder is calculating environmental stats
 	public CopyOnWriteArrayList<EnvAffecter> envAffecters();
+	//Objects polled when ListenHolder is responding to an ok message
 	public CopyOnWriteArrayList<OkChecker> okCheckers();
+	//Objects polled when ListenHolder is responding to an execute message
 	public CopyOnWriteArrayList<ExcChecker> excCheckers();
+	//Objects polled when ListenHolder is acting on a tick event
 	public CopyOnWriteArrayList<TickActer> tickActers();
 
 	public static enum Flags
@@ -36,8 +43,11 @@ public interface ListenHolder extends Tickable {
 
 	public static interface Listener
 	{
+		//Tell the ListenHolder what this Listener responds to
 		public void registerListeners(ListenHolder forThis);
+		//Tell all known ListenHolders what this Listener responds to
 		public void registerAllListeners();
+		//Tell all known ListenHolders to stop reporting to this
 		public void clearAllListeners();
 		public int priority(ListenHolder forThis);
 		public EnumSet<Flags> listenFlags();
@@ -57,11 +67,11 @@ public interface ListenHolder extends Tickable {
 
 	public static class DummyListener implements MsgListener	//Extend this for particular respondTo classes
 	{
-		public void registerListeners(ListenHolder forThis){}
-		public void registerAllListeners(){}
-		public void clearAllListeners(){}
-		public int priority(ListenHolder forThis){return 0;}
-		public EnumSet<Flags> listenFlags(){return null;}
+		@Override public void registerListeners(ListenHolder forThis){}
+		@Override public void registerAllListeners(){}
+		@Override public void clearAllListeners(){}
+		@Override public int priority(ListenHolder forThis){return 0;}
+		@Override public EnumSet<Flags> listenFlags(){return null;}
 		@Override public boolean okMessage(OkChecker myHost, CMMsg msg){return true;}
 		@Override public void executeMsg(ExcChecker myHost, CMMsg msg){}
 		@Override public boolean respondTo(CMMsg msg){return true;}
@@ -72,7 +82,6 @@ public interface ListenHolder extends Tickable {
 		public MsgListener realListener;
 		public Object data;
 		protected static final ConcurrentLinkedQueue<InbetweenListener> ListenerCache=new ConcurrentLinkedQueue();
-
 		
 		public InbetweenListener(MsgListener rL, Object d){realListener=rL; data=d;}
 		protected InbetweenListener(){}

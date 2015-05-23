@@ -24,8 +24,9 @@ public interface Exit extends Interactable, Closeable.CloseableHolder, CMModifia
 	public String exitListLook(MOB mob, Room destination);
 //	public String viewableText(MOB mob, Room destination);	//What was this supposed to be? Oh right it was from original code. Meh.
 	public boolean visibleExit(MOB mob, Room destination);
-	public void setVisible(boolean b);
+	public void setVisible(boolean b); //This probably needs to change
 	public ExitInstance makeInstance(Room source, Room destination);
+	//This may be called once recursively (removeInstance -> ExitInstance.destroy -> removeInstance) but it should not go farther
 	public void removeInstance(ExitInstance myInstance, boolean both);
 	public ExitInstance oppositeOf(ExitInstance myInstance, Room destination);
 	public void linkMe(ExitInstance myInstance);

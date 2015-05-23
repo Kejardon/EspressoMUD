@@ -16,7 +16,9 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 */
 public class StdCoins extends StdItem implements Coins
 {
-	@Override public String ID(){	return "StdCoins";}
+	@Override protected int AI_ENABLES(){return super.AI_ENABLES()&~AI_DISP;}
+	
+	@Override public String ID(){ return "StdCoins"; }
 //	public int value(){	return envStats().ability();}
 	protected long denomination=1;
 	protected long amount=0;
@@ -31,6 +33,7 @@ public class StdCoins extends StdItem implements Coins
 //		recoverEnvStats();
 	}
 
+	//TODO: Should this be name() ?
 	public String Name()
 	{
 		if(denom==null)
@@ -42,25 +45,26 @@ public class StdCoins extends StdItem implements Coins
 		if(denom==null) return "";
 		return ""+amount+" "+denom.name();
 	}
-	public String displayText()
+	@Override public String displayText()
 	{
 		return Name()+((amount==1)?" lies here.":" lie here.");
 	}
-	public long getNumberOfCoins(){return amount;}
-	public void setNumberOfCoins(long number)
+	//@Override public String description(){return desc;}
+	@Override public long getNumberOfCoins(){return amount;}
+	@Override public void setNumberOfCoins(long number)
 	{
 		if(number<=Long.MAX_VALUE/2)
 			number=Long.MAX_VALUE/2-1;
 		amount=number;
 		CMLib.database().saveObject(this);
 	}
-	public long getDenomination(){return denomination;}
-	public void setDenomination(long valuePerCoin) { denomination=valuePerCoin; CMLib.database().saveObject(this);}
-	public long getTotalValue(){return denomination*amount;}
-	public String getCurrency(){ return currency;}
-	public void setCurrency(String named) { currency=named; CMLib.database().saveObject(this);}
+	@Override public long getDenomination(){return denomination;}
+	@Override public void setDenomination(long valuePerCoin) { denomination=valuePerCoin; CMLib.database().saveObject(this);}
+	@Override public long getTotalValue(){return denomination*amount;}
+	@Override public String getCurrency(){ return currency;}
+	@Override public void setCurrency(String named) { currency=named; CMLib.database().saveObject(this);}
 
-	public boolean putCoinsBack()
+	@Override public boolean putCoinsBack()
 	{
 		Coins alternative=null;
 		ItemCollection O=ItemCollection.O.getFrom(container);
@@ -89,44 +93,24 @@ public class StdCoins extends StdItem implements Coins
 	private static Enum[] headerEnumM=null;
 	@Override public ModEnum[] totalEnumM()
 	{
-		if(totalEnumM==null)
-		{
-			ModEnum[] arrA=MCode.values();
-			ModEnum[] arrB=super.totalEnumM();
-			totalEnumM=CMParms.appendToArray(arrA, arrB, ModEnum[].class);
-		}
+		if(totalEnumM==null) totalEnumM=CMParms.appendToArray(MCode.values(), super.totalEnumM(), ModEnum[].class);
 		return totalEnumM;
 	}
 	@Override public Enum[] headerEnumM()
 	{
-		if(headerEnumM==null)
-		{
-			Enum[] arrA=new Enum[] {MCode.values()[0]};
-			Enum[] arrB=super.headerEnumM();
-			headerEnumM=CMParms.appendToArray(arrA, arrB, Enum[].class);
-		}
+		if(headerEnumM==null) headerEnumM=CMParms.appendToArray(new Enum[] {MCode.values()[0]}, super.headerEnumM(), Enum[].class);
 		return headerEnumM;
 	}
 	private static SaveEnum[] totalEnumS=null;
 	private static Enum[] headerEnumS=null;
 	@Override public SaveEnum[] totalEnumS()
 	{
-		if(totalEnumS==null)
-		{
-			SaveEnum[] arrA=SCode.values();
-			SaveEnum[] arrB=super.totalEnumS();
-			totalEnumS=CMParms.appendToArray(arrA, arrB, SaveEnum[].class);
-		}
+		if(totalEnumS==null) totalEnumS=CMParms.appendToArray(SCode.values(), super.totalEnumS(), SaveEnum[].class);
 		return totalEnumS;
 	}
 	@Override public Enum[] headerEnumS()
 	{
-		if(headerEnumS==null)
-		{
-			Enum[] arrA=new Enum[] {SCode.values()[0]};
-			Enum[] arrB=super.headerEnumS();
-			headerEnumS=CMParms.appendToArray(arrA, arrB, Enum[].class);
-		}
+		if(headerEnumS==null) headerEnumS=CMParms.appendToArray(new Enum[] {SCode.values()[0]}, super.headerEnumS(), Enum[].class);
 		return headerEnumS;
 	}
 

@@ -20,6 +20,44 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 public class DefaultSession extends Thread implements Session
 {
 	protected static final long DefaultPromptSleep=Long.MAX_VALUE;
+	protected static AtomicInteger sessionCounter=new AtomicInteger(0);
+
+		protected final static byte[][] IACRequests={
+		{(byte)TELNET_IAC, (byte)TELNET_SB, (byte)TELNET_TERMTYPE, (byte)1, (byte)TELNET_IAC, (byte)TELNET_SE},
+		//{TELNET_IAC, TELNET_DO, TELNET_NAWS},	//NAWS. We don't really care about NAWS at the moment
+		//{TELNET_IAC, TELNET_DO, TELNET_CHARSET},	//Only supporting one charset for the time being. also TELNET_CHARSET is not defined yet
+		{(byte)TELNET_IAC, (byte)TELNET_WILL, (byte)TELNET_MSDP},
+		{(byte)TELNET_IAC, (byte)TELNET_WILL, (byte)TELNET_MSSP},
+		{(byte)TELNET_IAC, (byte)TELNET_DO, (byte)TELNET_ATCP},
+		{(byte)TELNET_IAC, (byte)TELNET_WILL, (byte)TELNET_MSP},
+		{(byte)TELNET_IAC, (byte)TELNET_DO, (byte)TELNET_MXP},
+		//{TELNET_IAC, TELNET_WILL, TELNET_MCCP},	//TODO eventually: Reimplement compression
+	};
+
+	public static final String MSDP_START = String.valueOf(new char[]{TELNET_IAC, TELNET_SB, TELNET_MSDP, 1});
+	protected static class PromptStruct<E>
+	{
+		public final int number;
+		public CommandCallWrap wrapper;
+		public Thread thread;
+		public Future<E> future;
+		public volatile boolean isBusy;
+		public volatile String message;
+		public PromptStruct(int i, CommandCallWrap w, Future f)
+		{
+			number=i;
+			wrapper=w;
+			future=f;
+			isBusy=true;
+		}
+		public PromptStruct(int i, Thread t, Future f)
+		{
+			number=i;
+			thread=t;
+			future=f;
+			isBusy=true;
+		}
+	}
 
 	protected int status=0;
 	protected int tries=0; //Number of consecutive failed logins
@@ -81,32 +119,8 @@ public class DefaultSession extends Thread implements Session
 
 	//private int currentColor='N';
 	//private int lastColor=-1;
-	protected static AtomicInteger sessionCounter=new AtomicInteger(0);
 	//protected static int sessionCounter=0;
 	
-	protected static class PromptStruct<E>
-	{
-		public final int number;
-		public CommandCallWrap wrapper;
-		public Thread thread;
-		public Future<E> future;
-		public volatile boolean isBusy;
-		public volatile String message;
-		public PromptStruct(int i, CommandCallWrap w, Future f)
-		{
-			number=i;
-			wrapper=w;
-			future=f;
-			isBusy=true;
-		}
-		public PromptStruct(int i, Thread t, Future f)
-		{
-			number=i;
-			thread=t;
-			future=f;
-			isBusy=true;
-		}
-	}
 	//protected final DVector pendingPrompts=new DVector(5);	//Integer, Wrapper/Thread, Future (sign of use/done), Cached message, IsBusy (True=thread is busy and not expecting input, False=expecting user input)
 	//protected boolean[] promptNumbers=new boolean[MAX_PROMPTS];
 	protected final PromptStruct[] pendingPrompts=new PromptStruct[MAX_PROMPTS];
@@ -141,19 +155,81 @@ public class DefaultSession extends Thread implements Session
 	protected boolean defaultDark=false;	//TODO: Make this get written to and be reported and stuff!
 	protected boolean promptGA=false;
 
-	protected final static byte[][] IACRequests={
-		{(byte)TELNET_IAC, (byte)TELNET_SB, (byte)TELNET_TERMTYPE, (byte)1, (byte)TELNET_IAC, (byte)TELNET_SE},
-		//{TELNET_IAC, TELNET_DO, TELNET_NAWS},	//NAWS. We don't really care about NAWS at the moment
-		//{TELNET_IAC, TELNET_DO, TELNET_CHARSET},	//Only supporting one charset for the time being. also TELNET_CHARSET is not defined yet
-		{(byte)TELNET_IAC, (byte)TELNET_WILL, (byte)TELNET_MSDP},
-		{(byte)TELNET_IAC, (byte)TELNET_WILL, (byte)TELNET_MSSP},
-		{(byte)TELNET_IAC, (byte)TELNET_DO, (byte)TELNET_ATCP},
-		{(byte)TELNET_IAC, (byte)TELNET_WILL, (byte)TELNET_MSP},
-		{(byte)TELNET_IAC, (byte)TELNET_DO, (byte)TELNET_MXP},
-		//{TELNET_IAC, TELNET_WILL, TELNET_MCCP},	//TODO eventually: Reimplement compression
-	};
+	public DefaultSession()
+	{
+		super("DefaultSession."+sessionCounter.getAndIncrement());
+	}
+	public DefaultSession(DefaultSession clone)
+	{
+		this();
+		//status=clone.status;
+		//tries=clone.tries;
+		//sock=clone.sock;
+		//in=clone.in.clone();
+		//out=clone.out.clone();
+		//rawout=clone.rawout.clone();
+		//mob=clone.mob.clone();
+		//acct=clone.acct;
+		killFlag=clone.killFlag;
+		//needPrompt=false;
+		//afkFlag=false;
+		afkMessage=clone.afkMessage;
+		//input=new StringBuilder(256);
+		//output=new ConcurrentLinkedQueue<>();
+		previousCmd=clone.previousCmd;
+		lastColorStr=clone.lastColorStr;
+		lastStr=clone.lastStr;
+		//spamStack=clone.spamStack;
+		//snoops=new CopyOnWriteArrayList();
+		snoopTargets.addAll(clone.snoopTargets);
+		prevMsgs.addAll(clone.prevMsgs);
+		//curPrevMsg=null;
 
-	public static final String MSDP_START = String.valueOf(new char[]{TELNET_IAC, TELNET_SB, TELNET_MSDP, 1});
+		suspendCommandLine=clone.suspendCommandLine;
+
+		lastPrompt=clone.lastPrompt;
+		//private long lastStart=System.currentTimeMillis();
+		//private long lastStop=System.currentTimeMillis();
+		//private long lastLoopTop=System.currentTimeMillis();
+		onlineTime=clone.onlineTime;
+		milliTotal=clone.milliTotal;
+		lastKeystroke=clone.lastKeystroke;
+		//private Future<LoginResult> login=null;
+
+		clientTelnetCodes=clone.clientTelnetCodes.clone();
+		terminalType=clone.terminalType;
+		//protected long writeStartTime=0;
+
+		//protected final PromptStruct[] pendingPrompts=new PromptStruct[MAX_PROMPTS];
+		
+		//protected volatile boolean activePrompt=false;
+		//protected SessionInputReader currentInputReader=NormalSIR;
+		//protected int inputMark=0;
+		//protected volatile boolean doingInput=false;
+		lastMSDP=clone.lastMSDP;
+		//protected boolean busyMSDP=false;
+		//protected boolean newMSDP=false;
+		//protected boolean[] MSDPIsNew=new boolean[MSDPOptions.size];
+		MSDPReporting=clone.MSDPReporting.clone();
+
+		negotiated=clone.negotiated;
+		support256=clone.support256;	//-1 means does not, 0 means unknown, 1 means does
+
+		lastTType=clone.lastTType;
+		ClientID=clone.ClientID;
+		ClientVersion=clone.ClientVersion;
+		PluginID=clone.PluginID;
+		MXPVersion=clone.MXPVersion;
+		enANSI=clone.enANSI;
+		enXTERM=clone.enXTERM;
+		enSound=clone.enSound;
+		enMXP=clone.enMXP;
+		enMSP=clone.enMSP;
+		enMSDP=clone.enMSDP;
+		enATCP=clone.enATCP;
+		defaultDark=clone.defaultDark;	//TODO: Make this get written to and be reported and stuff!
+		promptGA=clone.promptGA;
+	}
 	
 	public void sendMSDPDirect(String name, String value)
 	{
@@ -308,13 +384,14 @@ public class DefaultSession extends Thread implements Session
 	@Override public DefaultSession newInstance(){return new DefaultSession();}
 	@Override public void initializeClass(){}
 	//public boolean isFake() { return false;}
-	@Override public DefaultSession copyOf(){ try{ Object O=this.clone(); return (DefaultSession)O;}catch(CloneNotSupportedException e){return newInstance();} }
+	@Override public DefaultSession copyOf()
+	{
+		return new DefaultSession(this);
+		//try{ Object O=this.clone(); return (DefaultSession)O;}catch(CloneNotSupportedException e){return newInstance();} 
+	}
 	@Override public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 
-	public DefaultSession()
-	{
-		super("DefaultSession."+sessionCounter.getAndIncrement());
-	}
+
 
 	@Override public void handlePromptFor(CommandCallWrap command, int type)
 	{

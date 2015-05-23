@@ -3,10 +3,31 @@ import com.planet_ink.coffee_mud.Common.DefaultSession;
 import com.planet_ink.coffee_mud.core.interfaces.*;
 import com.planet_ink.coffee_mud.core.database.*;
 import com.planet_ink.coffee_mud.core.interfaces.CMMsg.MsgCode;
+import java.io.File;
 
 import java.util.*;
 import java.lang.reflect.Modifier;
 import java.util.concurrent.*;
+
+/*
+//Need to import all native projects?
+import com.planet_ink.coffee_mud.Areas.*;
+import com.planet_ink.coffee_mud.Behaviors.*;
+import com.planet_ink.coffee_mud.Commands.*;
+import com.planet_ink.coffee_mud.Common.*;
+import com.planet_ink.coffee_mud.Common.Closeable.*;
+import com.planet_ink.coffee_mud.Effects.*;
+import com.planet_ink.coffee_mud.Effects.Languages.*;
+import com.planet_ink.coffee_mud.ExitInstance.*;
+import com.planet_ink.coffee_mud.Exits.*;
+import com.planet_ink.coffee_mud.Items.Basic.*;
+//import com.planet_ink.coffee_mud.Libraries.*;
+import com.planet_ink.coffee_mud.Locales.*;
+import com.planet_ink.coffee_mud.MOBs.*;
+import com.planet_ink.coffee_mud.Races.*;
+import com.planet_ink.coffee_mud.Races.Genders.*;
+import com.planet_ink.coffee_mud.Skills.*;
+*/
 
 /*
 CoffeeMUD 5.6.2 copyright 2000-2010 Bo Zimmerman
@@ -433,7 +454,7 @@ public class CMClass extends ClassLoader
 	{
 		//CMClass loader=new CMClass();
 		//Log.sysOut("CMClass","Loading path "+filePath);
-		CMFile file=new CMFile(filePath,null,true);
+		CMFile file=new CMFile(filePath,null,true,false,true);
 		LinkedList<String> fileList=new LinkedList();
 		if(file.canRead())
 		{
@@ -618,25 +639,29 @@ public class CMClass extends ClassLoader
 		if((result=findLoadedClass(className))!=null)
 			return result;
 */
-		try{
-			Class result=super.findSystemClass(className);
-			if(result!=null)
-			{
-				if(debugging) Log.debugOut("CMClass","Loaded: "+result.getName());
-				return result;
-			}
+		Class result=null;
+		try{result=super.findSystemClass(className);} catch(Throwable t){}
+		if(result==null) try
+		{
+			result = CMClass.class.getClassLoader().loadClass(className);
 		} catch(Throwable t){}
+		if(result!=null)
+		{
+			if(debugging) Log.debugOut("CMClass","Loaded: "+result.getName());
+			return result;
+		}
 		/*
 		if(CMFile.mainJAR!=null && className.startsWith("com.planet_ink.coffee_mud"))
 		{
 			
 		}
 		*/
-		CMFile CF=new CMFile(className,null,false);
+		String fileClassName = className.replace('.', File.separatorChar)+".class";
+		CMFile CF=new CMFile(fileClassName,null,false,false,true);
 		byte[] classData=CF.raw();
 		if((classData==null)||(classData.length==0))
 			throw new ClassNotFoundException("File "+className+" not readable!");
-		Class result=finishDefineClass(className,classData,null,resolveIt);
+		result=finishDefineClass(className,classData,null,resolveIt);
 		return null;
 	}
 

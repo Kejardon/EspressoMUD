@@ -22,50 +22,56 @@ compareAndSet(null, Thread.currentThread()) to get a lock.
 set(null) to clear a lock (only do if this place got a lock). Done in a finally?
 */
 
-public class StdRoom implements Room
+public class StdRoom extends AbstractSaveInteractable implements Room
 {
+	@Override protected int AI_ENABLES(){return AI_ENV|AI_AFFECTS|AI_BEHAVES|AI_OK|AI_EXC|AI_TICK|AI_NAME|AI_DISP|AI_DESC;}
 	@Override public String ID(){return "StdRoom";}
-	protected String name="the room";
-	protected String display="Standard Room";
-	protected String desc="";
-	protected String plainName;
-	protected String plainNameOf;
-	protected String plainDisplay;
-	protected String plainDisplayOf;
-	protected String plainDesc;
-	protected String plainDescOf;
+	@Override protected SIDLib.Objects SID(){return SIDLib.ROOM;}
+	//protected String name="the room";
+	//protected String display="Standard Room";
+	//protected String desc="";
 	protected Area myArea=null;
 	protected CopyOnWriteArrayList<ExitInstance> exits=new CopyOnWriteArrayList();
 	protected AtomicReference<Thread> activeThread=new AtomicReference<>();
 	protected long lockTime;
 	
-	protected CopyOnWriteArrayList<OkChecker> okCheckers=new CopyOnWriteArrayList();
-	protected CopyOnWriteArrayList<ExcChecker> excCheckers=new CopyOnWriteArrayList();
-	protected CopyOnWriteArrayList<TickActer> tickActers=new CopyOnWriteArrayList();
-	protected CopyOnWriteArrayList<Effect> affects=new CopyOnWriteArrayList();
-	protected CopyOnWriteArrayList<Behavior> behaviors=new CopyOnWriteArrayList();
-	protected EnumSet<ListenHolder.Flags> lFlags=EnumSet.of(ListenHolder.Flags.OK, ListenHolder.Flags.EXC);
-	protected int tickCount=0;
-	protected Tickable.TickStat tickStatus=Tickable.TickStat.Not;
+	//protected CopyOnWriteArrayList<OkChecker> okCheckers=new CopyOnWriteArrayList();
+	//protected CopyOnWriteArrayList<ExcChecker> excCheckers=new CopyOnWriteArrayList();
+	//protected CopyOnWriteArrayList<TickActer> tickActers=new CopyOnWriteArrayList();
+	//protected CopyOnWriteArrayList<Effect> affects=new CopyOnWriteArrayList();
+	//protected CopyOnWriteArrayList<Behavior> behaviors=new CopyOnWriteArrayList();
+	//protected EnumSet<ListenHolder.Flags> lFlags=EnumSet.of(ListenHolder.Flags.OK, ListenHolder.Flags.EXC);
+	//protected int tickCount=0;
+	//protected Tickable.TickStat tickStatus=Tickable.TickStat.Not;
 	//protected long lastTick=0;
 	//TODO: This needs a custom item collection! Eventually. For grids. Some day.
 	protected ItemCollection inventory=null;//(ItemCollection)((Ownable)CMClass.COMMON.getNew("DefaultItemCol")).setOwner(this);
 	protected EnvMap positions=null;
 	protected Domain myDom=Domain.AIR;
 	protected Enclosure myEnc=Enclosure.OPEN;
-	protected boolean amDestroyed=false;
-	protected Environmental myEnvironmental=null;//(Environmental)((Ownable)CMClass.COMMON.getNew("DefaultEnvironmental")).setOwner(this);
+	//protected boolean amDestroyed=false;
+	//protected Environmental myEnvironmental=null;//(Environmental)((Ownable)CMClass.COMMON.getNew("DefaultEnvironmental")).setOwner(this);
 	protected ArrayList<Environmental> terrainObjects=new ArrayList();
 
-	protected int saveNum=0;
-	protected int[] effectsToLoad=null;
-	protected int[] behavesToLoad=null;
 	protected int[] exitsToLoad=null;
 	protected int areaToLink=0;
 	protected int itemCollectionToLoad=0;
 	protected int envMapToLoad=0;
 
 	public StdRoom(){}
+	protected StdRoom(StdRoom clone)
+	{
+		super(clone);
+		myDom=clone.myDom;
+		myEnc=clone.myEnc;
+		/*
+		inventory=clone.inventory.clone();
+		for(Environmental env : clone.terrainObjects)
+		{
+			terrainObjects.add(env.clone());
+		}
+		*/
+	}
 
 	@Override public int priority(ListenHolder L){return Integer.MAX_VALUE;}
 	@Override public void registerListeners(ListenHolder forThis){}
@@ -84,78 +90,22 @@ public class StdRoom implements Room
 		return new StdRoom();
 	}
 
-	@Override public Environmental getEnvObject() {
-		if(myEnvironmental==null)
-			synchronized(this){if(myEnvironmental==null) myEnvironmental=(Environmental)((Ownable)CMClass.COMMON.getNew("DefaultEnvironmental")).setOwner(this);}
-		return myEnvironmental;
-	}
-	@Override public String name(){ return name;}
-	@Override public String plainName()
-	{
-		if(name==plainNameOf) //== is fine in this case
-			return plainName;
-		String newName=name;
-		String newPlain=CMLib.coffeeFilter().toRawString(newName);
-		synchronized(this)
-		{
-			plainName=newPlain;
-			plainNameOf=newName;
-		}
-		return newPlain;
-	}
-	@Override public void setName(String newName){name=newName; CMLib.database().saveObject(this);}
-	@Override public String displayText(){return display;}
-	@Override public String plainDisplayText()
-	{
-		if(display==plainDisplayOf) //== is fine in this case
-			return plainDisplay;
-		String newDisplay=display;
-		String newPlain=CMLib.coffeeFilter().toRawString(newDisplay);
-		synchronized(this)
-		{
-			plainDisplay=newPlain;
-			plainDisplayOf=newDisplay;
-		}
-		return newPlain;
-	}
-	@Override public void setDisplayText(String newDisplayText){display=newDisplayText; CMLib.database().saveObject(this);}
+	@Override public String name(){ return name==""?"the room":name;}
+	@Override public String displayText(){return display==""?"Standard Room":display;}
 	@Override public String description(){return desc;}
-	@Override public String plainDescription()
-	{
-		if(desc==plainDescOf) //== is fine in this case
-			return plainDesc;
-		String newDesc=desc;
-		String newPlain=CMLib.coffeeFilter().toRawString(newDesc);
-		synchronized(this)
-		{
-			plainDesc=newPlain;
-			plainDescOf=newDesc;
-		}
-		return newPlain;
-	}
-	@Override public void setDescription(String newDescription){desc=newDescription; CMLib.database().saveObject(this);}
 
+	/*
 	protected void cloneFix(StdRoom E)
 	{
-		okCheckers=new CopyOnWriteArrayList();
-		excCheckers=new CopyOnWriteArrayList();
-		tickActers=new CopyOnWriteArrayList();
-		affects=new CopyOnWriteArrayList();
-		behaviors=new CopyOnWriteArrayList();
-		lFlags=lFlags.clone();
-		if(myEnvironmental!=null) myEnvironmental=(Environmental)((Ownable)myEnvironmental.copyOf()).setOwner(this);
+		super.cloneFix(E);
 		//if(inventory!=null) inventory=inventory.copyOf();
 		inventory=null;
-		tickStatus=Tickable.TickStat.Not;
-		tickCount=0;
-
-		for(Effect A : E.affects)
-			affects.add(A.copyOnto(this));
-		for(Behavior B : E.behaviors)
-			addBehavior((Behavior)B.copyOf());
 	}
+	*/
 	@Override public StdRoom copyOf()
 	{
+		return new StdRoom(this);
+		/*
 		try
 		{
 			StdRoom R=(StdRoom)this.clone();
@@ -167,6 +117,7 @@ public class StdRoom implements Room
 		{
 			return this.newInstance();
 		}
+		*/
 	}
 	@Override public int numExits() { return exits.size(); }
 	@Override public void addExit(Exit E, Room destination)
@@ -175,8 +126,11 @@ public class StdRoom implements Room
 	}
 	@Override public void addExit(ExitInstance R)
 	{
+		R.setInRoom(this);
 		if(exits.addIfAbsent(R))
+		{
 			CMLib.database().saveObject(this);
+		}
 	}
 	/*
 	public void removeExit(Exit E, Room R)
@@ -422,27 +376,14 @@ public class StdRoom implements Room
 		}
 	}
 
-	@Override public Tickable.TickStat getTickStatus(){return tickStatus;}
-	public void tickAct(){}
-	@Override public int tickCounter(){return tickCount;}
-	@Override public boolean tick(int tickTo)
-	{
-		if(tickCount==0) tickCount=tickTo-1;
-		while(tickCount<tickTo)
-		{
-			tickCount++;
-			if(!doTick()) {tickCount=0; return false;}
-		}
-		return true;
-	}
-	protected boolean doTick()
+
+	@Override protected boolean doTick()
 	{
 		tickStatus=Tickable.TickStat.Listener;
 		for(TickActer T : tickActers)
 			if(!T.tick(tickCount))
 				removeListener(T, EnumSet.of(ListenHolder.Flags.TICK));
 		tickStatus=Tickable.TickStat.Not;
-		//lastTick=System.currentTimeMillis();
 		return true;
 	}
 	//public long lastAct(){return 0;}	//No Action ticks
@@ -669,27 +610,14 @@ public class StdRoom implements Room
 	//NOTE: this doesn't handle exits currently.. Also, player/MOB ejection is TODO
 	@Override public void destroy()
 	{
-		amDestroyed=true;
-
-		if(myEnvironmental!=null)
-			myEnvironmental.destroy();
-
-		for(Effect E : affects)
-			E.setAffectedOne(null);
-		affects.clear();
-		for(Behavior B : behaviors)
-			B.startBehavior(null);
-		behaviors.clear();
-
 		//TODO: Change for item rooms
 		if(inventory!=null)
 			inventory.destroy();
 
 		setArea(null);
-		if(saveNum!=0)
-			CMLib.database().deleteObject(this);
+		
+		super.destroy();
 	}
-	@Override public boolean amDestroyed(){return amDestroyed;}
 
 	//This might not really be necessary. ..meh
 	@Override public boolean isContent(Item E, boolean sub)
@@ -800,100 +728,14 @@ public class StdRoom implements Room
 	}
 	@Override public void registerAllListeners() {}
 	@Override public void clearAllListeners() {}
-	@Override public CopyOnWriteArrayList<CharAffecter> charAffecters(){return null;}
-	@Override public CopyOnWriteArrayList<EnvAffecter> envAffecters(){return null;}
-	@Override public CopyOnWriteArrayList<OkChecker> okCheckers(){return okCheckers;}
-	@Override public CopyOnWriteArrayList<ExcChecker> excCheckers(){return excCheckers;}
-	@Override public CopyOnWriteArrayList<TickActer> tickActers(){return tickActers;}
-	@Override public EnumSet<ListenHolder.Flags> listenFlags() {return lFlags;}
+	//@Override public CopyOnWriteArrayList<CharAffecter> charAffecters(){return null;}
+	//@Override public CopyOnWriteArrayList<EnvAffecter> envAffecters(){return null;}
+	//@Override public CopyOnWriteArrayList<OkChecker> okCheckers(){return okCheckers;}
+	//@Override public CopyOnWriteArrayList<ExcChecker> excCheckers(){return excCheckers;}
+	//@Override public CopyOnWriteArrayList<TickActer> tickActers(){return tickActers;}
+	//@Override public EnumSet<ListenHolder.Flags> listenFlags() {return lFlags;}
 
-	//Affectable
-	@Override public void addEffect(Effect to)
-	{
-		affects.add(to);
-		to.setAffectedOne(this);
-		CMLib.database().saveObject(this);
-	}
-	@Override public void delEffect(Effect to)
-	{
-		if(affects.remove(to))
-		{
-			to.setAffectedOne(null);
-			CMLib.database().saveObject(this);
-		}
-	}
-	@Override public boolean hasEffect(Effect to)
-	{
-		return affects.contains(to);
-	}
-	@Override public int numEffects(){return affects.size();}
-	@Override public Effect fetchEffect(int index)
-	{
-		try { return affects.get(index); }
-		catch(java.lang.ArrayIndexOutOfBoundsException x){}
-		return null;
-	}
-	@Override public Vector<Effect> fetchEffect(String ID)
-	{
-		Vector<Effect> V=new Vector(1);
-		for(Effect E : affects)
-			if(E.ID().equals(ID))
-				V.add(E);
-		return V;
-	}
-	@Override public Effect fetchFirstEffect(String ID)
-	{
-		for(Effect E : affects)
-			if(E.ID().equals(ID))
-				return E;
-		return null;
-	}
-	@Override public Iterator<Effect> allEffects() { return affects.iterator(); }
 
-	//Behavable
-	@Override public void addBehavior(Behavior to)
-	{
-		synchronized(behaviors)
-		{
-			if(fetchBehavior(to.ID())!=null) return;
-			to.startBehavior(this);
-			behaviors.add(to);
-		}
-		CMLib.database().saveObject(this);
-	}
-	@Override public void delBehavior(Behavior to)
-	{
-		if(behaviors.remove(to))
-		{
-			to.startBehavior(null);
-			CMLib.database().saveObject(this);
-		}
-	}
-	@Override public int numBehaviors()
-	{
-		return behaviors.size();
-	}
-	@Override public Behavior fetchBehavior(int index)
-	{
-		try { return behaviors.get(index); }
-		catch(java.lang.ArrayIndexOutOfBoundsException x){}
-		return null;
-	}
-	@Override public Behavior fetchBehavior(String ID)
-	{
-		for(Behavior B : behaviors)
-			if(B.ID().equals(ID))
-				return B;
-		return null;
-	}
-	@Override public boolean hasBehavior(String ID)
-	{
-		for(Behavior B : behaviors)
-			if(B.ID().equals(ID))
-				return true;
-		return false;
-	}
-	@Override public Iterator<Behavior> allBehaviors() { return behaviors.iterator(); }
 	@Override public ItemCollection getItemCollection()
 	{
 		if(inventory==null) synchronized(this)
@@ -914,68 +756,50 @@ public class StdRoom implements Room
 			newInv.copyFrom(oldInv);
 	}
 
+	/*
 	public boolean sameAs(Interactable E)
 	{
 		if(!(E instanceof StdRoom)) return false;
 		return true;
 	}
+	*/
 
 	//CMModifiable and CMSavable
-	@Override public SaveEnum[] totalEnumS(){return SCode.values();}
-	@Override public Enum[] headerEnumS(){return new Enum[] {SCode.values()[0]} ;}
-	@Override public ModEnum[] totalEnumM(){return MCode.values();}
-	@Override public Enum[] headerEnumM(){return new Enum[] {MCode.values()[0]};}
-	@Override public int saveNum()
+	private static ModEnum[] totalEnumM=null;
+	private static Enum[] headerEnumM=null;
+	@Override public ModEnum[] totalEnumM()
 	{
-		if((saveNum==0)&&(!amDestroyed))
-		synchronized(this)
-		{
-			if(saveNum==0)
-				saveNum=SIDLib.ROOM.getNumber(this);
-		}
-		return saveNum;
+		if(totalEnumM==null) totalEnumM=CMParms.appendToArray(MCode.values(), super.totalEnumM(), ModEnum[].class);
+		return totalEnumM;
 	}
-	@Override public void setSaveNum(int num)
+	@Override public Enum[] headerEnumM()
 	{
-		synchronized(this)
-		{
-			if(saveNum!=0)
-				SIDLib.ROOM.removeNumber(saveNum);
-			saveNum=num;
-			SIDLib.ROOM.assignNumber(num, this);
-		}
+		if(headerEnumM==null) headerEnumM=CMParms.appendToArray(new Enum[] {MCode.values()[0]}, super.headerEnumM(), Enum[].class);
+		return headerEnumM;
 	}
-	@Override public boolean needLink(){return true;}
+	private static SaveEnum[] totalEnumS=null;
+	private static Enum[] headerEnumS=null;
+	@Override public SaveEnum[] totalEnumS()
+	{
+		if(totalEnumS==null) totalEnumS=CMParms.appendToArray(SCode.values(), super.totalEnumS(), SaveEnum[].class);
+		return totalEnumS;
+	}
+	@Override public Enum[] headerEnumS()
+	{
+		if(headerEnumS==null) headerEnumS=CMParms.appendToArray(new Enum[] {SCode.values()[0]}, super.headerEnumS(), Enum[].class);
+		return headerEnumS;
+	}
+	//@Override public boolean needLink(){return true;}
 	@Override public void link()
 	{
-		if(effectsToLoad!=null)
-		{
-			for(int SID : effectsToLoad)
-			{
-				Effect to = SIDLib.EFFECT.get(SID);
-				if(to==null) continue;
-				affects.add(to);
-				to.setAffectedOne(this);
-			}
-			effectsToLoad=null;
-		}
-		if(behavesToLoad!=null)
-		{
-			for(int SID : behavesToLoad)
-			{
-				Behavior to = SIDLib.BEHAVIOR.get(SID);
-				if(to==null) continue;
-				to.startBehavior(this);
-				behaviors.add(to);
-			}
-			behavesToLoad=null;
-		}
+		super.link();
 		if(exitsToLoad!=null)
 		{
 			for(int SID : exitsToLoad)
 			{
 				ExitInstance e=SIDLib.EXITINSTANCE.get(SID);
 				if(e==null) continue;
+				e.setInRoom(this);
 				exits.add(e);
 			}
 			exitsToLoad=null;
@@ -1022,19 +846,9 @@ public class StdRoom implements Room
 				envMap.copyFrom(oldMap);
 		}
 	}
-	@Override public void saveThis(){CMLib.database().saveObject(this);}
 	@Override public void prepDefault(){getEnvObject(); getItemCollection();} //TODO: Env
 
 	private enum SCode implements SaveEnum<StdRoom>{
-		ENV(){
-			public ByteBuffer save(StdRoom E){ return CMLib.coffeeMaker().savSubFull(E.getEnvObject()); }
-			public int size(){return -1;}
-			public CMSavable subObject(StdRoom fromThis){return fromThis.myEnvironmental;}
-			public void load(StdRoom E, ByteBuffer S){
-				Environmental old=E.myEnvironmental;
-				E.myEnvironmental=(Environmental)CMLib.coffeeMaker().loadSub(S, E, this);
-				if(E.myEnvironmental!=null) ((Ownable)E.myEnvironmental).setOwner(E);
-				if((old!=null)&&(old!=E.myEnvironmental)) old.destroy(); } },
 		DOM(){
 			public ByteBuffer save(StdRoom E){ return CMLib.coffeeMaker().savString(E.myDom.name()); }
 			public int size(){return 0;}
@@ -1047,14 +861,6 @@ public class StdRoom implements Room
 			public void load(StdRoom E, ByteBuffer S){
 				Enclosure newEnc=(Enclosure)CMClass.valueOf(Enclosure.class, CMLib.coffeeMaker().loadString(S));
 				if(newEnc!=null) E.myEnc=newEnc; } },
-		DSP(){
-			public ByteBuffer save(StdRoom E){ return CMLib.coffeeMaker().savString(E.display); }
-			public int size(){return 0;}
-			public void load(StdRoom E, ByteBuffer S){ E.display=CMLib.coffeeMaker().loadString(S); } },
-		DSC(){
-			public ByteBuffer save(StdRoom E){ return CMLib.coffeeMaker().savString(E.desc); }
-			public int size(){return 0;}
-			public void load(StdRoom E, ByteBuffer S){ E.desc=CMLib.coffeeMaker().loadString(S); } },
 		EXT(){
 			public ByteBuffer save(StdRoom E){ return CMLib.coffeeMaker().savSaveNums(E.exits.toArray(CMSavable.dummyCMSavableArray)); }
 			public int size(){return 0;}
@@ -1067,22 +873,6 @@ public class StdRoom implements Room
 			public ByteBuffer save(StdRoom E){ return (ByteBuffer)ByteBuffer.wrap(new byte[4]).putInt(E.getItemCollection().saveNum()).rewind(); }
 			public int size(){return 4;}
 			public void load(StdRoom E, ByteBuffer S){ E.itemCollectionToLoad=S.getInt(); } },
-		EFC(){
-			public ByteBuffer save(StdRoom E){
-				if(E.affects.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.affects.toArray((CMSavable.dummyCMSavableArray)));
-				return CoffeeMaker.emptyBuffer; }
-			public int size(){return 0;}
-			public void load(StdRoom E, ByteBuffer S){ E.effectsToLoad=CMLib.coffeeMaker().loadAInt(S); } },
-		BHV(){
-			public ByteBuffer save(StdRoom E){
-				if(E.behaviors.size()>0) return CMLib.coffeeMaker().savSaveNums((CMSavable[])E.behaviors.toArray(CMSavable.dummyCMSavableArray));
-				return CoffeeMaker.emptyBuffer; }
-			public int size(){return 0;}
-			public void load(StdRoom E, ByteBuffer S){ E.behavesToLoad=CMLib.coffeeMaker().loadAInt(S); } },
-		NAM(){
-			public ByteBuffer save(StdRoom E){ return CMLib.coffeeMaker().savString(E.name); }
-			public int size(){return 0;}
-			public void load(StdRoom E, ByteBuffer S){ E.name=CMLib.coffeeMaker().loadString(S); } },
 		MAP(){
 			public ByteBuffer save(StdRoom E){ return (ByteBuffer)ByteBuffer.wrap(new byte[4]).putInt(E.positions==null?0:E.positions.saveNum()).rewind(); }
 			public int size(){return 4;}
@@ -1102,10 +892,6 @@ public class StdRoom implements Room
 				//E.setRoomID(CMLib.genEd().stringPrompt(M, ""+E.myID, false));
 				M.session().rawPrintln("This value cannot be manually edited");} },
 */
-		ENVIRONMENTAL(){
-			public String brief(StdRoom E){return E.getEnvObject().ID();}
-			public String prompt(StdRoom E){return "";}
-			public void mod(StdRoom E, MOB M){CMLib.genEd().genMiscSet(M, E.myEnvironmental);} },
 		DOMAIN(){
 			public String brief(StdRoom E){return E.myDom.toString();}
 			public String prompt(StdRoom E){return E.myDom.toString();}
@@ -1114,14 +900,6 @@ public class StdRoom implements Room
 			public String brief(StdRoom E){return E.myEnc.toString();}
 			public String prompt(StdRoom E){return E.myEnc.toString();}
 			public void mod(StdRoom E, MOB M){E.myEnc=(Enclosure)CMLib.genEd().enumPrompt(M, E.myEnc.toString(), Enclosure.values());} },
-		DISPLAY(){
-			public String brief(StdRoom E){return E.display;}
-			public String prompt(StdRoom E){return E.display;}
-			public void mod(StdRoom E, MOB M){E.display=CMLib.genEd().stringPrompt(M, E.display, false);} },
-		DESCRIPTION(){
-			public String brief(StdRoom E){return E.desc;}
-			public String prompt(StdRoom E){return E.desc;}
-			public void mod(StdRoom E, MOB M){E.desc=CMLib.genEd().stringPrompt(M, E.desc, false);} }, 
 		AREA(){
 			public String brief(StdRoom E){return E.myArea.name();}
 			public String prompt(StdRoom E){return E.myArea.name();}
@@ -1130,18 +908,6 @@ public class StdRoom implements Room
 			public String brief(StdRoom E){return ""+E.exits.size();}
 			public String prompt(StdRoom E){return "";}
 			public void mod(StdRoom E, MOB M){CMLib.genEd().modExits(E.exits, E, M);} },
-		EFFECTS(){
-			public String brief(StdRoom E){return ""+E.affects.size();}
-			public String prompt(StdRoom E){return "";}
-			public void mod(StdRoom E, MOB M){CMLib.genEd().modAffectable(E, M);} },
-		BEHAVIORS(){
-			public String brief(StdRoom E){return ""+E.behaviors.size();}
-			public String prompt(StdRoom E){return "";}
-			public void mod(StdRoom E, MOB M){CMLib.genEd().modBehavable(E, M);} },
-		NAME(){
-			public String brief(StdRoom E){return E.name;}
-			public String prompt(StdRoom E){return E.name;}
-			public void mod(StdRoom E, MOB M){E.name=CMLib.genEd().stringPrompt(M, E.name, false);} },
 		INVENTORY(){
 			public String brief(StdRoom E){return E.getItemCollection().ID()+" "+E.inventory.numItems();}
 			public String prompt(StdRoom E){return "";}

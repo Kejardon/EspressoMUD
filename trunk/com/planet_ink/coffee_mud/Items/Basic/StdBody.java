@@ -34,10 +34,7 @@ public class StdBody extends StdItem implements Body
 
 	public StdBody()
 	{
-		name="";
-		display="";
 		lFlags.add(ListenHolder.Flags.TICK);
-//		desc="";
 	}
 	@Override public String name()
 	{
@@ -170,6 +167,7 @@ public class StdBody extends StdItem implements Body
 		ListenHolder.O.addListener(this, newAffect, flags);
 	}
 
+	/*
 	protected void cloneFix(StdBody E)
 	{
 		charAffecters=new CopyOnWriteArrayList();
@@ -183,6 +181,7 @@ public class StdBody extends StdItem implements Body
 		super.cloneFix(E);
 		
 	}
+	*/
 	@Override public int value() { return baseGoldValue(); }
 	@Override public void setBaseValue(int newValue) { }
 	@Override public void setWornOut(int worn) { }
@@ -355,44 +354,24 @@ public class StdBody extends StdItem implements Body
 	private static Enum[] headerEnumM=null;
 	@Override public ModEnum[] totalEnumM()
 	{
-		if(totalEnumM==null)
-		{
-			ModEnum[] arrA=MCode.values();
-			ModEnum[] arrB=super.totalEnumM();
-			totalEnumM=CMParms.appendToArray(arrA, arrB, ModEnum[].class);
-		}
+		if(totalEnumM==null) totalEnumM=CMParms.appendToArray(MCode.values(), super.totalEnumM(), ModEnum[].class);
 		return totalEnumM;
 	}
 	@Override public Enum[] headerEnumM()
 	{
-		if(headerEnumM==null)
-		{
-			Enum[] arrA=new Enum[] {MCode.values()[0]};
-			Enum[] arrB=super.headerEnumM();
-			headerEnumM=CMParms.appendToArray(arrA, arrB, Enum[].class);
-		}
+		if(headerEnumM==null) headerEnumM=CMParms.appendToArray(new Enum[] {MCode.values()[0]}, super.headerEnumM(), Enum[].class);
 		return headerEnumM;
 	}
 	private static SaveEnum[] totalEnumS=null;
 	private static Enum[] headerEnumS=null;
 	@Override public SaveEnum[] totalEnumS()
 	{
-		if(totalEnumS==null)
-		{
-			SaveEnum[] arrA=SCode.values();
-			SaveEnum[] arrB=super.totalEnumS();
-			totalEnumS=CMParms.appendToArray(arrA, arrB, SaveEnum[].class);
-		}
+		if(totalEnumS==null) totalEnumS=CMParms.appendToArray(SCode.values(), super.totalEnumS(), SaveEnum[].class);
 		return totalEnumS;
 	}
 	@Override public Enum[] headerEnumS()
 	{
-		if(headerEnumS==null)
-		{
-			Enum[] arrA=new Enum[] {SCode.values()[0]};
-			Enum[] arrB=super.headerEnumS();
-			headerEnumS=CMParms.appendToArray(arrA, arrB, Enum[].class);
-		}
+		if(headerEnumS==null) headerEnumS=CMParms.appendToArray(new Enum[] {SCode.values()[0]}, super.headerEnumS(), Enum[].class);
 		return headerEnumS;
 	}
 /*	public void link()

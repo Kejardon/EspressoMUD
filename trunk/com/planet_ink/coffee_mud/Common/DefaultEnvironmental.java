@@ -18,7 +18,7 @@ Licensed under the Apache License, Version 2.0. You may obtain a copy of the lic
 */
 public class DefaultEnvironmental implements Environmental, Ownable
 {
-	protected CMSavable parent;
+	protected CMObject parent;
 	protected Tickable.TickStat tickStatus=Tickable.TickStat.Not;
 	protected int tickCount=0;
 	//This is ok for now because there is no alternative to DefaultEnvStats
@@ -31,26 +31,38 @@ public class DefaultEnvironmental implements Environmental, Ownable
 	protected CopyOnWriteArrayList<Effect> affects=new CopyOnWriteArrayList();
 	//protected long lastTick=0;
 	protected EnumSet<ListenHolder.Flags> lFlags=EnumSet.noneOf(ListenHolder.Flags.class);
-	protected int[] effectsToLoad=null;
 	protected int lastTemperature=-1;
 
+	protected int[] effectsToLoad=null;
+	
+	public DefaultEnvironmental(){}
+	public DefaultEnvironmental(DefaultEnvironmental clone)
+	{
+		baseEnvStats=(EnvStats)((Ownable)clone.baseEnvStats.copyOf()).setOwner(this);
+		envStats=(EnvStats)((Ownable)clone.envStats.copyOf()).setOwner(this);
+		if(clone.affects!=null) for(Effect A : clone.affects)
+			affects.add(A.copyOnto(this));
+		lFlags.addAll(clone.lFlags);
+		lastTemperature = clone.lastTemperature;
+	}
+	
 	//Ownable
-	public CMSavable owner(){return parent;}
-	public Ownable setOwner(CMSavable owner){parent=owner; return this;}
+	public CMObject owner(){return parent;}
+	public Ownable setOwner(CMObject owner){parent=owner; return this;}
 
 	//Affectable
 	public void addEffect(Effect to)
 	{
 		affects.add(to);
 		to.setAffectedOne(this);
-		if(parent!=null)parent.saveThis();
+		saveThis();
 	}
 	public void delEffect(Effect to)
 	{
 		if(affects.remove(to))
 		{
 			to.setAffectedOne(null);
-			if(parent!=null)parent.saveThis();
+			saveThis();
 		}
 	}
 	public boolean hasEffect(Effect to)
@@ -159,6 +171,8 @@ public class DefaultEnvironmental implements Environmental, Ownable
 	public DefaultEnvironmental newInstance(){return new DefaultEnvironmental();}
 	public DefaultEnvironmental copyOf()
 	{
+		return new DefaultEnvironmental(this);
+		/*
 		try
 		{
 			DefaultEnvironmental E=(DefaultEnvironmental)this.clone();
@@ -169,7 +183,9 @@ public class DefaultEnvironmental implements Environmental, Ownable
 		{
 			return this.newInstance();
 		}
+		*/
 	}
+	/*
 	protected void cloneFix(DefaultEnvironmental E)
 	{
 		//parent=null;	//Undecided if this is appropriate or not.
@@ -188,6 +204,7 @@ public class DefaultEnvironmental implements Environmental, Ownable
 		for(Effect A : E.affects)
 			affects.add(A.copyOnto(this));
 	}
+	*/
 	@Override public void initializeClass(){}
 	public int compareTo(CMObject o){ return CMClass.classID(this).compareToIgnoreCase(CMClass.classID(o));}
 
@@ -235,7 +252,7 @@ public class DefaultEnvironmental implements Environmental, Ownable
 			effectsToLoad=null;
 		}
 	}
-	public void saveThis(){if(parent!=null)parent.saveThis();}
+	public void saveThis(){if(parent instanceof CMSavable)((CMSavable)parent).saveThis();}
 	public void prepDefault(){}	//baseEnvStats will already default fine.
 
 	//Environmental
@@ -333,7 +350,7 @@ public class DefaultEnvironmental implements Environmental, Ownable
 		baseEnvStats=(EnvStats)((Ownable)newBaseEnvStats).setOwner(this);
 		envStats=(EnvStats)newBaseEnvStats.copyOf();
 		recoverEnvStats();
-		if(parent!=null)parent.saveThis();
+		saveThis();
 	}
 	public EnvStats envStats(){return envStats;}
 	public void recoverEnvStats()
@@ -351,8 +368,8 @@ public class DefaultEnvironmental implements Environmental, Ownable
 	}
 	public boolean amDestroyed()
 	{
-		if(parent!=null)
-			return parent.amDestroyed();
+		if(parent instanceof CMSavable)
+			return ((CMSavable)parent).amDestroyed();
 		return true;
 	}
 	public boolean sameAs(Environmental E)
